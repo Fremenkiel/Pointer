@@ -14,25 +14,35 @@ final class FrameLoopView: UIView {
 /// The camera motion of a frame-loop run.
 enum FrameLoopMotion {
     case pan
+    case fastPan
     case zoom
 
     /// The pan turns back after this many seconds, as in the benchmark.
-    private static let panLeg = 0.75
+    fileprivate static let panLeg = 0.75
     /// The pan speed, in view points per second.
     private static let panSpeed = Vector(dx: 1500, dy: 500)
+    /// The fast pan speed: 2,000 view points per second, the top speed of phase 2, task 4.
+    private static let fastPanSpeed = Vector(dx: 1897, dy: 632)
 
     /// Returns the camera at `elapsed` seconds after the start.
     func camera(at elapsed: Double, start: Camera) -> Camera {
         switch self {
         case .pan:
-            let phase = elapsed.truncatingRemainder(dividingBy: 2 * Self.panLeg)
-            let leg = phase < Self.panLeg ? phase : 2 * Self.panLeg - phase
-            let offset = Vector(dx: Self.panSpeed.dx * leg, dy: Self.panSpeed.dy * leg)
-            return start.panned(byView: offset)
+            return Self.pan(at: elapsed, speed: Self.panSpeed, start: start)
+        case .fastPan:
+            return Self.pan(at: elapsed, speed: Self.fastPanSpeed, start: start)
         case .zoom:
             // Zoom between 0.25 and 0.49, as in the benchmark.
             return Camera(center: start.center, zoom: 0.35 * pow(1.4, sin(elapsed * .pi)))
         }
+    }
+}
+
+extension FrameLoopMotion {
+    fileprivate static func pan(at elapsed: Double, speed: Vector, start: Camera) -> Camera {
+        let phase = elapsed.truncatingRemainder(dividingBy: 2 * panLeg)
+        let leg = phase < panLeg ? phase : 2 * panLeg - phase
+        return start.panned(byView: Vector(dx: speed.dx * leg, dy: speed.dy * leg))
     }
 }
 

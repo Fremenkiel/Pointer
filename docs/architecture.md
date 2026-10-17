@@ -222,7 +222,15 @@ The live pen stroke is not a pass of the renderer. The `PKCanvasView` on top dra
 
 The committed texture covers the viewport plus a margin of half a screen on each side (review A-04). It has the format `.r8Unorm`, because all content is gray. Thus two textures for a 13-inch iPad take about 45 MB. The composite pass turns the coverage into white on black in the `.bgra8Unorm` drawable. At the end of a stroke, the renderer draws only the new stroke into the committed texture. It never redraws all content at a pencil lift.
 
-While the camera moves, the renderer shows the committed texture, translated and scaled (decision D-28). A pan of less than the margin needs no new content pass. In parallel, the renderer draws a new committed texture for the current camera in chunks. Each frame gets a fixed GPU time for the chunks, so no frame drops. When the new texture is complete, it replaces the old one. When the camera stops, the renderer draws the content once at the exact zoom. The `SpatialGrid` limits all passes to the strokes that touch the texture area.
+While the camera moves, the renderer shows the committed texture, translated and scaled (decision D-28). It draws a new committed texture (a build) only in one of these cases:
+
+1. No front texture exists.
+2. A load made the front texture old.
+3. The zoom ratio of the front texture leaves the band 0.8 to 1.25.
+4. The visible rectangle leaves the front texture minus a quarter of its margin.
+5. The camera stays still for 6 frames and differs from the camera of the front texture. This build gives the exact zoom.
+
+A build runs in chunks. Each frame draws at most 125,000 instances of the build (`RendererConfiguration.instanceBudgetPerFrame`), so no frame drops. A chunk of 250,000 instances took up to 9.4 ms of GPU time and made late frames. The screen keeps the old texture until the new texture is complete. The `SpatialGrid` limits all passes to the strokes that touch the texture area.
 
 While the camera moves, the ink can look a little soft until the new texture is complete. This is accepted (D-28).
 

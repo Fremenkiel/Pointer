@@ -17,6 +17,15 @@ final class CommittedLayer {
 
     /// The first capacity of the build list. It grows once to the largest canvas.
     private static let initialSlotCapacity = 4096
+    /// The size of a texture over the size of the drawable.
+    static let textureScale = 2.0
+    /// The zoom ratios, front zoom over camera zoom, that the front texture serves without a
+    /// build (docs/m2-fix-plan.md, phase 2).
+    static let zoomBand = 0.8...1.25
+    /// The part of the margin that the visible rectangle must keep inside the front texture.
+    static let marginReserve = 0.25
+    /// A camera that stays still for this many frames gets a build at its exact zoom.
+    static let stillFramesBeforeExactBuild = 6
 
     /// The texture that the screen shows, or `nil` before the first build completes.
     private(set) var front: InkTarget?
@@ -28,6 +37,9 @@ final class CommittedLayer {
     private var frontIndex = 1
     private var build: Build?
     private var isStale = false
+    /// The camera of the last frame, and the frames in a row with that camera.
+    private var lastCamera: Camera?
+    private var stillFrames = 0
     /// The strokes of the build, in drawing order. Reused, so a build allocates nothing.
     private var buildSlots: [Int] = []
     private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
@@ -38,8 +50,8 @@ final class CommittedLayer {
     /// - Throws: `RenderingError` if Metal cannot make the textures.
     init(resources: InkResources, drawableWidth: Int, drawableHeight: Int) throws(RenderingError) {
         precondition(drawableWidth > 0 && drawableHeight > 0, "Drawable size must be positive")
-        let width = drawableWidth * 2
-        let height = drawableHeight * 2
+        let width = Int((Double(drawableWidth) * Self.textureScale).rounded(.up))
+        let height = Int((Double(drawableHeight) * Self.textureScale).rounded(.up))
         let format = InkResources.committedFormat
         textures = [
             try resources.makeTarget(width: width, height: height, format: format),
@@ -54,7 +66,20 @@ final class CommittedLayer {
     /// `true` while a build has strokes left to draw.
     var isBuilding: Bool { build != nil }
 
-    /// Starts a build for `camera` if no build runs and the front texture is old.
+    /// `true` while the front texture shows another camera than the last frame. The renderer then
+    /// keeps drawing frames until the exact build after the camera stops.
+    var isSettling: Bool {
+        guard let front, let lastCamera else { return false }
+        return front.camera != lastCamera
+    }
+
+    /// Starts a build for `camera` if no build runs and the front texture needs one. Call it once
+    /// per frame, because it counts the frames with a still camera.
+    ///
+    /// A build starts in these cases: no front texture exists, a load made the front texture
+    /// old, the zoom ratio leaves `zoomBand`, the visible rectangle leaves the front texture
+    /// minus a quarter of its margin, or the camera stays still for
+    /// `stillFramesBeforeExactBuild` frames away from the front camera.
     ///
     /// - Precondition: `displayScale` is positive.
     /// - Returns: `true` if a build started.
@@ -62,8 +87,11 @@ final class CommittedLayer {
         precondition(displayScale > 0, "Display scale must be positive, got \(displayScale)")
         let state = signposter.beginInterval("StartBuildIfNeeded")
         defer { signposter.endInterval("StartBuildIfNeeded", state) }
-        let isCurrent = front?.camera == camera && front?.displayScale == displayScale && !isStale
-        guard build == nil, !isCurrent else { return false }
+        stillFrames = camera == lastCamera ? stillFrames + 1 : 0
+        lastCamera = camera
+        guard build == nil, needsBuild(camera: camera, displayScale: displayScale) else {
+            return false
+        }
         isStale = false
         let texture = textures[1 - frontIndex]
         let target = InkTarget(texture: texture, camera: camera, displayScale: displayScale)
@@ -72,6 +100,33 @@ final class CommittedLayer {
         build = Build(target: target)
         assert(front?.texture !== texture, "A build never draws into the front texture")
         return true
+    }
+
+    private func needsBuild(camera: Camera, displayScale: Double) -> Bool {
+        guard let front, !isStale, front.displayScale == displayScale else { return true }
+        guard front.camera != camera else { return false }
+        guard Self.zoomBand.contains(front.camera.zoom / camera.zoom) else { return true }
+        guard covers(front, camera: camera) else { return true }
+        return stillFrames >= Self.stillFramesBeforeExactBuild
+    }
+
+    /// Returns `true` if the front texture, minus a quarter of its margin, holds the visible
+    /// rectangle of `camera`.
+    private func covers(_ front: InkTarget, camera: Camera) -> Bool {
+        let scale = front.displayScale
+        let viewSize = Size(
+            width: Double(drawableWidth) / scale,
+            height: Double(drawableHeight) / scale
+        )
+        let visible = camera.visibleRect(viewSize: viewSize)
+        let texture = front.canvasRect
+        let pixels = front.pixelsPerCanvasPoint
+        let reserveX = Double(front.texture.width - drawableWidth) / 2 / pixels * Self.marginReserve
+        let reserveY =
+            Double(front.texture.height - drawableHeight) / 2 / pixels * Self.marginReserve
+        assert(reserveX >= 0 && reserveY >= 0, "The texture is smaller than the drawable")
+        return visible.minX >= texture.minX + reserveX && visible.maxX <= texture.maxX - reserveX
+            && visible.minY >= texture.minY + reserveY && visible.maxY <= texture.maxY - reserveY
     }
 
     /// Marks the front texture as old after a change that is not one new stroke, for example a

@@ -69,7 +69,7 @@ final class FrameRenderer {
     /// early frame without a drawable size ends the frame loop, and the screen stays black.
     var needsMoreFrames: Bool {
         guard let layer else { return viewSize.width > 0 && viewSize.height > 0 }
-        return layer.isBuilding || !pendingSlots.isEmpty || waitingHandoff > 0
+        return layer.isBuilding || layer.isSettling || !pendingSlots.isEmpty || waitingHandoff > 0
     }
 
     /// Sets the size of the view and the display scale. A change rebuilds the committed layer.

@@ -188,6 +188,19 @@ These are the baselines of 2026-10-17 after phase 1, on the iPad Pro 11-inch (M4
 | Handwriting, 200,000 strokes, zoom | 120.0 | 0 of 479 | 0.00, 0.01 | 1.30, 3.18 | 5.11 | 242 | 0 | 68 |
 | Dense, 10 strokes, pan (`testPanFewStrokes`) | 120.0 | 0 of 479 | 0.00, 0.01 | 0.27, 0.35 | 1.61 | 480 | 0 | 46 |
 
+These are the baselines of 2026-10-17 after phase 2, tasks 1 to 3: the rebuild policy and an instance budget of 125,000 per frame. The texture margin is still 2x (D-47):
+
+| Run | Frame rate | Intervals over 12.5 ms | Builds | GPU ms per frame, mean | Uncovered frames | Allocations per frame, p50 |
+|---|---|---|---|---|---|---|
+| Dense, 20,000 strokes, pan | 120.0 | 0 of 479 | 17 | 0.95 | 0 | 37 |
+| Dense, 20,000 strokes, pan at 2,000 points per second | 120.0 | 0 of 479 | 21 | 1.00 | 0 | 37 |
+| Dense, 20,000 strokes, zoom | 119.0 | 1 of 475 | 8 | 0.91 | 0 | 37 |
+| Handwriting, 200,000 strokes, pan | 120.0 | 0 of 479 | 17 | 1.48 | 0 | 37 |
+| Handwriting, 200,000 strokes, zoom | 120.0 | 0 of 479 | 8 | 0.97 | 0 | 37 |
+| Dense, 10 strokes, pan | 120.0 | 0 of 479 | 17 | 0.57 | 0 | 37 |
+
+The main-thread time stayed at 0.02 ms or less at the 99th percentile in all runs. The late frame of the dense zoom is the render-thread spike of about 28 ms that phase 1 also showed.
+
 The pan of 10 strokes is the regression test of the idle pause in [m2-fix-plan.md](m2-fix-plan.md), phase 1. Before the fix, it had 42 late frames.
 
 The one late frame of the dense zoom was 41.7 ms. It came with one render-thread frame of 28.3 ms. Phase 4 targets the arena work that can cause it.

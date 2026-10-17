@@ -54,6 +54,7 @@ Status values: Open, Decided, Replaced.
 | D-44 | Window access in the frame-loop test | One inline lint exception for `UIApplication.shared` | Decided (2026-10-17) |
 | D-45 | Dense content of the performance tests | Two contents: the M2 content and the benchmark content | Decided (2026-10-17) |
 | D-46 | Unit of the GPU-time target of phase 3, task 1 | A ratio: at most 0.58 times the GPU time at 0.5 pixels | Decided (2026-10-17) |
+| D-47 | Texture margin of phase 2, task 4: 2x or 1.5x | Recommendation: keep 2x | Open |
 
 ## Details
 
@@ -379,6 +380,22 @@ Status values: Open, Decided, Replaced.
 - Options: (a) state the target as a ratio: the GPU time at 1.0 pixel is at most 0.58 times the time at 0.5 pixels, the ratio of the benchmark. (b) state a new absolute target in the unit of the permanent test, for example 2.0 ms. (c) keep 2.7 ms in the new unit. This target is then much easier to meet than the benchmark target.
 - Recommendation: (a), because a ratio does not depend on the clock state of the GPU.
 - Effect: phase 3, task 1 of [m2-fix-plan.md](m2-fix-plan.md) uses the ratio as its target.
+
+### D-47 Texture margin of phase 2, task 4
+
+- Open. Raised by phase 2, task 4 of [m2-fix-plan.md](m2-fix-plan.md) on 2026-10-17.
+- Task 4 says: if 1.5x gives no uncovered frames at pan speeds up to 2,000 view points per second, use 1.5x. Task 2 asks for at most 20 builds and a mean GPU time under 1 ms in a 4-second pan of 20,000 dense strokes. At 1.5x, task 4 passes and task 2 fails.
+- Measured on the iPad Pro 11-inch (M4), 4 seconds each, with the rebuild policy:
+
+| Run | Builds at 2x | Builds at 1.5x | GPU ms mean at 2x | GPU ms mean at 1.5x | Uncovered frames |
+|---|---|---|---|---|---|
+| Dense pan, about 1,580 points per second | 16 | 33 | 0.91 | 1.37 | 0 at both |
+| Dense pan, 2,000 points per second | 21 | 43 | 1.00 | 1.52 | 0 at both |
+| Handwriting pan | 17 | 32 | 1.48 | 1.54 | 0 at both |
+
+- Options: (a) keep 2x. Task 2 passes, and the textures keep 13.5 MB more on the 11-inch iPad and about 20 MB more on the 13-inch iPad. (b) use 1.5x and accept about twice the builds and about 0.5 ms more GPU time per frame. (c) use 1.5x with a smaller margin reserve than a quarter, which gives fewer builds but less room before a pan shows uncovered screen.
+- Recommendation: (a). The memory saving is small against the 300 MB budget of a canvas, and the GPU time of a pan is the cost that the user feels.
+- The code keeps 2x (`CommittedLayer.textureScale`) until the product owner decides.
 
 ## Points in the request that conflict or are not complete
 

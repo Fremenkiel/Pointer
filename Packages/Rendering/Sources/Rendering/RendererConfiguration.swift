@@ -5,7 +5,9 @@ public struct RendererConfiguration: Sendable {
     /// The size of the point arena at the start, in slabs of 256 KB.
     public var initialArenaSlabs: Int
     /// The draw instances that one frame can spend on a committed texture build. This is the
-    /// fixed GPU time per frame of D-28.
+    /// fixed GPU time per frame of D-28. With the rebuild policy of phase 2, most frames build
+    /// nothing, and a chunk of 250,000 instances took up to 9.4 ms of GPU time and made late
+    /// frames. 125,000 gave none (frame-loop test, 2026-10-17).
     public var instanceBudgetPerFrame: Int
     /// The draw-list entries per frame.
     public var drawListCapacity: Int
@@ -17,7 +19,7 @@ public struct RendererConfiguration: Sendable {
     public init(
         arenaByteBudget: Int = 192 << 20,
         initialArenaSlabs: Int = 64,
-        instanceBudgetPerFrame: Int = 250_000,
+        instanceBudgetPerFrame: Int = 125_000,
         drawListCapacity: Int = 32_768,
         buildTimeBudget: Double = 0.002
     ) {
