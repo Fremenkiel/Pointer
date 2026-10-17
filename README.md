@@ -8,7 +8,17 @@ The app has three tools only: a white pen, text boxes, and an eraser. It stores 
 
 ## Status
 
-The project is in the design phase. No code exists yet.
+Milestone M0 is built: the Xcode project, the empty packages, and the check tools. The app shows a black screen on the simulator. The test on a real iPad is open. See [docs/plan.md](docs/plan.md) for the next milestones.
+
+## Build
+
+Install Xcode 27 and SwiftLint (`brew install swiftlint`). Then run all checks from the repository root:
+
+```
+make check
+```
+
+Open `Pointer.xcodeproj` in Xcode to run the app. Set your signing team on the `PointerApp` target before you run it on an iPad.
 
 ## Documents
 

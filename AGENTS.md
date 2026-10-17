@@ -28,8 +28,12 @@ pointer/
   AGENTS.md                this file
   README.md                project overview
   docs/                    design documents and the coding standard
-  PointerApp/              app target: scene setup and composition only   (planned, M0)
-  Packages/                                                               (planned, M0)
+  Makefile                 one target per check, `make check` runs all
+  .swift-format            formatter configuration (STYLE-04)
+  .swiftlint.yml           lint rules, one custom rule per invariant
+  Pointer.xcodeproj/       Xcode project with the app target and the PointerApp scheme
+  PointerApp/              app target: scene setup and composition only
+  Packages/                one local Swift package per folder
     Geometry/              Layer 0: Double geometry, camera math, spatial grid
     Model/                 Layer 0: value types, IDs, clock, commands, history, limits
     InkEngine/             Layer 0: filters, stroke building, eraser
@@ -40,20 +44,28 @@ pointer/
     CanvasFeature/         Layer 2: canvas screen
     WorkspaceFeature/      Layer 2: workspace selector
     BackupFeature/         Layer 2: backup command and restore
-  Scripts/                 layer, assertion-density, and CI scripts       (planned, M0)
+  Scripts/                 check-layers.swift, assertion-density.swift, self-test.sh
+    Fixtures/              small trees that the self-test runs the check scripts on
   Spikes/                  throwaway prototypes for M1 only               (planned, M1)
 ```
 
 ## Commands
 
-The commands come in milestone M0. Until then, this section is empty.
+Run the commands from the repository root. They need Xcode 27 and SwiftLint 0.65.1 (`brew install swiftlint`).
 
 ```
-# Build:        (M0)
-# Test:         (M0)
-# Lint:         (M0)
-# Full check:   (M0)
+make build       # build the app for iOS, warnings are errors
+make analyze     # xcodebuild analyze, zero findings
+make test        # package tests: Tier A on the Mac, the others on an iPad simulator
+make format      # swift format lint
+make lint        # swiftlint --strict
+make layers      # Scripts/check-layers.swift
+make density     # Scripts/assertion-density.swift
+make self-test   # runs the check scripts on Scripts/Fixtures
+make check       # all of the above, the full check
 ```
+
+`make test` uses the simulator "iPad Pro 13-inch (M5)". To use another simulator, set `SIMULATOR`, for example `make test SIMULATOR='platform=iOS Simulator,name=iPad Air 11-inch (M4)'`.
 
 ## Working rules
 
