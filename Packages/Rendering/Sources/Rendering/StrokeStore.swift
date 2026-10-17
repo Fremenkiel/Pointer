@@ -31,6 +31,7 @@ final class StrokeStore {
     }
 
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
+    private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     private(set) var infos: [DrawInfo] = []
     /// The strokes by slot. Only an upload into the arena reads them.
     private var strokes: [Stroke] = []
@@ -99,6 +100,8 @@ final class StrokeStore {
 
     private func evictAndAllocate(_ points: Int, _ frame: UInt64) -> ArenaBlock? {
         precondition(points >= 1, "An allocation needs points, got \(points)")
+        let state = signposter.beginInterval("EvictAndAllocate")
+        defer { signposter.endInterval("EvictAndAllocate", state) }
         let protectedAfter = frame > Self.framesInFlight ? frame - Self.framesInFlight : 0
         var candidates = infos.indices.filter {
             infos[$0].block != nil && infos[$0].lastDrawnFrame < protectedAfter

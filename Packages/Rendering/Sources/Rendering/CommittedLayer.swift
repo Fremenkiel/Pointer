@@ -1,5 +1,6 @@
 import Geometry
 import Metal
+import os
 
 /// The committed layer: a texture with all finished ink around the viewport (architecture.md
 /// 5.2, D-28).
@@ -26,6 +27,7 @@ final class CommittedLayer {
     private var isStale = false
     /// The strokes of the build, in drawing order. Reused, so a build allocates nothing.
     private var buildSlots: [Int] = []
+    private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
 
     /// Makes the two textures for a drawable size.
     ///
@@ -53,6 +55,8 @@ final class CommittedLayer {
     /// - Returns: `true` if a build started.
     func startBuildIfNeeded(camera: Camera, displayScale: Double, store: StrokeStore) -> Bool {
         precondition(displayScale > 0, "Display scale must be positive, got \(displayScale)")
+        let state = signposter.beginInterval("StartBuildIfNeeded")
+        defer { signposter.endInterval("StartBuildIfNeeded", state) }
         let isCurrent = front?.camera == camera && front?.displayScale == displayScale && !isStale
         guard build == nil, !isCurrent else { return false }
         isStale = false
@@ -109,6 +113,8 @@ final class CommittedLayer {
     ) {
         precondition(budget > 0, "Build budget must be positive, got \(budget)")
         guard var current = build else { return }
+        let state = signposter.beginInterval("ContinueBuild")
+        defer { signposter.endInterval("ContinueBuild", state) }
         let options = InkPassOptions(
             clear: !current.hasCleared,
             instanceBudget: budget,

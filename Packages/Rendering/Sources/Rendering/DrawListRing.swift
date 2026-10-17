@@ -1,5 +1,6 @@
 import Dispatch
 import Metal
+import os
 
 /// Three draw-list buffers that frames use in turn, so the CPU never writes a buffer that the
 /// GPU still reads (PERF-01: no allocation per frame).
@@ -12,6 +13,7 @@ final class DrawListRing {
     let capacity: Int
     private let buffers: [any MTLBuffer]
     private let available = DispatchSemaphore(value: bufferCount)
+    private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     private var index = 0
     /// The entries that the current frame wrote.
     private(set) var used = 0
@@ -50,7 +52,9 @@ final class DrawListRing {
             commandBuffer.status == .notEnqueued,
             "The frame command buffer is already sent"
         )
+        let state = signposter.beginInterval("BeginFrame")
         available.wait()
+        signposter.endInterval("BeginFrame", state)
         index = (index + 1) % Self.bufferCount
         used = 0
         assert(

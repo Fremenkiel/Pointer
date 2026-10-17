@@ -15,6 +15,8 @@ final class InkEncoder {
     private let resources: InkResources
     private let store: StrokeStore
     let ring: DrawListRing
+    /// The level-of-detail spacing of the draws. Tests change it to compare values.
+    var minimumPixelSpacing = LevelOfDetail.minimumPixelSpacing
 
     /// Makes an encoder.
     init(resources: InkResources, store: StrokeStore, ring: DrawListRing) {
@@ -81,7 +83,8 @@ final class InkEncoder {
             pointCount: info.pointCount,
             meanSpacing: info.meanSpacing,
             maxSpacing: info.maxSpacing,
-            pixelsPerCanvasPoint: target.pixelsPerCanvasPoint
+            pixelsPerCanvasPoint: target.pixelsPerCanvasPoint,
+            minimumPixelSpacing: minimumPixelSpacing
         )
         // The subtraction runs in Double before the conversion to Float (architecture.md 5.3).
         let origin = info.origin - target.camera.center

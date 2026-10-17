@@ -17,7 +17,8 @@ public final class CanvasRenderer {
     private let encoder: InkEncoder
     private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
-    private var layer: CommittedLayer?
+    /// The committed layer, or `nil` before the first frame with a drawable size.
+    private(set) var layer: CommittedLayer?
     private var pendingSlots: [Int] = []
     private var pendingCallbacks: [@MainActor () -> Void] = []
     private var frame: UInt64 = 0
@@ -31,6 +32,10 @@ public final class CanvasRenderer {
 
     /// Called when the renderer needs a frame. `InkView` sets it.
     public var onNeedsFrame: (() -> Void)?
+
+    /// Called with the command buffer of each frame before the commit. Only the performance
+    /// tests set it, to read the GPU time of a frame.
+    var onCommit: ((any MTLCommandBuffer) -> Void)?
 
     /// Makes a renderer on the system GPU.
     ///
@@ -136,13 +141,17 @@ public final class CanvasRenderer {
         encoder.ring.beginFrame(commandBuffer)
         addGPUTimeSignpost(to: commandBuffer)
         encodeContent(layer: layer, commandBuffer: commandBuffer)
-        guard let drawable = metalLayer.nextDrawable() else {
+        let drawableState = signposter.beginInterval("NextDrawable")
+        let drawable = metalLayer.nextDrawable()
+        signposter.endInterval("NextDrawable", drawableState)
+        guard let drawable else {
             commandBuffer.commit()
             return true
         }
         encodeComposite(layer: layer, commandBuffer: commandBuffer, texture: drawable.texture)
         attachCallbacks(to: drawable, commandBuffer: commandBuffer)
         commandBuffer.present(drawable)
+        onCommit?(commandBuffer)
         commandBuffer.commit()
         if let deadline, CACurrentMediaTime() > deadline {
             signposter.emitEvent("LateFrame")

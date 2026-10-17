@@ -22,11 +22,18 @@ struct LevelOfDetail: Equatable {
     /// The number of draw instances: one per piece.
     var instanceCount: Int { (effectivePointCount - 1) * piecesPerSegment }
 
-    /// Computes the level of detail of a stroke.
+    /// Computes the level of detail of a stroke. Tests pass another `minimumPixelSpacing` to
+    /// compare values (docs/m2-fix-plan.md, phase 0).
     ///
     /// - Precondition: `pointCount >= 2`, the spacings are zero or positive, and
-    ///   `pixelsPerCanvasPoint` is positive.
-    init(pointCount: Int, meanSpacing: Double, maxSpacing: Double, pixelsPerCanvasPoint: Double) {
+    ///   `pixelsPerCanvasPoint` and `minimumPixelSpacing` are positive.
+    init(
+        pointCount: Int,
+        meanSpacing: Double,
+        maxSpacing: Double,
+        pixelsPerCanvasPoint: Double,
+        minimumPixelSpacing: Double = Self.minimumPixelSpacing
+    ) {
         precondition(pointCount >= 2, "A stroke has 2 points at least, got \(pointCount)")
         precondition(
             meanSpacing >= 0 && maxSpacing >= meanSpacing,
@@ -36,12 +43,13 @@ struct LevelOfDetail: Equatable {
             pixelsPerCanvasPoint > 0,
             "Pixel scale must be positive, got \(pixelsPerCanvasPoint)"
         )
+        precondition(minimumPixelSpacing > 0, "Spacing \(minimumPixelSpacing) is not positive")
         let meanPixels = meanSpacing * pixelsPerCanvasPoint
         var stride = pointCount - 1
-        if meanPixels >= Self.minimumPixelSpacing {
+        if meanPixels >= minimumPixelSpacing {
             stride = 1
         } else if meanPixels > 0 {
-            stride = min(pointCount - 1, Int((Self.minimumPixelSpacing / meanPixels).rounded(.up)))
+            stride = min(pointCount - 1, Int((minimumPixelSpacing / meanPixels).rounded(.up)))
         }
         self.stride = stride
         effectivePointCount = (pointCount - 1 + stride - 1) / stride + 1

@@ -25,8 +25,8 @@ public final class InkView: UIView {
     /// draws. It returns `true` while it needs more frames, for example during a camera animation.
     public var onFrame: ((TimeInterval) -> Bool)?
 
-    // The frame rate range of architecture.md 5.1.
-    private static let frameRates = CAFrameRateRange(minimum: 80, maximum: 120, preferred: 120)
+    /// The frame rate range of architecture.md 5.1.
+    static let frameRates = CAFrameRateRange(minimum: 80, maximum: 120, preferred: 120)
 
     /// The layer class: Metal.
     override public static var layerClass: AnyClass { CAMetalLayer.self }

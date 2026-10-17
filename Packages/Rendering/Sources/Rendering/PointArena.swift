@@ -1,5 +1,6 @@
 import Metal
 import Model
+import os
 
 /// All control points of a canvas in one shared `MTLBuffer` (architecture.md 5.3, D-28).
 ///
@@ -18,6 +19,7 @@ final class PointArena {
     /// The buffer with all points. It changes when the arena grows.
     private(set) var buffer: any MTLBuffer
     private var allocator: SlabAllocator
+    private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
 
     /// Makes an arena.
     ///
@@ -72,6 +74,8 @@ final class PointArena {
         let budgetSlabs = byteBudget / Self.bytesPerSlab
         let newCount = min(allocator.slabCount * 2, budgetSlabs)
         guard newCount > allocator.slabCount else { return false }
+        let state = signposter.beginInterval("ArenaGrow", "\(newCount) slabs")
+        defer { signposter.endInterval("ArenaGrow", state) }
         guard
             let newBuffer = device.makeBuffer(
                 length: newCount * Self.bytesPerSlab,
