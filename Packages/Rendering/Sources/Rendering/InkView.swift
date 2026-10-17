@@ -2,27 +2,28 @@ import Geometry
 import QuartzCore
 import UIKit
 
-/// A view with a `CAMetalLayer` that the renderer draws in a `UIUpdateLink` frame loop
-/// (architecture.md 5.1).
+/// A view with a `CAMetalLayer` that the renderer draws on its render thread (architecture.md
+/// 5.1, D-42).
 ///
-/// The link runs only while the renderer has work: a camera change, a build, or a stroke that
-/// waits for the handoff.
+/// The render thread starts when the view joins a window and stops when it leaves. A
+/// `UIUpdateLink` on the main thread steps the camera animations. It runs only while an
+/// animation runs.
 @MainActor
 public final class InkView: UIView {
     /// The renderer of the canvas.
     public let renderer: CanvasRenderer
+    private var renderThread: RenderThread?
     private var updateLink: UIUpdateLink?
-    /// `true` after `requestFrame()` until the next frame draws.
+    /// `true` after `requestFrame()` until the next step.
     private var isFrameRequested = false
-    /// The frames in a row without work.
-    private var idleFrames = 0
-    /// The link keeps its continuous updates for this many frames without work, about 0.1 s at
-    /// 120 Hz. Without the pause, the link turned off between the frames of a pan, and the
-    /// display fell back to 60 Hz on the device.
-    static let idleFramesBeforeSleep = 12
+    /// The steps in a row without an animation.
+    private var idleSteps = 0
+    /// The link keeps its continuous updates for this many steps without an animation, about
+    /// 0.1 s at 120 Hz, so that a new animation starts on the next display frame.
+    static let idleStepsBeforeSleep = 12
 
-    /// Called at the start of each frame with the model time of the frame, before the renderer
-    /// draws. It returns `true` while it needs more frames, for example during a camera animation.
+    /// Called at each display frame with the model time of the frame. It returns `true` while it
+    /// needs more frames, for example during a camera animation.
     public var onFrame: ((TimeInterval) -> Bool)?
 
     /// The frame rate range of architecture.md 5.1.
@@ -39,7 +40,6 @@ public final class InkView: UIView {
         backgroundColor = .black
         isUserInteractionEnabled = false
         renderer.configure(metalLayer)
-        renderer.onNeedsFrame = { [weak self] in self?.requestFrame() }
         assert(metalLayer.pixelFormat == .bgra8Unorm, "The renderer did not set up the layer")
     }
 
@@ -56,11 +56,24 @@ public final class InkView: UIView {
         return metalLayer
     }
 
-    /// Starts the frame loop when the view joins a window and stops it when the view leaves.
+    /// Starts the render thread and the step link when the view joins a window, and stops both
+    /// when the view leaves.
     override public func didMoveToWindow() {
         super.didMoveToWindow()
+        renderThread?.stop()
+        renderThread = nil
         updateLink?.isEnabled = false
-        updateLink = window == nil ? nil : makeUpdateLink()
+        updateLink = nil
+        guard window != nil else { return }
+        let thread = RenderThread(
+            engine: renderer.engine,
+            layer: metalLayer,
+            frameRates: Self.frameRates
+        )
+        thread.start()
+        renderThread = thread
+        updateLink = makeUpdateLink()
+        assert(updateLink?.isEnabled == true, "The step link runs while the view has a window")
     }
 
     /// Updates the drawable size and the viewport of the renderer.
@@ -72,58 +85,51 @@ public final class InkView: UIView {
         assert(viewSize.width.isFinite && viewSize.height.isFinite, "View bounds are not finite")
         assert(scale.isFinite, "Display scale is not finite")
         metalLayer.contentsScale = scale
-        metalLayer.drawableSize = CGSize(
-            width: viewSize.width * scale,
-            height: viewSize.height * scale
-        )
+        let drawableSize = CGSize(width: viewSize.width * scale, height: viewSize.height * scale)
+        if let renderThread {
+            renderThread.setDrawableSize(drawableSize)
+        } else {
+            metalLayer.drawableSize = drawableSize
+        }
         renderer.setViewport(viewSize: viewSize, displayScale: scale)
-        requestFrame()
     }
 
-    /// Asks the frame loop for frames until the renderer has no work.
+    /// Asks the step link for display frames until no animation runs.
     public func requestFrame() {
         isFrameRequested = true
         updateLink?.requiresContinuousUpdates = true
     }
 
     private func makeUpdateLink() -> UIUpdateLink {
-        precondition(window != nil, "The frame loop needs a window")
+        precondition(window != nil, "The step link needs a window")
         let link = UIUpdateLink(view: self)
         link.addAction(to: .afterCADisplayLinkDispatch) { [weak self] _, info in
-            self?.drawFrame(info)
+            self?.step(info)
         }
-        // The low-latency settings of architecture.md 5.1 serve the eraser path, which comes with
-        // M4. Without an eraser they only halve the time of each frame: the device test of
-        // 2026-10-17 showed a late frame on every second frame of a pan with them on.
-        link.wantsLowLatencyEventDispatch = false
-        link.wantsImmediatePresentation = false
         link.preferredFrameRateRange = Self.frameRates
         link.requiresContinuousUpdates = true
         link.isEnabled = true
-        assert(link.isEnabled, "The frame loop did not start")
+        assert(link.isEnabled, "The step link did not start")
         return link
     }
 
-    /// Returns `true` if the next frame has work: a request, an animation, or renderer work.
-    func shouldDrawFrame(isAnimating: Bool) -> Bool {
-        isFrameRequested || isAnimating || renderer.needsMoreFrames
+    /// Returns `true` if the next display frame needs a step: a request or an animation.
+    func needsStep(isAnimating: Bool) -> Bool {
+        isFrameRequested || isAnimating
     }
 
-    /// The link also calls this on UI updates that other views cause, for example the hover
-    /// preview of PencilKit on each display frame. A frame without work draws nothing, because
-    /// an extra Metal frame on each of these updates starves the drawables of both renderers.
-    private func drawFrame(_ info: UIUpdateInfo) {
+    private func step(_ info: UIUpdateInfo) {
+        assert(updateLink != nil, "A step runs only with a step link")
         let isAnimating = onFrame?(info.modelTime) ?? false
-        guard shouldDrawFrame(isAnimating: isAnimating) else {
-            idleFrames += 1
-            if idleFrames > Self.idleFramesBeforeSleep {
+        guard needsStep(isAnimating: isAnimating) else {
+            idleSteps += 1
+            if idleSteps > Self.idleStepsBeforeSleep {
                 updateLink?.requiresContinuousUpdates = false
             }
             return
         }
-        idleFrames = 0
+        idleSteps = 0
         isFrameRequested = false
-        renderer.renderFrame(into: metalLayer, deadline: info.completionDeadlineTime)
         updateLink?.requiresContinuousUpdates = true
     }
 }

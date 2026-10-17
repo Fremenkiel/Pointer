@@ -4,7 +4,6 @@ import Model
 import QuartzCore
 
 /// Encodes ink passes: one instanced draw for many strokes with vertex pulling (D-28).
-@MainActor
 final class InkEncoder {
     /// Half the width of the anti-aliased edge, in pixels. It matches the edge of the PencilKit
     /// monoline (docs/m2-plan.md section 1, fact 3).

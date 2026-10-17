@@ -72,6 +72,11 @@ Do this phase first. Each later phase reruns these tests and compares them with 
 
 ### Phase 1: frame pacing (D-41, D-42)
 
+Status on 2026-10-17: tasks 1 to 3 are done. Task 4 needs the product owner. The results are in [m2-plan.md](m2-plan.md) section 4.4. Task 3 found two causes of late frames, and the code fixes both:
+
+- The render thread and the main thread wake on the same display frame. The render thread sometimes ran first, found no new camera, and drew nothing. The render thread now waits up to 3 ms for the camera while the camera moves.
+- The display link paused during a pan of little content, because each frame completed its build and the loop counted the frame as idle. A frame that drew no longer counts as idle.
+
 1. Set `maximumDrawableCount = 3` in `CanvasRenderer.configure` and in architecture.md section 5.1.
 2. Run the frame-loop test with `UIUpdateLink`.
    - Done when: pan and zoom with 20,000 dense strokes and with 200,000 handwriting strokes run at 120 Hz with zero intervals over 12.5 ms.

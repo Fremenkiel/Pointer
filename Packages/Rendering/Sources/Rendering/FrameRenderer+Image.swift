@@ -2,14 +2,14 @@ import Geometry
 import Metal
 import Model
 
-extension CanvasRenderer {
+extension FrameRenderer {
     /// Renders strokes into an image with the same pipelines as the screen. Tests and the
     /// handoff comparison use it.
     ///
     /// - Precondition: The view size times the scale gives at least one pixel.
     /// - Throws: `RenderingError` if a Metal object fails.
     /// - Returns: The image of the view, black with white ink.
-    public func renderImage(
+    func renderImage(
         of strokes: [Stroke],
         camera: Camera,
         viewSize: Size,

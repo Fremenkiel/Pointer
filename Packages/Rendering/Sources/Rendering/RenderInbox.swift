@@ -1,0 +1,58 @@
+import Geometry
+import Model
+
+/// The changes that the main actor sends to the render thread, and the state that the render
+/// thread sends back (D-42). Only values cross between the threads.
+struct RenderInbox {
+    /// The newest camera.
+    var camera = Camera(center: .zero, zoom: Limits.standardZoom)
+    /// `true` after a camera change that no frame took yet.
+    var hasNewCamera = false
+    /// The newest view size and display scale that no frame took yet.
+    var viewport: (size: Size, scale: Double)?
+    /// Strokes to load without a handoff.
+    var loaded: [Stroke] = []
+    /// Strokes of handoffs, in order.
+    var added: [Stroke] = []
+    /// The number of the newest handoff in `added`, or 0.
+    var addedHandoff: UInt64 = 0
+    /// `true` if the last frame took a new camera, so the camera is likely in motion.
+    var cameraMovedInLastFrame = false
+    /// `true` while the render thread waits for the camera of the current display frame.
+    var isWaitingForCamera = false
+    /// `true` while the frame loop sleeps. The next change wakes it.
+    var isSleeping = false
+    /// Wakes the frame loop. The render thread sets it.
+    var wake: (@Sendable () -> Void)?
+    /// Watches each frame. Only the tests set it.
+    var observer: (any FrameObserving)?
+
+    /// The number of strokes in the renderer after the last frame.
+    var strokeCount = 0
+    /// `true` if the renderer needed more frames after the last frame.
+    var rendererHasWork = false
+
+    /// `true` if a change waits that needs a frame, other than a camera change.
+    var hasContentChange: Bool { viewport != nil || !loaded.isEmpty || !added.isEmpty }
+
+    /// Moves the waiting changes out. The camera stays as the newest value.
+    mutating func take() -> RenderInput {
+        precondition(added.isEmpty || addedHandoff > 0, "Handoff strokes need a handoff number")
+        let input = RenderInput(
+            camera: hasNewCamera ? camera : nil,
+            viewport: viewport,
+            loaded: loaded,
+            added: added,
+            addedHandoff: addedHandoff,
+            observer: observer
+        )
+        cameraMovedInLastFrame = hasNewCamera
+        hasNewCamera = false
+        viewport = nil
+        loaded = []
+        added = []
+        addedHandoff = 0
+        assert(!hasContentChange, "The inbox is empty after a take")
+        return input
+    }
+}

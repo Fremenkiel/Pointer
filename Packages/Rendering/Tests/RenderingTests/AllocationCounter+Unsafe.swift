@@ -17,12 +17,12 @@ private let allocationFlag: UInt32 = 2
 enum AllocationCounter {
     /// Runs `body` and returns the heap allocations of the process during the run.
     ///
+    /// - Precondition: No other count runs at the same time.
     /// - Returns: The count, or `nil` if the process has no `malloc_logger` symbol.
-    @MainActor
     static func count(_ body: () -> Void) -> Int? {
         // Safe: RTLD_DEFAULT is the documented pseudo handle -2. The symbol is a global function
-        // pointer of libmalloc that holds `MallocLogger?`, and only this main-actor function
-        // writes it.
+        // pointer of libmalloc that holds `MallocLogger?`. Only this function writes it, and
+        // the tests call it from one thread at a time: the render thread of the frame-loop test.
         guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "malloc_logger") else {
             body()
             return nil

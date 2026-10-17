@@ -1,4 +1,5 @@
 import Geometry
+import Metal
 import Model
 import QuartzCore
 import Testing
@@ -72,24 +73,24 @@ struct CanvasRendererTests {
 
     @Test("The composite shows the front texture 1:1 when the camera did not move")
     func compositeIdentity() throws {
-        let renderer = try CanvasRenderer()
+        let resources = try makeResources()
         let layer = try CommittedLayer(
-            resources: renderer.resources,
+            resources: resources,
             drawableWidth: 400,
             drawableHeight: 240
         )
         let store = StrokeStore(
             arena: try PointArena(
-                device: renderer.resources.device,
+                device: resources.device,
                 initialSlabs: 1,
                 byteBudget: 1 << 20
             )
         )
         let camera = Camera(center: Point(x: 5, y: 7), zoom: 2)
         #expect(layer.startBuildIfNeeded(camera: camera, displayScale: 2, store: store))
-        let ring = try DrawListRing(device: renderer.resources.device, capacity: 4)
-        let encoder = InkEncoder(resources: renderer.resources, store: store, ring: ring)
-        let commandBuffer = try #require(renderer.resources.queue.makeCommandBuffer())
+        let ring = try DrawListRing(device: resources.device, capacity: 4)
+        let encoder = InkEncoder(resources: resources, store: store, ring: ring)
+        let commandBuffer = try #require(resources.queue.makeCommandBuffer())
         ring.beginFrame(commandBuffer)
         layer.continueBuild(encoder: encoder, commandBuffer: commandBuffer, budget: 10, frame: 1)
         commandBuffer.commit()
@@ -106,27 +107,31 @@ struct CanvasRendererTests {
         #expect(moved.offset == SIMD2(180, 120))
     }
 
+    private func makeResources() throws -> InkResources {
+        try InkResources(device: try #require(MTLCreateSystemDefaultDevice()))
+    }
+
     private func makeEncoder(
-        _ renderer: CanvasRenderer,
+        _ resources: InkResources,
         strokes: Int
     ) throws -> (InkEncoder, [Int]) {
-        let device = renderer.resources.device
+        let device = resources.device
         let arena = try PointArena(device: device, initialSlabs: 1, byteBudget: 1 << 20)
         let store = StrokeStore(arena: arena)
         let slots = (0..<strokes).map {
             store.add(StrokeBuilder.curve(at: Point(x: 0, y: Double($0)), seed: $0))
         }
         let ring = try DrawListRing(device: device, capacity: 128)
-        return (InkEncoder(resources: renderer.resources, store: store, ring: ring), slots)
+        return (InkEncoder(resources: resources, store: store, ring: ring), slots)
     }
 
     @Test("A pass past its deadline stops after the first strokes")
     func deadline() throws {
-        let renderer = try CanvasRenderer()
-        let (encoder, slots) = try makeEncoder(renderer, strokes: 100)
-        let commandBuffer = try #require(renderer.resources.queue.makeCommandBuffer())
+        let resources = try makeResources()
+        let (encoder, slots) = try makeEncoder(resources, strokes: 100)
+        let commandBuffer = try #require(resources.queue.makeCommandBuffer())
         encoder.ring.beginFrame(commandBuffer)
-        let texture = try renderer.resources.makeTarget(
+        let texture = try resources.makeTarget(
             width: 64,
             height: 64,
             format: InkResources.committedFormat

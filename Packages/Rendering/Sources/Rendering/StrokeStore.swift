@@ -7,7 +7,6 @@ import os
 /// The renderer keeps its own GPU state and receives only new strokes (data-model.md 8). A
 /// stroke can leave the arena when the arena is at its budget. The next draw then copies its
 /// points in again from `InkPoints`.
-@MainActor
 final class StrokeStore {
     /// The side length of a grid cell, in canvas points (architecture.md 5.6).
     static let gridCellSize = 512.0

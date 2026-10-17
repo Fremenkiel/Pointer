@@ -4,7 +4,6 @@ import os
 
 /// Three draw-list buffers that frames use in turn, so the CPU never writes a buffer that the
 /// GPU still reads (PERF-01: no allocation per frame).
-@MainActor
 final class DrawListRing {
     /// The number of buffers, so at most three frames wait for the GPU. With three drawables
     /// (D-41), the pan of the benchmark ran at 120 Hz with this count.

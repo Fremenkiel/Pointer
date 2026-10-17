@@ -6,18 +6,18 @@ import Testing
 @MainActor
 @Suite("Ink view frame loop")
 struct InkViewTests {
-    @Test("A UI update without work draws no frame")
+    @Test("A display frame without a request or an animation needs no step")
     func idle() throws {
         let view = InkView(renderer: try CanvasRenderer())
-        #expect(!view.shouldDrawFrame(isAnimating: false))
+        #expect(!view.needsStep(isAnimating: false))
     }
 
-    @Test("A request or an animation draws a frame")
+    @Test("A request or an animation needs a step")
     func work() throws {
         let view = InkView(renderer: try CanvasRenderer())
-        #expect(view.shouldDrawFrame(isAnimating: true))
+        #expect(view.needsStep(isAnimating: true))
         view.requestFrame()
-        #expect(view.shouldDrawFrame(isAnimating: false))
+        #expect(view.needsStep(isAnimating: false))
     }
 
     @Test("A renderer with a viewport but no texture yet needs a frame")

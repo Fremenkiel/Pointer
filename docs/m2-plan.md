@@ -173,4 +173,25 @@ The frame-loop test `FrameLoopTests` pans or zooms for 4 seconds after 1 second 
 
 The allocation count covers all threads of the process and includes the allocations inside Metal (D-43).
 
+After phase 1 of [m2-fix-plan.md](m2-fix-plan.md), the renderer draws on a render thread with a `CAMetalDisplayLink` and three drawables (D-41, D-42). The probe then changed in two ways:
+
+1. The intervals are the times between two presented frames, from `addPresentedHandler`. The old intervals were the times between two callbacks of the main-thread link. The new measure is stricter, because a frame that the display never showed counts as late.
+2. The main-thread time is the time of the camera change on the main thread, which is all the work that the renderer leaves there. The render-thread time is the time of the frame on the render thread.
+
+These are the baselines of 2026-10-17 after phase 1, on the iPad Pro 11-inch (M4) in the Release configuration:
+
+| Run | Frame rate | Intervals over 12.5 ms | Main-thread ms, p50 and p99 | Render-thread ms, p50 and p99 | GPU ms per frame, mean | Builds | Uncovered frames | Allocations per frame, p50 |
+|---|---|---|---|---|---|---|---|---|
+| Dense, 20,000 strokes, pan | 120.0 | 0 of 479 | 0.01, 0.01 | 2.42, 4.27 | 4.71 | 251 | 0 | 75 |
+| Dense, 20,000 strokes, zoom | 119.0 | 1 of 475 | 0.01, 0.02 | 1.70, 4.36 | 4.20 | 159 | 0 | 75 |
+| Handwriting, 200,000 strokes, pan | 120.0 | 0 of 479 | 0.01, 0.01 | 1.08, 3.12 | 4.30 | 166 | 0 | 75 |
+| Handwriting, 200,000 strokes, zoom | 120.0 | 0 of 479 | 0.00, 0.01 | 1.30, 3.18 | 5.11 | 242 | 0 | 68 |
+| Dense, 10 strokes, pan (`testPanFewStrokes`) | 120.0 | 0 of 479 | 0.00, 0.01 | 0.27, 0.35 | 1.61 | 480 | 0 | 46 |
+
+The pan of 10 strokes is the regression test of the idle pause in [m2-fix-plan.md](m2-fix-plan.md), phase 1. Before the fix, it had 42 late frames.
+
+The one late frame of the dense zoom was 41.7 ms. It came with one render-thread frame of 28.3 ms. Phase 4 targets the arena work that can cause it.
+
+The content-pass tests gave 55 ms, 153 ms, and 212 ms in the same run. They show no change against the baselines above.
+
 `PointerDeviceTests` also compiles the files of `Packages/Rendering/Tests/RenderingTests`, except the snapshot tests, which read their reference images from the Mac.

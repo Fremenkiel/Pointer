@@ -1,7 +1,6 @@
 import Metal
 
 /// The Metal objects that every ink pass shares: device, queue, and pipelines.
-@MainActor
 final class InkResources {
     /// The pixel format of the committed textures: one coverage channel. Ink, text, and cards
     /// are gray values, so one channel holds them at a quarter of the memory of BGRA.

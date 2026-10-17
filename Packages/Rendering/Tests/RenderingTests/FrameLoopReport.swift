@@ -5,10 +5,12 @@ struct FrameLoopReport: CustomStringConvertible {
     /// A frame interval above this many milliseconds is late at 120 Hz.
     static let lateIntervalMilliseconds = 12.5
 
-    /// The times between two frame callbacks, in milliseconds.
+    /// The times between two presented frames, in milliseconds.
     var intervals: [Double] = []
-    /// The main-thread time of each frame of the renderer, in milliseconds.
+    /// The main-thread time of the renderer in each display frame, in milliseconds.
     var mainThread: [Double] = []
+    /// The render-thread time of each frame, in milliseconds.
+    var renderThread: [Double] = []
     /// The GPU time of every second frame, in milliseconds.
     var gpu: [Double] = []
     /// The heap allocations of the process during each other frame.
@@ -33,7 +35,8 @@ struct FrameLoopReport: CustomStringConvertible {
         let rate = String(format: "%.1f fps", frameRate)
         return "\(rate), late \(lateIntervals)/\(intervals.count), builds \(builds), "
             + "uncovered \(uncoveredFrames)/\(frames); interval ms \(Self.summary(intervals)); "
-            + "main ms \(Self.summary(mainThread)); GPU ms \(Self.summary(gpu)); "
+            + "main ms \(Self.summary(mainThread)); "
+            + "render ms \(Self.summary(renderThread)); GPU ms \(Self.summary(gpu)); "
             + "allocations \(Self.summary(allocations))"
     }
 

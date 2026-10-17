@@ -1,6 +1,6 @@
 import Metal
 
-extension CanvasRenderer {
+extension FrameRenderer {
     /// Reads the BGRA bytes of a shared texture.
     func readPixels(of texture: any MTLTexture) -> [UInt8] {
         precondition(texture.storageMode == .shared, "Only a shared texture can be read")

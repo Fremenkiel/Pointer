@@ -175,15 +175,21 @@ A `UIHoverGestureRecognizer` with `allowedTouchTypes = [.pencil]` shows a small 
 
 ### 5.1 Frame loop
 
-D-42 changes this section: a `CAMetalDisplayLink` on a render thread drives the frames. Phase 1 of [m2-fix-plan.md](m2-fix-plan.md) rewrites this section with the code. Until then, the `UIUpdateLink` configuration below stays in the code. The layer uses three drawables (D-41).
+The renderer encodes its frames on a render thread (D-42). The types work together in this way:
 
-`CanvasRenderer` owns the `CAMetalLayer` and one `UIUpdateLink`. Use this configuration:
+1. `InkView` owns the `CAMetalLayer`. When the view joins a window, it starts one `RenderThread`. When the view leaves the window, it stops the thread.
+2. `RenderThread` runs a `CAMetalDisplayLink` on its own run loop. Each update of the link gives the drawable of the frame, so `nextDrawable()` never blocks the main thread.
+3. `RenderEngine` holds the frame work (`FrameRenderer`) behind one lock and an inbox behind a second lock.
+4. `CanvasRenderer` is the main-actor side. It writes the camera, the viewport, and new strokes into the inbox as values. It never waits for a frame.
+5. At the start of each frame, the render thread takes the inbox and draws. The handoff callback returns to the main actor (section 4.2).
+
+`FrameRenderer` owns `CommittedLayer`, `InkEncoder`, `StrokeStore`, and `DrawListRing`. These types have no actor isolation. One thread at a time uses them: the render thread in the app, or the thread of a test.
+
+Use this configuration:
 
 ```swift
-link.wantsLowLatencyEventDispatch = false  // true with the eraser in M4, see below
-link.wantsImmediatePresentation = false     // true with the eraser in M4, see below
-link.requiresContinuousUpdates = false   // true only while the pencil is down or the camera moves
-link.preferredFrameRateRange = CAFrameRateRange(minimum: 80, maximum: 120, preferred: 120)
+displayLink.preferredFrameLatency = 2       // RenderThread.frameLatency
+displayLink.preferredFrameRateRange = CAFrameRateRange(minimum: 80, maximum: 120, preferred: 120)
 
 metalLayer.maximumDrawableCount = 3   // decision D-41
 metalLayer.presentsWithTransaction = false // see below
@@ -192,13 +198,17 @@ metalLayer.colorspace = CGColorSpace(name: CGColorSpace.sRGB)   // decision D-38
 metalLayer.framebufferOnly = true
 ```
 
-The frame presents with `commandBuffer.present(_:)`. With `presentsWithTransaction = true`, the call `waitUntilScheduled` blocked the main thread during a camera glide on the device, and touches arrived late (M2, see [m2-plan.md](m2-plan.md) section 4).
+The frame presents with `commandBuffer.present(_:)`. With `presentsWithTransaction = true`, the call `waitUntilScheduled` blocked the main thread during a camera glide on the device, and touches arrived late (M2, see [m2-plan.md](m2-plan.md) section 4). With two drawables, `nextDrawable()` blocked the main thread for 16.3 ms in each frame (D-41). A frame latency of 1 or 3 gave more late frames than 2 on the device.
 
-`UIUpdateLink` also calls its action on UI updates that other views cause. While the pencil hovers, PencilKit runs an update on each display frame for its hover preview. The frame action must draw only when the renderer has work: a requested frame, a camera animation, or a build. An extra frame on each of these updates starved the drawables of both renderers and froze the app on the device (M2).
+The display link pauses after 12 frames that drew nothing. A frame that drew is not idle, even if the renderer needs no next frame. The next change in the inbox wakes the link. The main-thread side of a change costs about 0.01 ms.
 
-The low-latency settings serve the eraser path, so M2 leaves them off. On the device, they gave a late frame on every second frame of a pan, because they halve the time of each frame. M4 turns them on only while the eraser is active. A build also has a main-thread budget of 2 ms per frame (`RendererConfiguration.buildTimeBudget`).
+The render thread and the main thread wake on the same display frame. If the camera moved in the last frame and no new camera waits, the render thread waits up to 3 ms (`RenderEngine.cameraWaitBudget`) for the camera of the main thread. Without the wait, about 1 frame in 10 of a pan found no new camera and drew nothing.
 
-The live pen stroke does not use this frame loop (section 4.2). If `UIUpdateLink` gives no gain for the eraser, the fallback is `CAMetalDisplayLink` with `preferredFrameLatency = 1`. With two drawables, `nextDrawable()` blocked the main thread for 16.3 ms in each frame (D-41). The renderer must measure the frame time against `UIUpdateInfo.completionDeadlineTime` and log a signpost for each late frame.
+`InkView` keeps one `UIUpdateLink` on the main thread for the camera animations, for example the glide after a pan. It runs only while an animation runs.
+
+A build also has a time budget of 2 ms per frame on the render thread (`RendererConfiguration.buildTimeBudget`).
+
+The live pen stroke does not use this frame loop (section 4.2). The eraser of M4 needs low latency. `UIUpdateLink` runs on the main thread only, so its low-latency settings do not apply to the render thread (D-42). M4 must design the eraser path for the render thread.
 
 ### 5.2 Layers in a frame
 
@@ -363,7 +373,7 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 ## 11. Concurrency
 
 - Swift 6 language mode with complete strict concurrency in every target.
-- UI types and the canvas run on the main actor. The renderer encodes its frames on a render thread (D-42). Until phase 1 of [m2-fix-plan.md](m2-fix-plan.md) is done, the renderer still runs on the main actor.
+- UI types and the canvas run on the main actor. The renderer encodes its frames on a render thread (D-42, section 5.1). The main actor sends values to it and never waits for a frame.
 - `SQLiteLibraryRepository` is an actor. It owns the only database connection that writes. All SQL goes through it.
 - The canvas sends the changed rows to the repository and the IDs of changed strokes to the renderer. It never shares mutable state (see [data-model.md](data-model.md) section 8).
 - PDF export runs in a `Task` off the main actor. Snapshots run inside the repository actor. They report progress to the main actor.

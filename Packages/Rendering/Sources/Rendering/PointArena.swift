@@ -6,7 +6,6 @@ import os
 ///
 /// A `SlabAllocator` hands out the ranges. The buffer grows by doubling up to the byte budget.
 /// The GPU reads the points directly, because Apple GPUs share memory with the CPU.
-@MainActor
 final class PointArena {
     /// The bytes of one point slot: the layout of `InkPoint`.
     static let bytesPerPoint = MemoryLayout<InkPoint>.stride

@@ -8,7 +8,6 @@ import os
 /// The texture covers the viewport plus a margin of half a screen on each side. While the camera
 /// moves, the composite pass shows it translated and scaled. A second texture is drawn for the
 /// current camera in chunks, one chunk per frame, and replaces the first one when it is complete.
-@MainActor
 final class CommittedLayer {
     private struct Build {
         let target: InkTarget
@@ -22,6 +21,10 @@ final class CommittedLayer {
     /// The texture that the screen shows, or `nil` before the first build completes.
     private(set) var front: InkTarget?
     private let textures: [any MTLTexture]
+    /// The drawable width in pixels that the textures were made for.
+    let drawableWidth: Int
+    /// The drawable height in pixels that the textures were made for.
+    let drawableHeight: Int
     private var frontIndex = 1
     private var build: Build?
     private var isStale = false
@@ -42,6 +45,8 @@ final class CommittedLayer {
             try resources.makeTarget(width: width, height: height, format: format),
             try resources.makeTarget(width: width, height: height, format: format),
         ]
+        self.drawableWidth = drawableWidth
+        self.drawableHeight = drawableHeight
         buildSlots.reserveCapacity(Self.initialSlotCapacity)
         assert(textures.count == 2, "The layer alternates two textures")
     }

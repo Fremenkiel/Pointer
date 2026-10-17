@@ -19,6 +19,11 @@ final class FrameLoopTests: XCTestCase {
         try run(.zoom, content: content, name: "dense 20k zoom")
     }
 
+    func testPanFewStrokes() throws {
+        let content = PerformanceContent.dense(count: 10, points: 300)
+        try run(.pan, content: content, name: "few pan")
+    }
+
     func testPanHandwriting() throws {
         let content = PerformanceContent.handwriting(count: 200_000)
         try run(.pan, content: content, name: "handwriting 200k pan")
