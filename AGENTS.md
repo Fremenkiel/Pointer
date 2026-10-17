@@ -33,12 +33,13 @@ pointer/
   .swiftlint.yml           lint rules, one custom rule per invariant
   Pointer.xcodeproj/       Xcode project with the app target and the PointerApp scheme
   PointerApp/              app target: scene setup and composition only
-  Packages/                one local Swift package per folder
+  Packages/                one local Swift package per folder, each with Sources/ and Tests/
     Geometry/              Layer 0: Double geometry, camera math, spatial grid
     Model/                 Layer 0: value types, IDs, clock, commands, history, limits
     InkEngine/             Layer 0: eraser hit test and stroke split
     Persistence/           Layer 1: SQLite repository, migrations, snapshots, restore
     Rendering/             Layer 1: Metal renderer and shaders
+      Tests/RenderingTests/References/  reference PNGs of the snapshot tests (TEST-07)
     Export/                Layer 1: PDF export
     DesignSystem/          Layer 1: tokens and shared small views
     CanvasFeature/         Layer 2: canvas screen
@@ -46,9 +47,6 @@ pointer/
     BackupFeature/         Layer 2: backup command and restore
   Scripts/                 check-layers.swift, assertion-density.swift, self-test.sh
     Fixtures/              small trees that the self-test runs the check scripts on
-  Spikes/                  M1 prototypes, outside all checks, kept as a reference until M2 is done
-    LatencySpikes.xcodeproj  one iPad app with the PencilKit, Custom, and Hybrid modes
-    LatencySpikes/           sources of the spike app
 ```
 
 ## Commands

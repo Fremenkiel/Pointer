@@ -85,7 +85,7 @@ PencilKit gives no samples before pencil lift. The pen tool works in these steps
 
 1. The `PKCanvasView` draws the live stroke at zoom 1 in view space. Its tool is a white monoline `PKInkingTool`. The pen width is 2 canvas points (decision D-37). The tool width is the pen width times the camera zoom, so the live stroke has the same size on the screen as the finished stroke.
 2. At pencil lift, `canvasViewDrawingDidChange(_:)` reports the new `PKStroke`.
-3. `PencilKitStrokeConverter` reads the control points of `stroke.path` (decision D-26), applies `stroke.transform`, and converts each point from view space to canvas space with the camera (in `Double`). The result is a `Stroke` of the `Model`. Both steps are affine transforms, and an affine transform of the control points gives the same transform of the curve. Thus the conversion does not change the shape. The math lives in `Geometry` and `Model` (Tier A). `CanvasFeature` only reads the `PKStroke`.
+3. `PencilKitStrokeConverter` reads the control points of `stroke.path` (decision D-26), applies `stroke.transform`, and converts each point from view space to canvas space with the camera (in `Double`). The converter takes the stroke width from the point sizes of the `PKStroke`, not from the tool width. A monoline point of size `s` draws a line `2 * (s - 2)` points wide (see [m2-plan.md](m2-plan.md) section 1). The result is a `Stroke` of the `Model`. Both steps are affine transforms, and an affine transform of the control points gives the same transform of the curve. Thus the conversion does not change the shape. The math lives in `Geometry` and `Model` (Tier A). `CanvasFeature` only reads the `PKStroke`.
    If the path has more than `Limits.maxPointsPerStroke` control points, the converter makes several strokes. Each new stroke starts with the last 3 control points of the stroke before it, so the curve continues without a gap or a kink. With `max` blending, the overlap does not show.
 4. The renderer adds the stroke to the committed layer and asks for a frame.
 5. After the presented handler of that frame runs, the canvas view removes the stroke from the `PKCanvasView`. Thus no frame shows the stroke twice or not at all.
@@ -118,7 +118,7 @@ PencilKit smooths the stroke. A `PKStrokePath` is a uniform cubic B-spline over 
 
 The screen and the export show the same curve. The curve does not depend on the zoom at which you drew it.
 
-Apple does not document how PencilKit treats the first and the last control point. A device test in M2 compares `StrokeCurve` with `PKStrokePath.interpolatedLocation(at:)` at many parameter values, also at the ends, and sets the end rule. The handoff test at zoom 0.25, 1, and 8 then compares the images.
+Apple does not document how PencilKit treats the first and the last control point. A test in M2 compared `StrokeCurve` with `PKStrokePath.interpolatedLocation(at:)` and found the end rule: each end uses a phantom point that mirrors the second point through the end point, so the curve passes through both end points. The parameter runs from 0 to `count - 1`. The handoff test at zoom 0.25, 1, and 8 compares the images.
 
 ### 4.4 Eraser
 
@@ -178,19 +178,25 @@ A `UIHoverGestureRecognizer` with `allowedTouchTypes = [.pencil]` shows a small 
 `CanvasRenderer` owns the `CAMetalLayer` and one `UIUpdateLink`. Use this configuration:
 
 ```swift
-link.wantsLowLatencyEventDispatch = true
-link.wantsImmediatePresentation = true
+link.wantsLowLatencyEventDispatch = false  // true with the eraser in M4, see below
+link.wantsImmediatePresentation = false     // true with the eraser in M4, see below
 link.requiresContinuousUpdates = false   // true only while the pencil is down or the camera moves
 link.preferredFrameRateRange = CAFrameRateRange(minimum: 80, maximum: 120, preferred: 120)
 
 metalLayer.maximumDrawableCount = 2
-metalLayer.presentsWithTransaction = true  // M1 did not measure it, see research.md 3.5
+metalLayer.presentsWithTransaction = false // see below
 metalLayer.pixelFormat = .bgra8Unorm
 metalLayer.colorspace = CGColorSpace(name: CGColorSpace.sRGB)   // decision D-38
 metalLayer.framebufferOnly = true
 ```
 
-The low-latency settings serve the eraser path. The live pen stroke does not use this frame loop (section 4.2). If `UIUpdateLink` gives no gain for the eraser, the fallback is `CAMetalDisplayLink` with `preferredFrameLatency = 1`. With two drawables, `nextDrawable()` can block. The renderer must measure the frame time against `UIUpdateInfo.completionDeadlineTime` and log a signpost for each late frame.
+The frame presents with `commandBuffer.present(_:)`. With `presentsWithTransaction = true`, the call `waitUntilScheduled` blocked the main thread during a camera glide on the device, and touches arrived late (M2, see [m2-plan.md](m2-plan.md) section 4).
+
+`UIUpdateLink` also calls its action on UI updates that other views cause. While the pencil hovers, PencilKit runs an update on each display frame for its hover preview. The frame action must draw only when the renderer has work: a requested frame, a camera animation, or a build. An extra frame on each of these updates starved the drawables of both renderers and froze the app on the device (M2).
+
+The low-latency settings serve the eraser path, so M2 leaves them off. On the device, they gave a late frame on every second frame of a pan, because they halve the time of each frame. M4 turns them on only while the eraser is active. A build also has a main-thread budget of 2 ms per frame (`RendererConfiguration.buildTimeBudget`).
+
+The live pen stroke does not use this frame loop (section 4.2). If `UIUpdateLink` gives no gain for the eraser, the fallback is `CAMetalDisplayLink` with `preferredFrameLatency = 1`. With two drawables, `nextDrawable()` can block. The renderer must measure the frame time against `UIUpdateInfo.completionDeadlineTime` and log a signpost for each late frame.
 
 ### 5.2 Layers in a frame
 
@@ -202,7 +208,7 @@ Each frame draws these passes:
 
 The live pen stroke is not a pass of the renderer. The `PKCanvasView` on top draws it (section 4.2). While you draw, the renderer draws a frame only at the handoff of a stroke.
 
-The committed texture covers the viewport plus a margin of half a screen on each side (review A-04). At the end of a stroke, the renderer draws only the new stroke into the committed texture. It never redraws all content at a pencil lift.
+The committed texture covers the viewport plus a margin of half a screen on each side (review A-04). It has the format `.r8Unorm`, because all content is gray. Thus two textures for a 13-inch iPad take about 45 MB. The composite pass turns the coverage into white on black in the `.bgra8Unorm` drawable. At the end of a stroke, the renderer draws only the new stroke into the committed texture. It never redraws all content at a pencil lift.
 
 While the camera moves, the renderer shows the committed texture, translated and scaled (decision D-28). A pan of less than the margin needs no new content pass. In parallel, the renderer draws a new committed texture for the current camera in chunks. Each frame gets a fixed GPU time for the chunks, so no frame drops. When the new texture is complete, it replaces the old one. When the camera stops, the renderer draws the content once at the exact zoom. The `SpatialGrid` limits all passes to the strokes that touch the texture area.
 
@@ -226,8 +232,8 @@ The point arena:
 Drawing (vertex pulling, which means that the shader reads the points from the buffer itself):
 
 1. Each instance is one piece of a curve segment. The vertex shader reads 4 control points from the arena, evaluates the B-spline at the start and the end of the piece, and builds a capsule (a segment with round ends) as a quad. No capsule buffer exists.
-2. The fragment shader computes the distance from the pixel to the segment and gives an anti-aliased edge one pixel wide.
-3. Per frame, the CPU writes one small draw list for the visible strokes: the first point, the point count, the level of detail, and the stroke origin minus the camera center as `Float`. The draws of all strokes read the same arena.
+2. The fragment shader computes the distance from the pixel to the segment and gives an anti-aliased edge with a `smoothstep` over plus or minus 1.06 pixels. This matches the edge of the PencilKit monoline (see [m2-plan.md](m2-plan.md) section 1).
+3. Per frame, the CPU writes one small draw list for the visible strokes: the first point, the point count, the level of detail, the first instance, and the stroke origin minus the camera center as `Float`. One instanced draw covers many strokes. The vertex shader finds the stroke of an instance with a binary search over the first instances.
 
 Level of detail:
 

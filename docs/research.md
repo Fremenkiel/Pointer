@@ -92,7 +92,7 @@ Decision: The targets are 13 ms (goal) and 20 ms (limit). The first milestone is
 
 ### 3.5 M1 latency test report
 
-The prototypes are in `Spikes/LatencySpikes.xcodeproj`. [Spikes/README.md](../Spikes/README.md) describes them.
+The prototypes were in `Spikes/LatencySpikes.xcodeproj`, with a description in `Spikes/README.md`. The folder was deleted after M2. Commit `92b5e5d` still holds it.
 
 Device: iPad Pro 11-inch (M4), 120 Hz, with Apple Pencil. The app ran in the Release configuration.
 

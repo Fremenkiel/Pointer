@@ -46,6 +46,8 @@ Status values: Open, Decided.
 | D-36 | Camera movement during a pencil stroke | Ignore finger pan and pinch while the pencil draws | Decided (2026-10-17) |
 | D-37 | Pen width | 2 canvas points, a start value | Decided (2026-10-17) |
 | D-38 | Ink color and blending at the handoff | sRGB layer, `max` blending, white as close to `#FFFFFF` as possible | Decided (2026-10-17) |
+| D-39 | Frame rate of pan and zoom in M2 | 60 Hz accepted for now, keep the full build budget and two drawables | Decided (2026-10-17) |
+| D-40 | Measured pen latency against FEEL-01 | About 25 ms accepted for M2 | Decided (2026-10-17) |
 
 ## Details
 
@@ -310,6 +312,21 @@ Status values: Open, Decided.
 - Color space: the Metal layer uses `.bgra8Unorm` with the sRGB color space. White and black are then exact on sRGB and on Display P3 screens, because both use the same white point. The anti-aliased edge is in gamma space, as in Core Graphics.
 - Blending: the ink pipeline uses `MTLBlendOperation.max`. Overlapping parts of the ink do not get brighter. The "over" blend of the spike made the joints brighter.
 - White: the ink is as close to `#FFFFFF` as possible, and exact if the platform allows it. The `PKCanvasView` uses the light interface style and the tool color `UIColor.white`, so PencilKit does not convert the color. A test makes sure that the center of a stroke reads 255 in each channel, both in PencilKit and in Metal. If PencilKit cannot give 255, the test records the value that it gives, and the Metal ink uses the same value.
+
+### D-39 Frame rate of pan and zoom in M2
+
+- Decided by the product owner on 2026-10-17: option (c). Pan and zoom at 60 Hz are accepted for now. The build budget stays at 250,000 draw instances per frame, and the layer keeps two drawables.
+- Raised by the device test of M2 on an iPad Pro 11-inch (M4) with 20,000 strokes. Pan and zoom ran at a steady 60 Hz with zero hitches. The Settings app ran at 120 Hz in the same test. The ink pass took 5.7 ms of GPU time per frame (median), 7.8 ms at the 90th percentile. With two drawables, this work does not fit into one frame of 8.3 ms.
+- Options: (a) three drawables, at the cost of up to one frame more display latency for the Metal ink. (b) less GPU work per draw instance: a cheaper shader and more level of detail. (c) keep the setup and accept 60 Hz while the camera moves. A budget of 80,000 instances was tried and rejected by the product owner after a look on the device.
+- Recommendation: (a) now and (b) later.
+- Effect: CAN-05 and M2 acceptance 2 and 10 ask for 120 Hz. With this decision, the M2 test checks for zero hitches at the rate that the system chooses. Option (b) stays open for a later milestone.
+
+### D-40 Measured pen latency against FEEL-01
+
+- Decided by the product owner on 2026-10-17: the measured latency is accepted for M2 acceptance 1.
+- Raised by the device test of M2 on an iPad Pro 11-inch (M4). In a 240 fps video of fast strokes, the ink reached the pencil tip after about 6 video frames, so about 25 ms. FEEL-01 sets 20 ms as the limit and 13 ms as the goal.
+- PencilKit draws the live stroke alone (D-02, D-33), so Pointer cannot make this part faster with its own renderer. A comparison with Apple Notes, which also uses PencilKit, was not made.
+- Effect: FEEL-01 keeps its numbers. M2 acceptance 1 counts as met with the measured value.
 
 ## Points in the request that conflict or are not complete
 
