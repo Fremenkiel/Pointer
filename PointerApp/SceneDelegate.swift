@@ -17,7 +17,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             preconditionFailure("Scene \(session.persistentIdentifier) is not a UIWindowScene")
         }
         let window = UIWindow(windowScene: windowScene)
-        window.rootViewController = RootViewController()
+        window.rootViewController = CanvasComposition.makeRootViewController(defaults: .standard)
         window.makeKeyAndVisible()
         self.window = window
     }
