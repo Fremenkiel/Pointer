@@ -20,6 +20,8 @@ The standard combines four sources:
 |---|---|---|
 | A (core) | `Geometry`, `Model`, `InkEngine`, `Persistence` | All rules. |
 | B (engine) | `Rendering`, `Export` | All rules. `SAFE-09` allows Metal buffer pointers in files named `*+Unsafe.swift`. |
+
+One exception applies in Tier A: `Persistence` can use SQLite C pointers in files named `SQLite*+Unsafe.swift` (`SAFE-09`).
 | C (interface) | `CanvasFeature`, `WorkspaceFeature`, `BackupFeature`, `DesignSystem`, `PointerApp` | All rules except `CONTRACT-02` (assertion density). |
 
 ## 1. Sources and what each one gives
@@ -57,7 +59,7 @@ Sources: <https://en.wikipedia.org/wiki/The_Power_of_10:_Rules_for_Developing_Sa
 
 - `BUILD-01` Every target and package uses the Swift 6 language mode with complete strict concurrency checking. Enforcement: compiler.
 - `BUILD-02` Warnings are errors. Xcode targets set `SWIFT_TREAT_WARNINGS_AS_ERRORS = YES` and `GCC_TREAT_WARNINGS_AS_ERRORS = YES`. Packages set `.treatAllWarnings(as: .error)`. Enforcement: compiler.
-- `BUILD-03` The app links no third-party code. A new framework dependency, even from Apple, needs an entry in `docs/decisions.md`. Enforcement: a CI script fails the build on any `Package.resolved` file.
+- `BUILD-03` The app links no third-party code. A new framework dependency, even from Apple, needs an entry in `docs/decisions.md`. Development tools from third parties (linters, formatters, rule checkers) are allowed (decision D-04). They never link into the app. Enforcement: a CI script fails the build on a third-party package in the dependency graph of the app target.
 - `BUILD-04` CI runs `xcodebuild analyze` on each pull request. Zero analyzer findings. Enforcement: CI.
 
 ### 3.2 Architecture
@@ -65,9 +67,10 @@ Sources: <https://en.wikipedia.org/wiki/The_Power_of_10:_Rules_for_Developing_Sa
 - `ARCH-01` Code lives in the package of its layer (see [architecture.md](architecture.md) section 3). The app target holds only composition and scene setup.
 - `ARCH-02` A package imports only packages in its own layer or a lower layer. A feature package never imports another feature package. Enforcement: CI script `Scripts/check-layers.swift`.
 - `ARCH-03` Tier A packages import only `Foundation`, `CryptoKit`, `os`, and other Tier A packages. They never import `UIKit`, `SwiftUI`, `Metal`, or `CoreGraphics`. Enforcement: lint.
-- `ARCH-04` Only `Persistence` touches the file system. Only `Rendering` touches Metal. Only `Export` makes PDFs. Enforcement: lint (Threema-style: the rule bans `FileManager`, `MTLDevice`, and `UIGraphicsPDFRenderer` outside their own package).
+- `ARCH-04` Only `Persistence` touches the database and the file system. Only `Rendering` touches Metal. Only `Export` makes PDFs. Enforcement: lint (Threema-style: the rule bans `import SQLite3`, `FileManager`, `MTLDevice`, and `UIGraphicsPDFRenderer` outside their own package).
 - `ARCH-05` Dependencies come in through initializers. No singletons, no service locators, no global mutable state. Apple singletons (`UIApplication.shared`, `FileManager.default`) appear only in `PointerApp` and are passed down. Enforcement: lint and review.
 - `ARCH-06` Model types are `struct` or `enum`, `Sendable`, and immutable where possible (`let` over `var`).
+- `ARCH-07` No haptics and no sounds (PEN-06). Haptics that the system plays by itself are accepted (D-23). The code must not use `UICanvasFeedbackGenerator`, `UIFeedbackGenerator` or its subclasses, `CoreHaptics`, `AVAudioPlayer`, or `AudioServicesPlaySystemSound`. Enforcement: lint, severity error, no allowed path.
 
 ### 3.3 Control flow
 
@@ -117,11 +120,12 @@ func split(_ stroke: Stroke, by center: Point, radius: Double) -> [StrokePart] {
 - `SAFE-02` No `try?` that drops an error in silence. `try?` is allowed only with a handler for the `nil` case in the same statement or the next one. Enforcement: review.
 - `SAFE-03` No `@discardableResult` without a documentation comment that gives the reason. Enforcement: lint.
 - `SAFE-04` Errors are typed. Each package has one error enum. Functions use typed throws (`throws(PersistenceError)`) where the error set is known. Enforcement: review.
-- `SAFE-05` Integer conversions from external data use `init(exactly:)` or a `guard` on the range. No unchecked `Int(someUInt64)` on file data. Enforcement: review.
+- `SAFE-05` Integer conversions from external data use `init(exactly:)` or a `guard` on the range. No unchecked `Int(someUInt64)` on file data or database data. Enforcement: review.
+- `SAFE-10` SQL uses prepared statements with bound parameters. No SQL text built from values with string interpolation. Each SQLite result code is compared with the expected code, and a mismatch throws `PersistenceError` with `sqlite3_errmsg`. Enforcement: lint bans `sqlite3_exec` with an interpolated string, and review.
 - `SAFE-06` No `print`, `debugPrint`, `NSLog`, or `dump`. Use `os.Logger` with a subsystem and a category per package. Never log text or ink content of the user. Enforcement: lint.
 - `SAFE-07` No `fatalError` except in `init(coder:)` stubs that UIKit requires. Use `preconditionFailure` with a message for unreachable code. Enforcement: lint.
 - `SAFE-08` `#if` only for `DEBUG`, `targetEnvironment(simulator)`, and `canImport`. No feature flags with `#if`. Enforcement: lint.
-- `SAFE-09` No `Unsafe*Pointer`, `unsafeBitCast`, `Unmanaged`, `nonisolated(unsafe)`, `@unchecked Sendable`, or `@preconcurrency`. Exception: Tier B files with the suffix `+Unsafe.swift`. Each use there has a comment that states why it is safe. Enforcement: lint that excludes those files.
+- `SAFE-09` No `Unsafe*Pointer`, `unsafeBitCast`, `Unmanaged`, `nonisolated(unsafe)`, `@unchecked Sendable`, or `@preconcurrency`. Exceptions: Tier B files with the suffix `+Unsafe.swift`, and the SQLite wrapper files `Packages/Persistence/**/SQLite*+Unsafe.swift`. Each use there has a comment that states why it is safe. No unsafe type leaves these files: their public API uses `Data`, `String`, and Swift numbers only. Enforcement: lint that excludes those files.
 
 ### 3.7 Scope
 
@@ -162,7 +166,7 @@ func split(_ stroke: Stroke, by center: Point, radius: Double) -> [StrokePart] {
 - `TEST-05` Test names are sentences that state the behavior: `@Test("Erasing the middle of a stroke leaves two parts")`.
 - `TEST-06` Use parameterized tests (`@Test(arguments:)`) for limits and edges: zero, one, the limit, and the limit plus one.
 - `TEST-07` Each UI component and each renderer output has a snapshot test. The test renders to an image with `UIGraphicsImageRenderer` or an offscreen Metal texture. It compares the image with a reference PNG in the repository, with a tolerance of 0.5% of the pixels. No snapshot library.
-- `TEST-08` Each schema version has a fixture file and a migration test (see [data-model.md](data-model.md) section 12).
+- `TEST-08` Each schema version has a fixture database and a migration test (see [data-model.md](data-model.md) section 12).
 - `TEST-09` Each command has a test that applies it, reverts it, and compares the result with the start state.
 
 Test pyramid: most tests are unit tests in Tier A. Fewer tests cover Tier B with snapshots. A few UI tests cover the main flows: create a workspace, draw, open a card, leave a card, undo, export.
@@ -176,30 +180,32 @@ Test pyramid: most tests are unit tests in Tier A. Fewer tests cover Tier B with
 
 ## 4. Tools
 
-All tools come with Xcode or are scripts in this repository. Decision D-04 asks whether SwiftLint is allowed as a development tool.
+Third-party development tools are allowed (decision D-04). They run in development and CI only, and the app never links them. SwiftLint owns the pattern rules and the size metrics, so the repository needs fewer scripts.
 
 | Tool | Purpose | Source |
 |---|---|---|
 | Swift compiler | `BUILD-01`, `BUILD-02`, `SCOPE-03` | Xcode |
 | `swift format` and `swift format lint` | Format and basic lint (`SAFE-01`, `DOC-01`) | Xcode toolchain |
 | `xcodebuild analyze` | `BUILD-04` | Xcode |
-| `Scripts/lint.swift` | Pattern rules: one rule per invariant, with an allowed path and a message that names the fix | This repository |
+| SwiftLint | Built-in rules and `custom_rules`: one rule per invariant, with an allowed path and a message that names the fix | Third party (D-04) |
 | `Scripts/check-layers.swift` | `ARCH-02` | This repository |
 | `Scripts/assertion-density.swift` | `CONTRACT-02` | This repository |
-| `Scripts/metrics.swift` | `SIZE-01` to `SIZE-04`, built on `swift-syntax` as a tool-only package | This repository (see D-04) |
+| SwiftLint metric rules | `SIZE-01` to `SIZE-04` (`function_body_length`, `cyclomatic_complexity`, `type_body_length`, `file_length`, `function_parameter_count`) | Third party (D-04) |
 
-Each lint rule in `Scripts/lint.swift` has this form (Threema pattern):
+Each custom rule in `.swiftlint.yml` has this form (Threema pattern):
 
-```swift
-LintRule(
-    id: "ARCH-04",
-    pattern: #"\bFileManager\b"#,
-    allowedPaths: ["Packages/Persistence/"],
-    message: "Only Persistence touches the file system. Add a method to LibraryRepository instead."
-)
+```yaml
+custom_rules:
+  arch_04_sqlite:
+    name: "ARCH-04"
+    regex: '\bimport SQLite3\b'
+    excluded: "Packages/Persistence/"
+    match_kinds: [keyword, identifier]
+    message: "Only Persistence touches the database. Add a method to LibraryRepository instead."
+    severity: error
 ```
 
-The rule skips comments and string literals.
+The `match_kinds` key makes the rule skip comments and string literals.
 
 A starting `.swift-format` configuration (make sure that the rule names match the output of `swift format dump-configuration` before the first commit):
 
@@ -229,7 +235,7 @@ A starting `.swift-format` configuration (make sure that the rule names match th
 A pull request is ready only with each item true:
 
 1. The build has zero warnings and zero analyzer findings.
-2. `swift format lint`, `Scripts/lint.swift`, `Scripts/check-layers.swift`, and `Scripts/metrics.swift` pass.
+2. `swift format lint`, `swiftlint --strict`, `Scripts/check-layers.swift`, and `Scripts/assertion-density.swift` pass.
 3. All tests pass. Coverage meets `TEST-02`.
 4. New behavior has tests. A bug fix has a regression test.
 5. Each new function that is not private has a documentation comment with its contract.
@@ -245,7 +251,7 @@ These rules add to all rules above. They apply to each agent that writes code in
 
 - `AGENT-01` Read `AGENTS.md`, this document, and the document for the area you change before you write code.
 - `AGENT-02` Do the smallest change that meets the task. Do not refactor code outside the task. Do not add features that the product specification does not list.
-- `AGENT-03` Do not add a dependency. Do not change a rule in this document. If a rule blocks the task, stop and ask the product owner.
+- `AGENT-03` Do not add a dependency to the app. Do not add a development tool without an entry in `docs/decisions.md`. Do not change a rule in this document. If a rule blocks the task, stop and ask the product owner.
 - `AGENT-04` Stop and ask about a document that is unclear or that contradicts the code. Do not guess. Record the question in `docs/decisions.md`.
 - `AGENT-05` Run the full checklist in section 5 before you report the task as done. Report each failure with its output.
 - `AGENT-06` Record each correction from the product owner as a rule in the "Learned rules" section of `AGENTS.md`. Do this in the same pull request (Infomaniak self-correction pattern).

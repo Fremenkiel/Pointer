@@ -4,221 +4,256 @@ This document describes where Pointer stores data, how it writes data safely, an
 
 ## 1. Strategy
 
-Pointer stores the library as plain files in a folder tree. The folder is the data. It is not an export of a database.
+Pointer stores the whole library in one SQLite database. The app uses the SQLite library that ships with iPadOS (`import SQLite3`). It adds no third-party code and no wrapper library.
 
-- Each card, text box, and workspace is one small JSON file.
-- Ink is in binary chunk files. The app adds chunk files but never edits them.
-- Each write replaces a whole file atomically (write to a temporary file, then rename).
-- The library folder shows in the Files app. You back it up with a copy of the folder.
+- The live database is private to the app. The Files app does not show it.
+- Each card, text box, workspace, and stroke is one row. Ink points are a binary column (a BLOB) in the stroke row.
+- Each save is one transaction. A transaction writes all of its rows or none of them.
+- For backup, the app writes a complete copy of the database (a snapshot) into a folder that the Files app shows. You back up with a copy of a snapshot file.
 
 Reasons:
 
-1. A copy of the folder is a valid backup at any time, because each file is complete on its own.
-2. A small edit changes a small file. A future incremental backup uploads only the changed files.
-3. A conflict covers one object, not the whole library.
-4. No third-party code is necessary. Foundation and CryptoKit do all the work.
+1. Speed. SQLite reads 1,000 small records about 250 times faster than 1,000 files, and writes them about 250 times faster in one transaction. See [research.md](research.md) section 5.
+2. Atomic changes across records. A command that changes several rows (for example, an erase that removes one stroke and adds two parts) is saved in one transaction.
+3. One file to back up. A snapshot is one consistent file that you can copy, store, and restore.
+4. Room to grow. SQLite has full-text search (FTS5) for a later search feature.
 
-SwiftData, Core Data, and SQLite were rejected. See [research.md](research.md) section 5.
+The costs:
 
-## 2. Folder layout
+1. A live SQLite database with its `-wal` and `-shm` files is not safe to copy while the app writes to it. Thus backups must use snapshots, never the live files.
+2. A snapshot is the whole library. A backup uploads the whole file each time, not only the changes. Section 8 shows how a later version can upload only changes.
+3. The SQLite C API needs unsafe pointers in Swift. A small wrapper keeps them in one place (see [code-of-code.md](code-of-code.md), `SAFE-09`).
+
+## 2. Locations
 
 ```
 <app container>/
-  Documents/                                   visible in Files as "On My iPad > Pointer"
-    PointerLibrary/                            the library: the unit of backup
-      library.json
-      workspaces/
-        <workspace-id>/
-          workspace.json
-          canvases/
-            <canvas-id>/                       one folder per canvas, flat (never nested)
-              nodes/
-                <node-id>.json                 one card or one text box
-              ink/
-                index.json                     list of chunks and erase records
-                <chunk-id>.ink                 binary strokes, write-once
   Library/
     Application Support/Pointer/
-      device.json                              device state (not part of the backup)
+      library.sqlite                   the live database (with -wal and -shm files)
+      device.json                      device state (not part of the library)
     Caches/Pointer/
-      previews/<canvas-id>.png                 card previews, rebuilt on demand
+      previews/<canvas-id>.png         card previews, rebuilt on demand
+  Documents/                           visible in Files as "On My iPad > Pointer"
+    Backups/
+      Pointer-2026-10-17-2200.sqlite   snapshots, newest first
 ```
 
 Rules:
 
-- All names are lowercase UUID strings plus an extension. Thus names are safe in every file system and in zip files.
-- Canvas folders are flat under `canvases/`. The folder tree never follows the card tree. Thus the path length stays fixed at any tree depth.
-- A card record lives in the folder of its parent canvas. Its child content lives in the folder with the card ID.
-- Nothing in `Documents/` can be rebuilt from other data. Caches go to `Library/Caches/`.
+- `Documents/` holds snapshots only. The app never reads from it, except for a restore that the user starts.
+- The live database is in `Library/Application Support/`. Thus the user cannot move or delete it by accident in the Files app. iCloud backup and Finder backup still include it.
 
-Decision D-03 asks whether each workspace is a plain folder or a document package (a folder that the Files app shows as one file).
+The library is one database for all workspaces (decision D-03).
 
-## 3. File formats
+## 3. Schema
 
-### 3.1 `library.json`
+### 3.1 Connection setup
 
-```json
-{
-  "formatVersion": 1,
-  "createdBy": "Pointer 1.0 (100)",
-  "created": { "wallMillis": 1792224000000, "counter": 0, "device": "4f1c..." }
-}
+The repository opens the database and runs these statements once per connection:
+
+```sql
+PRAGMA journal_mode = WAL;        -- readers do not block the writer
+PRAGMA synchronous = NORMAL;      -- safe in WAL mode; a power loss can lose the last commit only
+PRAGMA foreign_keys = ON;
+PRAGMA auto_vacuum = INCREMENTAL; -- set before the first table exists
+PRAGMA busy_timeout = 2000;
 ```
 
-Only a change of the folder layout changes `formatVersion`.
+`PRAGMA user_version` holds the schema version of the database (see section 6).
 
-### 3.2 Record files
+### 3.2 Clock values
 
-`workspace.json` and each file in `nodes/` hold one record as JSON, encoded with `JSONEncoder` and `outputFormatting = [.sortedKeys, .prettyPrinted]`. Sorted keys give stable files, so a diff shows only real changes. A `"type"` field (`"card"` or `"textBox"`) tells the decoder which type to use.
-
-```json
-{
-  "type": "textBox",
-  "id": "9b2e...",
-  "canvasID": "4a77...",
-  "meta": { "schema": 1, "created": { ... }, "modified": { ... }, "isDeleted": false },
-  "origin": { "x": 1204.5, "y": -310.0 },
-  "sortKey": "a0V",
-  "text": "struct Node {\n  let next: Node?\n}"
-}
-```
-
-### 3.3 Ink index
-
-`ink/index.json` lists the chunks of the canvas in order, and the erase records.
-
-```json
-{
-  "schema": 1,
-  "chunks": [
-    { "id": "c01d...", "strokeCount": 412, "sha256": "e3b0..." }
-  ],
-  "erased": [
-    { "strokeID": "77aa...", "erased": { ... } }
-  ]
-}
-```
-
-A chunk file that is not in the index is an orphan. At load time, the repository deletes orphans that are older than 60 seconds.
-
-### 3.4 Ink chunk (`.ink`)
-
-All numbers are little-endian. The format has no padding.
+Each `created`, `modified`, and `erased` column holds a `HybridTimestamp` (see [data-model.md](data-model.md) section 4) as a 28-byte BLOB:
 
 ```
-Header (32 bytes)
-  magic          4 bytes   "PINK"
-  version        UInt16    1
-  flags          UInt16    0 (reserved)
-  strokeCount    UInt32
-  reserved       20 bytes  zero
-
-Stroke (repeated strokeCount times)
-  id             16 bytes  UUID
-  created        28 bytes  wallMillis UInt64, counter UInt32, device UUID (16 bytes)
-  originX        Float64
-  originY        Float64
-  width          Float32
-  pointCount     UInt32    2...Limits.maxPointsPerStroke
-  points         pointCount * 16 bytes: x Float32, y Float32, force Float32, time Float32
-
-Footer
-  sha256         32 bytes  SHA-256 of all bytes before the footer
+wallMillis  8 bytes  UInt64, big-endian
+counter     4 bytes  UInt32, big-endian
+device     16 bytes  UUID
 ```
 
-A stroke of 300 points takes about 4.9 KB. Delta encoding and compression (Apple `Compression` framework, LZFSE) can make chunks about 3 to 5 times smaller. They are not part of version 1. A new chunk version can add them.
+Big-endian order makes the byte order equal to the clock order. Thus `ORDER BY modified` and `WHERE modified > ?` work without decoding.
 
-The decoder must reject a chunk with one of these faults: a wrong magic, an unknown version, or a count over a limit. It must also reject a size that does not match the counts, and a wrong hash. A rejected chunk does not stop the load. The canvas opens without those strokes, the app shows a message, and the file stays on disk unchanged.
+IDs are 16-byte BLOBs with the bytes of the UUID.
+
+### 3.3 Tables
+
+```sql
+CREATE TABLE library (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+) STRICT;
+-- rows: formatVersion, created, createdBy
+
+CREATE TABLE workspace (
+    id         BLOB PRIMARY KEY,
+    title      TEXT NOT NULL CHECK (length(title) BETWEEN 1 AND 120),
+    sort_key   TEXT NOT NULL,
+    created    BLOB NOT NULL,
+    modified   BLOB NOT NULL,
+    is_deleted INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0, 1))
+) STRICT;
+
+CREATE TABLE card (
+    id         BLOB PRIMARY KEY,
+    canvas_id  BLOB NOT NULL,          -- parent canvas: a workspace ID or a card ID
+    x REAL NOT NULL, y REAL NOT NULL,
+    width  REAL NOT NULL CHECK (width  >= 64),
+    height REAL NOT NULL CHECK (height >= 48),
+    title      TEXT CHECK (title IS NULL OR length(title) <= 120),
+    sort_key   TEXT NOT NULL,
+    created    BLOB NOT NULL,
+    modified   BLOB NOT NULL,
+    is_deleted INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0, 1))
+) STRICT;
+CREATE INDEX card_canvas ON card (canvas_id);
+
+CREATE TABLE text_box (
+    id         BLOB PRIMARY KEY,
+    canvas_id  BLOB NOT NULL,
+    x REAL NOT NULL, y REAL NOT NULL,
+    text       TEXT NOT NULL CHECK (length(text) BETWEEN 1 AND 100000),
+    sort_key   TEXT NOT NULL,
+    created    BLOB NOT NULL,
+    modified   BLOB NOT NULL,
+    is_deleted INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0, 1))
+) STRICT;
+CREATE INDEX text_box_canvas ON text_box (canvas_id);
+
+CREATE TABLE stroke (
+    id          BLOB PRIMARY KEY,
+    canvas_id   BLOB NOT NULL,
+    created     BLOB NOT NULL,
+    origin_x    REAL NOT NULL,
+    origin_y    REAL NOT NULL,
+    width       REAL NOT NULL,
+    min_x REAL NOT NULL, min_y REAL NOT NULL,   -- bounds, including width
+    max_x REAL NOT NULL, max_y REAL NOT NULL,
+    point_count INTEGER NOT NULL CHECK (point_count BETWEEN 2 AND 16384),
+    points      BLOB NOT NULL,                  -- see 3.4
+    CHECK (length(points) = point_count * 16)
+) STRICT;
+CREATE INDEX stroke_canvas ON stroke (canvas_id);
+
+CREATE TABLE stroke_erase (
+    stroke_id BLOB PRIMARY KEY REFERENCES stroke (id),
+    erased    BLOB NOT NULL
+) STRICT;
+```
+
+Rules:
+
+- `STRICT` tables refuse values of the wrong type.
+- `CHECK` constraints repeat the limits from `Limits`. The Swift code checks first. The database is the last line of defense.
+- A canvas is not a table. A canvas is all rows with the same `canvas_id` (see [data-model.md](data-model.md) section 2).
+- `canvas_id` has no foreign key, because it points to a workspace or to a card.
+- Strokes never change. An erase adds a row to `stroke_erase`, and a partial erase also adds new stroke rows.
+
+### 3.4 Point BLOB
+
+The `points` column holds `point_count` points of 16 bytes each, little-endian, without a header:
+
+```
+x      Float32   offset from origin, canvas points
+y      Float32
+force  Float32   0...1, or -1 if the pencil has no pressure
+time   Float32   seconds since the first point
+```
+
+A stroke of 300 points takes 4.8 KB. The layout matches `InkPoint` in memory. Thus the decoder copies the bytes in one step after the length check.
 
 ## 4. Write path
 
-`FileLibraryRepository` is an actor. It is the only code that touches the library folder.
-
-### 4.1 Records
+`SQLiteLibraryRepository` is an actor. It owns the one connection that writes. It is the only code that runs SQL.
 
 1. A command changes `CanvasContent` on the main actor.
-2. The canvas controller sends the IDs of the changed records and a value copy of them to the repository.
-3. The repository marks the records as dirty.
-4. One second after the last change, the repository writes each dirty record with `Data.write(to:options: [.atomic])`. All writes go through `NSFileCoordinator.coordinate(writingItemAt:options:)`.
-5. When the scene goes to the background, the repository writes all dirty records at once. It asks for extra time with `UIApplication.beginBackgroundTask` for this step.
+2. The canvas controller sends a value copy of the changed rows to the repository.
+3. The repository adds the rows to its pending set.
+4. One second after the last change, the repository writes all pending rows in one transaction (`BEGIN IMMEDIATE` ... `COMMIT`). It uses prepared statements and `INSERT ... ON CONFLICT (id) DO UPDATE`.
+5. When the scene goes to the background, the repository writes all pending rows at once. It asks for extra time with `UIApplication.beginBackgroundTask` for this step.
 
-### 4.2 Ink
+The data loss after a crash is at most the one-second wait plus the time of one write (STO-06).
 
-1. At the end of each stroke, the repository adds the stroke to the pending chunk of the canvas.
-2. One second after the last stroke, the repository writes the pending strokes as a new chunk file.
-3. After the chunk file is on disk, the repository writes the new `index.json`.
-4. Erase records go into the next `index.json` write.
-
-Order matters: the chunk first, the index last. If the app stops between the two writes, the index does not list the new chunk. The chunk becomes an orphan, and the data loss is at most one second (STO-06).
-
-### 4.3 Compaction
-
-Many small chunks slow down the load. At the close of a canvas, the repository compacts its ink if one of these conditions is true:
-
-- The canvas has more than 64 chunks.
-- More than 25% of its strokes are erased.
-
-Compaction writes one new chunk with all strokes that are not erased. Then it writes a new index that lists only that chunk. The index keeps all erase records, because a future merge needs them. Then the repository deletes the old chunk files.
+If a transaction fails, the repository rolls it back and keeps the rows in the pending set. It logs the error and tries again at the next save. After three failures in a row, the app shows a message and stops new edits until the next save works. It never drops changes in silence.
 
 ## 5. Read path
 
-1. At launch, read `library.json`. If its `formatVersion` is newer than the app knows, open the library read-only and show a message.
-2. Read every `workspace.json` for the workspace selector.
-3. To open a canvas, read its `nodes/` folder and its `ink/` folder. Read the canvases of visible cards one level deep for their previews.
-4. Read each record and run the migrations (see [data-model.md](data-model.md) section 12).
+1. At launch, open the database. If it does not exist, create it with the current schema.
+2. Read `PRAGMA user_version`. If it is newer than the app knows, open the library read-only and show a message.
+3. If it is older, run the migrations (section 6).
+4. Read all workspaces for the selector.
+5. To open a canvas, read all rows with its `canvas_id` from `card`, `text_box`, `stroke`, and `stroke_erase`. Build the `SpatialGrid` in memory.
+6. For the previews of visible cards, read their canvases one level deep.
 
-The repository loads the content of a canvas at the time of first use. It never loads the whole library into memory.
+The repository loads one canvas at a time. It never loads the whole library into memory.
 
-## 6. External changes
+A canvas at the stroke limit (200,000 strokes of 300 points) holds about 1 GB of points. That is too much for one load. If tests on the device show a slow open for large canvases, the next step is a load by viewport: an R-tree index on the stroke bounds, and a query for the strokes near the camera only. Version 1 loads the whole canvas (decision D-24).
 
-The app owns the library folder while it runs. The Files app can still change files in it. The rules:
+## 6. Schema changes
 
-- At each launch and each return to the foreground, the repository reads the modification dates of the `canvases/` folders. It reloads a canvas whose files changed.
-- The app does not watch the folder (`NSFilePresenter`) in version 1. Decision D-21 covers this.
-- The app never deletes a file that it cannot decode. It skips the file and shows a message.
+1. `PRAGMA user_version` is the schema version. Version 1 is the first release.
+2. Each change is one migration: a numbered list of SQL statements plus optional Swift code for data changes.
+3. Before the first migration step, the repository writes a snapshot to `Backups/Pointer-pre-migration-v<old>.sqlite`.
+4. All steps of one migration run in one transaction, with the new `user_version` set at the end. If a step fails, the transaction rolls back and the old database stays as it was.
+5. Each version has a fixture database in the test bundle. A test opens each fixture, runs the migrations, and compares the result with the expected rows.
 
 ## 7. Backup
 
-### 7.1 Manual copy (STO-03)
+### 7.1 Snapshots
 
-The `Info.plist` sets `UIFileSharingEnabled = YES` and `LSSupportsOpeningDocumentsInPlace = YES`. Thus the Files app shows `Documents/` as "On My iPad > Pointer". To back up, the user copies the `PointerLibrary` folder to any provider in the Files app: iCloud Drive, Dropbox, Google Drive, OneDrive, or a server through SMB.
+A snapshot is a complete, consistent copy of the library in one file. The repository makes it with:
 
-### 7.2 "Back up now" (STO-04)
+```sql
+VACUUM INTO '<path>/Pointer-<yyyy-MM-dd-HHmm>.sqlite';
+```
 
-1. The repository writes all dirty records.
-2. `BackupService` calls `NSFileCoordinator().coordinate(readingItemAt: libraryURL, options: .forUploading)`. The system makes a zip of the folder.
-3. Inside the block, the service copies the zip to a temporary file with the name `Pointer-Backup-<yyyy-MM-dd-HHmm>.zip`. The system deletes its own zip after the block.
-4. The app opens the share sheet with that file. The user picks a destination.
+`VACUUM INTO` reads one consistent view of the database and writes a compact copy. The copy has no `-wal` file and no free pages. Writes wait while it runs.
 
-The coordinated read waits for coordinated writes. Thus the zip never holds a half-written file.
+### 7.2 Automatic snapshots (STO-02)
 
-### 7.3 Scheduled backup through Shortcuts
+When the scene goes to the background, the repository makes a snapshot if the newest snapshot is older than 24 hours. It keeps the newest 7 snapshots and deletes older ones. These values come from decision D-21.
 
-`BackupFeature` provides an App Intent named "Back Up Pointer Library". It returns the zip as an `IntentFile`. The user can build a Shortcuts automation, for example "every day at 22:00, run Back Up Pointer Library, then save the file to Dropbox". This is not an integration with a provider. The user picks the provider in Shortcuts.
+The `Info.plist` sets `UIFileSharingEnabled = YES` and `LSSupportsOpeningDocumentsInPlace = YES`. Thus the Files app shows `Documents/Backups/` under "On My iPad > Pointer".
 
-The library files use the data protection class `completeUntilFirstUserAuthentication` (the system default). Thus the intent can read them after the first unlock since the last restart. Whether the automation runs while the iPad is locked must be tested on a device (decision D-14).
+### 7.3 Manual copy (STO-03)
 
-### 7.4 Device backup
+To back up, the user copies the newest snapshot file from the Files app to any provider: iCloud Drive, Dropbox, Google Drive, OneDrive, or a server through SMB.
 
-iCloud backup and Finder backup include `Documents/` and `Library/Application Support/`. They exclude `Library/Caches/`. This protects against the loss of the iPad, but it restores the whole device only.
+### 7.4 "Back up now" (STO-04)
+
+1. The repository writes all pending rows.
+2. The repository makes a new snapshot.
+3. The app opens the share sheet with the snapshot file. The user picks a destination.
 
 ### 7.5 Restore
 
-To restore, the user replaces the `PointerLibrary` folder in the Files app with the copy from the backup, while Pointer is closed. An in-app restore is decision D-20.
+1. The user picks a snapshot file with the document picker.
+2. The app opens it read-only and runs `PRAGMA integrity_check` and `PRAGMA user_version`.
+3. If the file passes, the app makes a snapshot of the current library first. Then it copies the picked file into the live database with the SQLite online backup API (`sqlite3_backup_init`, `sqlite3_backup_step`, `sqlite3_backup_finish`).
+4. The app reloads all workspaces.
+
+Restore is part of version 1 (decision D-20).
+
+### 7.6 Device backup
+
+iCloud backup and Finder backup include `Library/Application Support/` and `Documents/`. They exclude `Library/Caches/`. This protects against the loss of the iPad, but it restores the whole device only.
 
 ## 8. Future: automatic backup to a provider
 
 This version contains no integration. The design keeps these paths open:
 
-1. A protocol `BackupDestination` in `BackupFeature` with one method: `upload(file: URL, relativePath: String) async throws`. An iCloud Drive container, S3, or WebDAV destination can implement it later.
-2. Incremental upload: the service computes SHA-256 per file with CryptoKit and compares the hashes with the last upload. Only changed files go up. Write-once chunks never change, so they upload once.
-3. Encryption: a destination can encrypt each file with CryptoKit `AES.GCM` before upload. The key lives in the Keychain.
-4. iCloud Drive: the same folder layout works in a ubiquity container. Then all access must go through `NSFileCoordinator`, which the repository already does.
+1. A protocol `BackupDestination` in `BackupFeature` with one method: `upload(file: URL, name: String) async throws`. An iCloud Drive container, S3, or WebDAV destination can implement it later.
+2. Full upload: upload each snapshot. This is simple, but a library of 100 MB uploads 100 MB each time.
+3. Change upload: each row has a `modified` clock value (strokes have `created`, erases have `erased`). A later version can export all rows that changed after the last upload into a small change file, and upload that file. A restore then applies the last snapshot and the change files in order. The clock values and tombstones make this possible without a schema change.
+4. Encryption: a destination can encrypt each file with CryptoKit `AES.GCM` before upload. The key lives in the Keychain.
 
 ## 9. Tests for storage
 
-- Round-trip tests for every record type and the chunk format: encode, decode, compare.
-- Fixture tests: one file per schema version in the test bundle, loaded and migrated.
-- Corruption tests: a truncated chunk, a wrong hash, a wrong magic, an over-limit count. The loader must reject each one and keep the rest of the canvas.
-- Crash tests: stop the write sequence after each step with an injected failure. Then load, and make sure that no stroke older than the debounce interval is lost.
-- Backup test: make a library, run the zip step, unzip it with `/usr/bin/ditto` in a macOS test, and compare the trees.
+- Round-trip tests for every row type and the point BLOB: write, read, compare.
+- Migration tests with one fixture database per schema version.
+- Constraint tests: each `CHECK` refuses a value one past its limit.
+- Corruption tests: a point BLOB with a wrong length, a damaged database file. The repository must report the fault, keep the rest of the library readable, and never overwrite the file.
+- Crash tests: stop the process between `BEGIN` and `COMMIT` with an injected failure. Then open the database, and make sure that it holds the state before the transaction.
+- Snapshot test: make a library, run `VACUUM INTO`, open the snapshot, and compare all rows with the live database.
+- Restore test: restore a snapshot over a different library, and compare all rows with the snapshot.
+- Performance test on the device: open a canvas with 10,000 nodes and 20,000 strokes in under 300 ms.

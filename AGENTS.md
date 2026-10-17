@@ -15,7 +15,7 @@ Read these documents before you write code:
 3. The document for the area that you change:
    - [docs/architecture.md](docs/architecture.md) for modules, input, rendering, navigation, and export.
    - [docs/data-model.md](docs/data-model.md) for types, IDs, clocks, and commands.
-   - [docs/storage.md](docs/storage.md) for files, saving, and backup.
+   - [docs/storage.md](docs/storage.md) for the SQLite schema, saving, and backup.
 4. [docs/decisions.md](docs/decisions.md): open questions. Do not decide an open question yourself.
 5. [docs/plan.md](docs/plan.md): the current milestone and its acceptance criteria.
 
@@ -33,14 +33,14 @@ pointer/
     Geometry/              Layer 0: Double geometry, camera math, spatial grid
     Model/                 Layer 0: value types, IDs, clock, commands, history, limits
     InkEngine/             Layer 0: filters, stroke building, eraser
-    Persistence/           Layer 1: file repository, codecs, migrations, backup zip
+    Persistence/           Layer 1: SQLite repository, migrations, snapshots, restore
     Rendering/             Layer 1: Metal renderer and shaders
     Export/                Layer 1: PDF export
     DesignSystem/          Layer 1: tokens and shared small views
     CanvasFeature/         Layer 2: canvas screen
     WorkspaceFeature/      Layer 2: workspace selector
-    BackupFeature/         Layer 2: backup command and App Intent
-  Scripts/                 lint, layer, metric, and CI scripts            (planned, M0)
+    BackupFeature/         Layer 2: backup command and restore
+  Scripts/                 layer, assertion-density, and CI scripts       (planned, M0)
   Spikes/                  throwaway prototypes for M1 only               (planned, M1)
 ```
 
@@ -58,7 +58,7 @@ The commands come in milestone M0. Until then, this section is empty.
 ## Working rules
 
 - Do the smallest change that completes the task (AGENT-02).
-- Never add a dependency (BUILD-03, AGENT-03).
+- Never add a dependency to the app (BUILD-03, AGENT-03). Development tools follow decision D-04.
 - Stop and ask the product owner about an unclear or conflicting document (AGENT-04).
 - Run the full pull request checklist before you report a task as done. Report each failure with its output (AGENT-05).
 - Name the requirement IDs and the rule IDs in each pull request (GIT-03).

@@ -18,15 +18,16 @@ Read the documents in this order:
 2. [docs/research.md](docs/research.md) gives the research results and the sources.
 3. [docs/architecture.md](docs/architecture.md) gives the implementation design: modules, input, rendering, navigation, and export.
 4. [docs/data-model.md](docs/data-model.md) gives the data types and their rules.
-5. [docs/storage.md](docs/storage.md) gives the file layout, the save strategy, and the backup strategy.
+5. [docs/storage.md](docs/storage.md) gives the SQLite schema, the save strategy, and the backup strategy.
 6. [docs/code-of-code.md](docs/code-of-code.md) gives the coding standard. All contributors must obey it, people and agents.
 7. [docs/plan.md](docs/plan.md) gives the build order and the acceptance criteria per milestone.
 8. [docs/decisions.md](docs/decisions.md) lists the open decisions for the product owner.
+9. [docs/review-2026-10-17.md](docs/review-2026-10-17.md) gives the design review and the source check of the research.
 
 [AGENTS.md](AGENTS.md) is the entry point for AI coding agents.
 
 ## Platform
 
 - Language: Swift 6 language mode, Swift 6.4 toolchain, Xcode 27.
-- Target: iPad only. The minimum version is an open decision (see [docs/decisions.md](docs/decisions.md), D-01).
-- Dependencies: Apple frameworks only. The app links no third-party code.
+- Target: iPad only. The minimum version is iPadOS 26 (see [docs/decisions.md](docs/decisions.md), D-01).
+- Dependencies: Apple frameworks only. The app links no third-party code. Development tools such as linters and formatters can come from third parties (D-04).

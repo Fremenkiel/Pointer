@@ -2,12 +2,12 @@
 
 This document gives the build order. Each milestone ends with a demo on a real iPad and a list of acceptance criteria. A milestone is done only with all criteria met and the checklist in [code-of-code.md](code-of-code.md) section 5 passed.
 
-Build the milestones in order. M1 is a test that can change the design. Do not start M2 before the product owner decides D-02.
+Build the milestones in order. M1 is a test that can change the design. The product owner chose the custom engine (D-02). Do not start M2 before M1 passes.
 
 ## M0: Project skeleton
 
 - Make the Xcode project, the app target, and the empty packages of [architecture.md](architecture.md) section 3.
-- Add `.swift-format`, `Scripts/lint.swift`, `Scripts/check-layers.swift`, `Scripts/assertion-density.swift`, and `Scripts/metrics.swift`.
+- Add `.swift-format`, `.swiftlint.yml`, `Scripts/check-layers.swift`, and `Scripts/assertion-density.swift`.
 - Add a `Makefile` or `Scripts/ci.sh` with one command per check.
 - Fill in the commands and the context map in `AGENTS.md`.
 
@@ -29,7 +29,7 @@ Measure both on a 120 Hz iPad Pro with a high-speed camera and with the presente
 Acceptance:
 
 1. A short report in `docs/research.md` with the measured latency of both, the method, and the device.
-2. The product owner decides D-02.
+2. The custom engine is at most 3 ms slower than PencilKit. If it is slower, the product owner decides D-02 again.
 
 ## M2: Ink on one canvas
 
@@ -48,14 +48,15 @@ Acceptance:
 
 ## M3: Storage and workspaces
 
-- `Persistence`: repository actor, JSON records, ink chunks, index, compaction, migrations.
+- `Persistence`: SQLite wrapper, repository actor, schema, point BLOB codec, migrations, automatic snapshots.
 - `WorkspaceFeature`: selector in the top left, create, rename, delete.
 - Device state: last workspace and camera.
 
 Acceptance:
 
 1. A force quit loses at most 2 seconds of ink (STO-06), shown with an automated crash test.
-2. The library shows in the Files app, and a copy of it opens on a second iPad.
+2. A snapshot shows in the Files app under `Backups`, and it opens on a second iPad.
+4. A canvas with 10,000 nodes and 20,000 strokes opens in under 300 ms on the device.
 3. All corruption tests in [storage.md](storage.md) section 9 pass.
 
 ## M4: Eraser and undo
@@ -97,6 +98,7 @@ Acceptance:
 1. Double tap follows D-07 for each value of `preferredTapAction`.
 2. Squeeze opens the palette at the pencil tip on Apple Pencil Pro.
 3. With an Apple Pencil (USB-C), every feature that does not need tap or squeeze works.
+4. No app action plays a haptic event in Apple Pencil Pro (PEN-06). Drawing plays no haptic event. A system haptic on squeeze is accepted (D-23).
 
 ## M8: PDF export
 
@@ -105,16 +107,16 @@ Acceptance:
 Acceptance:
 
 1. The exported PDF opens in Preview on a Mac. Ink stays sharp at 6400% zoom. Text can be selected and searched.
-2. A snapshot test compares a rendered PDF page with the screen render of the same canvas.
+2. A snapshot test compares a rendered PDF page with a reference image: a white page, black ink and text, and no cards.
 
 ## M9: Backup
 
-- `BackupFeature`: "Back up now", the App Intent (D-14).
+- `BackupFeature`: "Back up now" and restore (D-20). No App Intent (D-14).
 
 Acceptance:
 
-1. The zip opens on a Mac, and its tree equals the library folder.
-2. A Shortcuts automation saves a backup to iCloud Drive at a fixed time. Record the result with the iPad locked and unlocked (D-14).
+1. A snapshot from "Back up now" opens with `sqlite3` on a Mac and passes `PRAGMA integrity_check`.
+2. A restore from a snapshot gives a library with the same rows.
 
 ## M10: Hardening
 

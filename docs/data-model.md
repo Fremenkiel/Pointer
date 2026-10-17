@@ -1,6 +1,6 @@
 # Data model
 
-This document defines the data types of Pointer and the rules that they obey. The file format of these types is in [storage.md](storage.md).
+This document defines the data types of Pointer and the rules that they obey. The database schema for these types is in [storage.md](storage.md).
 
 All types in this document live in the `Model` package. They are value types (`struct` or `enum`), `Sendable`, and `Codable` where the storage needs it. They import Foundation and `Geometry` only.
 
@@ -10,7 +10,7 @@ All types in this document live in the `Model` package. They are value types (`s
 2. Each object has a stable identity that never changes. Thus a later sync or backup can compare objects across devices.
 3. A change to one object changes one record. A move changes only the moved object.
 4. A delete leaves a tombstone (a record that marks the object as deleted). Thus a merge or a restore does not bring deleted objects back.
-5. Each record carries a schema version. Each record carries a clock value that orders changes across devices.
+5. The database carries a schema version. Each record carries a clock value that orders changes across devices.
 
 ## 2. Overview
 
@@ -48,10 +48,10 @@ typealias DeviceID = EntityID
 Rules:
 
 - The app makes new IDs with `UUID()` (version 4, random).
-- An ID is never an array index, a file path, or a title.
-- File names use the lowercase string form of the ID.
+- An ID is never an array index, a row number (`rowid`), or a title.
+- The database stores an ID as a 16-byte BLOB. File names (for previews) use the lowercase string form.
 
-Decision D-17 asks whether to use distinct wrapper types per entity instead of type aliases. Distinct types catch more mistakes at compile time, but they need more code.
+Each entity has its own wrapper ID type, not a type alias (decision D-17). The compiler then refuses a `StrokeID` where a `CardID` is needed. The code above shows aliases for brevity only.
 
 ## 4. Clock
 
@@ -82,7 +82,6 @@ Each stored record has these fields:
 
 ```swift
 struct RecordMeta: Codable, Sendable {
-    let schema: Int                    // schema version of this record type
     let created: HybridTimestamp
     var modified: HybridTimestamp      // set on every change
     var isDeleted: Bool                // tombstone
@@ -92,7 +91,7 @@ struct RecordMeta: Codable, Sendable {
 Rules:
 
 - Each change sets `modified` to a new clock value.
-- A delete sets `isDeleted = true` and sets `modified`. The record stays on disk.
+- A delete sets `isDeleted = true` and sets `modified`. The row stays in the database.
 - An undo of a delete sets `isDeleted = false` and sets `modified`.
 - Code that reads content ignores records with `isDeleted == true`. The repository is the only place that filters them.
 
@@ -144,7 +143,7 @@ Rules:
 
 - `frame.size` is at least 64 by 48 canvas points.
 - `canvasID` never equals `id`. A move of a card to a different parent must not make a cycle. The `Model` function that moves a card walks the parent chain with a depth limit of `Limits.maxDepth` and refuses a cycle.
-- A delete of a card marks only the card. The child content stays on disk and comes back with an undo. Clean-up of orphaned content is decision D-18.
+- A delete of a card marks only the card. The child content stays on disk for 30 days and comes back with an undo (decision D-18). After 30 days, the repository removes the card and its subtree at launch.
 
 ### 7.3 Text box
 
@@ -161,7 +160,7 @@ struct TextBox: Identifiable, Codable, Sendable {
 
 The width and the height come from the text layout. They are not stored.
 
-Decision D-19 asks whether the text is one value or a list of paragraphs. One value is simple. A list of paragraphs makes merge conflicts smaller, as Muse found.
+The text is one value (decision D-19). One value is simple. A list of paragraphs makes merge conflicts smaller, as Muse found, and can come with a future sync.
 
 ### 7.4 Stroke
 
@@ -191,7 +190,7 @@ Rules:
 - `origin` is the first point of the stroke. Thus all offsets are small, and `Float` precision is enough.
 - `points` are the subdivided points that the user saw (see [architecture.md](architecture.md) section 4.3).
 - A stroke with one sample (a dot) stores the point twice.
-- Strokes use a binary format, not JSON (see [storage.md](storage.md)).
+- The database stores the points as one binary BLOB per stroke (see [storage.md](storage.md) section 3.4).
 
 ### 7.5 Erase record
 
@@ -253,19 +252,20 @@ The model is ready for a future sync or an automatic backup. This version does n
 
 | Future need | What the model already provides |
 |---|---|
-| Incremental backup | One file per record. A content hash per file in the manifest (see [storage.md](storage.md)). |
+| Incremental backup | A `modified` clock value per row. A query for all rows after the last backup gives the changes (see [storage.md](storage.md) section 8). |
 | Merge of two copies | Stable IDs. `modified` HLC per record for "last writer wins". Tombstones. |
 | Move without conflict | `canvasID` lives on the child. A move changes one record. |
 | Reorder without conflict | `FractionalIndex` keys. |
 | Ink merge | Strokes never change. Erases are separate records. Two devices can only add. |
-| Mixed app versions | `schema` per record and `formatVersion` per library. An app refuses to write records with a newer schema than it knows. |
+| Mixed app versions | `PRAGMA user_version` per database. An app refuses to write to a database with a newer schema than it knows. |
 
 A conflict-free replicated data type (CRDT) for text is not part of this version. Decision D-19 covers the text model.
 
 ## 12. Schema changes
 
-1. Each record type has its own `schema` number, starting at 1.
-2. A change to a stored field adds 1 to the number of that type.
-3. Each change comes with a migration function `migrate(from: Int, data: Data) throws -> Data` in `Persistence`.
-4. Each change adds a fixture file of the old version to the test bundle. A test loads each fixture and compares the result with the expected value.
-5. If a record has a newer schema than the app knows, the app opens the workspace read-only and shows a message. It never overwrites the record.
+The schema version of the whole database is `PRAGMA user_version`. The rules for a change are in [storage.md](storage.md) section 6. In short:
+
+1. A change to a stored field adds 1 to `user_version`.
+2. Each change comes with a migration in `Persistence` that runs in one transaction.
+3. Each change adds a fixture database of the old version to the test bundle.
+4. If the database has a newer version than the app knows, the app opens the library read-only and shows a message. It never writes to that database.

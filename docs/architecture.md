@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes how Pointer is built. It covers the modules, the input pipeline, the renderer, navigation, text, undo, and export. The data types are in [data-model.md](data-model.md). Files and backup are in [storage.md](storage.md). The rules for the code are in [code-of-code.md](code-of-code.md).
+This document describes how Pointer is built. It covers the modules, the input pipeline, the renderer, navigation, text, undo, and export. The data types are in [data-model.md](data-model.md). Storage and backup are in [storage.md](storage.md). The rules for the code are in [code-of-code.md](code-of-code.md).
 
 ## 1. Principles
 
@@ -9,6 +9,7 @@ This document describes how Pointer is built. It covers the modules, the input p
 3. Pure core. All logic that does not need UIKit or Metal lives in packages that import Foundation only. Unit tests cover these packages without a device.
 4. Apple frameworks only. The app links no third-party code.
 5. Bounded everything. Each collection, loop, and recursion has a named limit (see section 10).
+6. No imitation of paper. The app plays no haptics and no sounds, and draws no paper texture (PEN-06). Haptics that the system plays by itself, for example on squeeze, are accepted (D-23).
 
 ## 2. Platform choices
 
@@ -20,7 +21,7 @@ This document describes how Pointer is built. It covers the modules, the input p
 | Text editing | `UITextView` (TextKit 2), only while you edit | Keyboard, Scribble, selection, and dictation come free. |
 | Frame timing | `UIUpdateLink` (iOS 18+) | Apple's documented low-latency path for pencil apps. |
 | PDF | `UIGraphicsPDFRenderer`, Core Graphics, Core Text | Vector output and real text. |
-| Storage | Files in the app `Documents` folder, Foundation `FileManager`, `NSFileCoordinator` | See [storage.md](storage.md). |
+| Storage | SQLite from the system (`import SQLite3`), no wrapper library | See [storage.md](storage.md). |
 | Logging | `os.Logger`, `OSSignposter` | Logging that is off has zero cost. Signposts feed the performance tests. |
 
 PencilKit is not part of the main design. If the custom engine fails the latency test, PencilKit is the fallback (decision D-02).
@@ -44,13 +45,13 @@ Layer 0  Foundations      InkEngine ---- Model ---- Geometry
 | `Geometry` | 0 | Foundation | `Point`, `Vector`, `Rect`, `Transform` in `Double`. Camera math. `SpatialGrid`. |
 | `Model` | 0 | `Geometry` | Value types: `Workspace`, `Card`, `TextBox`, `Stroke`, IDs, `HybridClock`, `FractionalIndex`. Commands and `History`. Protocol `LibraryRepository`. |
 | `InkEngine` | 0 | `Model`, `Geometry` | `OneEuroFilter`, `StrokeBuilder`, Catmull-Rom subdivision, eraser hit test and stroke split. |
-| `Persistence` | 1 | `Model` | `FileLibraryRepository` (an actor), JSON and binary codecs, migrations, zip backup. |
+| `Persistence` | 1 | `Model`, SQLite3 | `SQLiteLibraryRepository` (an actor), a small SQLite wrapper, row codecs, migrations, snapshots, restore. |
 | `Rendering` | 1 | `Model`, `Geometry`, `InkEngine`, Metal | `CanvasRenderer`, GPU stroke buffers, shaders, text texture cache. |
 | `Export` | 1 | `Model`, `Geometry`, `InkEngine`, Core Graphics, Core Text | `PDFExporter`. |
 | `DesignSystem` | 1 | SwiftUI, UIKit | Color, spacing, size, and icon tokens. Shared small views. |
 | `CanvasFeature` | 2 | Layer 0 and 1 | `CanvasViewController`, `CanvasView`, input routing, camera control, card navigation, text editing, top bars. |
 | `WorkspaceFeature` | 2 | Layer 0 and 1 | Workspace selector, create, rename, delete. |
-| `BackupFeature` | 2 | Layer 0 and 1 | "Back up now" command and the App Intent. |
+| `BackupFeature` | 2 | Layer 0 and 1 | "Back up now" command and restore. |
 | `PointerApp` | 3 | All | Scene setup, dependency composition, routing between features. |
 
 A script in CI reads `swift package show-dependencies --format json` for each package. It fails the build on a forbidden import (see [code-of-code.md](code-of-code.md), rule ARCH-02).
@@ -95,10 +96,7 @@ The eraser has a radius of 8 view points. The radius stays the same on the scree
 2. Ask the `SpatialGrid` for the strokes whose bounds touch the eraser circle.
 3. For each of these strokes, run the hit test against each segment.
 
-The result depends on decision D-06:
-
-- Partial eraser (recommended): `StrokeSplitter` removes the points inside the circle and returns the remaining runs as new strokes. The command records the old stroke ID and the new strokes.
-- Whole-stroke eraser: the command records the stroke ID only.
+The eraser is partial (decision D-06). `StrokeSplitter` removes the points inside the circle and returns the remaining runs as new strokes. The command records the old stroke ID and the new strokes.
 
 The changes of one eraser gesture (pencil down to pencil up) form one undo step.
 
@@ -280,10 +278,11 @@ While a text view is in edit mode, the undo and redo buttons go to the text view
 
 1. Compute the content bounds. Add a margin of 48 points.
 2. Make one page with the size of the bounds. If a side is longer than 14,400 points (the PDF page limit of 200 inches), scale the content down to fit.
-3. Fill the page black (decision D-13).
-4. Draw the cards: frame, title, and the child content one level deep, as vectors and clipped to the frame.
-5. Draw each stroke as one `CGPath` of the subdivided points. Use `setLineCap(.round)`, `setLineJoin(.round)`, the stroke width, and white.
-6. Draw each text box with `CTFramesetter` and `CTFrameDraw`. Flip the text matrix for the PDF coordinate system.
+3. Fill the page white (decision D-13).
+4. Draw each stroke as one `CGPath` of the subdivided points. Use `setLineCap(.round)`, `setLineJoin(.round)`, the stroke width, and black.
+5. Draw each text box in black with `CTFramesetter` and `CTFrameDraw`. Flip the text matrix for the PDF coordinate system.
+
+The PDF contains no cards (decision D-13). The exporter does not draw card frames, titles, or child content. The content bounds in step 1 also ignore cards.
 
 The exporter runs off the main actor. It reads a snapshot (a value copy), so it does not block drawing. The result goes to `UIActivityViewController`.
 
@@ -308,9 +307,9 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 
 - Swift 6 language mode with complete strict concurrency in every target.
 - UI types, the canvas, and the renderer run on the main actor.
-- `FileLibraryRepository` is an actor. All file access goes through it.
+- `SQLiteLibraryRepository` is an actor. It owns the only database connection that writes. All SQL goes through it.
 - The canvas sends value snapshots to the repository. It never shares mutable state.
-- PDF export and the backup zip run in a `Task` off the main actor. They report progress to the main actor.
+- PDF export runs in a `Task` off the main actor. Snapshots run inside the repository actor. They report progress to the main actor.
 - No code on the main actor waits for disk.
 
 ## 12. Performance budgets
