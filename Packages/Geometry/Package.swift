@@ -12,7 +12,12 @@ let package = Package(
         .target(
             name: "Geometry",
             swiftSettings: [.treatAllWarnings(as: .error)]
-        )
+        ),
+        .testTarget(
+            name: "GeometryTests",
+            dependencies: ["Geometry"],
+            swiftSettings: [.treatAllWarnings(as: .error)]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
