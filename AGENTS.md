@@ -46,7 +46,9 @@ pointer/
     BackupFeature/         Layer 2: backup command and restore
   Scripts/                 check-layers.swift, assertion-density.swift, self-test.sh
     Fixtures/              small trees that the self-test runs the check scripts on
-  Spikes/                  throwaway prototypes for M1 only               (planned, M1)
+  Spikes/                  throwaway prototypes for M1 only, outside all checks
+    LatencySpikes.xcodeproj  one iPad app with the PencilKit, Custom, and Hybrid modes
+    LatencySpikes/           sources of the spike app
 ```
 
 ## Commands

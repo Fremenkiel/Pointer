@@ -2,7 +2,7 @@
 
 This document gives the build order. Each milestone ends with a demo on a real iPad and a list of acceptance criteria. A milestone is done only with all criteria met and the checklist in [code-of-code.md](code-of-code.md) section 5 passed.
 
-Build the milestones in order. M1 is a test that can change the design. The product owner chose the custom engine (D-02). Do not start M2 before M1 passes.
+Build the milestones in order. M1 was a test that could change the design. It did: the product owner chose the hybrid of D-33 after M1 (D-02).
 
 ## M0: Project skeleton
 
@@ -19,6 +19,8 @@ Acceptance:
 
 ## M1: Latency test (go or no-go)
 
+Status: done on 2026-10-17 by a decision of the product owner. The custom input path trailed the pencil, so Pointer uses the hybrid. The product owner compared the prototypes by eye and skipped the camera measurement, so acceptance 1 and 3 have no measured values. See [research.md](research.md) section 3.5.
+
 Build three throwaway prototypes in a `Spikes/` folder. They do not follow the full standard.
 
 1. `PencilKit`: a `PKCanvasView` with a white monoline pen on black.
@@ -27,25 +29,35 @@ Build three throwaway prototypes in a `Spikes/` folder. They do not follow the f
 
 Measure all three on a 120 Hz iPad Pro with a high-speed camera and with the presented-time log (see [research.md](research.md) section 3.4). Also tune the 1€ filter values.
 
+In `Custom`, also measure these points:
+
+1. Latency with `presentsWithTransaction` set to `true` and to `false` (review A-15).
+2. The CPU time from the pencil event to the end of command encoding. The budget is 3 ms, because low-latency events get half of the 8.3 ms frame (review A-15).
+3. Whether `UITouch.timestamp` and `MTLDrawable.presentedTime` use the same clock. Compare both with `CACurrentMediaTime()` once (review B-3).
+
 Acceptance:
 
 1. A short report in `docs/research.md` with the measured latency of all three, the method, and the device.
 2. The custom engine is at most 3 ms slower than PencilKit. If it is more than 3 ms slower, the hybrid is the fallback (D-33), and the product owner decides D-02 again.
+3. The report gives the `presentsWithTransaction` setting with the lower latency, the CPU time against the 3 ms budget, and the result of the clock test.
 
 ## M2: Ink on one canvas
 
 - `Geometry`: points, rectangles, transforms, `SpatialGrid`.
 - `Model`: `Stroke`, `InkPoint`, `CanvasContent`, `Limits`, IDs, `HybridClock`.
-- `InkEngine`: `OneEuroFilter`, `StrokeBuilder`, Catmull-Rom subdivision.
-- `Rendering`: committed layer, live stroke, capsule shader, culling.
-- `CanvasFeature`: canvas view, pencil input, finger pan and pinch, camera.
+- `InkEngine`: no work in M2. The eraser parts come in M4.
+- `Rendering`: committed layer, capsule shader, culling, presented handler for the handoff.
+- `CanvasFeature`: canvas view, live `PKCanvasView`, `PencilKitStrokeConverter`, handoff, finger pan and pinch, camera.
+
+Before M2, the product owner decides D-35 and D-36. D-34 can wait for M4.
 
 Acceptance:
 
 1. Latency meets FEEL-01 on the device.
 2. 20,000 strokes pan and zoom at 120 Hz with zero dropped frames in a 10-second recording.
 3. Strokes at canvas position (1,000,000, 1,000,000) look the same as strokes at the origin.
-4. The stroke does not change shape at pencil lift (snapshot test of the live and the finished stroke).
+4. The stroke does not change shape at the handoff (FEEL-03): a test compares the PencilKit image with the Metal image of the same stroke at zoom 0.25, 1, and 8.
+5. At zoom 0.25 and 8, the PencilKit tool width is not clamped by `validWidthRange`, or the product owner accepts the difference.
 
 ## M3: Storage and workspaces
 

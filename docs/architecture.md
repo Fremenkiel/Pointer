@@ -16,15 +16,16 @@ This document describes how Pointer is built. It covers the modules, the input p
 | Area | Choice | Reason |
 |---|---|---|
 | App shell | UIKit `UIApplication` with a `UIScene` | The canvas needs direct `UITouch` access and exact frame timing. |
-| Canvas view | A `UIView` subclass with a `CAMetalLayer` | Lowest latency path. Full control of the camera and the cards. |
+| Canvas view | A `UIView` subclass with a `CAMetalLayer`, and one `PKCanvasView` on top for the live stroke | PencilKit gives the lowest latency for the live stroke (M1). Metal gives full control of the camera and the cards. |
+| Live pen input | PencilKit, `PKCanvasView` at zoom 1 (decisions D-02 and D-33) | The custom input path trailed the pencil in M1. |
 | Chrome (top bars, workspace selector, palette) | SwiftUI views in `UIHostingController` children | Less code for lists, menus, and alerts. Not on the ink path. |
 | Text editing | `UITextView` (TextKit 2), only while you edit | Keyboard, Scribble, selection, and dictation come free. |
-| Frame timing | `UIUpdateLink` (iOS 18+) | Apple's documented low-latency path for pencil apps. |
+| Frame timing | `UIUpdateLink` (iOS 18+) | Frame loop of the Metal renderer. |
 | PDF | `UIGraphicsPDFRenderer`, Core Graphics, Core Text | Vector output and real text. |
 | Storage | SQLite from the system (`import SQLite3`), no wrapper library | See [storage.md](storage.md). |
 | Logging | `os.Logger`, `OSSignposter` | Logging that is off has zero cost. Signposts feed the performance tests. |
 
-PencilKit is not part of the main design. If the custom engine fails the latency test, the fallback is PencilKit for input capture only, with the custom renderer (decisions D-02 and D-33).
+PencilKit captures the pen input and draws the live stroke. The Metal renderer draws all finished ink. Pointer never stores PencilKit data. The custom input path failed the latency test of M1 (see [research.md](research.md) section 3.5, decisions D-02 and D-33).
 
 ## 3. Modules
 
@@ -44,12 +45,12 @@ Layer 0  Foundations      InkEngine ---- Model ---- Geometry
 |---|---|---|---|
 | `Geometry` | 0 | Foundation | `Point`, `Vector`, `Rect`, `Transform` in `Double`. Camera math. `SpatialGrid`. |
 | `Model` | 0 | `Geometry` | Value types: `Workspace`, `Card`, `TextBox`, `Stroke`, IDs, `HybridClock`, `FractionalIndex`. Commands and `History`. Protocol `LibraryRepository`. |
-| `InkEngine` | 0 | `Model`, `Geometry` | `OneEuroFilter`, `StrokeBuilder`, Catmull-Rom subdivision, eraser hit test and stroke split. |
+| `InkEngine` | 0 | `Model`, `Geometry` | Eraser hit test and stroke split. |
 | `Persistence` | 1 | `Model`, SQLite3 | `SQLiteLibraryRepository` (an actor), a small SQLite wrapper, row codecs, migrations, snapshots, restore. |
 | `Rendering` | 1 | `Model`, `Geometry`, `InkEngine`, Metal | `CanvasRenderer`, GPU stroke buffers, shaders, text texture cache. |
 | `Export` | 1 | `Model`, `Geometry`, `InkEngine`, Core Graphics, Core Text | `PDFExporter`. |
 | `DesignSystem` | 1 | SwiftUI, UIKit | Color, spacing, size, and icon tokens. Shared small views. |
-| `CanvasFeature` | 2 | Layer 0 and 1 | `CanvasViewController`, `CanvasView`, input routing, camera control, card navigation, text editing, top bars. |
+| `CanvasFeature` | 2 | Layer 0 and 1, PencilKit | `CanvasViewController`, `CanvasView`, the live `PKCanvasView`, `PencilKitStrokeConverter`, input routing, camera control, card navigation, text editing, top bars. |
 | `WorkspaceFeature` | 2 | Layer 0 and 1 | Workspace selector, create, rename, delete. |
 | `BackupFeature` | 2 | Layer 0 and 1 | "Back up now" command and restore. |
 | `PointerApp` | 3 | All | Scene setup, dependency composition, routing between features. |
@@ -62,31 +63,36 @@ Dependencies flow down. Features get repositories and services through their ini
 
 ### 4.1 Touch routing
 
-The canvas view gets all touches. It separates them by `UITouch.type`:
+The canvas view holds the Metal view and one `PKCanvasView` on top of it. The `PKCanvasView` has a clear background and `drawingPolicy = .pencilOnly`. It never zooms or scrolls.
 
-- `.pencil` touches go to the active tool directly, in `touchesBegan`, `touchesMoved`, `touchesEnded`, and `touchesCancelled`. No gesture recognizer sees pencil touches. Thus nothing delays the first ink sample (FEEL-02).
+- With the pen tool, `.pencil` touches go to the drawing gesture recognizer of the `PKCanvasView`. PencilKit draws the live stroke.
+- With the eraser tool or the text tool, the drawing gesture recognizer is off. `.pencil` touches go to the active tool directly, in `touchesBegan`, `touchesMoved`, `touchesEnded`, and `touchesCancelled`. Decision D-34 is open for this point.
 - `.direct` (finger) touches go to gesture recognizers with `allowedTouchTypes = [.direct]`: one-finger pan, two-finger pinch, tap, and long press.
 
-The view sets `isMultipleTouchEnabled = true`. A finger that touches during a pencil stroke does not cancel the stroke.
+The view sets `isMultipleTouchEnabled = true`. A finger that touches during a pencil stroke does not cancel the stroke. Decision D-36 is open for camera movement during a pencil stroke.
 
-### 4.2 Pen samples
+FEEL-02 says that no gesture recognizer delays the start of a stroke. The PencilKit drawing gesture recognizer conflicts with that text. Decision D-35 is open for this point.
 
-For each pencil event, the pen tool does these steps:
+### 4.2 Pen strokes
 
-1. Read `event.coalescedTouches(for: touch)`. Each coalesced touch is one sample (240 Hz).
-2. Convert each location from view space to canvas space with the camera (in `Double`).
-3. Send each sample through `OneEuroFilter`. Start values: minimum cutoff 1.0 Hz, beta 0.007, derivative cutoff 1.0 Hz. Tune them on a device (see [plan.md](plan.md), M1).
-4. Append the filtered samples to the `StrokeBuilder` as committed points.
-5. Read `event.predictedTouches(for: touch)`. Filter them with a copy of the filter state. Give them to the builder as the temporary tail. Keep only the predicted points within 8 ms of the last real sample.
-6. Mark the live stroke as dirty for the next frame.
+PencilKit gives no samples before pencil lift. The pen tool works in these steps:
 
-If a touch has `estimatedPropertiesExpectingUpdates` that contains `.force`, the builder keeps its `estimationUpdateIndex`. `touchesEstimatedPropertiesUpdated(_:)` then updates the force of that sample. Force is stored but not drawn in version 1 (decision D-05).
+1. The `PKCanvasView` draws the live stroke at zoom 1 in view space. Its tool is a white monoline `PKInkingTool`. The tool width is the pen width times the camera zoom, so the live stroke has the same size on the screen as the finished stroke.
+2. At pencil lift, `canvasViewDrawingDidChange(_:)` reports the new `PKStroke`.
+3. `PencilKitStrokeConverter` reads `stroke.path.interpolatedPoints(by: .distance(0.5))`, applies `stroke.transform`, and converts each point from view space to canvas space with the camera (in `Double`). The result is a `Stroke` of the `Model`. Decision D-26 is open for the points that the stroke stores.
+4. The renderer adds the stroke to the committed layer and asks for a frame.
+5. After the presented handler of that frame runs, the canvas view removes the stroke from the `PKCanvasView`. Thus no frame shows the stroke twice or not at all.
 
-On `touchesEnded`, the builder drops the tail and returns a finished `Stroke`. The stroke contains exactly the committed points that the user saw (FEEL-03). On `touchesCancelled`, the builder drops the stroke.
+The `PKDrawing` of the `PKCanvasView` holds at most the strokes that wait for the handoff. Pointer never stores PencilKit data.
+
+The finished stroke must look the same as the live stroke (FEEL-03). Two risks need a test in M2:
+
+- PencilKit clamps the monoline width to `PKInkingTool.InkType.monoline.validWidthRange`. At zoom 0.25 or 8, the live width can differ from the finished width.
+- The monoline rendering of PencilKit and the capsule rendering of the renderer can differ by up to one pixel at the edge.
 
 ### 4.3 Curve smoothing
 
-`StrokeBuilder` subdivides the committed points with centripetal Catmull-Rom splines. It adds points until no segment is longer than 0.5 canvas points. The renderer and the PDF exporter both draw the subdivided points as straight segments. Thus the screen and the export show the same curve.
+PencilKit smooths the stroke. `interpolatedPoints(by: .distance(0.5))` gives points on the curve that PencilKit drew, no more than 0.5 view points apart. The renderer and the PDF exporter both draw these points as straight segments. Thus the screen and the export show the same curve.
 
 ### 4.4 Eraser
 
@@ -150,22 +156,22 @@ link.requiresContinuousUpdates = false   // true only while the pencil is down o
 link.preferredFrameRateRange = CAFrameRateRange(minimum: 80, maximum: 120, preferred: 120)
 
 metalLayer.maximumDrawableCount = 2
-metalLayer.presentsWithTransaction = true
+metalLayer.presentsWithTransaction = true  // M1 did not measure it, see research.md 3.5
 metalLayer.pixelFormat = .bgra8Unorm
 metalLayer.framebufferOnly = true
 ```
 
-If the M1 test shows no gain from `UIUpdateLink`, the fallback is `CAMetalDisplayLink` with `preferredFrameLatency = 1`. With two drawables, `nextDrawable()` can block. The renderer must measure the frame time against `UIUpdateInfo.completionDeadlineTime` and log a signpost for each late frame.
+The low-latency settings serve the eraser path. The live pen stroke does not use this frame loop (section 4.2). If `UIUpdateLink` gives no gain for the eraser, the fallback is `CAMetalDisplayLink` with `preferredFrameLatency = 1`. With two drawables, `nextDrawable()` can block. The renderer must measure the frame time against `UIUpdateInfo.completionDeadlineTime` and log a signpost for each late frame.
 
 ### 5.2 Layers in a frame
 
-Each frame draws three passes:
+Each frame draws these passes:
 
 1. The committed layer: all finished strokes, text, and cards that are visible. This layer is a texture with the size of the drawable. The renderer reuses it while the camera and the content do not change.
-2. The live stroke: the committed points and the predicted tail of the stroke in progress.
+2. The live eraser path, if the eraser is active.
 3. Overlays: the hover dot and the selection outline.
 
-While you draw, the camera does not move. So each frame copies the committed texture and draws only the live stroke on top. The cost of a frame does not depend on the size of the canvas.
+The live pen stroke is not a pass of the renderer. The `PKCanvasView` on top draws it (section 4.2). While you draw, the renderer draws a frame only at the handoff of a stroke.
 
 While the camera moves, the renderer draws all visible content directly from the GPU buffers of each stroke. The `SpatialGrid` limits the work to the strokes that touch the viewport.
 
@@ -317,7 +323,7 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 | Measure | Budget | How to measure |
 |---|---|---|
 | Pencil to ink | 13 ms goal, 20 ms limit | High-speed camera and the presented-time log (see [research.md](research.md) 3.4) |
-| Frame time while drawing | Under 4 ms CPU, under 4 ms GPU | `OSSignposter` intervals in an `XCTOSSignpostMetric` test |
+| Frame time while drawing | Under 3 ms CPU from the pencil event to the end of encoding, under 4 ms GPU | `OSSignposter` intervals in an `XCTOSSignpostMetric` test |
 | Dropped frames while drawing or panning | 0 per 10 s | Animation Hitches template |
 | Open a workspace with 20,000 strokes | Under 300 ms to first frame | `XCTClockMetric` |
 | Save after a stroke | Off the main actor, under 50 ms | Signpost |

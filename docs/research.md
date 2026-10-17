@@ -90,6 +90,35 @@ Friction (the physical feel of paper) depends on the screen protector of the use
 
 Decision: The targets are 13 ms (goal) and 20 ms (limit). The first milestone is a latency test that compares PencilKit with the custom engine (see [plan.md](plan.md), M1).
 
+### 3.5 M1 latency test report
+
+The prototypes are in `Spikes/LatencySpikes.xcodeproj`. [Spikes/README.md](../Spikes/README.md) describes them.
+
+Device: iPad Pro 11-inch (M4), 120 Hz, with Apple Pencil. The app ran in the Release configuration.
+
+Method: the product owner drew with the Apple Pencil in all three prototypes and compared the gap between the pencil tip and the end of the ink by eye. Custom ran with the 1€ filter on and off, with `presentsWithTransaction` on and off, and with the low-latency settings of `UIUpdateLink` on and off. The pen width was 2 points. Nobody filmed the screen, and nobody saved the presented-time log.
+
+Results:
+
+| Prototype | Result |
+|---|---|
+| PencilKit | No visible trail behind the pencil tip. |
+| Custom | The ink trailed the pencil tip in every configuration. |
+| Hybrid | The same as PencilKit. No visible change at the handoff. |
+
+These points of M1 have no measured value:
+
+- The latency in milliseconds of the three prototypes.
+- The `presentsWithTransaction` setting with the lower latency.
+- The CPU time from the pencil event to the end of encoding.
+- The clock test of `UITouch.timestamp`, `presentedTime`, and `CACurrentMediaTime()`.
+- The pixel comparison at the hybrid handoff.
+- Tuned 1€ values. The hybrid does not use the 1€ filter, so this point no longer applies to the pen.
+
+The cause of the trail in Custom is not known. The product owner judged that a measurement would not change the result, and decided without one.
+
+Decision: the custom input path fails M1. Pointer uses the hybrid of D-33 (D-02 decided again on 2026-10-17). M2 measures the hybrid latency and the handoff (see [plan.md](plan.md), M2).
+
 ## 4. Apple APIs
 
 ### 4.1 PencilKit
@@ -146,7 +175,7 @@ Sources: <https://developer.apple.com/documentation/uikit/uipencilinteraction>, 
 - Draw text with Core Text (`CTFramesetter`, `CTFrameDraw`). The result is real glyphs.
 - Never use `CALayer.render(in:)` or a view snapshot. A TextKit 2 text view becomes a bitmap that way (forum thread 745459).
 
-Decision: Pointer uses a custom Metal renderer for display and Core Graphics for PDF export. Both use the same stroke geometry. If the custom engine fails the latency test in M1, the fallback is PencilKit for input capture only, with the custom renderer (D-33).
+Decision: Pointer uses a custom Metal renderer for display and Core Graphics for PDF export. Both use the same stroke geometry. The custom input path failed the latency test in M1, so PencilKit captures the pen input and draws the live stroke (D-02, D-33, section 3.5).
 
 ## 5. Storage
 

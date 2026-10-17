@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day.
 
 Status values: Open, Decided.
 
@@ -9,7 +9,7 @@ Status values: Open, Decided.
 | ID | Question | Decision | Status |
 |---|---|---|---|
 | D-01 | Minimum iPadOS version | iPadOS 26 | Decided (2026-10-17) |
-| D-02 | Custom Metal ink engine or PencilKit | Custom engine, with a latency test in M1 | Decided (2026-10-17) |
+| D-02 | Custom Metal ink engine or PencilKit | Hybrid after M1: PencilKit captures the pen input, the custom renderer draws (D-33) | Decided again (2026-10-17) |
 | D-03 | One database for the library or one per workspace | One database | Decided (2026-10-17) |
 | D-04 | Third-party development tools | Allowed: linters, formatters, rule checkers. The app links none. | Decided (2026-10-17) |
 | D-05 | Pressure changes the line width | No, fixed width | Decided (2026-10-17) |
@@ -41,6 +41,9 @@ Status values: Open, Decided.
 | D-31 | UUID version 4 or 7 | Recommendation: version 7 | Open |
 | D-32 | Snapshot procedure: temporary file, second connection, time of the run | Recommendation: all three | Open |
 | D-33 | Fallback after a failed M1 | PencilKit for input capture only, with the custom renderer | Decided (2026-10-17) |
+| D-34 | Eraser and text tool input next to the live `PKCanvasView` | Recommendation: turn off the PencilKit drawing gesture for these tools | Open |
+| D-35 | FEEL-02 and the PencilKit drawing gesture recognizer | Recommendation: change FEEL-02 to a rule about the first sample | Open |
+| D-36 | Camera movement during a pencil stroke | Recommendation: no pan or pinch while the pencil is down | Open |
 
 ## Details
 
@@ -53,7 +56,8 @@ Status values: Open, Decided.
 
 ### D-02 Custom Metal ink engine or PencilKit
 
-- Decided by the product owner on 2026-10-17: custom engine. The M1 latency test still runs. If the custom engine is more than 3 ms slower than PencilKit, the product owner decides again.
+- Decided again by the product owner on 2026-10-17, after M1: the hybrid of D-33. PencilKit captures the pen input and draws the live stroke. The custom Metal renderer draws all finished ink. In M1, the custom input path trailed the pencil in every configuration. PencilKit and the hybrid showed no trail. See [research.md](research.md) section 3.5.
+- First decision on 2026-10-17: custom engine, with the M1 latency test. If the custom engine is more than 3 ms slower than PencilKit, the product owner decides again.
 - Options: a custom Metal engine (the design in these documents), PencilKit, or PencilKit for capture with custom display.
 - Recommendation: custom engine. PencilKit has a confirmed tile-render bug at zoom levels other than 1x. It needs one view per visible card. It stores data in a format that is not documented.
 - Doubt: no published measurement shows that a custom engine reaches the latency of PencilKit. Press reports from 2019 say that Apple keeps part of the gain for itself. Milestone M1 measures both. If the custom engine is more than 3 ms slower, the team must decide again.
@@ -214,6 +218,7 @@ Status values: Open, Decided.
 - Options: (a) store the filtered 240 Hz samples and define the shared geometry as the curve through them. (b) store the subdivided polyline, as the current design does.
 - Recommendation: (a). Option (b) inflates stored points 3 to 27 times and ends a fast stroke after 3 to 4 seconds. It also ties the stored data to a rendering tolerance.
 - Doubt: with (a), the renderer and the PDF exporter flatten the same curve with different tolerances. The curve is the same, the polylines are not identical.
+- Change after M1 (D-02): PencilKit gives the stroke, so the options change. (a) becomes the control points of the `PKStrokePath`. Pointer then needs its own curve that matches the curve of PencilKit. (b) becomes the points of `interpolatedPoints(by: .distance(0.5))`, which match the live stroke exactly.
 
 ### D-27 Save policy
 
@@ -261,6 +266,28 @@ Status values: Open, Decided.
 - D-02 names PencilKit as the fallback. Apple confirmed in March 2026 that `PKCanvasView` flickers at zoom scales other than 1x, with no workaround. Pointer zooms from 0.25 to 8. The fallback also needs one `PKCanvasView` per visible card.
 - Options: (a) accept the measured latency of the custom engine. (b) PencilKit for input capture only, with the custom renderer. (c) keep PencilKit as the fallback and accept the flicker.
 - Recommendation: decide before M1 starts, so that M1 measures the right things.
+
+### D-34 Eraser and text tool input with the live `PKCanvasView`
+
+- Open. Raised by the hybrid of D-02.
+- The `PKCanvasView` on top of the canvas gets the pencil touches through its drawing gesture recognizer. The eraser needs every sample while the pencil moves (architecture.md 4.4). PencilKit gives no samples before pencil lift. The PencilKit eraser erases only the `PKDrawing`, which holds no finished ink.
+- Options: (a) turn off `drawingGestureRecognizer` while the eraser or the text tool is active. The canvas view then reads the pencil touches directly, as in the first design. (b) remove the `PKCanvasView` from the view tree while the eraser or the text tool is active.
+- Recommendation: (a). It is one property change, and the eraser keeps the design of architecture.md section 4.4.
+- Doubt: the M1 spikes did not test a tool switch during use. M2 or M4 must make sure that the first eraser sample is not lost after a switch.
+
+### D-35 FEEL-02 and the PencilKit drawing gesture recognizer
+
+- Open. Raised by the hybrid of D-02.
+- FEEL-02 says: "Ink appears on the first touch sample. No gesture recognizer delays the start of a stroke." PencilKit draws through its own gesture recognizer. In M1, the product owner saw no delay at the start of a PencilKit stroke.
+- Options: (a) change FEEL-02 to "Ink appears on the first touch sample" and remove the sentence about gesture recognizers. (b) keep FEEL-02 as it is and accept the PencilKit gesture recognizer as an exception.
+- Recommendation: (a). The requirement then states the effect that the user sees, and a test can measure it.
+
+### D-36 Camera movement during a pencil stroke
+
+- Open. Raised by the hybrid of D-02.
+- The `PKCanvasView` draws the live stroke at zoom 1 and does not follow the camera. A finger pan or pinch during a pencil stroke moves the finished ink but not the live stroke.
+- Options: (a) ignore finger pan and pinch while the pencil is down. (b) end the stroke with a handoff when the camera starts to move. (c) move the `PKCanvasView` with a transform that follows the camera.
+- Recommendation: (a). Option (b) splits one stroke into two. Option (c) scales the `PKCanvasView` and can bring back the tile flicker of PencilKit at zoom scales other than 1x.
 
 ## Points in the request that conflict or are not complete
 
