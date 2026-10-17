@@ -30,7 +30,17 @@ let package = Package(
                 .product(name: "Rendering", package: "Rendering"),
             ],
             swiftSettings: [.treatAllWarnings(as: .error)]
-        )
+        ),
+        .testTarget(
+            name: "CanvasFeatureTests",
+            dependencies: [
+                "CanvasFeature",
+                .product(name: "Geometry", package: "Geometry"),
+                .product(name: "Model", package: "Model"),
+                .product(name: "Rendering", package: "Rendering"),
+            ],
+            swiftSettings: [.treatAllWarnings(as: .error)]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
