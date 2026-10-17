@@ -1,8 +1,8 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43.
 
-Status values: Open, Decided.
+Status values: Open, Decided, Replaced.
 
 ## Summary
 
@@ -46,8 +46,11 @@ Status values: Open, Decided.
 | D-36 | Camera movement during a pencil stroke | Ignore finger pan and pinch while the pencil draws | Decided (2026-10-17) |
 | D-37 | Pen width | 2 canvas points, a start value | Decided (2026-10-17) |
 | D-38 | Ink color and blending at the handoff | sRGB layer, `max` blending, white as close to `#FFFFFF` as possible | Decided (2026-10-17) |
-| D-39 | Frame rate of pan and zoom in M2 | 60 Hz accepted for now, keep the full build budget and two drawables | Decided (2026-10-17) |
+| D-39 | Frame rate of pan and zoom in M2 | Replaced by D-41 | Replaced (2026-10-17) |
 | D-40 | Measured pen latency against FEEL-01 | About 25 ms accepted for M2 | Decided (2026-10-17) |
+| D-41 | Drawable count of the Metal layer | Three drawables | Decided (2026-10-17) |
+| D-42 | Thread of the frame encoding | A render thread with `CAMetalDisplayLink`, off the main actor | Decided (2026-10-17) |
+| D-43 | Scope of PERF-01 | No allocation in Pointer code, measured against a bare Metal frame | Decided (2026-10-17) |
 
 ## Details
 
@@ -320,6 +323,7 @@ Status values: Open, Decided.
 - Options: (a) three drawables, at the cost of up to one frame more display latency for the Metal ink. (b) less GPU work per draw instance: a cheaper shader and more level of detail. (c) keep the setup and accept 60 Hz while the camera moves. A budget of 80,000 instances was tried and rejected by the product owner after a look on the device.
 - Recommendation: (a) now and (b) later.
 - Effect: CAN-05 and M2 acceptance 2 and 10 ask for 120 Hz. With this decision, the M2 test checks for zero hitches at the rate that the system chooses. Option (b) stays open for a later milestone.
+- Replaced on 2026-10-17 by D-41. The benchmarks of [m2-fix-plan.md](m2-fix-plan.md) showed that the drawable count, not the GPU time, set the 60 Hz.
 
 ### D-40 Measured pen latency against FEEL-01
 
@@ -327,6 +331,28 @@ Status values: Open, Decided.
 - Raised by the device test of M2 on an iPad Pro 11-inch (M4). In a 240 fps video of fast strokes, the ink reached the pencil tip after about 6 video frames, so about 25 ms. FEEL-01 sets 20 ms as the limit and 13 ms as the goal.
 - PencilKit draws the live stroke alone (D-02, D-33), so Pointer cannot make this part faster with its own renderer. A comparison with Apple Notes, which also uses PencilKit, was not made.
 - Effect: FEEL-01 keeps its numbers. M2 acceptance 1 counts as met with the measured value.
+
+### D-41 Drawable count of the Metal layer
+
+- Decided by the product owner on 2026-10-17: three drawables. This replaces D-39.
+- Raised by the benchmarks of the M2 code review on an iPad Pro 11-inch (M4), section 2 of [m2-fix-plan.md](m2-fix-plan.md).
+- With two drawables, a pan ran at exactly 60 Hz, also at 0.34 ms of GPU time per frame. `nextDrawable()` blocked the main thread for 16.3 ms in each frame.
+- With three drawables, a pan ran at 120 Hz with zero late frames. This was also true with a build in every frame and 5.5 ms of GPU time.
+- Cost: up to one frame more display latency for the Metal ink. The live pen stroke does not use this layer (D-02, D-33). The handoff must still pass FEEL-03.
+- Effect: CAN-05 and M2 acceptance 2 and 10 test 120 Hz again.
+
+### D-42 Thread of the frame encoding
+
+- Decided by the product owner on 2026-10-17: the renderer encodes its frames on a render thread. A `CAMetalDisplayLink` on the run loop of that thread drives the frames and gives the drawable.
+- Raised by the same benchmarks. With three drawables, `nextDrawable()` still blocked the main thread for 5.7 to 7.9 ms in each frame. Touches wait during that time. When no drawable is free, `nextDrawable()` waits up to one second, as Apple documents.
+- The render thread owns `CommittedLayer`, `InkEncoder`, `StrokeStore`, and `DrawListRing`. The main actor sends the camera and the new strokes as values. The handoff callback returns to the main actor.
+- Effect: architecture.md sections 5.1 and 11 change. The low-latency settings of `UIUpdateLink` for the eraser in M4 need a new design, because `UIUpdateLink` runs on the main thread only.
+
+### D-43 Scope of PERF-01
+
+- Decided by the product owner on 2026-10-17: PERF-01 covers the allocations of Pointer code only.
+- Raised by the same benchmarks. A bare Metal command buffer with one render pass makes 33 to 36 heap allocations inside Metal. The rule "no allocation" cannot pass for any Metal frame.
+- The test counts the allocations of a frame and subtracts the count of a bare frame with the same passes. The result must be 0.
 
 ## Points in the request that conflict or are not complete
 

@@ -136,7 +136,7 @@ func split(_ stroke: Stroke, by center: Point, radius: Double) -> [StrokePart] {
 
 ### 3.8 Performance
 
-- `PERF-01` No allocation in the per-frame path and the per-sample path. This covers `touchesMoved`, the frame callback, and the shaders. Buffers use `reserveCapacity` once and are reused. No closures that capture in these paths. Enforcement: `XCTMemoryMetric` and allocation tests in Instruments for each milestone.
+- `PERF-01` No allocation in Pointer code in the per-frame path and the per-sample path. This covers `touchesMoved`, the frame callback, and the shaders. Buffers use `reserveCapacity` once and are reused. No closures that capture in these paths. The allocations inside Metal do not count (D-43). Enforcement: an allocation test that subtracts the count of a bare Metal frame with the same passes, and allocation tests in Instruments for each milestone.
 - `PERF-02` No disk access and no `Task` creation on the main actor in the per-frame path. Enforcement: review and signposts.
 - `PERF-03` Each hot path has an `OSSignposter` interval and a performance test with a baseline (see [architecture.md](architecture.md) section 12). Enforcement: CI on a device.
 

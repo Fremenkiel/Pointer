@@ -175,6 +175,8 @@ A `UIHoverGestureRecognizer` with `allowedTouchTypes = [.pencil]` shows a small 
 
 ### 5.1 Frame loop
 
+D-41 and D-42 change this section: the layer uses three drawables, and a `CAMetalDisplayLink` on a render thread drives the frames. Phase 1 of [m2-fix-plan.md](m2-fix-plan.md) rewrites this section with the code. Until then, the M2 configuration below stays in the code.
+
 `CanvasRenderer` owns the `CAMetalLayer` and one `UIUpdateLink`. Use this configuration:
 
 ```swift
@@ -361,7 +363,7 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 ## 11. Concurrency
 
 - Swift 6 language mode with complete strict concurrency in every target.
-- UI types, the canvas, and the renderer run on the main actor.
+- UI types and the canvas run on the main actor. The renderer encodes its frames on a render thread (D-42). Until phase 1 of [m2-fix-plan.md](m2-fix-plan.md) is done, the renderer still runs on the main actor.
 - `SQLiteLibraryRepository` is an actor. It owns the only database connection that writes. All SQL goes through it.
 - The canvas sends the changed rows to the repository and the IDs of changed strokes to the renderer. It never shares mutable state (see [data-model.md](data-model.md) section 8).
 - PDF export runs in a `Task` off the main actor. Snapshots run inside the repository actor. They report progress to the main actor.
