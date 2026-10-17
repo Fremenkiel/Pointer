@@ -103,4 +103,42 @@ struct PencilKitParityTests {
         #expect(comparison.differingPixels == 0, "\(comparison)")
         #expect(comparison.maxDifference <= 32, "\(comparison)")
     }
+
+    /// Dense points with one long jump: the renderer draws this stroke as three level-of-detail
+    /// runs (docs/m2-fix-plan.md, phase 3, task 2).
+    private static func jumpPath() -> [CGPoint] {
+        (0..<200).map { index in
+            let x = index <= 130 ? 20 + Double(index) * 0.1 : 150 + Double(index - 131) * 0.1
+            return CGPoint(x: x, y: 60 + sin(x / 4) * 3)
+        }
+    }
+
+    @Test("A stroke with level-of-detail runs matches the PencilKit stroke at the run boundaries")
+    func runBoundaries() throws {
+        let pointSize = PencilKitStrokeConverter.pointSize(drawingWidth: PenTool.width)
+        let live = Fixtures.pencilKitStroke(Self.jumpPath(), pointSize: pointSize)
+        let camera = Camera(center: .zero, zoom: 1)
+        var converter = PencilKitStrokeConverter(
+            factory: Fixtures.factory(),
+            canvasID: Fixtures.canvas
+        )
+        let strokes = try converter.convert(live, camera: camera, viewSize: viewSize)
+        let metal = try CanvasRenderer().renderImage(
+            of: strokes,
+            camera: camera,
+            viewSize: viewSize,
+            displayScale: 2
+        )
+        let pencilKit = try #require(
+            Fixtures.pencilKitImage(
+                PKDrawing(strokes: [live]),
+                size: CGSize(width: 200, height: 120),
+                scale: 2
+            )
+        )
+        let comparison = InkComparison(metal, pencilKit)
+        #expect(abs(comparison.inkRatio - 1) < 0.03, "Ink ratio \(comparison.inkRatio)")
+        #expect(comparison.differingPixels == 0, "\(comparison)")
+        #expect(comparison.maxDifference <= 32, "\(comparison)")
+    }
 }

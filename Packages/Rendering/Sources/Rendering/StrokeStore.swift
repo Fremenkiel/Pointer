@@ -23,8 +23,10 @@ final class StrokeStore {
         let origin: Point
         let radius: Float
         let pointCount: Int
-        let meanSpacing: Double
-        let maxSpacing: Double
+        /// The index of the first block spacing of the stroke in `blockSpacings`.
+        let firstBlock: Int
+        /// The number of blocks of the stroke (`DetailRuns`).
+        let blockCount: Int
         var block: ArenaBlock?
         var lastDrawnFrame: UInt64 = 0
     }
@@ -35,6 +37,8 @@ final class StrokeStore {
     /// The strokes by slot. Only an upload into the arena reads them.
     private var strokes: [Stroke] = []
     private var slotByID: [StrokeID: Int] = [:]
+    /// The mean and the largest neighbor spacing of each block of each stroke, in canvas points.
+    private var blockSpacings: [SIMD2<Float>] = []
     private(set) var grid = SpatialGrid<Int>(cellSize: gridCellSize)
     let arena: PointArena
 
@@ -58,14 +62,15 @@ final class StrokeStore {
             infos.count < Limits.maxStrokesPerCanvas,
             "The renderer holds the stroke limit"
         )
-        let spacing = Self.spacing(of: stroke.points)
         let slot = infos.count
+        let firstBlock = blockSpacings.count
+        DetailRuns.appendSpacings(of: stroke.points, to: &blockSpacings)
         let info = DrawInfo(
             origin: stroke.origin,
             radius: stroke.width / 2,
             pointCount: stroke.points.count,
-            meanSpacing: spacing.mean,
-            maxSpacing: spacing.max
+            firstBlock: firstBlock,
+            blockCount: blockSpacings.count - firstBlock
         )
         infos.append(info)
         strokes.append(stroke)
@@ -123,22 +128,12 @@ final class StrokeStore {
         return result
     }
 
-    /// Returns the mean and the largest distance between neighbor control points.
-    static func spacing(of points: InkPoints) -> (mean: Double, max: Double) {
-        let values = points.values
-        precondition(values.count >= 2, "A stroke has 2 points at least")
-        var total = 0.0
-        var largest = 0.0
-        for index in 1..<values.count {
-            let dx = Double(values[index].x - values[index - 1].x)
-            let dy = Double(values[index].y - values[index - 1].y)
-            let length = (dx * dx + dy * dy).squareRoot()
-            total += length
-            largest = max(largest, length)
-        }
-        // Equal segments can give a mean one rounding step above the largest spacing.
-        let mean = min(total / Double(values.count - 1), largest)
-        assert(mean >= 0 && mean.isFinite, "The mean spacing \(mean) is invalid")
-        return (mean, largest)
+    /// Returns the block spacings of a stroke.
+    ///
+    /// - Precondition: `info` is the draw data of a stroke of this store.
+    func spacings(of info: DrawInfo) -> ArraySlice<SIMD2<Float>> {
+        precondition(info.firstBlock + info.blockCount <= blockSpacings.count, "Unknown blocks")
+        precondition(info.blockCount >= 1, "A stroke has one block at least")
+        return blockSpacings[info.firstBlock..<(info.firstBlock + info.blockCount)]
     }
 }

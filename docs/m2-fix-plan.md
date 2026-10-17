@@ -105,7 +105,12 @@ Status on 2026-10-17: phase 2 is done. For task 4, the margin stays 2x (D-47). T
 
 ### Phase 3: level of detail
 
-Status on 2026-10-17: task 1 is done, with one target missed by a small amount. At 1.0 pixel, the dense content at zoom 0.25 draws 300,000 instances, and the largest pixel difference is 12. In three runs, the GPU time ratio against 0.5 pixels was 0.61, 0.58, and 0.59 (1.82 against 3.00 ms, 1.79 against 3.09 ms, 1.83 against 3.08 ms). The target of D-46 is at most 0.58, so only one run met it. The run-to-run noise of about 4 % is as large as the miss.
+Status on 2026-10-17: task 1 is done, with one target missed by a small amount. At 1.0 pixel, the dense content at zoom 0.25 draws 300,000 instances, and the largest pixel difference is 12. In three runs, the GPU time ratio against 0.5 pixels was 0.61, 0.58, and 0.59 (1.82 against 3.00 ms, 1.79 against 3.09 ms, 1.83 against 3.08 ms). The target of D-46 is at most 0.58, so only one run met it. The run-to-run noise of about 4 % is as large as the miss. After task 2, two more runs gave 0.54 (1.49 against 2.74 ms and 1.49 against 2.73 ms).
+
+Task 2 is done. A test stroke of 1,000 control points 0.001 points apart with one jump of 100 points gives the 31,968 instances of the plan with one level of detail per stroke, and at most 2,100 with the runs. Two changes go beyond the text of the task:
+
+- Neighbor blocks merge when their pieces are equal, and the merged run computes its stride from its own spacing. Without the merge, each run boundary added a used point, and the dense content at zoom 0.25 drew 340,000 instances instead of 300,000.
+- At a run boundary, the neighbor point uses the stride of the neighbor run, not the stride of the run itself. With its own stride, the two curves did not meet, and a split stroke differed from PencilKit by 34 of 255 at zoom 1. A parity test now covers a split stroke.
 
 1. Set `LevelOfDetail.minimumPixelSpacing` to 1.0.
    - Done when: the dense content at zoom 0.25 has at most 300,000 instances, and its GPU time is at most 0.58 times the GPU time at 0.5 pixels (D-46). The largest pixel difference is at or under 17. The benchmark gave 300,000 instances, 2.62 ms against 4.68 ms (0.56), and 12 of 255. `LevelOfDetailPerformanceTests` gave 1.81 ms against 3.10 ms (0.58) on 2026-10-17.

@@ -30,7 +30,8 @@ final class InkRig {
         for stroke in strokes {
             store.add(stroke)
         }
-        let ring = try DrawListRing(device: device, capacity: max(1, strokes.count))
+        let entries = strokes.reduce(0) { $0 + DetailRuns.blockCount(pointCount: $1.points.count) }
+        let ring = try DrawListRing(device: device, capacity: max(1, entries))
         encoder = InkEncoder(resources: resources, store: store, ring: ring)
         assert(store.count == strokes.count, "Each stroke has its own slot")
     }
@@ -66,16 +67,16 @@ final class InkRig {
 
     /// Returns the draw instances of the slots at the spacing of the encoder.
     func instanceCount(slots: [Int], target: InkTarget) -> Int {
-        slots.reduce(0) { total, slot in
+        var total = 0
+        for slot in slots {
             let info = store.infos[slot]
-            let detail = LevelOfDetail(
+            DetailRuns.forEach(
                 pointCount: info.pointCount,
-                meanSpacing: info.meanSpacing,
-                maxSpacing: info.maxSpacing,
+                spacings: store.spacings(of: info),
                 pixelsPerCanvasPoint: target.pixelsPerCanvasPoint,
                 minimumPixelSpacing: encoder.minimumPixelSpacing
-            )
-            return total + detail.instanceCount
+            ) { total += $0.instanceCount }
         }
+        return total
     }
 }

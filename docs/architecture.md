@@ -259,6 +259,8 @@ Level of detail:
 
 - At low zoom, the draw list skips control points so that the points it uses are at least 1 pixel apart on the screen (`LevelOfDetail.minimumPixelSpacing`). At zoom 0.25, the 20,000 dense strokes of the performance tests then draw 300,000 instances instead of 560,000 at the 0.5 pixels of M2.
 - At high zoom, each segment is cut into pieces so that the curve stays smooth. The number of pieces depends on the zoom, and a named limit bounds it.
+- A stroke is cut into blocks of 64 segments (`DetailRuns`). Neighbor blocks with the same pieces per segment merge into one run, and each run gets its stride and its pieces from its own spacing. Thus one long segment sets the pieces of its own block only. A stroke whose blocks all have the same pieces stays one run with the detail of the whole stroke.
+- Each run is one draw entry. At a boundary between two runs, the shader reads the real neighbor point of the stroke at the stride of the neighbor run, so the curves of the two runs meet exactly. At the ends of the stroke, it uses the mirrored phantom points (section 4.3).
 
 Each stroke stores its origin in `Double` and its points as `Float` offsets from that origin. Per frame, the CPU computes the offset of the stroke from the camera in `Double`. The CPU converts it to `Float` only after the camera position is removed. Thus precision stays correct at any distance from the canvas origin.
 

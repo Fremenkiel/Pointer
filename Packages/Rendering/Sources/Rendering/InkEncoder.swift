@@ -43,23 +43,24 @@ final class InkEncoder {
         var instances = 0
         for slot in slots[cursor...] {
             let isFirst = position == cursor
-            guard ring.remaining > 0, isFirst || instances < options.instanceBudget else { break }
+            guard ring.remaining >= store.infos[slot].blockCount else { break }
+            guard isFirst || instances < options.instanceBudget else { break }
             guard isFirst || !Self.isPastDeadline(position - cursor, options.deadline) else {
                 break
             }
-            let entry = makeEntry(
+            instances += appendEntries(
                 slot,
                 target: target,
                 frame: options.frame,
                 firstInstance: instances
             )
-            if let entry {
-                ring.append(entry)
-                instances += Int(entry.pieces) * (Self.usedPointCount(entry) - 1)
-            }
             position += 1
         }
-        assert(position > cursor || cursor == slots.count, "A pass must advance")
+        assert(
+            position > cursor || cursor == slots.count
+                || ring.remaining < store.infos[slots[cursor]].blockCount,
+            "A pass must advance unless the draw list is full"
+        )
         let draw = InkDraw(
             entries: firstEntry..<ring.used,
             instances: instances,
@@ -69,44 +70,56 @@ final class InkEncoder {
         return position
     }
 
-    private func makeEntry(
+    /// Writes one draw entry per level-of-detail run of a stroke.
+    ///
+    /// - Returns: The instances of the entries, or 0 if the arena has no room for the stroke.
+    private func appendEntries(
         _ slot: Int,
         target: InkTarget,
         frame: UInt64,
         firstInstance: Int
-    ) -> StrokeDrawEntry? {
+    ) -> Int {
         guard let info = store.residentInfo(of: slot, frame: frame), let block = info.block else {
-            return nil
+            return 0
         }
-        let detail = LevelOfDetail(
+        // The subtraction runs in Double before the conversion to Float (architecture.md 5.3).
+        let delta = info.origin - target.camera.center
+        let origin = SIMD2(Float(delta.dx), Float(delta.dy))
+        var instances = 0
+        DetailRuns.forEach(
             pointCount: info.pointCount,
-            meanSpacing: info.meanSpacing,
-            maxSpacing: info.maxSpacing,
+            spacings: store.spacings(of: info),
             pixelsPerCanvasPoint: target.pixelsPerCanvasPoint,
             minimumPixelSpacing: minimumPixelSpacing
-        )
-        // The subtraction runs in Double before the conversion to Float (architecture.md 5.3).
-        let origin = info.origin - target.camera.center
-        return StrokeDrawEntry(
-            origin: SIMD2(Float(origin.dx), Float(origin.dy)),
-            firstPoint: UInt32(block.start),
-            pointCount: UInt32(info.pointCount),
-            stride: UInt32(detail.stride),
-            pieces: UInt32(detail.piecesPerSegment),
-            firstInstance: UInt32(firstInstance),
-            radius: info.radius
-        )
+        ) { run in
+            let detail = StrokeDrawEntry.packDetail(
+                stride: run.stride,
+                pieces: run.pieces,
+                nextOffset: run.nextOffset
+            )
+            ring.append(
+                StrokeDrawEntry(
+                    origin: origin,
+                    firstPoint: UInt32(block.start + run.start),
+                    pointCount: UInt32(run.end - run.start + 1),
+                    firstSegment: StrokeDrawEntry.packStart(
+                        start: run.start,
+                        previousOffset: run.previousOffset
+                    ),
+                    detail: detail,
+                    firstInstance: UInt32(firstInstance + instances),
+                    radius: info.radius
+                )
+            )
+            instances += run.instanceCount
+        }
+        assert(instances > 0, "A resident stroke draws one instance at least")
+        return instances
     }
 
     /// Reading the clock costs time too, so the pass checks it every few strokes.
     private static func isPastDeadline(_ drawn: Int, _ deadline: TimeInterval) -> Bool {
         drawn.isMultiple(of: deadlineCheckInterval) && CACurrentMediaTime() > deadline
-    }
-
-    private static func usedPointCount(_ entry: StrokeDrawEntry) -> Int {
-        let last = Int(entry.pointCount) - 1
-        let stride = Int(entry.stride)
-        return (last + stride - 1) / stride + 1
     }
 
     private func encode(

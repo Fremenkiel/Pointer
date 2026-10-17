@@ -59,7 +59,9 @@ extension FrameRenderer {
         let store = StrokeStore(arena: arena)
         let slots = strokes.map { store.add($0) }
         assert(store.count == Set(strokes.map(\.id)).count, "Each stroke has one slot")
-        let ring = try DrawListRing(device: resources.device, capacity: max(1, strokes.count))
+        // A stroke writes at most one draw entry per block.
+        let entries = strokes.reduce(0) { $0 + DetailRuns.blockCount(pointCount: $1.points.count) }
+        let ring = try DrawListRing(device: resources.device, capacity: max(1, entries))
         let encoder = InkEncoder(resources: resources, store: store, ring: ring)
         ring.beginFrame(commandBuffer)
         let options = InkPassOptions(clear: true, instanceBudget: .max, frame: 1)
