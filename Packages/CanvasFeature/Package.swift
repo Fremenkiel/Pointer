@@ -15,7 +15,7 @@ let package = Package(
         .package(path: "../InkEngine"),
         .package(path: "../Model"),
         .package(path: "../Persistence"),
-        .package(path: "../Rendering")
+        .package(path: "../Rendering"),
     ],
     targets: [
         .target(
@@ -27,7 +27,7 @@ let package = Package(
                 .product(name: "InkEngine", package: "InkEngine"),
                 .product(name: "Model", package: "Model"),
                 .product(name: "Persistence", package: "Persistence"),
-                .product(name: "Rendering", package: "Rendering")
+                .product(name: "Rendering", package: "Rendering"),
             ],
             swiftSettings: [.treatAllWarnings(as: .error)]
         )

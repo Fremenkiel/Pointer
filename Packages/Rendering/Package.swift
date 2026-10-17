@@ -11,7 +11,7 @@ let package = Package(
     dependencies: [
         .package(path: "../Geometry"),
         .package(path: "../InkEngine"),
-        .package(path: "../Model")
+        .package(path: "../Model"),
     ],
     targets: [
         .target(
@@ -19,7 +19,7 @@ let package = Package(
             dependencies: [
                 .product(name: "Geometry", package: "Geometry"),
                 .product(name: "InkEngine", package: "InkEngine"),
-                .product(name: "Model", package: "Model")
+                .product(name: "Model", package: "Model"),
             ],
             swiftSettings: [.treatAllWarnings(as: .error)]
         )

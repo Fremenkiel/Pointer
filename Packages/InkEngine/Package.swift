@@ -10,14 +10,14 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Geometry"),
-        .package(path: "../Model")
+        .package(path: "../Model"),
     ],
     targets: [
         .target(
             name: "InkEngine",
             dependencies: [
                 .product(name: "Geometry", package: "Geometry"),
-                .product(name: "Model", package: "Model")
+                .product(name: "Model", package: "Model"),
             ],
             swiftSettings: [.treatAllWarnings(as: .error)]
         )

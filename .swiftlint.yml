@@ -1,0 +1,200 @@
+# SwiftLint configuration for Pointer. See docs/code-of-code.md section 4.
+# Each custom rule protects one rule of the standard. Its name is the rule ID,
+# and its message names the fix (Threema pattern). `swift format` owns the format.
+
+included:
+  - PointerApp
+  - Packages
+  - Scripts
+
+excluded:
+  - "**/.build"
+  - Scripts/Fixtures
+  - Spikes
+
+disabled_rules:
+  - todo # replaced by the custom rule doc_04_todo
+  - trailing_comma # swift format adds trailing commas (STYLE-04)
+
+opt_in_rules:
+  - fallthrough
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+
+# SAFE-01
+force_unwrapping:
+  severity: error
+force_try:
+  severity: error
+force_cast:
+  severity: error
+implicitly_unwrapped_optional:
+  severity: error
+
+# FLOW-02
+fallthrough:
+  severity: error
+
+# SIZE-01 to SIZE-05
+function_body_length:
+  warning: 40
+  error: 60
+cyclomatic_complexity:
+  warning: 8
+  error: 12
+type_body_length:
+  warning: 250
+  error: 250
+file_length:
+  warning: 400
+  error: 400
+  ignore_comment_only_lines: false
+function_parameter_count:
+  warning: 5
+  error: 5
+line_length:
+  warning: 100
+  error: 100
+
+# STYLE-02 allows short standard names such as `id`, `x`, and `y`.
+identifier_name:
+  min_length: 1
+
+custom_rules:
+  arch_03_tier_a_imports:
+    name: "ARCH-03"
+    regex: '\bimport\s+(UIKit|SwiftUI|Metal|MetalKit|CoreGraphics|QuartzCore)\b'
+    included: 'Packages/(Geometry|Model|InkEngine|Persistence)/'
+    match_kinds: [keyword, identifier]
+    message: "Tier A imports only Foundation, CryptoKit, os, and Tier A packages. Move UI or GPU code to a Tier B or C package."
+    severity: error
+
+  arch_04_sqlite:
+    name: "ARCH-04"
+    regex: '\bimport\s+SQLite3\b'
+    excluded: 'Packages/Persistence/'
+    match_kinds: [keyword, identifier]
+    message: "Only Persistence touches the database. Add a method to LibraryRepository instead."
+    severity: error
+
+  arch_04_file_system:
+    name: "ARCH-04"
+    regex: '\bFileManager\b'
+    excluded: ['Packages/Persistence/', 'PointerApp/', 'Scripts/']
+    match_kinds: [identifier, typeidentifier]
+    message: "Only Persistence touches the file system. Add a method to the repository instead."
+    severity: error
+
+  arch_04_metal:
+    name: "ARCH-04"
+    regex: '\bimport\s+Metal(Kit)?\b|\bMTLDevice\b|\bMTLCreateSystemDefaultDevice\b'
+    excluded: 'Packages/Rendering/'
+    match_kinds: [keyword, identifier, typeidentifier]
+    message: "Only Rendering touches Metal. Add a method to CanvasRenderer instead."
+    severity: error
+
+  arch_04_pdf:
+    name: "ARCH-04"
+    regex: '\bUIGraphicsPDFRenderer\b'
+    excluded: 'Packages/Export/'
+    match_kinds: [identifier, typeidentifier]
+    message: "Only Export makes PDFs. Call PDFExporter instead."
+    severity: error
+
+  arch_05_singletons:
+    name: "ARCH-05"
+    regex: '\b(UIApplication|FileManager|NotificationCenter|UserDefaults|URLSession|UIDevice|UIScreen)\.(shared|default|standard|current|main)\b'
+    excluded: ['PointerApp/', 'Scripts/']
+    match_kinds: [identifier, typeidentifier]
+    message: "Apple singletons appear only in PointerApp. Pass the dependency in through the initializer."
+    severity: error
+
+  arch_07_haptics_sounds:
+    name: "ARCH-07"
+    regex: '\b(UICanvasFeedbackGenerator|UIFeedbackGenerator|UIImpactFeedbackGenerator|UISelectionFeedbackGenerator|UINotificationFeedbackGenerator|CHHapticEngine|CoreHaptics|AVAudioPlayer|AudioServicesPlaySystemSound|AudioServicesPlayAlertSound)\b'
+    match_kinds: [identifier, typeidentifier]
+    message: "The app plays no haptics and no sounds (PEN-06). Remove the call."
+    severity: error
+
+  safe_06_logging:
+    name: "SAFE-06"
+    regex: '\b(print|debugPrint|NSLog|dump)\s*\('
+    excluded: 'Scripts/'
+    match_kinds: [identifier]
+    message: "Use os.Logger with the subsystem and the category of the package. Never log user content."
+    severity: error
+
+  safe_07_fatal_error:
+    name: "SAFE-07"
+    regex: '\bfatalError\s*\('
+    match_kinds: [identifier]
+    message: "Use preconditionFailure with a message. Only an init(coder:) stub can use fatalError, with `// swiftlint:disable:next safe_07_fatal_error`."
+    severity: error
+
+  safe_08_conditional_compilation:
+    name: "SAFE-08"
+    regex: '^\s*#(if|elseif)\s+(?!(!?DEBUG|targetEnvironment\(simulator\)|canImport\(\w+\))\s*$)'
+    message: "Use #if only for DEBUG, targetEnvironment(simulator), and canImport. No feature flags."
+    severity: error
+
+  safe_09_unsafe_types:
+    name: "SAFE-09"
+    regex: '\b(Unsafe(Mutable)?(Raw)?(Buffer)?Pointer|unsafeBitCast|Unmanaged|OpaquePointer)\b'
+    excluded: ['Packages/(Rendering|Export)/.*\+Unsafe\.swift$', 'Packages/Persistence/.*SQLite[^/]*\+Unsafe\.swift$']
+    match_kinds: [identifier, typeidentifier]
+    message: "Unsafe pointers live only in *+Unsafe.swift files of Tier B and in the SQLite wrapper. Keep the public API on Data, String, and Swift numbers."
+    severity: error
+
+  safe_09_unsafe_attributes:
+    name: "SAFE-09"
+    regex: 'nonisolated\(unsafe\)|@unchecked\s+Sendable|@preconcurrency\b'
+    excluded: ['Packages/(Rendering|Export)/.*\+Unsafe\.swift$', 'Packages/Persistence/.*SQLite[^/]*\+Unsafe\.swift$']
+    message: "Do not turn off concurrency checks. Make the type Sendable or isolate it to an actor."
+    severity: error
+
+  scope_02_final_class:
+    name: "SCOPE-02"
+    regex: '(?<!\bfinal\s)\bclass(?=\s+[A-Z])'
+    match_kinds: [keyword]
+    message: "Mark the class final. Write the modifiers in the order `access final class`."
+    severity: error
+
+  scope_04_private_property_wrappers:
+    name: "SCOPE-04"
+    regex: '@(State|Environment|Binding|FocusState|StateObject|ObservedObject|Bindable)\b(\([^)]*\))?\s+(?!private\b)'
+    message: "Make the SwiftUI property wrapper private. Pass values in through the initializer."
+    severity: error
+
+  style_03_raw_ui_values:
+    name: "STYLE-03"
+    regex: '\.(padding|frame)\([^)]*\b\d+(\.\d+)?\b|\b(Color|UIColor)\([^)]*\b\d+(\.\d+)?\b'
+    message: "Take sizes and colors from DesignSystem, not from number literals."
+    severity: error
+
+  doc_04_todo:
+    name: "DOC-04"
+    regex: '\b(TODO|FIXME)\b(?!\(#\d+\))'
+    match_kinds: [comment, doccomment]
+    message: "Write `TODO(#issue): ...` with an issue number."
+    severity: error
+
+  doc_05_file_header:
+    name: "DOC-05"
+    regex: '\A\s*//(?!\s*swift-tools-version)'
+    match_kinds: [comment]
+    message: "No file header comments. Git holds the author and the date."
+    severity: error
+
+  flow_02_labeled_jump:
+    name: "FLOW-02"
+    regex: '\b(break|continue)[ \t]+[A-Za-z_]\w*'
+    match_kinds: [keyword, identifier]
+    message: "No labeled break or continue. Split the loop into a function and return early."
+    severity: error
+
+  flow_03_while_true:
+    name: "FLOW-03"
+    regex: '\bwhile\s+true\b'
+    match_kinds: [keyword]
+    message: "Each loop needs a visible bound. Compare a counter against a named constant in Limits."
+    severity: error
