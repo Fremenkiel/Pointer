@@ -175,7 +175,7 @@ A `UIHoverGestureRecognizer` with `allowedTouchTypes = [.pencil]` shows a small 
 
 ### 5.1 Frame loop
 
-D-41 and D-42 change this section: the layer uses three drawables, and a `CAMetalDisplayLink` on a render thread drives the frames. Phase 1 of [m2-fix-plan.md](m2-fix-plan.md) rewrites this section with the code. Until then, the M2 configuration below stays in the code.
+D-42 changes this section: a `CAMetalDisplayLink` on a render thread drives the frames. Phase 1 of [m2-fix-plan.md](m2-fix-plan.md) rewrites this section with the code. Until then, the `UIUpdateLink` configuration below stays in the code. The layer uses three drawables (D-41).
 
 `CanvasRenderer` owns the `CAMetalLayer` and one `UIUpdateLink`. Use this configuration:
 
@@ -185,7 +185,7 @@ link.wantsImmediatePresentation = false     // true with the eraser in M4, see b
 link.requiresContinuousUpdates = false   // true only while the pencil is down or the camera moves
 link.preferredFrameRateRange = CAFrameRateRange(minimum: 80, maximum: 120, preferred: 120)
 
-metalLayer.maximumDrawableCount = 2
+metalLayer.maximumDrawableCount = 3   // decision D-41
 metalLayer.presentsWithTransaction = false // see below
 metalLayer.pixelFormat = .bgra8Unorm
 metalLayer.colorspace = CGColorSpace(name: CGColorSpace.sRGB)   // decision D-38
@@ -198,7 +198,7 @@ The frame presents with `commandBuffer.present(_:)`. With `presentsWithTransacti
 
 The low-latency settings serve the eraser path, so M2 leaves them off. On the device, they gave a late frame on every second frame of a pan, because they halve the time of each frame. M4 turns them on only while the eraser is active. A build also has a main-thread budget of 2 ms per frame (`RendererConfiguration.buildTimeBudget`).
 
-The live pen stroke does not use this frame loop (section 4.2). If `UIUpdateLink` gives no gain for the eraser, the fallback is `CAMetalDisplayLink` with `preferredFrameLatency = 1`. With two drawables, `nextDrawable()` can block. The renderer must measure the frame time against `UIUpdateInfo.completionDeadlineTime` and log a signpost for each late frame.
+The live pen stroke does not use this frame loop (section 4.2). If `UIUpdateLink` gives no gain for the eraser, the fallback is `CAMetalDisplayLink` with `preferredFrameLatency = 1`. With two drawables, `nextDrawable()` blocked the main thread for 16.3 ms in each frame (D-41). The renderer must measure the frame time against `UIUpdateInfo.completionDeadlineTime` and log a signpost for each late frame.
 
 ### 5.2 Layers in a frame
 

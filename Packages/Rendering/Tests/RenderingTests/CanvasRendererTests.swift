@@ -25,13 +25,13 @@ struct CanvasRendererTests {
         return frames
     }
 
-    @Test("The layer uses the color setup of D-38")
+    @Test("The layer uses the color setup of D-38 and three drawables (D-41)")
     func layerSetup() throws {
         let renderer = try CanvasRenderer()
         let layer = makeLayer(renderer: renderer)
         #expect(layer.pixelFormat == .bgra8Unorm)
         #expect(layer.colorspace?.name == CGColorSpace.sRGB)
-        #expect(layer.maximumDrawableCount == 2)
+        #expect(layer.maximumDrawableCount == CanvasRenderer.drawableCount)
         #expect(!layer.presentsWithTransaction)
     }
 

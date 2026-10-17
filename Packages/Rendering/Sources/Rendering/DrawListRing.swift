@@ -6,7 +6,8 @@ import os
 /// GPU still reads (PERF-01: no allocation per frame).
 @MainActor
 final class DrawListRing {
-    /// The number of buffers. Two drawables and one frame of work give three.
+    /// The number of buffers, so at most three frames wait for the GPU. With three drawables
+    /// (D-41), the pan of the benchmark ran at 120 Hz with this count.
     static let bufferCount = 3
 
     /// The entries per buffer.

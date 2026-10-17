@@ -25,6 +25,9 @@ public final class CanvasRenderer {
     private var viewSize = Size.zero
     private var displayScale = 1.0
 
+    /// The drawables of the Metal layer (D-41).
+    static let drawableCount = 3
+
     /// The camera of the canvas. A change asks for a frame.
     public var camera = Camera(center: .zero, zoom: Limits.standardZoom) {
         didSet { if camera != oldValue { onNeedsFrame?() } }
@@ -78,13 +81,15 @@ public final class CanvasRenderer {
         metalLayer.pixelFormat = InkResources.drawableFormat
         metalLayer.colorspace = CGColorSpace(name: CGColorSpace.sRGB)
         metalLayer.framebufferOnly = true
-        metalLayer.maximumDrawableCount = 2
+        // Three drawables (D-41): with two, `nextDrawable()` blocked the main thread for 16.3 ms
+        // in each frame, and a pan ran at 60 Hz (docs/m2-fix-plan.md section 2).
+        metalLayer.maximumDrawableCount = Self.drawableCount
         // `false`: the frame presents through the command buffer, so the main thread never waits
         // for the GPU. With `true`, `waitUntilScheduled` blocked the main thread during a camera
         // glide, and touches arrived late (device trace of 2026-10-17, docs/m2-plan.md).
         metalLayer.presentsWithTransaction = false
         metalLayer.isOpaque = true
-        assert(metalLayer.maximumDrawableCount == 2, "The layer keeps two drawables")
+        assert(metalLayer.maximumDrawableCount == Self.drawableCount, "The layer keeps 3 drawables")
         assert(metalLayer.colorspace != nil, "The sRGB color space must exist (D-38)")
     }
 

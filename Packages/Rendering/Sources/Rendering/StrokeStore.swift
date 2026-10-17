@@ -12,8 +12,8 @@ final class StrokeStore {
     /// The side length of a grid cell, in canvas points (architecture.md 5.6).
     static let gridCellSize = 512.0
     /// A stroke that a frame drew stays in the arena for this many frames, because the GPU can
-    /// still read it. Two drawables and one frame of work give three.
-    static let framesInFlight: UInt64 = 3
+    /// still read it. The draw-list ring lets at most this many frames wait for the GPU.
+    static let framesInFlight = UInt64(DrawListRing.bufferCount)
     /// The eviction frees this part of the budget beyond the request, so that a pan at the edge
     /// does not evict and load the same strokes again.
     static let evictionMargin = 0.1
