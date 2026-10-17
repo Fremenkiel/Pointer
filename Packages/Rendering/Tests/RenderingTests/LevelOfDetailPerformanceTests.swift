@@ -10,7 +10,7 @@ import XCTest
 @MainActor
 final class LevelOfDetailPerformanceTests: XCTestCase {
     /// The spacings to compare. The first one is the M2 value and gives the reference image.
-    private static let spacings = [LevelOfDetail.minimumPixelSpacing, 0.75, 1.0]
+    private static let spacings = [0.5, 0.75, 1.0]
     /// The largest pixel difference of M2 acceptance 4.
     private static let maxDifference = 17
     /// The texture of the committed layer on the iPad Pro 11-inch: twice the drawable.

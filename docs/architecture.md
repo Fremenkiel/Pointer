@@ -257,7 +257,7 @@ Drawing (vertex pulling, which means that the shader reads the points from the b
 
 Level of detail:
 
-- At low zoom, the draw list skips control points so that the points it uses are at least 0.5 pixels apart on the screen. At zoom 0.25, a stroke of 300 points then draws about 75 pieces.
+- At low zoom, the draw list skips control points so that the points it uses are at least 1 pixel apart on the screen (`LevelOfDetail.minimumPixelSpacing`). At zoom 0.25, the 20,000 dense strokes of the performance tests then draw 300,000 instances instead of 560,000 at the 0.5 pixels of M2.
 - At high zoom, each segment is cut into pieces so that the curve stays smooth. The number of pieces depends on the zoom, and a named limit bounds it.
 
 Each stroke stores its origin in `Double` and its points as `Float` offsets from that origin. Per frame, the CPU computes the offset of the stroke from the camera in `Double`. The CPU converts it to `Float` only after the camera position is removed. Thus precision stays correct at any distance from the canvas origin.

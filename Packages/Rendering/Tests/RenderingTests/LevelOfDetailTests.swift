@@ -18,7 +18,7 @@ struct LevelOfDetailTests {
         #expect(detail.instanceCount == 299)
     }
 
-    @Test("At low zoom, used points are at least half a pixel apart")
+    @Test("At low zoom, used points are at least one pixel apart")
     func lowZoom() {
         let detail = LevelOfDetail(
             pointCount: 300,
@@ -26,8 +26,8 @@ struct LevelOfDetailTests {
             maxSpacing: 0.5,
             pixelsPerCanvasPoint: 0.5
         )
-        #expect(detail.stride == 4)
-        #expect(detail.effectivePointCount == 76)
+        #expect(detail.stride == 8)
+        #expect(detail.effectivePointCount == 39)
         #expect(Double(detail.stride) * 0.25 * 0.5 >= LevelOfDetail.minimumPixelSpacing)
     }
 
@@ -68,7 +68,8 @@ struct LevelOfDetailTests {
             pointCount: 11,
             meanSpacing: 0.1,
             maxSpacing: 0.1,
-            pixelsPerCanvasPoint: 1
+            pixelsPerCanvasPoint: 1,
+            minimumPixelSpacing: 0.5
         )
         #expect(detail.stride == 5)
         #expect(detail.effectivePointCount == 3)

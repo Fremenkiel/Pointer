@@ -4,8 +4,10 @@
 /// `minimumPixelSpacing` apart on the screen. At high zoom, each segment is cut into pieces so
 /// that the curve stays smooth.
 struct LevelOfDetail: Equatable {
-    /// The smallest screen distance between two used control points.
-    static let minimumPixelSpacing = 0.5
+    /// The smallest screen distance between two used control points. 1.0 pixel halved the GPU
+    /// time of dense content at zoom 0.25 against the 0.5 of M2, with a largest pixel difference
+    /// of 12 of 255. 2.0 gave a difference of 58 (docs/m2-fix-plan.md, phase 3).
+    static let minimumPixelSpacing = 1.0
     /// The target screen length of one piece. A piece of 6 pixels with a turn of 0.5 radians
     /// differs from the curve by less than 0.4 pixels.
     static let targetPiecePixels = 6.0
