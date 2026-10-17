@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-34 to D-36 on 2026-10-17.
 
 Status values: Open, Decided.
 
@@ -41,9 +41,9 @@ Status values: Open, Decided.
 | D-31 | UUID version 4 or 7 | Recommendation: version 7 | Open |
 | D-32 | Snapshot procedure: temporary file, second connection, time of the run | Recommendation: all three | Open |
 | D-33 | Fallback after a failed M1 | PencilKit for input capture only, with the custom renderer | Decided (2026-10-17) |
-| D-34 | Eraser and text tool input next to the live `PKCanvasView` | Recommendation: turn off the PencilKit drawing gesture for these tools | Open |
-| D-35 | FEEL-02 and the PencilKit drawing gesture recognizer | Recommendation: change FEEL-02 to a rule about the first sample | Open |
-| D-36 | Camera movement during a pencil stroke | Recommendation: no pan or pinch while the pencil is down | Open |
+| D-34 | Eraser and text tool input next to the live `PKCanvasView` | Turn off the PencilKit drawing gesture for these tools | Decided (2026-10-17) |
+| D-35 | FEEL-02 and the PencilKit drawing gesture recognizer | FEEL-02 keeps only "Ink appears on the first touch sample" | Decided (2026-10-17) |
+| D-36 | Camera movement during a pencil stroke | Ignore finger pan and pinch while the pencil draws | Decided (2026-10-17) |
 
 ## Details
 
@@ -269,7 +269,8 @@ Status values: Open, Decided.
 
 ### D-34 Eraser and text tool input with the live `PKCanvasView`
 
-- Open. Raised by the hybrid of D-02.
+- Decided by the product owner on 2026-10-17: option (a).
+- Raised by the hybrid of D-02.
 - The `PKCanvasView` on top of the canvas gets the pencil touches through its drawing gesture recognizer. The eraser needs every sample while the pencil moves (architecture.md 4.4). PencilKit gives no samples before pencil lift. The PencilKit eraser erases only the `PKDrawing`, which holds no finished ink.
 - Options: (a) turn off `drawingGestureRecognizer` while the eraser or the text tool is active. The canvas view then reads the pencil touches directly, as in the first design. (b) remove the `PKCanvasView` from the view tree while the eraser or the text tool is active.
 - Recommendation: (a). It is one property change, and the eraser keeps the design of architecture.md section 4.4.
@@ -277,14 +278,16 @@ Status values: Open, Decided.
 
 ### D-35 FEEL-02 and the PencilKit drawing gesture recognizer
 
-- Open. Raised by the hybrid of D-02.
+- Decided by the product owner on 2026-10-17: option (a). [product-spec.md](product-spec.md) has the new text of FEEL-02.
+- Raised by the hybrid of D-02.
 - FEEL-02 says: "Ink appears on the first touch sample. No gesture recognizer delays the start of a stroke." PencilKit draws through its own gesture recognizer. In M1, the product owner saw no delay at the start of a PencilKit stroke.
 - Options: (a) change FEEL-02 to "Ink appears on the first touch sample" and remove the sentence about gesture recognizers. (b) keep FEEL-02 as it is and accept the PencilKit gesture recognizer as an exception.
 - Recommendation: (a). The requirement then states the effect that the user sees, and a test can measure it.
 
 ### D-36 Camera movement during a pencil stroke
 
-- Open. Raised by the hybrid of D-02.
+- Decided by the product owner on 2026-10-17: option (a). Finger pan and pinch do nothing while the pencil draws.
+- Raised by the hybrid of D-02.
 - The `PKCanvasView` draws the live stroke at zoom 1 and does not follow the camera. A finger pan or pinch during a pencil stroke moves the finished ink but not the live stroke.
 - Options: (a) ignore finger pan and pinch while the pencil is down. (b) end the stroke with a handoff when the camera starts to move. (c) move the `PKCanvasView` with a transform that follows the camera.
 - Recommendation: (a). Option (b) splits one stroke into two. Option (c) scales the `PKCanvasView` and can bring back the tile flicker of PencilKit at zoom scales other than 1x.

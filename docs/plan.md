@@ -49,7 +49,7 @@ Acceptance:
 - `Rendering`: committed layer, capsule shader, culling, presented handler for the handoff.
 - `CanvasFeature`: canvas view, live `PKCanvasView`, `PencilKitStrokeConverter`, handoff, finger pan and pinch, camera.
 
-Before M2, the product owner decides D-35 and D-36. D-34 can wait for M4.
+Known issue from M1: in the hybrid spike, the live stroke and the finished stroke differ in style and width. After the engine parts above work, fix this difference before M2 is done. Acceptance 4 and 5 test it. [architecture.md](architecture.md) section 4.2 lists possible causes.
 
 Acceptance:
 

@@ -56,7 +56,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 ### 3.4 Drawing feel
 
 - FEEL-01: The time from pencil movement to visible ink is at most 20 ms on a 120 Hz iPad Pro. The target is 13 ms or less. See [research.md](research.md) section 3.
-- FEEL-02: Ink appears on the first touch sample. No gesture recognizer delays the start of a stroke.
+- FEEL-02: Ink appears on the first touch sample (D-35).
 - FEEL-03: A stroke does not change shape after the pencil lifts.
 - FEEL-04: No frame is dropped while you draw.
 

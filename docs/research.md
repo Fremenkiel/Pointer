@@ -104,7 +104,7 @@ Results:
 |---|---|
 | PencilKit | No visible trail behind the pencil tip. |
 | Custom | The ink trailed the pencil tip in every configuration. |
-| Hybrid | The same as PencilKit. No visible change at the handoff. |
+| Hybrid | The live stroke has the same latency as PencilKit. At the handoff, the stroke changes in style and width in a way that the user can see (FEEL-03 fails). |
 
 These points of M1 have no measured value:
 

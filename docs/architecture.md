@@ -66,12 +66,10 @@ Dependencies flow down. Features get repositories and services through their ini
 The canvas view holds the Metal view and one `PKCanvasView` on top of it. The `PKCanvasView` has a clear background and `drawingPolicy = .pencilOnly`. It never zooms or scrolls.
 
 - With the pen tool, `.pencil` touches go to the drawing gesture recognizer of the `PKCanvasView`. PencilKit draws the live stroke.
-- With the eraser tool or the text tool, the drawing gesture recognizer is off. `.pencil` touches go to the active tool directly, in `touchesBegan`, `touchesMoved`, `touchesEnded`, and `touchesCancelled`. Decision D-34 is open for this point.
+- With the eraser tool or the text tool, the drawing gesture recognizer is off. `.pencil` touches go to the active tool directly, in `touchesBegan`, `touchesMoved`, `touchesEnded`, and `touchesCancelled`. See decision D-34.
 - `.direct` (finger) touches go to gesture recognizers with `allowedTouchTypes = [.direct]`: one-finger pan, two-finger pinch, tap, and long press.
 
-The view sets `isMultipleTouchEnabled = true`. A finger that touches during a pencil stroke does not cancel the stroke. Decision D-36 is open for camera movement during a pencil stroke.
-
-FEEL-02 says that no gesture recognizer delays the start of a stroke. The PencilKit drawing gesture recognizer conflicts with that text. Decision D-35 is open for this point.
+The view sets `isMultipleTouchEnabled = true`. A finger that touches during a pencil stroke does not cancel the stroke. While the pencil draws, the pan and pinch gesture recognizers ignore the finger, so the camera does not move (decision D-36).
 
 ### 4.2 Pen strokes
 
@@ -85,10 +83,11 @@ PencilKit gives no samples before pencil lift. The pen tool works in these steps
 
 The `PKDrawing` of the `PKCanvasView` holds at most the strokes that wait for the handoff. Pointer never stores PencilKit data.
 
-The finished stroke must look the same as the live stroke (FEEL-03). Two risks need a test in M2:
+The finished stroke must look the same as the live stroke (FEEL-03). In the M1 hybrid spike, the product owner saw a clear difference in style and width at the handoff. M2 must fix it (see [plan.md](plan.md), M2). Possible causes to test:
 
+- The PencilKit monoline width and the capsule width use different definitions. The spike drew capsules with half the tool width as the radius and ignored the point sizes of the `PKStroke`.
+- The monoline rendering of PencilKit has its own edge and end shape, which capsules do not copy.
 - PencilKit clamps the monoline width to `PKInkingTool.InkType.monoline.validWidthRange`. At zoom 0.25 or 8, the live width can differ from the finished width.
-- The monoline rendering of PencilKit and the capsule rendering of the renderer can differ by up to one pixel at the edge.
 
 ### 4.3 Curve smoothing
 
