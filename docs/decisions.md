@@ -54,7 +54,7 @@ Status values: Open, Decided, Replaced.
 | D-44 | Window access in the frame-loop test | One inline lint exception for `UIApplication.shared` | Decided (2026-10-17) |
 | D-45 | Dense content of the performance tests | Two contents: the M2 content and the benchmark content | Decided (2026-10-17) |
 | D-46 | Unit of the GPU-time target of phase 3, task 1 | A ratio: at most 0.58 times the GPU time at 0.5 pixels | Decided (2026-10-17) |
-| D-47 | Texture margin of phase 2, task 4: 2x or 1.5x | Recommendation: keep 2x | Open |
+| D-47 | Texture margin of phase 2, task 4: 2x or 1.5x | Keep 2x | Decided (2026-10-17) |
 
 ## Details
 
@@ -383,7 +383,8 @@ Status values: Open, Decided, Replaced.
 
 ### D-47 Texture margin of phase 2, task 4
 
-- Open. Raised by phase 2, task 4 of [m2-fix-plan.md](m2-fix-plan.md) on 2026-10-17.
+- Decided by the product owner on 2026-10-17: option (a), keep 2x.
+- Raised by phase 2, task 4 of [m2-fix-plan.md](m2-fix-plan.md) on 2026-10-17.
 - Task 4 says: if 1.5x gives no uncovered frames at pan speeds up to 2,000 view points per second, use 1.5x. Task 2 asks for at most 20 builds and a mean GPU time under 1 ms in a 4-second pan of 20,000 dense strokes. At 1.5x, task 4 passes and task 2 fails.
 - Measured on the iPad Pro 11-inch (M4), 4 seconds each, with the rebuild policy:
 
@@ -395,7 +396,7 @@ Status values: Open, Decided, Replaced.
 
 - Options: (a) keep 2x. Task 2 passes, and the textures keep 13.5 MB more on the 11-inch iPad and about 20 MB more on the 13-inch iPad. (b) use 1.5x and accept about twice the builds and about 0.5 ms more GPU time per frame. (c) use 1.5x with a smaller margin reserve than a quarter, which gives fewer builds but less room before a pan shows uncovered screen.
 - Recommendation: (a). The memory saving is small against the 300 MB budget of a canvas, and the GPU time of a pan is the cost that the user feels.
-- The code keeps 2x (`CommittedLayer.textureScale`) until the product owner decides.
+- Effect: `CommittedLayer.textureScale` stays 2. Task 2 of phase 2 keeps its targets.
 
 ## Points in the request that conflict or are not complete
 

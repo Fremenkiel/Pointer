@@ -188,7 +188,7 @@ These are the baselines of 2026-10-17 after phase 1, on the iPad Pro 11-inch (M4
 | Handwriting, 200,000 strokes, zoom | 120.0 | 0 of 479 | 0.00, 0.01 | 1.30, 3.18 | 5.11 | 242 | 0 | 68 |
 | Dense, 10 strokes, pan (`testPanFewStrokes`) | 120.0 | 0 of 479 | 0.00, 0.01 | 0.27, 0.35 | 1.61 | 480 | 0 | 46 |
 
-These are the baselines of 2026-10-17 after phase 2, tasks 1 to 3: the rebuild policy and an instance budget of 125,000 per frame. The texture margin is still 2x (D-47):
+These are the baselines of 2026-10-17 after phase 2, tasks 1 to 3: the rebuild policy and an instance budget of 125,000 per frame. The texture margin stays 2x (D-47):
 
 | Run | Frame rate | Intervals over 12.5 ms | Builds | GPU ms per frame, mean | Uncovered frames | Allocations per frame, p50 |
 |---|---|---|---|---|---|---|

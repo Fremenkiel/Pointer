@@ -89,7 +89,7 @@ Status on 2026-10-17: phase 1 is done. For task 4, the film shows 4 video frames
 
 ### Phase 2: rebuild policy
 
-Status on 2026-10-17: tasks 1 to 3 are done. Task 4 waits for decision D-47. The results are in [m2-plan.md](m2-plan.md) section 4.4. With the policy, most frames build nothing, and a build chunk of 250,000 instances made late frames. The instance budget per frame is now 125,000.
+Status on 2026-10-17: phase 2 is done. For task 4, the margin stays 2x (D-47). The results are in [m2-plan.md](m2-plan.md) section 4.4. With the policy, most frames build nothing, and a build chunk of 250,000 instances made late frames. The instance budget per frame is now 125,000.
 
 1. In `CommittedLayer`, start a build only in one of these cases:
    - No front texture exists.
