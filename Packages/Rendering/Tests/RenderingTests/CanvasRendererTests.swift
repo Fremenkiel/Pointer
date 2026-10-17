@@ -59,7 +59,7 @@ struct CanvasRendererTests {
         )
         let layer = makeLayer(renderer: renderer)
         let strokes = (0..<20).map {
-            StrokeBuilder.curve(at: Point(x: -60, y: Double($0) * 3 - 30), seed: UInt8($0))
+            StrokeBuilder.curve(at: Point(x: -60, y: Double($0) * 3 - 30), seed: $0)
         }
         renderer.load(strokes)
         let frames = drain(renderer, layer: layer)
@@ -114,7 +114,7 @@ struct CanvasRendererTests {
         let arena = try PointArena(device: device, initialSlabs: 1, byteBudget: 1 << 20)
         let store = StrokeStore(arena: arena)
         let slots = (0..<strokes).map {
-            store.add(StrokeBuilder.curve(at: Point(x: 0, y: Double($0)), seed: UInt8($0)))
+            store.add(StrokeBuilder.curve(at: Point(x: 0, y: Double($0)), seed: $0))
         }
         let ring = try DrawListRing(device: device, capacity: 128)
         return (InkEncoder(resources: renderer.resources, store: store, ring: ring), slots)

@@ -11,20 +11,24 @@ enum StrokeBuilder {
         rawValue: UUID(uuid: (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
     )
 
-    /// Makes one stroke through canvas points, with a fresh ID.
-    static func stroke(_ points: [Point], width: Float = 2, seed: UInt8 = 0) -> Stroke {
+    /// Makes one stroke through canvas points. Two strokes with different seeds have different
+    /// IDs, because the ID holds the full seed.
+    ///
+    /// - Precondition: `seed` fits into 48 bits.
+    static func stroke(_ points: [Point], width: Float = 2, seed: Int = 0) -> Stroke {
+        precondition(seed >= 0 && seed < 1 << 48, "Seed \(seed) does not fit into 48 bits")
         let origin = points[0]
         let ink = points.map { point in
             InkPoint(x: Float(point.x - origin.x), y: Float(point.y - origin.y), force: 1, time: 0)
         }
-        var bytes: [UInt8] = Array(repeating: 0, count: 16)
-        bytes[0] = seed
-        bytes[1] = UInt8(truncatingIfNeeded: points.count)
-        bytes[2] = UInt8(truncatingIfNeeded: Int(origin.x))
-        bytes[3] = UInt8(truncatingIfNeeded: Int(origin.y))
+        let header = [points.count, Int(origin.x), Int(origin.y)].map {
+            UInt8(truncatingIfNeeded: $0)
+        }
+        let tail = (0..<6).map { UInt8(truncatingIfNeeded: seed >> (40 - $0 * 8)) }
         let uuid = UUID(
             uuid: (
-                bytes[0], bytes[1], bytes[2], bytes[3], 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 0
+                header[0], header[1], header[2], 0, 0, 0, 0x70, 0, 0x80, 0,
+                tail[0], tail[1], tail[2], tail[3], tail[4], tail[5]
             )
         )
         return Stroke(
@@ -49,7 +53,7 @@ enum StrokeBuilder {
     }
 
     /// A gentle curve of 30 points.
-    static func curve(at origin: Point, seed: UInt8 = 0) -> Stroke {
+    static func curve(at origin: Point, seed: Int = 0) -> Stroke {
         let points = (0..<30).map { index in
             let t = Double(index) / 29
             return Point(x: origin.x + t * 120, y: origin.y + sin(t * .pi * 2) * 30)

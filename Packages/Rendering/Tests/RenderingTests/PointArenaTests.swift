@@ -37,7 +37,7 @@ struct PointArenaTests {
     func eviction() throws {
         let store = StrokeStore(arena: try makeArena(slabs: 1, budgetSlabs: 2))
         let long = (0..<10_000).map { Point(x: Double($0) * 0.1, y: 0) }
-        let slots = (0..<3).map { store.add(StrokeBuilder.stroke(long, seed: UInt8($0))) }
+        let slots = (0..<3).map { store.add(StrokeBuilder.stroke(long, seed: $0)) }
         #expect(store.residentInfo(of: slots[0], frame: 1)?.block != nil)
         #expect(store.residentInfo(of: slots[1], frame: 2)?.block != nil)
         let third = store.residentInfo(of: slots[2], frame: 10)
