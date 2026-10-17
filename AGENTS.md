@@ -36,7 +36,7 @@ pointer/
   Packages/                one local Swift package per folder
     Geometry/              Layer 0: Double geometry, camera math, spatial grid
     Model/                 Layer 0: value types, IDs, clock, commands, history, limits
-    InkEngine/             Layer 0: filters, stroke building, eraser
+    InkEngine/             Layer 0: eraser hit test and stroke split
     Persistence/           Layer 1: SQLite repository, migrations, snapshots, restore
     Rendering/             Layer 1: Metal renderer and shaders
     Export/                Layer 1: PDF export
@@ -46,7 +46,7 @@ pointer/
     BackupFeature/         Layer 2: backup command and restore
   Scripts/                 check-layers.swift, assertion-density.swift, self-test.sh
     Fixtures/              small trees that the self-test runs the check scripts on
-  Spikes/                  throwaway prototypes for M1 only, outside all checks
+  Spikes/                  M1 prototypes, outside all checks, kept as a reference until M2 is done
     LatencySpikes.xcodeproj  one iPad app with the PencilKit, Custom, and Hybrid modes
     LatencySpikes/           sources of the spike app
 ```

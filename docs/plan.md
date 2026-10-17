@@ -43,11 +43,11 @@ Acceptance:
 
 ## M2: Ink on one canvas
 
-- `Geometry`: points, rectangles, transforms, `SpatialGrid`.
-- `Model`: `Stroke`, `InkPoint`, `CanvasContent`, `Limits`, IDs, `HybridClock`.
+- `Geometry`: points, rectangles, transforms, `Camera`, `SpatialGrid`, `StrokeCurve` (D-26).
+- `Model`: `Stroke`, `InkPoint`, `InkPoints`, `CanvasContent`, `Limits`, IDs as UUID version 7 (D-31), `HybridClock`.
 - `InkEngine`: no work in M2. The eraser parts come in M4.
-- `Rendering`: committed layer, capsule shader, culling, presented handler for the handoff.
-- `CanvasFeature`: canvas view, live `PKCanvasView`, `PencilKitStrokeConverter`, handoff, finger pan and pinch, camera.
+- `Rendering`: point arena with a slab allocator, B-spline capsule shader with vertex pulling, `max` blending and the sRGB layer (D-38), level of detail, committed texture with a margin and chunked redraw, culling, presented handler for the handoff (D-28).
+- `CanvasFeature`: canvas view, live `PKCanvasView`, `PencilKitStrokeConverter` with the split at the point limit, handoff, finger pan and pinch, palm guard, camera.
 
 Known issue from M1: in the hybrid spike, the live stroke and the finished stroke differ in style and width. After the engine parts above work, fix this difference before M2 is done. Acceptance 4 and 5 test it. [architecture.md](architecture.md) section 4.2 lists possible causes.
 
@@ -58,6 +58,11 @@ Acceptance:
 3. Strokes at canvas position (1,000,000, 1,000,000) look the same as strokes at the origin.
 4. The stroke does not change shape at the handoff (FEEL-03): a test compares the PencilKit image with the Metal image of the same stroke at zoom 0.25, 1, and 8.
 5. At zoom 0.25 and 8, the PencilKit tool width is not clamped by `validWidthRange`, or the product owner accepts the difference.
+6. The center of a stroke is 255 in each channel in the PencilKit image and in the Metal image, or both images have the same value (D-38).
+7. A snapshot test of a tight zigzag stroke shows no bright joints and no notches (D-38, review A-06).
+8. On the device, a palm that rests on the screen while you write does not pan or zoom the canvas (review A-14).
+9. On the device, `StrokeCurve` matches `PKStrokePath.interpolatedLocation(at:)` to within 0.01 canvas points at many parameter values, also at the ends (D-26).
+10. 200,000 strokes pan and zoom at 120 Hz with zero dropped frames in a 10-second recording (review A-04, D-28).
 
 ## M3: Storage and workspaces
 
@@ -69,8 +74,8 @@ Acceptance:
 
 1. A force quit loses at most 2 seconds of ink (STO-06), shown with an automated crash test.
 2. A snapshot shows in the Files app under `Backups`, and it opens on a second iPad.
-4. A canvas with 10,000 nodes and 20,000 strokes opens in under 300 ms on the device.
-3. All corruption tests in [storage.md](storage.md) section 9 pass.
+3. A canvas with 10,000 nodes and 20,000 strokes opens in under 300 ms on the device.
+4. All corruption tests in [storage.md](storage.md) section 9 pass.
 
 ## M4: Eraser and undo
 

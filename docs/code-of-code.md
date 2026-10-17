@@ -20,9 +20,9 @@ The standard combines four sources:
 |---|---|---|
 | A (core) | `Geometry`, `Model`, `InkEngine`, `Persistence` | All rules. |
 | B (engine) | `Rendering`, `Export` | All rules. `SAFE-09` allows Metal buffer pointers in files named `*+Unsafe.swift`. |
+| C (interface) | `CanvasFeature`, `WorkspaceFeature`, `BackupFeature`, `DesignSystem`, `PointerApp` | All rules except `CONTRACT-02` (assertion density). |
 
 One exception applies in Tier A: `Persistence` can use SQLite C pointers in files named `SQLite*+Unsafe.swift` (`SAFE-09`).
-| C (interface) | `CanvasFeature`, `WorkspaceFeature`, `BackupFeature`, `DesignSystem`, `PointerApp` | All rules except `CONTRACT-02` (assertion density). |
 
 ## 1. Sources and what each one gives
 
@@ -66,10 +66,10 @@ Sources: <https://en.wikipedia.org/wiki/The_Power_of_10:_Rules_for_Developing_Sa
 
 - `ARCH-01` Code lives in the package of its layer (see [architecture.md](architecture.md) section 3). The app target holds only composition and scene setup.
 - `ARCH-02` A package imports only packages in its own layer or a lower layer. A feature package never imports another feature package. Enforcement: CI script `Scripts/check-layers.swift`.
-- `ARCH-03` Tier A packages import only `Foundation`, `CryptoKit`, `os`, and other Tier A packages. They never import `UIKit`, `SwiftUI`, `Metal`, or `CoreGraphics`. Enforcement: lint.
+- `ARCH-03` Tier A packages import only `Foundation`, `CryptoKit`, `os`, and other Tier A packages. `Persistence` also imports `SQLite3` (`ARCH-04`). They never import `UIKit`, `SwiftUI`, `Metal`, or `CoreGraphics`. Enforcement: lint.
 - `ARCH-04` Only `Persistence` touches the database and the file system. Only `Rendering` touches Metal. Only `Export` makes PDFs. Enforcement: lint (Threema-style: the rule bans `import SQLite3`, `FileManager`, `MTLDevice`, and `UIGraphicsPDFRenderer` outside their own package).
 - `ARCH-05` Dependencies come in through initializers. No singletons, no service locators, no global mutable state. Apple singletons (`UIApplication.shared`, `FileManager.default`) appear only in `PointerApp` and are passed down. Enforcement: lint and review.
-- `ARCH-06` Model types are `struct` or `enum`, `Sendable`, and immutable where possible (`let` over `var`).
+- `ARCH-06` Model types are `struct` or `enum`, `Sendable`, and immutable where possible (`let` over `var`). One exception: `InkPoints` is a `final class` with `let` properties only, so that strokes share their points (see [data-model.md](data-model.md) section 7.4).
 - `ARCH-07` No haptics and no sounds (PEN-06). Haptics that the system plays by itself are accepted (D-23). The code must not use `UICanvasFeedbackGenerator`, `UIFeedbackGenerator` or its subclasses, `CoreHaptics`, `AVAudioPlayer`, or `AudioServicesPlaySystemSound`. Enforcement: lint, severity error, no allowed path.
 
 ### 3.3 Control flow

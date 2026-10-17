@@ -1,6 +1,8 @@
 # M1 latency spikes
 
-This folder holds the throwaway prototypes of milestone M1 (see [docs/plan.md](../docs/plan.md)). The code does not follow the coding standard. SwiftLint, `swift format`, and the check scripts skip this folder. Delete the folder after M1.
+This folder holds the throwaway prototypes of milestone M1 (see [docs/plan.md](../docs/plan.md)). The code does not follow the coding standard. SwiftLint, `swift format`, and the check scripts skip this folder.
+
+M1 is done, and Pointer uses the hybrid (decision D-02). Keep the folder as a reference until M2 is done, because the `Hybrid` mode holds the handoff pixel comparison. Do not copy its code into the packages. The spike uses "over" blending, no layer color space, and a converted white. Decision D-38 replaces all three. Delete the folder after M2.
 
 `LatencySpikes.xcodeproj` builds one iPad app with three modes:
 

@@ -43,11 +43,11 @@ Layer 0  Foundations      InkEngine ---- Model ---- Geometry
 
 | Package | Layer | Imports | Contents |
 |---|---|---|---|
-| `Geometry` | 0 | Foundation | `Point`, `Vector`, `Rect`, `Transform` in `Double`. Camera math. `SpatialGrid`. |
+| `Geometry` | 0 | Foundation | `Point`, `Vector`, `Rect`, `Transform` in `Double`. `Camera` and camera math. `SpatialGrid`. `StrokeCurve`, the B-spline math. |
 | `Model` | 0 | `Geometry` | Value types: `Workspace`, `Card`, `TextBox`, `Stroke`, IDs, `HybridClock`, `FractionalIndex`. Commands and `History`. Protocol `LibraryRepository`. |
 | `InkEngine` | 0 | `Model`, `Geometry` | Eraser hit test and stroke split. |
 | `Persistence` | 1 | `Model`, SQLite3 | `SQLiteLibraryRepository` (an actor), a small SQLite wrapper, row codecs, migrations, snapshots, restore. |
-| `Rendering` | 1 | `Model`, `Geometry`, `InkEngine`, Metal | `CanvasRenderer`, GPU stroke buffers, shaders, text texture cache. |
+| `Rendering` | 1 | `Model`, `Geometry`, `InkEngine`, Metal | `CanvasRenderer`, the point arena, shaders, the committed texture cache, text texture cache. |
 | `Export` | 1 | `Model`, `Geometry`, `InkEngine`, Core Graphics, Core Text | `PDFExporter`. |
 | `DesignSystem` | 1 | SwiftUI, UIKit | Color, spacing, size, and icon tokens. Shared small views. |
 | `CanvasFeature` | 2 | Layer 0 and 1, PencilKit | `CanvasViewController`, `CanvasView`, the live `PKCanvasView`, `PencilKitStrokeConverter`, input routing, camera control, card navigation, text editing, top bars. |
@@ -71,13 +71,22 @@ The canvas view holds the Metal view and one `PKCanvasView` on top of it. The `P
 
 The view sets `isMultipleTouchEnabled = true`. A finger that touches during a pencil stroke does not cancel the stroke. While the pencil draws, the pan and pinch gesture recognizers ignore the finger, so the camera does not move (decision D-36).
 
+A palm guard keeps the palm away from the finger gestures (review A-14). iPadOS suppresses most palm touches while the pencil is near the screen, but not all. The finger gesture recognizers ignore a `.direct` touch in these cases:
+
+1. The touch begins while a pencil touch is active.
+2. The touch begins less than 150 ms after the last pencil touch ended. The value is a start value. Tune it on a device.
+3. The `majorRadius` of the touch is larger than a palm threshold. Find the start value on a device in M2.
+
+The guard affects the finger gestures only. A finger never draws in any case (TOOL-03), because the `PKCanvasView` uses `drawingPolicy = .pencilOnly`.
+
 ### 4.2 Pen strokes
 
 PencilKit gives no samples before pencil lift. The pen tool works in these steps:
 
-1. The `PKCanvasView` draws the live stroke at zoom 1 in view space. Its tool is a white monoline `PKInkingTool`. The tool width is the pen width times the camera zoom, so the live stroke has the same size on the screen as the finished stroke.
+1. The `PKCanvasView` draws the live stroke at zoom 1 in view space. Its tool is a white monoline `PKInkingTool`. The pen width is 2 canvas points (decision D-37). The tool width is the pen width times the camera zoom, so the live stroke has the same size on the screen as the finished stroke.
 2. At pencil lift, `canvasViewDrawingDidChange(_:)` reports the new `PKStroke`.
-3. `PencilKitStrokeConverter` reads `stroke.path.interpolatedPoints(by: .distance(0.5))`, applies `stroke.transform`, and converts each point from view space to canvas space with the camera (in `Double`). The result is a `Stroke` of the `Model`. Decision D-26 is open for the points that the stroke stores.
+3. `PencilKitStrokeConverter` reads the control points of `stroke.path` (decision D-26), applies `stroke.transform`, and converts each point from view space to canvas space with the camera (in `Double`). The result is a `Stroke` of the `Model`. Both steps are affine transforms, and an affine transform of the control points gives the same transform of the curve. Thus the conversion does not change the shape. The math lives in `Geometry` and `Model` (Tier A). `CanvasFeature` only reads the `PKStroke`.
+   If the path has more than `Limits.maxPointsPerStroke` control points, the converter makes several strokes. Each new stroke starts with the last 3 control points of the stroke before it, so the curve continues without a gap or a kink. With `max` blending, the overlap does not show.
 4. The renderer adds the stroke to the committed layer and asks for a frame.
 5. After the presented handler of that frame runs, the canvas view removes the stroke from the `PKCanvasView`. Thus no frame shows the stroke twice or not at all.
 
@@ -88,10 +97,28 @@ The finished stroke must look the same as the live stroke (FEEL-03). In the M1 h
 - The PencilKit monoline width and the capsule width use different definitions. The spike drew capsules with half the tool width as the radius and ignored the point sizes of the `PKStroke`.
 - The monoline rendering of PencilKit has its own edge and end shape, which capsules do not copy.
 - PencilKit clamps the monoline width to `PKInkingTool.InkType.monoline.validWidthRange`. At zoom 0.25 or 8, the live width can differ from the finished width.
+- The spike Metal layer had no color space, so its anti-aliased edge differed from the edge of PencilKit.
+- The spike blended capsules with "over", so overlapping capsules made the joints brighter.
+- The spike made the PencilKit white with `PKInkingTool.convertColor` in the dark style, so the white was possibly not exactly `#FFFFFF`.
+- The spike cleared the whole `PKDrawing` at the handoff. If the pencil already started the next stroke, the clear can cancel it. M2 removes only the handed-off stroke and tests a fast second stroke.
+
+Decision D-38 sets the color and the blending for both layers:
+
+- The Metal layer uses `.bgra8Unorm` and the sRGB color space (section 5.1).
+- The ink pipeline blends with `max`, not with "over" (section 5.3).
+- The `PKCanvasView` uses the light interface style and the tool color `UIColor.white`, so PencilKit does not convert the color. A test makes sure that the center of a stroke is 255 in each channel in both layers. If PencilKit cannot give 255, the Metal ink uses the value that PencilKit gives.
 
 ### 4.3 Curve smoothing
 
-PencilKit smooths the stroke. `interpolatedPoints(by: .distance(0.5))` gives points on the curve that PencilKit drew, no more than 0.5 view points apart. The renderer and the PDF exporter both draw these points as straight segments. Thus the screen and the export show the same curve.
+PencilKit smooths the stroke. A `PKStrokePath` is a uniform cubic B-spline over its control points. Pointer stores these control points and draws the same curve (decision D-26).
+
+- `StrokeCurve` in `Geometry` evaluates the curve on the CPU. Tests, the eraser, and the export use it.
+- The vertex shader evaluates the same curve on the GPU (section 5.3).
+- The PDF exporter converts each curve piece to one cubic Bézier segment. This conversion is exact (section 9).
+
+The screen and the export show the same curve. The curve does not depend on the zoom at which you drew it.
+
+Apple does not document how PencilKit treats the first and the last control point. A device test in M2 compares `StrokeCurve` with `PKStrokePath.interpolatedLocation(at:)` at many parameter values, also at the ends, and sets the end rule. The handoff test at zoom 0.25, 1, and 8 then compares the images.
 
 ### 4.4 Eraser
 
@@ -104,6 +131,8 @@ The eraser has a radius of 8 view points. The radius stays the same on the scree
 The eraser is partial (decision D-06). `StrokeSplitter` removes the points inside the circle and returns the remaining runs as new strokes. The command records the old stroke ID and the new strokes.
 
 The changes of one eraser gesture (pencil down to pencil up) form one undo step.
+
+The stored points are control points, not points on the curve (decision D-26). M4 must define how a cut on the curve maps to the control points of the new parts.
 
 ### 4.5 Apple Pencil interaction
 
@@ -157,6 +186,7 @@ link.preferredFrameRateRange = CAFrameRateRange(minimum: 80, maximum: 120, prefe
 metalLayer.maximumDrawableCount = 2
 metalLayer.presentsWithTransaction = true  // M1 did not measure it, see research.md 3.5
 metalLayer.pixelFormat = .bgra8Unorm
+metalLayer.colorspace = CGColorSpace(name: CGColorSpace.sRGB)   // decision D-38
 metalLayer.framebufferOnly = true
 ```
 
@@ -172,27 +202,39 @@ Each frame draws these passes:
 
 The live pen stroke is not a pass of the renderer. The `PKCanvasView` on top draws it (section 4.2). While you draw, the renderer draws a frame only at the handoff of a stroke.
 
-While the camera moves, the renderer draws all visible content directly from the GPU buffers of each stroke. The `SpatialGrid` limits the work to the strokes that touch the viewport.
+The committed texture covers the viewport plus a margin of half a screen on each side (review A-04). At the end of a stroke, the renderer draws only the new stroke into the committed texture. It never redraws all content at a pencil lift.
+
+While the camera moves, the renderer shows the committed texture, translated and scaled (decision D-28). A pan of less than the margin needs no new content pass. In parallel, the renderer draws a new committed texture for the current camera in chunks. Each frame gets a fixed GPU time for the chunks, so no frame drops. When the new texture is complete, it replaces the old one. When the camera stops, the renderer draws the content once at the exact zoom. The `SpatialGrid` limits all passes to the strokes that touch the texture area.
+
+While the camera moves, the ink can look a little soft until the new texture is complete. This is accepted (D-28).
 
 ### 5.3 Stroke geometry on the GPU
 
-Ink is opaque white on black. So overlapping parts of a stroke need no blending, and the draw order of strokes does not matter.
+Ink is white on black. The ink pipeline blends with `MTLBlendOperation.max` and the blend factors `one` and `one` (decision D-38, review A-06). The result of a pixel is the larger of the old value and the new value. Thus overlapping capsules do not get brighter, the anti-aliased edge of one capsule does not cut a notch into another capsule, and the draw order of strokes does not matter. A snapshot test draws a tight zigzag stroke and compares it with a reference image.
 
-Each stroke is a list of capsules (a capsule is a segment with round ends). The renderer draws them as instanced quads. The fragment shader computes the distance from the pixel to the segment and gives an anti-aliased edge one pixel wide. One draw call draws all capsules of all visible strokes.
+The GPU memory follows decision D-28.
 
-GPU data for one capsule:
+The point arena:
 
-```swift
-struct CapsuleInstance {      // 20 bytes, stroke-local Float32
-    var start: SIMD2<Float>
-    var end: SIMD2<Float>
-    var radius: Float
-}
-```
+1. All control points of a canvas live in one `MTLBuffer` with `.storageModeShared`, the arena. Apple GPUs share memory with the CPU, so the GPU reads the points directly.
+2. A slab allocator (an allocator that hands out ranges of fixed size classes) manages the arena. Each stroke owns one range.
+3. The arena uses the layout of `InkPoint`, 16 bytes per point. The load path copies each point BLOB from SQLite straight into the arena (see [storage.md](storage.md) section 3.4). At the end of a stroke, the renderer copies the new points into the arena once.
+4. The arena has a byte budget. Above the budget, the renderer removes the least recently drawn strokes first, with a margin so that a pan at the edge does not remove and add the same strokes again. It never removes a stroke by its distance to the viewport.
 
-Each stroke stores its origin in `Double` and its points as `Float` offsets from that origin. Per frame, the CPU computes the transform from stroke space to clip space in `Double`. The CPU converts the transform to `Float` only after the camera position is removed. Thus precision stays correct at any distance from the canvas origin.
+`Model` keeps a second copy of the points in `InkPoints` for commands, saves, and the export. The arena replaces the capsule buffers of the earlier design. For 20,000 strokes of 300 points, the two copies take about 96 MB each.
 
-The renderer builds the GPU buffer of a stroke once: at load time, or at the end of the stroke. After the stroke leaves the viewport plus one screen of margin, the renderer frees the buffer.
+Drawing (vertex pulling, which means that the shader reads the points from the buffer itself):
+
+1. Each instance is one piece of a curve segment. The vertex shader reads 4 control points from the arena, evaluates the B-spline at the start and the end of the piece, and builds a capsule (a segment with round ends) as a quad. No capsule buffer exists.
+2. The fragment shader computes the distance from the pixel to the segment and gives an anti-aliased edge one pixel wide.
+3. Per frame, the CPU writes one small draw list for the visible strokes: the first point, the point count, the level of detail, and the stroke origin minus the camera center as `Float`. The draws of all strokes read the same arena.
+
+Level of detail:
+
+- At low zoom, the draw list skips control points so that the points it uses are at least 0.5 pixels apart on the screen. At zoom 0.25, a stroke of 300 points then draws about 75 pieces.
+- At high zoom, each segment is cut into pieces so that the curve stays smooth. The number of pieces depends on the zoom, and a named limit bounds it.
+
+Each stroke stores its origin in `Double` and its points as `Float` offsets from that origin. Per frame, the CPU computes the offset of the stroke from the camera in `Double`. The CPU converts it to `Float` only after the camera position is removed. Thus precision stays correct at any distance from the canvas origin.
 
 ### 5.4 Text
 
@@ -216,11 +258,13 @@ Layer order on a canvas, from bottom to top: cards, ink, text boxes (decision D-
 
 ### 5.6 Spatial index
 
-Each loaded canvas has one `SpatialGrid`. The grid has square cells of 512 canvas points in a dictionary keyed by cell coordinates. Each cell holds the IDs of the strokes, text boxes, and cards whose bounds touch it. A query for a rectangle reads only the cells in that rectangle. A query has a limit: at zoom 0.25 on a 13-inch iPad, the viewport covers at most about 40 cells.
+Each loaded canvas has one `SpatialGrid`. The grid has square cells of 512 canvas points in a dictionary keyed by cell coordinates. Each cell holds the IDs of the strokes, text boxes, and cards whose bounds touch it. A query for a rectangle reads only the cells in that rectangle. A query has a limit: at zoom 0.25 on a 13-inch iPad, the viewport covers 5,504 by 4,128 canvas points. That is 11 by 9 cells, and at most 120 cells when the viewport does not align with the grid (review A-04).
 
 ## 6. Camera and navigation
 
 ### 6.1 Camera
+
+`Camera` lives in `Geometry`, because `Model` (`DeviceState`) and `CanvasFeature` both use it.
 
 ```swift
 struct Camera: Equatable, Sendable {
@@ -284,7 +328,7 @@ While a text view is in edit mode, the undo and redo buttons go to the text view
 1. Compute the content bounds. Add a margin of 48 points.
 2. Make one page with the size of the bounds. If a side is longer than 14,400 points (the PDF page limit of 200 inches), scale the content down to fit.
 3. Fill the page white (decision D-13).
-4. Draw each stroke as one `CGPath` of the subdivided points. Use `setLineCap(.round)`, `setLineJoin(.round)`, the stroke width, and black.
+4. Draw each stroke as one `CGPath` of cubic Bézier segments. The exporter converts each piece of the B-spline to one Bézier segment, which is exact (decision D-26). Use `setLineCap(.round)`, `setLineJoin(.round)`, the stroke width, and black.
 5. Draw each text box in black with `CTFramesetter` and `CTFrameDraw`. Flip the text matrix for the PDF coordinate system.
 
 The PDF contains no cards (decision D-13). The exporter does not draw card frames, titles, or child content. The content bounds in step 1 also ignore cards.
@@ -298,7 +342,7 @@ All limits live in one type, `Limits`, in `Model`. Code uses the names, never th
 | Name | Value | Reason |
 |---|---|---|
 | `maxDepth` | 32 | Card tree depth (CARD-09). Bounds the recursion. |
-| `maxPointsPerStroke` | 16,384 | About 68 s of pencil input. A longer stroke ends and a new one starts. |
+| `maxPointsPerStroke` | 16,384 | Control points per stroke, about 68 s at 240 Hz. The converter splits a longer PencilKit stroke into several strokes (section 4.2). |
 | `maxStrokesPerCanvas` | 200,000 | Upper bound for loops and memory. |
 | `maxNodesPerCanvas` | 10,000 | Cards plus text boxes. |
 | `maxTextLength` | 100,000 | Characters per text box. |
@@ -313,7 +357,7 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 - Swift 6 language mode with complete strict concurrency in every target.
 - UI types, the canvas, and the renderer run on the main actor.
 - `SQLiteLibraryRepository` is an actor. It owns the only database connection that writes. All SQL goes through it.
-- The canvas sends value snapshots to the repository. It never shares mutable state.
+- The canvas sends the changed rows to the repository and the IDs of changed strokes to the renderer. It never shares mutable state (see [data-model.md](data-model.md) section 8).
 - PDF export runs in a `Task` off the main actor. Snapshots run inside the repository actor. They report progress to the main actor.
 - No code on the main actor waits for disk.
 

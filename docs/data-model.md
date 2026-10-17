@@ -2,7 +2,7 @@
 
 This document defines the data types of Pointer and the rules that they obey. The database schema for these types is in [storage.md](storage.md).
 
-All types in this document live in the `Model` package. They are value types (`struct` or `enum`), `Sendable`, and `Codable` where the storage needs it. They import Foundation and `Geometry` only.
+All types in this document live in the `Model` package. They are value types (`struct` or `enum`), except `InkPoints` (section 7.4). They are `Sendable`, and `Codable` where the storage needs it. They import Foundation and `Geometry` only.
 
 ## 1. Goals
 
@@ -47,7 +47,7 @@ typealias DeviceID = EntityID
 
 Rules:
 
-- The app makes new IDs with `UUID()` (version 4, random).
+- The app makes new IDs as UUID version 7 (decision D-31). A version 7 UUID starts with the wall-clock time in milliseconds, so new keys land at the end of the database index. Foundation has no version 7 function, so `Model` makes the UUID from an injected clock and random bytes (RFC 9562, section 5.7).
 - An ID is never an array index, a row number (`rowid`), or a title.
 - The database stores an ID as a 16-byte BLOB. File names (for previews) use the lowercase string form.
 
@@ -173,7 +173,7 @@ struct Stroke: Identifiable, Sendable {
     let created: HybridTimestamp
     let origin: Point          // Double, canvas space
     let width: Float           // canvas points
-    let points: [InkPoint]     // 2...Limits.maxPointsPerStroke
+    let points: InkPoints      // control points, 2...Limits.maxPointsPerStroke, shared
     let bounds: Rect           // computed at creation, includes width
 }
 
@@ -183,12 +183,18 @@ struct InkPoint: Sendable {
     let force: Float           // 0...1, or -1 if the pencil has no pressure
     let time: Float            // seconds since the first point
 }
+
+/// The points of one stroke. A copy of a `Stroke` copies one reference, never the points.
+final class InkPoints: Sendable {
+    let values: [InkPoint]
+}
 ```
 
 Rules:
 
 - `origin` is the first point of the stroke. Thus all offsets are small, and `Float` precision is enough.
-- `points` are the subdivided points that the user saw (see [architecture.md](architecture.md) section 4.3).
+- `points` are the control points of the uniform cubic B-spline that PencilKit drew (decision D-26, see [architecture.md](architecture.md) section 4.3). They are not points on the curve. The curve does not depend on the zoom at which you drew it.
+- `InkPoints` is the one reference type of `Model` (review A-03). It holds only `let` properties, so the compiler checks that it is `Sendable`. A copy of a `Stroke` or of a dictionary of strokes then costs one retain, not a copy of the points.
 - A stroke with one sample (a dot) stores the point twice.
 - The database stores the points as one binary BLOB per stroke (see [storage.md](storage.md) section 3.4).
 
@@ -215,7 +221,11 @@ struct CanvasContent: Sendable {
 }
 ```
 
-`CanvasContent` is the input and the output of commands. The renderer, the exporter, and the repository read it as a value. The canvas controller holds the current value and the `History`.
+`CanvasContent` is the input and the output of commands. Only the canvas controller holds it, together with the `History` (review A-03). Swift copies a dictionary at the first change after a copy exists, so other holders of a copy would make the main actor copy up to 200,000 entries at a pencil lift.
+
+- The renderer receives deltas: the IDs of added and erased strokes. It keeps its own GPU state.
+- The repository receives the changed rows (see [storage.md](storage.md) section 4).
+- The exporter takes a copy. Export is rare and the user starts it, so the cost of the copy is accepted.
 
 ## 9. Commands
 
@@ -241,7 +251,7 @@ struct DeviceState: Codable, Sendable {
     let deviceID: DeviceID
     var lastTimestamp: HybridTimestamp
     var lastWorkspace: WorkspaceID?
-    var cameras: [CanvasID: Camera]     // last camera per canvas, at most 1,000 entries
+    var cameras: [CanvasID: Camera]     // last camera per canvas, at most 1,000 entries. Camera is in Geometry.
     var navigationPath: [CardID]         // at most Limits.maxDepth
 }
 ```

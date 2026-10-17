@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-34 to D-36 on 2026-10-17.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17.
 
 Status values: Open, Decided.
 
@@ -33,17 +33,19 @@ Status values: Open, Decided.
 | D-23 | System haptics | System haptics are accepted. The app plays none, and drawing plays none. | Decided (2026-10-17) |
 | D-24 | Load a canvas whole or by viewport | Whole canvas, R-tree later if needed | Decided (2026-10-17) |
 | D-25 | SQLite or plain files | SQLite | Decided (2026-10-17) |
-| D-26 | Store raw samples or subdivided points | Recommendation: raw samples | Open |
+| D-26 | Store raw samples or subdivided points | The control points of the PencilKit curve | Decided (2026-10-17) |
 | D-27 | Save policy: debounce or throttle | Recommendation: throttle, 1 s | Open |
-| D-28 | Renderer memory: shared arena or per-stroke buffers, and level of detail | Recommendation: arena, vertex pulling, cached texture while the camera moves | Open |
+| D-28 | Renderer memory: shared arena or per-stroke buffers, and level of detail | Arena, vertex pulling, level of detail, cached texture while the camera moves | Decided (2026-10-17) |
 | D-29 | Text rendering: glyph atlas or texture per text box, and `maxTextLength` | Recommendation: glyph atlas, 10,000 characters | Open |
 | D-30 | Erase records: flag or delete, and eraser commit at pencil lift | Recommendation: flag, commit at pencil lift | Open |
-| D-31 | UUID version 4 or 7 | Recommendation: version 7 | Open |
+| D-31 | UUID version 4 or 7 | Version 7 | Decided (2026-10-17) |
 | D-32 | Snapshot procedure: temporary file, second connection, time of the run | Recommendation: all three | Open |
 | D-33 | Fallback after a failed M1 | PencilKit for input capture only, with the custom renderer | Decided (2026-10-17) |
 | D-34 | Eraser and text tool input next to the live `PKCanvasView` | Turn off the PencilKit drawing gesture for these tools | Decided (2026-10-17) |
 | D-35 | FEEL-02 and the PencilKit drawing gesture recognizer | FEEL-02 keeps only "Ink appears on the first touch sample" | Decided (2026-10-17) |
 | D-36 | Camera movement during a pencil stroke | Ignore finger pan and pinch while the pencil draws | Decided (2026-10-17) |
+| D-37 | Pen width | 2 canvas points, a start value | Decided (2026-10-17) |
+| D-38 | Ink color and blending at the handoff | sRGB layer, `max` blending, white as close to `#FFFFFF` as possible | Decided (2026-10-17) |
 
 ## Details
 
@@ -214,7 +216,8 @@ Status values: Open, Decided.
 
 ### D-26 Store raw samples or subdivided points
 
-- Open. Raised by the design review of 2026-10-17 ([review-2026-10-17.md](review-2026-10-17.md), A-01).
+- Decided by the product owner on 2026-10-17: option (a) in the form after M1. A stroke stores the control points of the `PKStrokePath`. Pointer draws the same uniform cubic B-spline (a smooth curve that is set by its control points) as PencilKit. See [architecture.md](architecture.md) sections 4.2 and 4.3.
+- Raised by the design review of 2026-10-17 ([review-2026-10-17.md](review-2026-10-17.md), A-01).
 - Options: (a) store the filtered 240 Hz samples and define the shared geometry as the curve through them. (b) store the subdivided polyline, as the current design does.
 - Recommendation: (a). Option (b) inflates stored points 3 to 27 times and ends a fast stroke after 3 to 4 seconds. It also ties the stored data to a rendering tolerance.
 - Doubt: with (a), the renderer and the PDF exporter flatten the same curve with different tolerances. The curve is the same, the polylines are not identical.
@@ -228,7 +231,8 @@ Status values: Open, Decided.
 
 ### D-28 Renderer memory and level of detail
 
-- Open. Review A-03, A-04, A-05, A-06.
+- Decided by the product owner on 2026-10-17: option (a). See [architecture.md](architecture.md) sections 5.2 and 5.3.
+- Review A-03, A-04, A-05, A-06.
 - Options: (a) one shared arena buffer per canvas with vertex pulling and a draw list per frame. While the camera moves, a cached committed texture and a stride per zoom band limit the work. (b) one buffer per stroke with `CapsuleInstance` arrays, as the current design does.
 - Recommendation: (a). It stores the points once, removes the buffer build at pencil lift, and keeps pan and zoom within the GPU budget at the stroke limit.
 - Doubt: (a) needs a slab allocator and a level-of-detail step in M2. Both are small, but M2 grows.
@@ -249,7 +253,8 @@ Status values: Open, Decided.
 
 ### D-31 UUID version
 
-- Open. Review A-16.
+- Decided by the product owner on 2026-10-17: option (a), UUID version 7.
+- Review A-16.
 - Options: (a) UUID version 7, time-ordered, made in `Model`. (b) UUID version 4 from `UUID()`.
 - Recommendation: (a). RFC 9562 states that random UUIDs have poor index locality. The change costs about 20 lines now and a migration later.
 
@@ -291,6 +296,20 @@ Status values: Open, Decided.
 - The `PKCanvasView` draws the live stroke at zoom 1 and does not follow the camera. A finger pan or pinch during a pencil stroke moves the finished ink but not the live stroke.
 - Options: (a) ignore finger pan and pinch while the pencil is down. (b) end the stroke with a handoff when the camera starts to move. (c) move the `PKCanvasView` with a transform that follows the camera.
 - Recommendation: (a). Option (b) splits one stroke into two. Option (c) scales the `PKCanvasView` and can bring back the tile flicker of PencilKit at zoom scales other than 1x.
+
+### D-37 Pen width
+
+- Decided by the product owner on 2026-10-17: 2 canvas points. This is a start value. Tune it on a device.
+- The M1 spikes used 2 points. No document gave a value before.
+- At zoom 0.25 the PencilKit tool width is 0.5 points, and at zoom 8 it is 16 points. M2 acceptance 5 tests these widths against `validWidthRange`.
+
+### D-38 Ink color and blending at the handoff
+
+- Decided by the product owner on 2026-10-17.
+- Raised by the M1 hybrid spike, where the live stroke and the finished stroke looked different (FEEL-03).
+- Color space: the Metal layer uses `.bgra8Unorm` with the sRGB color space. White and black are then exact on sRGB and on Display P3 screens, because both use the same white point. The anti-aliased edge is in gamma space, as in Core Graphics.
+- Blending: the ink pipeline uses `MTLBlendOperation.max`. Overlapping parts of the ink do not get brighter. The "over" blend of the spike made the joints brighter.
+- White: the ink is as close to `#FFFFFF` as possible, and exact if the platform allows it. The `PKCanvasView` uses the light interface style and the tool color `UIColor.white`, so PencilKit does not convert the color. A test makes sure that the center of a stroke reads 255 in each channel, both in PencilKit and in Metal. If PencilKit cannot give 255, the test records the value that it gives, and the Metal ink uses the same value.
 
 ## Points in the request that conflict or are not complete
 

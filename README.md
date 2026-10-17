@@ -8,7 +8,7 @@ The app has three tools only: a white pen, text boxes, and an eraser. It stores 
 
 ## Status
 
-Milestone M0 is built: the Xcode project, the empty packages, and the check tools. The app shows a black screen on the simulator. The test on a real iPad is open. See [docs/plan.md](docs/plan.md) for the next milestones.
+Milestones M0 and M1 are done. M0 gave the Xcode project, the empty packages, and the check tools. The app shows a black screen. M1 compared three latency prototypes. The custom input path trailed the pencil, so Pointer uses a hybrid: PencilKit draws the live stroke, and a Metal renderer draws the finished ink (decisions D-02 and D-33). The next milestone is M2, ink on one canvas. See [docs/plan.md](docs/plan.md).
 
 ## Build
 
