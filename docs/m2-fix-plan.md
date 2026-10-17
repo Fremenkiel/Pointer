@@ -99,7 +99,7 @@ Do this phase first. Each later phase reruns these tests and compares them with 
 ### Phase 3: level of detail
 
 1. Set `LevelOfDetail.minimumPixelSpacing` to 1.0.
-   - Done when: the dense content at zoom 0.25 has at most 300,000 instances and a GPU time at or under 2.7 ms. The largest pixel difference is at or under 17. The benchmark gave 300,000 instances, 2.62 ms, and 12 of 255.
+   - Done when: the dense content at zoom 0.25 has at most 300,000 instances, and its GPU time is at most 0.58 times the GPU time at 0.5 pixels (D-46). The largest pixel difference is at or under 17. The benchmark gave 300,000 instances, 2.62 ms against 4.68 ms (0.56), and 12 of 255. `LevelOfDetailPerformanceTests` gave 1.81 ms against 3.10 ms (0.58) on 2026-10-17.
    - Do not use 2.0. It gave a pixel difference of 58.
 2. Fix the inflation by one long segment. Split each stroke into level-of-detail runs of 64 segments. Each run gets its own stride and pieces from its own spacing.
    - Store the runs as draw entries with a `firstSegment` field. At a run boundary, the shader then uses the real neighbor points, not the phantom points.

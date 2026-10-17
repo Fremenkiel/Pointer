@@ -53,7 +53,7 @@ Status values: Open, Decided, Replaced.
 | D-43 | Scope of PERF-01 | No allocation in Pointer code, measured against a bare Metal frame | Decided (2026-10-17) |
 | D-44 | Window access in the frame-loop test | One inline lint exception for `UIApplication.shared` | Decided (2026-10-17) |
 | D-45 | Dense content of the performance tests | Two contents: the M2 content and the benchmark content | Decided (2026-10-17) |
-| D-46 | Unit of the GPU-time target of phase 3, task 1 | Recommendation: state the target as a ratio to the 0.5-pixel value | Open |
+| D-46 | Unit of the GPU-time target of phase 3, task 1 | A ratio: at most 0.58 times the GPU time at 0.5 pixels | Decided (2026-10-17) |
 
 ## Details
 
@@ -372,11 +372,13 @@ Status values: Open, Decided, Replaced.
 
 ### D-46 Unit of the GPU-time target of phase 3, task 1
 
-- Open. Raised by phase 0, task 6 on 2026-10-17.
+- Decided by the product owner on 2026-10-17: option (a), the ratio.
+- Raised by phase 0, task 6 on 2026-10-17.
 - The benchmark timed single passes and waited for each one. The GPU clock then changed between passes, and the same pass gave 1.24 ms in one run and 5.11 ms in another. The permanent test runs its passes back to back and divides the span by the pass count. Its values repeat within 4 % between runs, but they are lower than the benchmark values.
 - Dense content at zoom 0.25 in the permanent test: 3.07 ms at 0.5 pixels and 1.80 ms at 1.0 pixel. The benchmark gave 4.68 ms and 2.62 ms. The target of phase 3, task 1 is "at or under 2.7 ms" in the unit of the benchmark.
 - Options: (a) state the target as a ratio: the GPU time at 1.0 pixel is at most 0.58 times the time at 0.5 pixels, the ratio of the benchmark. (b) state a new absolute target in the unit of the permanent test, for example 2.0 ms. (c) keep 2.7 ms in the new unit. This target is then much easier to meet than the benchmark target.
 - Recommendation: (a), because a ratio does not depend on the clock state of the GPU.
+- Effect: phase 3, task 1 of [m2-fix-plan.md](m2-fix-plan.md) uses the ratio as its target.
 
 ## Points in the request that conflict or are not complete
 
