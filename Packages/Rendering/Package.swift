@@ -21,8 +21,19 @@ let package = Package(
                 .product(name: "InkEngine", package: "InkEngine"),
                 .product(name: "Model", package: "Model"),
             ],
+            resources: [.process("Shaders.metal")],
             swiftSettings: [.treatAllWarnings(as: .error)]
-        )
+        ),
+        .testTarget(
+            name: "RenderingTests",
+            dependencies: [
+                "Rendering",
+                .product(name: "Geometry", package: "Geometry"),
+                .product(name: "Model", package: "Model"),
+            ],
+            exclude: ["References"],
+            swiftSettings: [.treatAllWarnings(as: .error)]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

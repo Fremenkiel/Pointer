@@ -1,0 +1,73 @@
+import Dispatch
+import Metal
+
+/// Three draw-list buffers that frames use in turn, so the CPU never writes a buffer that the
+/// GPU still reads (PERF-01: no allocation per frame).
+@MainActor
+final class DrawListRing {
+    /// The number of buffers. Two drawables and one frame of work give three.
+    static let bufferCount = 3
+
+    /// The entries per buffer.
+    let capacity: Int
+    private let buffers: [any MTLBuffer]
+    private let available = DispatchSemaphore(value: bufferCount)
+    private var index = 0
+    /// The entries that the current frame wrote.
+    private(set) var used = 0
+
+    /// Makes the ring.
+    ///
+    /// - Precondition: `capacity` is positive.
+    /// - Throws: `RenderingError.resourceUnavailable` if Metal cannot make a buffer.
+    init(device: any MTLDevice, capacity: Int) throws(RenderingError) {
+        precondition(capacity > 0, "Draw list capacity must be positive, got \(capacity)")
+        var buffers: [any MTLBuffer] = []
+        for _ in 0..<Self.bufferCount {
+            let length = capacity * MemoryLayout<StrokeDrawEntry>.stride
+            guard let buffer = device.makeBuffer(length: length, options: .storageModeShared) else {
+                throw .resourceUnavailable("draw list of \(capacity) entries")
+            }
+            buffer.label = "Draw list"
+            buffers.append(buffer)
+        }
+        self.capacity = capacity
+        self.buffers = buffers
+    }
+
+    /// The buffer of the current frame.
+    var buffer: any MTLBuffer { buffers[index] }
+
+    /// The number of entries that the current frame can still write.
+    var remaining: Int { capacity - used }
+
+    /// Waits for a free buffer and makes it the buffer of the next frame. The command buffer of
+    /// the frame frees it when the GPU completes.
+    ///
+    /// - Precondition: The command buffer is not committed.
+    func beginFrame(_ commandBuffer: any MTLCommandBuffer) {
+        precondition(
+            commandBuffer.status == .notEnqueued,
+            "The frame command buffer is already sent"
+        )
+        available.wait()
+        index = (index + 1) % Self.bufferCount
+        used = 0
+        assert(
+            buffer.length >= capacity * MemoryLayout<StrokeDrawEntry>.stride,
+            "Draw list is short"
+        )
+        commandBuffer.addCompletedHandler { [available] _ in
+            available.signal()
+        }
+    }
+
+    /// Writes one entry at the end of the current frame.
+    ///
+    /// - Precondition: The frame has room for one more entry.
+    func append(_ entry: StrokeDrawEntry) {
+        precondition(used < capacity, "Draw list is full at \(capacity) entries")
+        write(entry, at: used)
+        used += 1
+    }
+}
