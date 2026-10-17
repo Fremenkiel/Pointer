@@ -10,7 +10,6 @@ included:
 excluded:
   - "**/.build"
   - Scripts/Fixtures
-  - Spikes
 
 disabled_rules:
   - todo # replaced by the custom rule doc_04_todo
