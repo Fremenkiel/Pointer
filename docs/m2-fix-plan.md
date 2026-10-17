@@ -72,7 +72,7 @@ Do this phase first. Each later phase reruns these tests and compares them with 
 
 ### Phase 1: frame pacing (D-41, D-42)
 
-Status on 2026-10-17: tasks 1 to 3 are done. For task 4, the film shows 4 video frames at 240 fps from pen to ink, about 16.7 ms. The check for flicker and jumps at the handoff waits for the product owner. The results are in [m2-plan.md](m2-plan.md) section 4.4. Task 3 found two causes of late frames, and the code fixes both:
+Status on 2026-10-17: phase 1 is done. For task 4, the film shows 4 video frames at 240 fps from pen to ink, about 16.7 ms. The product owner confirmed that the strokes stay steady at the handoff: they do not move or change (FEEL-03). The results are in [m2-plan.md](m2-plan.md) section 4.4. Task 3 found two causes of late frames, and the code fixes both:
 
 - The render thread and the main thread wake on the same display frame. The render thread sometimes ran first, found no new camera, and drew nothing. The render thread now waits up to 3 ms for the camera while the camera moves.
 - The display link paused during a pan of little content, because each frame completed its build and the loop counted the frame as idle. A frame that drew no longer counts as idle.
