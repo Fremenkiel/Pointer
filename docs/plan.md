@@ -19,17 +19,18 @@ Acceptance:
 
 ## M1: Latency test (go or no-go)
 
-Build two throwaway prototypes in a `Spikes/` folder. They do not follow the full standard.
+Build three throwaway prototypes in a `Spikes/` folder. They do not follow the full standard.
 
 1. `PencilKit`: a `PKCanvasView` with a white monoline pen on black.
 2. `Custom`: a `CAMetalLayer` view, `UIUpdateLink` with low latency, coalesced and predicted touches, and capsule rendering.
+3. `Hybrid`: PencilKit captures the pencil input, and the renderer of `Custom` draws the ink. This is the fallback of D-33. PencilKit gives no samples before pencil lift, so a `PKCanvasView` at zoom 1 draws the live stroke. At pencil lift, the stroke moves to the Metal renderer and leaves the `PKCanvasView`. Set the pen width from the camera zoom. Measure the latency, and make sure that the stroke does not change at the handoff (FEEL-03).
 
-Measure both on a 120 Hz iPad Pro with a high-speed camera and with the presented-time log (see [research.md](research.md) section 3.4). Also tune the 1€ filter values.
+Measure all three on a 120 Hz iPad Pro with a high-speed camera and with the presented-time log (see [research.md](research.md) section 3.4). Also tune the 1€ filter values.
 
 Acceptance:
 
-1. A short report in `docs/research.md` with the measured latency of both, the method, and the device.
-2. The custom engine is at most 3 ms slower than PencilKit. If it is slower, the product owner decides D-02 again.
+1. A short report in `docs/research.md` with the measured latency of all three, the method, and the device.
+2. The custom engine is at most 3 ms slower than PencilKit. If it is more than 3 ms slower, the hybrid is the fallback (D-33), and the product owner decides D-02 again.
 
 ## M2: Ink on one canvas
 

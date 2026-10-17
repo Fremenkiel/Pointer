@@ -146,7 +146,7 @@ Sources: <https://developer.apple.com/documentation/uikit/uipencilinteraction>, 
 - Draw text with Core Text (`CTFramesetter`, `CTFrameDraw`). The result is real glyphs.
 - Never use `CALayer.render(in:)` or a view snapshot. A TextKit 2 text view becomes a bitmap that way (forum thread 745459).
 
-Decision: Pointer uses a custom Metal renderer for display and Core Graphics for PDF export. Both use the same stroke geometry. If the custom engine fails the latency test in M1, PencilKit is the fallback.
+Decision: Pointer uses a custom Metal renderer for display and Core Graphics for PDF export. Both use the same stroke geometry. If the custom engine fails the latency test in M1, the fallback is PencilKit for input capture only, with the custom renderer (D-33).
 
 ## 5. Storage
 

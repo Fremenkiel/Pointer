@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 on 2026-10-17.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17.
 
 Status values: Open, Decided.
 
@@ -40,7 +40,7 @@ Status values: Open, Decided.
 | D-30 | Erase records: flag or delete, and eraser commit at pencil lift | Recommendation: flag, commit at pencil lift | Open |
 | D-31 | UUID version 4 or 7 | Recommendation: version 7 | Open |
 | D-32 | Snapshot procedure: temporary file, second connection, time of the run | Recommendation: all three | Open |
-| D-33 | Fallback after a failed M1 | Recommendation: define it now, PencilKit is not viable | Open |
+| D-33 | Fallback after a failed M1 | PencilKit for input capture only, with the custom renderer | Decided (2026-10-17) |
 
 ## Details
 
@@ -256,7 +256,8 @@ Status values: Open, Decided.
 
 ### D-33 Fallback after a failed M1
 
-- Open. Review A-17.
+- Decided by the product owner on 2026-10-17: option (b). If the custom engine is more than 3 ms slower than PencilKit, PencilKit captures the pencil input and the custom renderer draws. M1 measures this setup as a third prototype.
+- Review A-17.
 - D-02 names PencilKit as the fallback. Apple confirmed in March 2026 that `PKCanvasView` flickers at zoom scales other than 1x, with no workaround. Pointer zooms from 0.25 to 8. The fallback also needs one `PKCanvasView` per visible card.
 - Options: (a) accept the measured latency of the custom engine. (b) PencilKit for input capture only, with the custom renderer. (c) keep PencilKit as the fallback and accept the flicker.
 - Recommendation: decide before M1 starts, so that M1 measures the right things.

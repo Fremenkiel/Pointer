@@ -24,7 +24,7 @@ This document describes how Pointer is built. It covers the modules, the input p
 | Storage | SQLite from the system (`import SQLite3`), no wrapper library | See [storage.md](storage.md). |
 | Logging | `os.Logger`, `OSSignposter` | Logging that is off has zero cost. Signposts feed the performance tests. |
 
-PencilKit is not part of the main design. If the custom engine fails the latency test, PencilKit is the fallback (decision D-02).
+PencilKit is not part of the main design. If the custom engine fails the latency test, the fallback is PencilKit for input capture only, with the custom renderer (decisions D-02 and D-33).
 
 ## 3. Modules
 
