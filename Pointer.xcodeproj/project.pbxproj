@@ -1,0 +1,334 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B0000000000000000000B001 /* CanvasFeature in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D001 /* CanvasFeature */; };
+		B0000000000000000000B002 /* WorkspaceFeature in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D002 /* WorkspaceFeature */; };
+		B0000000000000000000B003 /* BackupFeature in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D003 /* BackupFeature */; };
+		B0000000000000000000B004 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D004 /* DesignSystem */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B0000000000000000000F001 /* Pointer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pointer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B0000000000000000000E001 /* Exceptions for "PointerApp" folder in "PointerApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = B0000000000000000000A001 /* PointerApp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		B0000000000000000000G002 /* PointerApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B0000000000000000000E001 /* Exceptions for "PointerApp" folder in "PointerApp" target */,
+			);
+			path = PointerApp;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B0000000000000000000P002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B0000000000000000000B001 /* CanvasFeature in Frameworks */,
+				B0000000000000000000B002 /* WorkspaceFeature in Frameworks */,
+				B0000000000000000000B003 /* BackupFeature in Frameworks */,
+				B0000000000000000000B004 /* DesignSystem in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		B0000000000000000000G001 = {
+			isa = PBXGroup;
+			children = (
+				B0000000000000000000G002 /* PointerApp */,
+				B0000000000000000000G003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B0000000000000000000G003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B0000000000000000000F001 /* Pointer.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B0000000000000000000A001 /* PointerApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B0000000000000000000L002 /* Build configuration list for PBXNativeTarget "PointerApp" */;
+			buildPhases = (
+				B0000000000000000000P001 /* Sources */,
+				B0000000000000000000P002 /* Frameworks */,
+				B0000000000000000000P003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				B0000000000000000000G002 /* PointerApp */,
+			);
+			name = PointerApp;
+			packageProductDependencies = (
+				B0000000000000000000D001 /* CanvasFeature */,
+				B0000000000000000000D002 /* WorkspaceFeature */,
+				B0000000000000000000D003 /* BackupFeature */,
+				B0000000000000000000D004 /* DesignSystem */,
+			);
+			productName = PointerApp;
+			productReference = B0000000000000000000F001 /* Pointer.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B0000000000000000000R001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					B0000000000000000000A001 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = B0000000000000000000L001 /* Build configuration list for PBXProject "Pointer" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = B0000000000000000000G001;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B0000000000000000000K001 /* XCLocalSwiftPackageReference "Packages/CanvasFeature" */,
+				B0000000000000000000K002 /* XCLocalSwiftPackageReference "Packages/WorkspaceFeature" */,
+				B0000000000000000000K003 /* XCLocalSwiftPackageReference "Packages/BackupFeature" */,
+				B0000000000000000000K004 /* XCLocalSwiftPackageReference "Packages/DesignSystem" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = B0000000000000000000G003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B0000000000000000000A001 /* PointerApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B0000000000000000000P003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B0000000000000000000P001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		B0000000000000000000C001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		B0000000000000000000C002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 6.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		B0000000000000000000C003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PointerApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = dk.saarikivi.pointer;
+				PRODUCT_NAME = Pointer;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		B0000000000000000000C004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PointerApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = dk.saarikivi.pointer;
+				PRODUCT_NAME = Pointer;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B0000000000000000000L001 /* Build configuration list for PBXProject "Pointer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B0000000000000000000C001 /* Debug */,
+				B0000000000000000000C002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B0000000000000000000L002 /* Build configuration list for PBXNativeTarget "PointerApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B0000000000000000000C003 /* Debug */,
+				B0000000000000000000C004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		B0000000000000000000K001 /* XCLocalSwiftPackageReference "Packages/CanvasFeature" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/CanvasFeature;
+		};
+		B0000000000000000000K002 /* XCLocalSwiftPackageReference "Packages/WorkspaceFeature" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/WorkspaceFeature;
+		};
+		B0000000000000000000K003 /* XCLocalSwiftPackageReference "Packages/BackupFeature" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/BackupFeature;
+		};
+		B0000000000000000000K004 /* XCLocalSwiftPackageReference "Packages/DesignSystem" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/DesignSystem;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B0000000000000000000D001 /* CanvasFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CanvasFeature;
+		};
+		B0000000000000000000D002 /* WorkspaceFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WorkspaceFeature;
+		};
+		B0000000000000000000D003 /* BackupFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BackupFeature;
+		};
+		B0000000000000000000D004 /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DesignSystem;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = B0000000000000000000R001 /* Project object */;
+}
