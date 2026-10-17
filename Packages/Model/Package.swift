@@ -18,7 +18,12 @@ let package = Package(
                 .product(name: "Geometry", package: "Geometry")
             ],
             swiftSettings: [.treatAllWarnings(as: .error)]
-        )
+        ),
+        .testTarget(
+            name: "ModelTests",
+            dependencies: ["Model", .product(name: "Geometry", package: "Geometry")],
+            swiftSettings: [.treatAllWarnings(as: .error)]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
