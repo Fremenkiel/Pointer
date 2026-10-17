@@ -140,6 +140,37 @@ The performance tests ran on the iPad Pro 11-inch (M4) in the Release configurat
 | Test | Average |
 |---|---|
 | `testContentPassTwentyThousandStrokes`: 20,000 strokes of 300 points | 61 ms |
-| `testContentPassTwoHundredThousandStrokes`: 200,000 strokes of 30 points | 58 ms |
+| `testContentPassTwoHundredThousandStrokes`: 200,000 strokes of 30 points | 58 ms, not valid |
+
+The second baseline is not valid. The test data had only 25,600 unique stroke IDs, and the renderer drops a stroke with a known ID. Phase 0 of [m2-fix-plan.md](m2-fix-plan.md) fixed the test data. These are the baselines from 2026-10-17 after the fix, with the same configuration:
+
+| Test | Average |
+|---|---|
+| `testContentPassTwentyThousandStrokes`: 20,000 strokes of 300 points | 55 ms |
+| `testContentPassTwoHundredThousandStrokes`: 200,000 strokes of 30 points, 1 run | 163 ms |
+| `testContentPassTwoHundredThousandHandwritingStrokes`: 200,000 strokes of 60 points, 1 run | 219 ms |
+
+The two tests with 200,000 strokes run once, so their value changes from run to run. Two runs gave 154 ms and 163 ms for the second test, and 219 ms twice for the third.
+
+The level-of-detail test `LevelOfDetailPerformanceTests` gives the GPU time of one content pass per pass, over 7 passes back to back. The texture has 4840 by 3336 pixels. The largest pixel difference is against the image at 0.5 pixels. These are the median values of two runs:
+
+| Content and zoom | Instances at 0.5, 0.75, and 1.0 pixels | GPU ms at 0.5, 0.75, and 1.0 pixels | Difference at 0.75 and 1.0 pixels |
+|---|---|---|---|
+| Dense, 20,000 strokes, zoom 0.25 | 560,000, 380,000, 300,000 | 3.10, 2.12, 1.81 | 6, 12 |
+| Dense, 20,000 strokes, zoom 1 | 451,000, 338,250, 225,500 | 3.52, 2.64, 1.73 | 2, 5 |
+| Handwriting, 200,000 strokes, zoom 0.25 | 689,710 at each value | 3.03 | 0, 0 |
+| Handwriting, 200,000 strokes, zoom 1 | 136,998 at each value | 0.98 | 0, 0 |
+| Handwriting, 200,000 strokes, zoom 8 | 19,116 at each value | 0.81 | 0, 0 |
+
+The frame-loop test `FrameLoopTests` pans or zooms for 4 seconds after 1 second of warm-up, with a `UIUpdateLink` and the M2 renderer with two drawables. It starts at zoom 0.25. These are the baselines of phase 1:
+
+| Run | Frame rate | Intervals over 12.5 ms | Main-thread ms per frame, p50 and p99 | GPU ms per frame, mean | Builds | Uncovered frames | Allocations per frame, p50 |
+|---|---|---|---|---|---|---|---|
+| Dense, 20,000 strokes, pan | 60.0 | 240 of 240 | 16.42, 16.52 | 4.84 | 125 | 0 | 85 |
+| Dense, 20,000 strokes, zoom | 59.9 | 239 of 240 | 16.42, 19.35 | 4.31 | 79 | 0 | 85 |
+| Handwriting, 200,000 strokes, pan | 60.0 | 240 of 240 | 16.42, 16.94 | 4.31 | 83 | 0 | 85 |
+| Handwriting, 200,000 strokes, zoom | 60.0 | 240 of 240 | 16.44, 16.71 | 4.50 | 122 | 0 | 85 |
+
+The allocation count covers all threads of the process and includes the allocations inside Metal (D-43).
 
 `PointerDeviceTests` also compiles the files of `Packages/Rendering/Tests/RenderingTests`, except the snapshot tests, which read their reference images from the Mac.

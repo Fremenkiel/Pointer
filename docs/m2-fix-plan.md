@@ -8,7 +8,7 @@ A temporary benchmark suite ran on the iPad Pro 11-inch (M4) in the Release conf
 
 The suite used three kinds of content:
 
-1. Dense: 20,000 strokes of 300 control points each, 24 canvas points long. This is the content of the M2 performance tests.
+1. Dense: 20,000 strokes of 300 control points each, on a smooth curve 24 canvas points long. The M2 performance tests use other content with the same grid, but their points are up to 10 times farther apart (D-45).
 2. Handwriting: 200,000 strokes of 60 control points, about 2 canvas points apart. This is closer to real pencil input at 240 Hz.
 3. A frame loop on the screen: a `CADisplayLink` at 120 Hz drives a pan or a zoom for 4 seconds after 1 second of warm-up.
 
@@ -38,6 +38,16 @@ The suite is not in the repository, because it does not meet the lint rules. Pha
 | The 200,000-stroke performance test | Its test data has 25,600 unique stroke IDs, not 200,000. The store drops the duplicates. | New finding. The M2 baseline of 58 ms is not valid. |
 
 The 33 to 300 ms main-thread waits of [m2-plan.md](m2-plan.md) section 4.3 did not show in the benchmarks. One zoom frame took 22 to 25 ms on the main thread in the build step, in both policies. Phase 0 adds the signposts that find the cause.
+
+### 2.1 Cause of the main-thread waits
+
+On 2026-10-17, Instruments recorded 25 seconds of pan and zoom with 20,000 strokes on the iPad Pro 11-inch (M4), with the signposts of phase 0. The recording showed 215 "Potential Interaction Delay" intervals on the main thread, from 33.1 ms to 300.4 ms, with a median of 33.3 ms.
+
+Each wait is a run of frames without an idle gap in the run loop. 196 of the 215 waits hold exactly two frames, and the longest wait holds 18 frames. In each frame, `nextDrawable()` blocks for about 15 to 16 ms, because the layer has two drawables (D-41). Over all waits, `nextDrawable()` takes 37.4 ms of the 40.3 ms of frame time in a mean wait. In the 300.4 ms wait, it takes 271.0 ms.
+
+One wait at 4.05 s, during the load, has two other causes. An arena growth took 29.1 ms, and the builds took 40.3 ms. The benchmark measured at most 7.4 ms for one growth step.
+
+Thus the cause of the waits is the block in `nextDrawable()`. Phase 1 removes it from the main thread (D-42).
 
 ## 3. Decisions for the product owner
 

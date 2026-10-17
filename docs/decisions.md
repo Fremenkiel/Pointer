@@ -51,6 +51,9 @@ Status values: Open, Decided, Replaced.
 | D-41 | Drawable count of the Metal layer | Three drawables | Decided (2026-10-17) |
 | D-42 | Thread of the frame encoding | A render thread with `CAMetalDisplayLink`, off the main actor | Decided (2026-10-17) |
 | D-43 | Scope of PERF-01 | No allocation in Pointer code, measured against a bare Metal frame | Decided (2026-10-17) |
+| D-44 | Window access in the frame-loop test | One inline lint exception for `UIApplication.shared` | Decided (2026-10-17) |
+| D-45 | Dense content of the performance tests | Two contents: the M2 content and the benchmark content | Decided (2026-10-17) |
+| D-46 | Unit of the GPU-time target of phase 3, task 1 | Recommendation: state the target as a ratio to the 0.5-pixel value | Open |
 
 ## Details
 
@@ -353,6 +356,27 @@ Status values: Open, Decided, Replaced.
 - Decided by the product owner on 2026-10-17: PERF-01 covers the allocations of Pointer code only.
 - Raised by the same benchmarks. A bare Metal command buffer with one render pass makes 33 to 36 heap allocations inside Metal. The rule "no allocation" cannot pass for any Metal frame.
 - The test counts the allocations of a frame and subtracts the count of a bare frame with the same passes. The result must be 0.
+
+### D-44 Window access in the frame-loop test
+
+- Decided by the product owner on 2026-10-17: the frame-loop test reads the window of the host app through `UIApplication.shared`, with one `// swiftlint:disable:next arch_05_singletons` line and a comment that names this decision.
+- Raised by phase 0, task 3 of [m2-fix-plan.md](m2-fix-plan.md). The test must draw on the screen of the device. Only `UIApplication.shared` reaches the window of the test host, and lint rule ARCH-05 bans it outside `PointerApp/`.
+- Options: (a) one inline exception in the test. (b) a path exclusion in `.swiftlint.yml`. (c) no window test, Instruments only.
+- Effect: the rule ARCH-05 and `.swiftlint.yml` stay as they are.
+
+### D-45 Dense content of the performance tests
+
+- Decided by the product owner on 2026-10-17: the tests use two dense contents with different names.
+- Raised by phase 0, task 6. Section 1 of [m2-fix-plan.md](m2-fix-plan.md) called the benchmark content "the content of the M2 performance tests", but the two differ. The M2 content has a wave of 4 canvas points with a period of about 31 points, so its neighbor points are up to 0.8 canvas points apart. The benchmark content is a smooth curve, and its points are 0.08 canvas points apart. At zoom 0.25, the M2 content gives 3,000,000 draw instances, and the benchmark content gives 560,000.
+- `PerformanceContent.m2Dense` keeps the content of the two M2 content-pass tests, so their baselines stay comparable with M2. `PerformanceContent.dense` is the benchmark content. The frame-loop and level-of-detail tests use it, so the targets of the fix plan stay comparable.
+
+### D-46 Unit of the GPU-time target of phase 3, task 1
+
+- Open. Raised by phase 0, task 6 on 2026-10-17.
+- The benchmark timed single passes and waited for each one. The GPU clock then changed between passes, and the same pass gave 1.24 ms in one run and 5.11 ms in another. The permanent test runs its passes back to back and divides the span by the pass count. Its values repeat within 4 % between runs, but they are lower than the benchmark values.
+- Dense content at zoom 0.25 in the permanent test: 3.07 ms at 0.5 pixels and 1.80 ms at 1.0 pixel. The benchmark gave 4.68 ms and 2.62 ms. The target of phase 3, task 1 is "at or under 2.7 ms" in the unit of the benchmark.
+- Options: (a) state the target as a ratio: the GPU time at 1.0 pixel is at most 0.58 times the time at 0.5 pixels, the ratio of the benchmark. (b) state a new absolute target in the unit of the permanent test, for example 2.0 ms. (c) keep 2.7 ms in the new unit. This target is then much easier to meet than the benchmark target.
+- Recommendation: (a), because a ratio does not depend on the clock state of the GPU.
 
 ## Points in the request that conflict or are not complete
 
