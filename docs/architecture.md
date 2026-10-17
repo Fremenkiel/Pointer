@@ -54,7 +54,7 @@ Layer 0  Foundations      InkEngine ---- Model ---- Geometry
 | `BackupFeature` | 2 | Layer 0 and 1 | "Back up now" command and restore. |
 | `PointerApp` | 3 | All | Scene setup, dependency composition, routing between features. |
 
-A script in CI reads `swift package show-dependencies --format json` for each package. It fails the build on a forbidden import (see [code-of-code.md](code-of-code.md), rule ARCH-02).
+The script `Scripts/check-layers.swift` reads `swift package dump-package` for each package and the `import` lines of its sources. It fails the build on a forbidden import (see [code-of-code.md](code-of-code.md), rule ARCH-02). It also fails on third-party code (rule BUILD-03): a remote package, a local package outside `Packages/`, a binary target, or a prebuilt framework in the Xcode project.
 
 Dependencies flow down. Features get repositories and services through their initializers. No singletons exist, except the ones that Apple provides.
 

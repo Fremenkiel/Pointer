@@ -95,7 +95,15 @@ func dumpPackage(folder: URL) throws -> [String: Any] {
 }
 
 /// Checks one declared dependency of package `name` (ARCH-02, BUILD-03).
-func checkDependency(_ dependency: [String: Any], of name: String, path: String) -> Finding? {
+///
+/// A dependency must be a package of the layer table in the `packages` folder. A local path to
+/// any other folder is third-party code, for example a vendored copy of a library.
+func checkDependency(
+    _ dependency: [String: Any],
+    of name: String,
+    path: String,
+    packages: URL
+) -> Finding? {
     guard let local = (dependency["fileSystem"] as? [[String: Any]])?.first,
         let localPath = local["path"] as? String
     else {
@@ -104,9 +112,30 @@ func checkDependency(_ dependency: [String: Any], of name: String, path: String)
             + "The app links no third-party code. Use a local path dependency."
         return Finding(path: path, line: 1, rule: "BUILD-03", message: message)
     }
-    let imported = URL(fileURLWithPath: localPath).lastPathComponent
+    let folder = URL(fileURLWithPath: localPath).resolvingSymlinksInPath()
+    let imported = folder.lastPathComponent
+    guard layerTable[imported] != nil,
+        folder.deletingLastPathComponent().path == packages.resolvingSymlinksInPath().path
+    else {
+        let message =
+            "\(name) depends on \(localPath), which is not a Pointer package in Packages/. "
+            + "The app links no third-party code."
+        return Finding(path: path, line: 1, rule: "BUILD-03", message: message)
+    }
     return violation(importer: name, imported: imported).map {
         Finding(path: path, line: 1, rule: "ARCH-02", message: $0)
+    }
+}
+
+/// Fails on each binary target of a manifest, because a binary is third-party code (BUILD-03).
+func checkBinaryTargets(manifest: [String: Any], of name: String, path: String) -> [Finding] {
+    let targets = manifest["targets"] as? [[String: Any]] ?? []
+    return targets.filter { $0["type"] as? String == "binary" }.map {
+        let target = $0["name"] as? String ?? "?"
+        let message =
+            "\(name) has the binary target \(target). "
+            + "The app links no third-party code. Write the code in a package."
+        return Finding(path: path, line: 1, rule: "BUILD-03", message: message)
     }
 }
 
@@ -124,8 +153,12 @@ func checkManifest(folder: URL) -> [Finding] {
         let message = "swift package dump-package failed for \(name). Fix the manifest."
         return [Finding(path: path, line: 1, rule: "ARCH-02", message: message)]
     }
+    let packages = folder.deletingLastPathComponent()
     let dependencies = manifest["dependencies"] as? [[String: Any]] ?? []
-    return dependencies.compactMap { checkDependency($0, of: name, path: path) }
+    return checkBinaryTargets(manifest: manifest, of: name, path: path)
+        + dependencies.compactMap {
+            checkDependency($0, of: name, path: path, packages: packages)
+        }
 }
 
 /// Returns the Swift files under `folder`, sorted by path.
@@ -175,19 +208,43 @@ func checkImports(module: String, folder: URL) -> [Finding] {
     return findings
 }
 
-/// Fails on a remote package reference in the Xcode project (BUILD-03).
+let localReferencePattern = try NSRegularExpression(pattern: #"^\s*relativePath = "?([^";]+)"?;"#)
+
+/// Returns the third-party reference on one line of the Xcode project, or nil if it has none.
+func projectProblem(line: String) -> String? {
+    if line.contains("isa = XCRemoteSwiftPackageReference;") {
+        return "The project has a remote package."
+    }
+    if line.contains("\tpath = ") && line.contains(".xcframework") {
+        return "The project references a prebuilt framework."
+    }
+    let range = NSRange(line.startIndex..., in: line)
+    guard let match = localReferencePattern.firstMatch(in: line, range: range),
+        let pathRange = Range(match.range(at: 1), in: line)
+    else { return nil }
+    let reference = String(line[pathRange])
+    let name = URL(fileURLWithPath: reference).lastPathComponent
+    guard reference != "Packages/\(name)" || layerTable[name] == nil else { return nil }
+    return "The project references the package \(reference), which is not in Packages/."
+}
+
+/// Fails on third-party code in the Xcode project (BUILD-03).
+///
+/// The project can reference only the packages of the layer table in `Packages/`. A remote
+/// package, a local package in another folder, or a prebuilt framework fails.
 func checkProject(root: URL) -> [Finding] {
     let project = root.appendingPathComponent("Pointer.xcodeproj/project.pbxproj")
     guard let text = try? String(contentsOf: project, encoding: .utf8) else { return [] }
-    guard text.contains("XCRemoteSwiftPackageReference") else { return [] }
-    return [
-        Finding(
-            path: project.path,
-            line: 1,
-            rule: "BUILD-03",
-            message: "The app target has a remote package. The app links no third-party code."
-        )
-    ]
+    return text.components(separatedBy: "\n").enumerated().compactMap { index, line in
+        projectProblem(line: line).map {
+            Finding(
+                path: project.path,
+                line: index + 1,
+                rule: "BUILD-03",
+                message: $0 + " The app links no third-party code."
+            )
+        }
+    }
 }
 
 let root = rootFolder()

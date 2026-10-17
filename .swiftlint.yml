@@ -61,10 +61,12 @@ identifier_name:
   min_length: 1
 
 custom_rules:
+  # An allow list, so that a framework nobody thought of also fails. SQLite3 is for Persistence
+  # (architecture.md section 3, arch_04_sqlite). Testing and XCTest are for the test targets.
   arch_03_tier_a_imports:
     name: "ARCH-03"
-    regex: '\bimport\s+(UIKit|SwiftUI|Metal|MetalKit|CoreGraphics|QuartzCore)\b'
-    included: 'Packages/(Geometry|Model|InkEngine|Persistence)/'
+    regex: '\bimport\s+(?:(?:typealias|struct|class|enum|protocol|let|var|func)\s+)?+(?!(?:Foundation|CryptoKit|os|Geometry|Model|InkEngine|Persistence|SQLite3|Testing|XCTest)\b)\w+'
+    included: 'Packages/(Geometry|Model|InkEngine|Persistence)/(Sources|Tests)/'
     match_kinds: [keyword, identifier]
     message: "Tier A imports only Foundation, CryptoKit, os, and Tier A packages. Move UI or GPU code to a Tier B or C package."
     severity: error
@@ -103,7 +105,7 @@ custom_rules:
 
   arch_05_singletons:
     name: "ARCH-05"
-    regex: '\b(UIApplication|FileManager|NotificationCenter|UserDefaults|URLSession|UIDevice|UIScreen)\.(shared|default|standard|current|main)\b'
+    regex: '\b(UIApplication|FileManager|NotificationCenter|UserDefaults|URLSession|UIDevice|UIScreen|Bundle)\.(shared|default|standard|current|main)\b|\bProcessInfo\.processInfo\b'
     excluded: ['PointerApp/', 'Scripts/']
     match_kinds: [identifier, typeidentifier]
     message: "Apple singletons appear only in PointerApp. Pass the dependency in through the initializer."
@@ -165,9 +167,11 @@ custom_rules:
     message: "Make the SwiftUI property wrapper private. Pass values in through the initializer."
     severity: error
 
+  # DesignSystem is the one place where the raw values live.
   style_03_raw_ui_values:
     name: "STYLE-03"
     regex: '\.(padding|frame)\([^)]*\b\d+(\.\d+)?\b|\b(Color|UIColor)\([^)]*\b\d+(\.\d+)?\b'
+    excluded: 'Packages/DesignSystem/'
     message: "Take sizes and colors from DesignSystem, not from number literals."
     severity: error
 

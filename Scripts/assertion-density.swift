@@ -132,7 +132,12 @@ struct Blanker {
     private mutating func stepString(hashes: Int, isMultiline: Bool) {
         let delimiter = String(repeating: "#", count: hashes)
         let quote = isMultiline ? "\"\"\"" : "\""
-        if starts(with: "\\" + delimiter + "(", at: index) {
+        // A single-line string cannot hold a newline. A quote that opened a "string" here was
+        // part of other syntax, for example a regex literal, so the damage stops at the line end.
+        if !isMultiline && bytes[index] == UInt8(ascii: "\n") {
+            stack.removeLast()
+            index += 1
+        } else if starts(with: "\\" + delimiter + "(", at: index) {
             let open = index + hashes + 2
             blank(index..<open)
             stack.append(.code(isInterpolation: true, parenDepth: 0))
@@ -162,7 +167,8 @@ struct PackageResult {
 }
 
 let declarationPattern = try NSRegularExpression(
-    pattern: #"(?<![.\w])(?:func\s+(?:\w+|[^\s\w(<]+)|init[?!]?|subscript)\s*(?:<[^>{(]*>\s*)?\("#
+    pattern: #"(?<![.\w])(?:func\s+(?:\w+|[^\s\w(<]+)|init[?!]?|subscript)\s*"#
+        + #"(?:<(?:[^<>{(]|<[^<>{(]*>)*>\s*)?\("#
 )
 let checkPattern = try NSRegularExpression(
     pattern: #"\b(?:precondition|preconditionFailure|assert|assertionFailure)\s*\("#

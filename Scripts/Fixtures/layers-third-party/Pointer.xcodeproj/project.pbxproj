@@ -1,0 +1,21 @@
+// !$*UTF8*$!
+{
+	objects = {
+		A001 /* XCRemoteSwiftPackageReference "swift-collections" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-collections";
+		};
+		A002 /* XCLocalSwiftPackageReference "Packages/CanvasFeature" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/CanvasFeature;
+		};
+		A003 /* XCLocalSwiftPackageReference "Vendor/Library" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Vendor/Library;
+		};
+		A004 /* Prebuilt.xcframework */ = {
+			isa = PBXFileReference;
+			path = Prebuilt.xcframework;
+		};
+	};
+}

@@ -43,9 +43,9 @@ test:
 	done
 	@echo "test: done"
 
-# STYLE-04
+# STYLE-04. The fixtures hold deliberate violations, so the formatter skips them.
 format:
-	swift format lint --strict --recursive PointerApp Packages Scripts
+	swift format lint --strict --recursive PointerApp Packages Scripts/*.swift
 
 lint:
 	swiftlint --strict --quiet
@@ -58,5 +58,6 @@ layers:
 density:
 	swift Scripts/assertion-density.swift
 
+# The check scripts and the SwiftLint rules on Scripts/Fixtures.
 self-test:
 	Scripts/self-test.sh
