@@ -192,6 +192,8 @@ The pan of 10 strokes is the regression test of the idle pause in [m2-fix-plan.m
 
 The one late frame of the dense zoom was 41.7 ms. It came with one render-thread frame of 28.3 ms. Phase 4 targets the arena work that can cause it.
 
+On 2026-10-17 after phase 1, the product owner filmed fast strokes at 240 fps on the same iPad. The ink reached the pencil tip after 4 video frames, so about 16.7 ms. This meets the FEEL-01 limit of 20 ms but not the goal of 13 ms. The M2 film gave about 6 frames, 25 ms (D-40). PencilKit draws the live stroke on the main thread, and the renderer no longer blocks that thread for about 8 ms per frame. This is the likely cause of the gain, but no test isolates it.
+
 The content-pass tests gave 55 ms, 153 ms, and 212 ms in the same run. They show no change against the baselines above.
 
 `PointerDeviceTests` also compiles the files of `Packages/Rendering/Tests/RenderingTests`, except the snapshot tests, which read their reference images from the Mac.
