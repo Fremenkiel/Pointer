@@ -21,10 +21,20 @@ let package = Package(
             ],
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
+        .executableTarget(
+            name: "PersistenceCrashHelper",
+            dependencies: [
+                "Persistence",
+                .product(name: "Geometry", package: "Geometry"),
+                .product(name: "Model", package: "Model"),
+            ],
+            swiftSettings: [.treatAllWarnings(as: .error)]
+        ),
         .testTarget(
             name: "PersistenceTests",
             dependencies: [
                 "Persistence",
+                "PersistenceCrashHelper",
                 .product(name: "Geometry", package: "Geometry"),
                 .product(name: "Model", package: "Model"),
             ],

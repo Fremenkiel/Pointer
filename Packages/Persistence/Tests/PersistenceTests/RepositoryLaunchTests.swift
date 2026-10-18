@@ -92,6 +92,15 @@ struct RepositoryLaunchTests {
         #expect(files.contains("keep.sqlite"))
     }
 
+    @Test("A damaged library file gives a fault at the open and stays as it was (storage.md 9)")
+    func damagedLibrary() async throws {
+        let harness = try RepositoryHarness()
+        let damage = Data((0..<8_192).map { UInt8(truncatingIfNeeded: $0 &* 31) })
+        try damage.write(to: URL(filePath: harness.path))
+        await #expect(throws: ModelError.self) { _ = try await harness.make().open { _ in } }
+        #expect(try Data(contentsOf: URL(filePath: harness.path)) == damage)
+    }
+
     /// Rows at day 0 (`zeroblob` sorts first) and at day 30 after `RepositoryHarness.now`
     /// (`young`). The launch runs at day 31, so only the day-0 tombstones are old.
     static let tombstoneRows: StaticString = """
