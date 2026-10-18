@@ -63,10 +63,11 @@ extension FrameRenderer {
         let entries = strokes.reduce(0) { $0 + DetailRuns.blockCount(pointCount: $1.points.count) }
         let ring = try DrawListRing(device: resources.device, capacity: max(1, entries))
         let encoder = InkEncoder(resources: resources, store: store, ring: ring)
-        ring.beginFrame(commandBuffer)
-        let options = InkPassOptions(clear: true, instanceBudget: .max, frame: 1)
+        let context = FrameContext(commandBuffer: commandBuffer, frame: 1)
+        encoder.beginFrame(context)
+        let options = InkPassOptions(clear: true, instanceBudget: .max)
         let cursor = encoder.encodePass(
-            commandBuffer,
+            context,
             target: target,
             slots: slots,
             cursor: 0,

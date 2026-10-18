@@ -114,27 +114,8 @@ struct CanvasRendererTests {
 
     @Test("The composite shows the front texture 1:1 at whole-pixel offsets when the zoom is equal")
     func compositeIdentity() throws {
-        let resources = try makeResources()
-        let layer = try CommittedLayer(
-            resources: resources,
-            drawableWidth: 400,
-            drawableHeight: 240
-        )
-        let store = StrokeStore(
-            arena: try PointArena(
-                device: resources.device,
-                initialSlabs: 1,
-                byteBudget: 1 << 20
-            )
-        )
         let camera = Camera(center: Point(x: 5, y: 7), zoom: 2)
-        #expect(layer.startBuildIfNeeded(camera: camera, displayScale: 2, store: store))
-        let ring = try DrawListRing(device: resources.device, capacity: 4)
-        let encoder = InkEncoder(resources: resources, store: store, ring: ring)
-        let commandBuffer = try #require(resources.queue.makeCommandBuffer())
-        ring.beginFrame(commandBuffer)
-        layer.continueBuild(encoder: encoder, commandBuffer: commandBuffer, budget: 10, frame: 1)
-        commandBuffer.commit()
+        let layer = try makeBuiltLayer(camera: camera)
         let uniforms = layer.compositeUniforms(
             camera: camera,
             displayScale: 2,
@@ -154,6 +135,27 @@ struct CanvasRendererTests {
             drawableSize: Size(width: 400, height: 240)
         )
         #expect(fraction.offset == SIMD2(199, 120))
+    }
+
+    /// Returns a layer of 400 x 240 pixels with a complete, empty build for `camera`.
+    private func makeBuiltLayer(camera: Camera) throws -> CommittedLayer {
+        let resources = try makeResources()
+        let layer = try CommittedLayer(
+            resources: resources,
+            drawableWidth: 400,
+            drawableHeight: 240
+        )
+        let arena = try PointArena(device: resources.device, initialSlabs: 1, byteBudget: 1 << 20)
+        let store = StrokeStore(arena: arena)
+        #expect(layer.startBuildIfNeeded(camera: camera, displayScale: 2, store: store))
+        let ring = try DrawListRing(device: resources.device, capacity: 4)
+        let encoder = InkEncoder(resources: resources, store: store, ring: ring)
+        let commandBuffer = try #require(resources.queue.makeCommandBuffer())
+        let context = FrameContext(commandBuffer: commandBuffer, frame: 1)
+        encoder.beginFrame(context)
+        layer.continueBuild(encoder: encoder, context: context, budget: 10)
+        commandBuffer.commit()
+        return layer
     }
 
     private func makeResources() throws -> InkResources {
@@ -179,7 +181,8 @@ struct CanvasRendererTests {
         let resources = try makeResources()
         let (encoder, slots) = try makeEncoder(resources, strokes: 100)
         let commandBuffer = try #require(resources.queue.makeCommandBuffer())
-        encoder.ring.beginFrame(commandBuffer)
+        let context = FrameContext(commandBuffer: commandBuffer, frame: 1)
+        encoder.beginFrame(context)
         let texture = try resources.makeTarget(
             width: 64,
             height: 64,
@@ -190,17 +193,17 @@ struct CanvasRendererTests {
             camera: Camera(center: .zero, zoom: 1),
             displayScale: 1
         )
-        let late = InkPassOptions(clear: true, instanceBudget: .max, frame: 1, deadline: 0)
+        let late = InkPassOptions(clear: true, instanceBudget: .max, deadline: 0)
         let cursor = encoder.encodePass(
-            commandBuffer,
+            context,
             target: target,
             slots: slots,
             cursor: 0,
             options: late
         )
-        let rest = InkPassOptions(clear: false, instanceBudget: .max, frame: 1)
+        let rest = InkPassOptions(clear: false, instanceBudget: .max)
         let end = encoder.encodePass(
-            commandBuffer,
+            context,
             target: target,
             slots: slots,
             cursor: cursor,

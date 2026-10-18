@@ -51,10 +51,11 @@ final class InkRig {
         guard let commandBuffer = resources.queue.makeCommandBuffer() else {
             preconditionFailure("Metal gave no command buffer")
         }
-        encoder.ring.beginFrame(commandBuffer)
-        let options = InkPassOptions(clear: true, instanceBudget: .max, frame: 1)
+        let context = FrameContext(commandBuffer: commandBuffer, frame: 1)
+        encoder.beginFrame(context)
+        let options = InkPassOptions(clear: true, instanceBudget: .max)
         let cursor = encoder.encodePass(
-            commandBuffer,
+            context,
             target: target,
             slots: slots,
             cursor: 0,

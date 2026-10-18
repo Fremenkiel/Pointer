@@ -152,19 +152,18 @@ final class CommittedLayer {
     func addStrokes(
         _ slots: [Int],
         encoder: InkEncoder,
-        commandBuffer: any MTLCommandBuffer,
-        frame: UInt64
+        context: FrameContext
     ) {
         precondition(slots.allSatisfy { $0 >= 0 }, "A stroke slot is invalid")
         if build != nil {
             buildSlots.append(contentsOf: slots)
         }
         guard let front, !slots.isEmpty else { return }
-        let options = InkPassOptions(clear: false, instanceBudget: .max, frame: frame)
+        let options = InkPassOptions(clear: false, instanceBudget: .max)
         var cursor = 0
         for _ in slots.indices where cursor < slots.count {
             cursor = encoder.encodePass(
-                commandBuffer,
+                context,
                 target: front,
                 slots: slots,
                 cursor: cursor,
@@ -179,9 +178,8 @@ final class CommittedLayer {
     /// - Precondition: `budget` is positive.
     func continueBuild(
         encoder: InkEncoder,
-        commandBuffer: any MTLCommandBuffer,
+        context: FrameContext,
         budget: Int,
-        frame: UInt64,
         deadline: TimeInterval = .infinity
     ) {
         precondition(budget > 0, "Build budget must be positive, got \(budget)")
@@ -191,11 +189,10 @@ final class CommittedLayer {
         let options = InkPassOptions(
             clear: !current.hasCleared,
             instanceBudget: budget,
-            frame: frame,
             deadline: deadline
         )
         current.cursor = encoder.encodePass(
-            commandBuffer,
+            context,
             target: current.target,
             slots: buildSlots,
             cursor: current.cursor,

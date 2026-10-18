@@ -43,13 +43,9 @@ struct CommittedLayerTests {
             store: subject.store
         )
         let commandBuffer = try #require(subject.resources.queue.makeCommandBuffer())
-        subject.encoder.ring.beginFrame(commandBuffer)
-        subject.layer.continueBuild(
-            encoder: subject.encoder,
-            commandBuffer: commandBuffer,
-            budget: 1_000,
-            frame: 1
-        )
+        let context = FrameContext(commandBuffer: commandBuffer, frame: 1)
+        subject.encoder.beginFrame(context)
+        subject.layer.continueBuild(encoder: subject.encoder, context: context, budget: 1_000)
         commandBuffer.commit()
         return started
     }

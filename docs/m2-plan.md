@@ -98,6 +98,12 @@ On 2026-10-17 the CanvasFeature tests also passed on an iPad Pro 11-inch (M4), w
 xcodebuild test -project Pointer.xcodeproj -scheme PointerApp -destination 'id=DEVICE_ID' -allowProvisioningUpdates
 ```
 
+The performance values of this document come from the Release configuration. The tests use `@testable import`, so a Release run needs testability on the command line:
+
+```
+xcodebuild test -project Pointer.xcodeproj -scheme PointerApp -configuration Release -destination 'id=DEVICE_ID' -allowProvisioningUpdates ENABLE_TESTABILITY=YES
+```
+
 The coverage of `TEST-02` is not measured yet. To fill the canvas for acceptance 2 and 10, launch the app with `-fillStrokes 20000` or `-fillStrokes 200000 -fillPoints 30`.
 
 ### 4.1 Fixes from the device test of 2026-10-17
@@ -200,6 +206,28 @@ These are the baselines of 2026-10-17 after phase 2, tasks 1 to 3: the rebuild p
 | Dense, 10 strokes, pan | 120.0 | 0 of 479 | 17 | 0.57 | 0 | 37 |
 
 The main-thread time stayed at 0.02 ms or less at the 99th percentile in all runs. The late frame of the dense zoom is the render-thread spike of about 28 ms that phase 1 also showed.
+
+These are the baselines of 2026-10-18 after all phases of [m2-fix-plan.md](m2-fix-plan.md), on the iPad Pro 11-inch (M4) in the Release configuration:
+
+| Run | Frame rate | Intervals over 12.5 ms | Builds | Uncovered frames |
+|---|---|---|---|---|
+| Dense, 20,000 strokes, pan | 120.0 | 0 of 479 | 11 | 0 |
+| Dense, 20,000 strokes, pan at 2,000 points per second | 120.0 | 0 of 479 | 16 | 0 |
+| Dense, 20,000 strokes, zoom | 120.0 | 0 of 479 | 8 | 0 |
+| Handwriting, 200,000 strokes, pan | 120.0 | 0 of 479 | 11 | 0 |
+| Handwriting, 200,000 strokes, zoom | 120.0 | 0 of 479 | 8 | 0 |
+| Dense, 10 strokes, pan | 120.0 | 0 of 479 | 11 | 0 |
+
+The dense zoom had one late frame of 16.7 ms in two of the last five runs. Its render and GPU times stayed under 5 ms, so a long frame did not cause it.
+
+| Test | Result |
+|---|---|
+| `testContentPassTwentyThousandStrokes` | 40 ms |
+| `testContentPassTwoHundredThousandStrokes` | 156 ms |
+| `testContentPassTwoHundredThousandHandwritingStrokes` | 220 ms |
+| `FrameAllocationTests`: allocations of a pan frame against a bare Metal frame | 15 and 15 |
+| `PointArenaPerformanceTests`: slowest upload, slowest eviction | 0.12 ms, 0.39 ms |
+| `StrokeStoreMemoryTests`: heap of the store of 200,000 handwriting strokes | 69.7 MB (D-49) |
 
 The pan of 10 strokes is the regression test of the idle pause in [m2-fix-plan.md](m2-fix-plan.md), phase 1. Before the fix, it had 42 late frames.
 

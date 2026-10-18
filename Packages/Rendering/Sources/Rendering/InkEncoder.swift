@@ -14,7 +14,7 @@ final class InkEncoder {
 
     private let resources: InkResources
     private let store: StrokeStore
-    let ring: DrawListRing
+    private let ring: DrawListRing
     /// The level-of-detail spacing of the draws. Tests change it to compare values.
     var minimumPixelSpacing = LevelOfDetail.minimumPixelSpacing
     /// `false` uses the pieces of before phase 3, task 3. Tests change it to compare images.
@@ -36,13 +36,18 @@ final class InkEncoder {
         self.ring = ring
     }
 
+    /// Starts a frame: it waits for a free draw list and makes it the list of the frame.
+    func beginFrame(_ context: FrameContext) {
+        ring.beginFrame(context.commandBuffer)
+    }
+
     /// Encodes the strokes of `slots` from `cursor` on until the instance budget or the draw
     /// list is full. A pass draws at least one stroke.
     ///
     /// - Precondition: `cursor` is a valid start in `slots`, and the budget is positive.
     /// - Returns: The new cursor. It equals `slots.count` when all strokes are drawn.
     func encodePass(
-        _ commandBuffer: any MTLCommandBuffer,
+        _ context: FrameContext,
         target: InkTarget,
         slots: [Int],
         cursor: Int,
@@ -67,7 +72,7 @@ final class InkEncoder {
             guard isFirst || !Self.isPastDeadline(position - cursor, options.deadline) else {
                 break
             }
-            instances += appendEntries(slot, target: target, frame: options.frame, into: &lists)
+            instances += appendEntries(slot, target: target, frame: context.frame, into: &lists)
             position += 1
         }
         assert(
@@ -75,7 +80,7 @@ final class InkEncoder {
                 || ring.remaining < store.infos[slots[cursor]].blockCount,
             "A pass must advance unless the draw list is full"
         )
-        encode(lists, into: commandBuffer, target: target, clear: options.clear)
+        encode(lists, into: context.commandBuffer, target: target, clear: options.clear)
         swap(&lists, &buckets)
         return position
     }

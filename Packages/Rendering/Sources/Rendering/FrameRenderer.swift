@@ -139,8 +139,9 @@ final class FrameRenderer {
         else { return false }
         frame += 1
         store.releaseRemovals(at: frame)
-        encoder.ring.beginFrame(commandBuffer)
-        encodeContent(layer: layer, commandBuffer: commandBuffer)
+        let context = FrameContext(commandBuffer: commandBuffer, frame: frame)
+        encoder.beginFrame(context)
+        encodeContent(layer: layer, context: context)
         RenderSignpost.begin("NextDrawable")
         let target = drawable.next()
         RenderSignpost.end("NextDrawable")
@@ -184,16 +185,15 @@ final class FrameRenderer {
         return layer
     }
 
-    private func encodeContent(layer: CommittedLayer, commandBuffer: any MTLCommandBuffer) {
+    private func encodeContent(layer: CommittedLayer, context: FrameContext) {
         // One pass for all new strokes of the frame, from the reused list (PERF-01).
-        layer.addStrokes(pendingSlots, encoder: encoder, commandBuffer: commandBuffer, frame: frame)
+        layer.addStrokes(pendingSlots, encoder: encoder, context: context)
         pendingSlots.removeAll(keepingCapacity: true)
         _ = layer.startBuildIfNeeded(camera: camera, displayScale: displayScale, store: store)
         layer.continueBuild(
             encoder: encoder,
-            commandBuffer: commandBuffer,
+            context: context,
             budget: configuration.instanceBudgetPerFrame,
-            frame: frame,
             deadline: CACurrentMediaTime() + configuration.buildTimeBudget
         )
         assert(pendingSlots.isEmpty, "Each new stroke reached the committed layer")
