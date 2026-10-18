@@ -242,8 +242,8 @@ The GPU memory follows decision D-28.
 
 The point arena:
 
-1. All control points of a canvas live in one `MTLBuffer` with `.storageModeShared`, the arena. Apple GPUs share memory with the CPU, so the GPU reads the points directly.
-2. A slab allocator (an allocator that hands out ranges of fixed size classes) manages the arena. Each stroke owns one range.
+1. All control points of a canvas live in the arena: a list of `MTLBuffer` objects of 16 MB with `.storageModeShared`. Apple GPUs share memory with the CPU, so the GPU reads the points directly. The arena grows by one buffer and never copies points.
+2. A slab allocator (an allocator that hands out ranges of fixed size classes) manages the arena. The 32 size classes grow by 1.25, from 16 to 16,384 points. Each stroke owns one range, and a range never crosses a buffer.
 3. The arena stores only `x` and `y` of each point as a `float2`, 8 bytes per point, because the shader reads nothing else. The upload converts each `InkPoint` once. At the end of a stroke, the renderer copies the new points into the arena once.
 4. The arena has a byte budget. Above the budget, the renderer removes the least recently drawn strokes first, with a margin so that a pan at the edge does not remove and add the same strokes again. It never removes a stroke by its distance to the viewport.
 
@@ -253,7 +253,7 @@ Drawing (vertex pulling, which means that the shader reads the points from the b
 
 1. Each instance is one piece of a curve segment. The vertex shader reads 4 control points from the arena, evaluates the B-spline at the start and the end of the piece, and builds a capsule (a segment with round ends) as a quad. No capsule buffer exists.
 2. The fragment shader computes the distance from the pixel to the segment and gives an anti-aliased edge with a `smoothstep` over plus or minus 1.06 pixels. This matches the edge of the PencilKit monoline (see [m2-plan.md](m2-plan.md) section 1).
-3. Per frame, the CPU writes one small draw list for the visible strokes: the first point, the point count, the level of detail, the first instance, and the stroke origin minus the camera center as `Float`. One instanced draw covers many strokes. The vertex shader finds the stroke of an instance with a binary search over the first instances.
+3. Per frame, the CPU writes one small draw list for the visible strokes: the first point, the point count, the level of detail, the first instance, and the stroke origin minus the camera center as `Float`. One instanced draw per arena buffer covers many strokes: the encoder groups the entries of a pass by buffer. The vertex shader finds the stroke of an instance with a binary search over the first instances.
 
 Level of detail:
 

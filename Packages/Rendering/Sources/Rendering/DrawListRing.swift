@@ -66,6 +66,16 @@ final class DrawListRing {
         }
     }
 
+    /// Writes entries at the end of the current frame in one copy.
+    ///
+    /// - Precondition: The frame has room for the entries.
+    func append(contentsOf entries: [StrokeDrawEntry]) {
+        precondition(used + entries.count <= capacity, "Draw list is full at \(capacity) entries")
+        write(entries, at: used)
+        used += entries.count
+        assert(used <= capacity, "The draw list passed its capacity")
+    }
+
     /// Writes one entry at the end of the current frame.
     ///
     /// - Precondition: The frame has room for one more entry.

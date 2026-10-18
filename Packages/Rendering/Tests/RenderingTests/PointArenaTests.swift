@@ -17,20 +17,33 @@ struct PointArenaTests {
         )
     }
 
-    @Test("The arena doubles up to its budget and keeps the written points")
+    @Test("The arena adds one buffer at a time up to its budget, and no block crosses a buffer")
     func growth() throws {
-        let arena = try makeArena(slabs: 1, budgetSlabs: 4)
+        let device = try #require(MTLCreateSystemDefaultDevice())
+        let arena = try PointArena(
+            device: device,
+            initialSlabs: 1,
+            byteBudget: 5 * PointArena.bytesPerSlab,
+            slabsPerBuffer: 2
+        )
         let points = InkPoints((0..<16_384).map { InkPoint(x: Float($0), y: 0, force: 1, time: 0) })
+        #expect(arena.buffers.count == 1)
         let first = try #require(arena.allocate(points: points.count))
         arena.write(points, to: first)
         let second = try #require(arena.allocate(points: points.count))
-        #expect(arena.slabCount == 2)
-        #expect(second.start == SlabAllocator.slabPoints)
+        #expect(arena.buffers.count == 1)
+        #expect(arena.location(of: second) == (buffer: 0, offset: SlabAllocator.slabPoints))
+        let third = try #require(arena.allocate(points: points.count))
+        #expect(arena.buffers.count == 2)
+        #expect(arena.location(of: third) == (buffer: 1, offset: 0))
         _ = try #require(arena.allocate(points: points.count))
-        _ = try #require(arena.allocate(points: points.count))
-        #expect(arena.slabCount == 4)
+        let fifth = try #require(arena.allocate(points: points.count))
+        #expect(arena.buffers.count == 3)
+        #expect(arena.buffers[2].length == PointArena.bytesPerSlab)
+        #expect(arena.location(of: fifth) == (buffer: 2, offset: 0))
         #expect(arena.allocate(points: points.count) == nil)
-        #expect(arena.usedBytes == 4 * PointArena.bytesPerSlab)
+        #expect(arena.footprint == 5 * PointArena.bytesPerSlab)
+        #expect(arena.usedBytes == 5 * PointArena.bytesPerSlab)
     }
 
     @Test("A full arena evicts the strokes drawn least recently and loads them again")

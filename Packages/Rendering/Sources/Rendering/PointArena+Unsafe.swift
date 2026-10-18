@@ -10,24 +10,19 @@ extension PointArena {
             points.count <= block.capacity,
             "Block \(block) is too small for \(points.count) points"
         )
+        let (bufferIndex, offset) = location(of: block)
+        let buffer = buffers[bufferIndex]
         precondition(
-            (block.start + block.capacity) * Self.bytesPerPoint <= buffer.length,
-            "Block \(block) is outside the arena"
+            (offset + block.capacity) * Self.bytesPerPoint <= buffer.length,
+            "Block \(block) is outside its buffer"
         )
         // Safe: the buffer is shared memory of `buffer.length` bytes, and the preconditions keep
         // the writes inside it. Each slot is one `SIMD2<Float>`, the `float2` of the shader.
         let target = buffer.contents()
-            .advanced(by: block.start * Self.bytesPerPoint)
+            .advanced(by: offset * Self.bytesPerPoint)
             .bindMemory(to: SIMD2<Float>.self, capacity: points.count)
         for (index, point) in points.values.enumerated() {
             target[index] = SIMD2(point.x, point.y)
         }
-    }
-
-    /// Copies the whole old buffer to the start of the new buffer.
-    func copyContents(of old: any MTLBuffer, to new: any MTLBuffer) {
-        precondition(new.length >= old.length, "The new arena is smaller than the old one")
-        // Safe: both buffers are shared memory, and the new buffer is at least as long.
-        new.contents().copyMemory(from: old.contents(), byteCount: old.length)
     }
 }

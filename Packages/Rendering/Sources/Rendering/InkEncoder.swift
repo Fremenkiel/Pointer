@@ -3,7 +3,8 @@ import Metal
 import Model
 import QuartzCore
 
-/// Encodes ink passes: one instanced draw for many strokes with vertex pulling (D-28).
+/// Encodes ink passes: one instanced draw per arena buffer for many strokes with vertex pulling
+/// (D-28).
 final class InkEncoder {
     /// Half the width of the anti-aliased edge, in pixels. It matches the edge of the PencilKit
     /// monoline (docs/m2-plan.md section 1, fact 3).
@@ -18,6 +19,8 @@ final class InkEncoder {
     var minimumPixelSpacing = LevelOfDetail.minimumPixelSpacing
     /// `false` uses the pieces of before phase 3, task 3. Tests change it to compare images.
     var usesSmoothPieces = true
+    /// The entry lists of the passes. A pass moves them into a local value and back.
+    private var buckets = EntryBuckets()
 
     /// Makes an encoder.
     init(resources: InkResources, store: StrokeStore, ring: DrawListRing) {
@@ -40,22 +43,19 @@ final class InkEncoder {
     ) -> Int {
         precondition(cursor >= 0 && cursor <= slots.count, "Cursor \(cursor) out of \(slots.count)")
         precondition(options.instanceBudget > 0, "Instance budget must be positive")
-        let firstEntry = ring.used
+        var lists = EntryBuckets()
+        swap(&lists, &buckets)
+        lists.reset(bufferCount: store.arena.buffers.count)
         var position = cursor
         var instances = 0
         for slot in slots[cursor...] {
             let isFirst = position == cursor
-            guard ring.remaining >= store.infos[slot].blockCount else { break }
+            guard lists.entryCount + store.infos[slot].blockCount <= ring.remaining else { break }
             guard isFirst || instances < options.instanceBudget else { break }
             guard isFirst || !Self.isPastDeadline(position - cursor, options.deadline) else {
                 break
             }
-            instances += appendEntries(
-                slot,
-                target: target,
-                frame: options.frame,
-                firstInstance: instances
-            )
+            instances += appendEntries(slot, target: target, frame: options.frame, into: &lists)
             position += 1
         }
         assert(
@@ -63,27 +63,27 @@ final class InkEncoder {
                 || ring.remaining < store.infos[slots[cursor]].blockCount,
             "A pass must advance unless the draw list is full"
         )
-        let draw = InkDraw(
-            entries: firstEntry..<ring.used,
-            instances: instances,
-            clear: options.clear
-        )
-        encode(draw, into: commandBuffer, target: target)
+        encode(lists, into: commandBuffer, target: target, clear: options.clear)
+        swap(&lists, &buckets)
         return position
     }
 
-    /// Writes one draw entry per level-of-detail run of a stroke.
+    /// Writes one draw entry per level-of-detail run of a stroke into the list of its buffer.
     ///
     /// - Returns: The instances of the entries, or 0 if the arena has no room for the stroke.
     private func appendEntries(
         _ slot: Int,
         target: InkTarget,
         frame: UInt64,
-        firstInstance: Int
+        into lists: inout EntryBuckets
     ) -> Int {
         guard let info = store.residentInfo(of: slot, frame: frame), let block = info.block else {
             return 0
         }
+        // The upload can add an arena buffer, and the new buffer needs a list.
+        lists.ensure(bufferCount: store.arena.buffers.count)
+        let (bucket, offset) = store.arena.location(of: block)
+        let firstInstance = lists.instanceCount(of: bucket)
         // The subtraction runs in Double before the conversion to Float (architecture.md 5.3).
         let delta = info.origin - target.camera.center
         let origin = SIMD2(Float(delta.dx), Float(delta.dy))
@@ -98,25 +98,14 @@ final class InkEncoder {
             ),
             bend: { store.bend(slot: slot, block: $0) },
             body: { run in
-                let detail = StrokeDrawEntry.packDetail(
-                    stride: run.stride,
-                    pieces: run.pieces,
-                    nextOffset: run.nextOffset
+                let entry = StrokeDrawEntry(
+                    run,
+                    origin: origin,
+                    bufferOffset: offset,
+                    firstInstance: firstInstance + instances,
+                    radius: info.radius
                 )
-                ring.append(
-                    StrokeDrawEntry(
-                        origin: origin,
-                        firstPoint: UInt32(block.start + run.start),
-                        pointCount: UInt32(run.end - run.start + 1),
-                        firstSegment: StrokeDrawEntry.packStart(
-                            start: run.start,
-                            previousOffset: run.previousOffset
-                        ),
-                        detail: detail,
-                        firstInstance: UInt32(firstInstance + instances),
-                        radius: info.radius
-                    )
-                )
+                lists.append(entry, instanceCount: run.instanceCount, to: bucket)
                 instances += run.instanceCount
             }
         )
@@ -129,14 +118,16 @@ final class InkEncoder {
         drawn.isMultiple(of: deadlineCheckInterval) && CACurrentMediaTime() > deadline
     }
 
+    /// Writes the lists into the draw list and encodes one render pass with one draw per buffer.
     private func encode(
-        _ draw: InkDraw,
+        _ lists: EntryBuckets,
         into commandBuffer: any MTLCommandBuffer,
-        target: InkTarget
+        target: InkTarget,
+        clear: Bool
     ) {
         let pass = MTLRenderPassDescriptor()
         pass.colorAttachments[0].texture = target.texture
-        pass.colorAttachments[0].loadAction = draw.clear ? .clear : .load
+        pass.colorAttachments[0].loadAction = clear ? .clear : .load
         pass.colorAttachments[0].storeAction = .store
         pass.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
         guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass) else {
@@ -144,20 +135,22 @@ final class InkEncoder {
             return
         }
         encoder.label = "Ink"
-        assert(draw.instances >= 0, "Instance count \(draw.instances) is negative")
-        if !draw.entries.isEmpty && draw.instances > 0 {
-            encoder.setRenderPipelineState(resources.inkPipeline)
-            encoder.setVertexBuffer(store.arena.buffer, offset: 0, index: 0)
-            let entryOffset = draw.entries.lowerBound * MemoryLayout<StrokeDrawEntry>.stride
+        encoder.setRenderPipelineState(resources.inkPipeline)
+        for (index, bucket) in lists.lists.enumerated() where !bucket.isEmpty {
+            let firstEntry = ring.used
+            ring.append(contentsOf: bucket)
+            assert(lists.instanceCount(of: index) > 0, "A list with entries draws instances")
+            encoder.setVertexBuffer(store.arena.buffers[index], offset: 0, index: 0)
+            let entryOffset = firstEntry * MemoryLayout<StrokeDrawEntry>.stride
             encoder.setVertexBuffer(ring.buffer, offset: entryOffset, index: 1)
-            let uniforms = Self.uniforms(target: target, entryCount: draw.entries.count)
+            let uniforms = Self.uniforms(target: target, entryCount: bucket.count)
             encoder.setVertexValue(uniforms, index: 2)
             encoder.setFragmentValue(uniforms, index: 2)
             encoder.drawPrimitives(
                 type: .triangleStrip,
                 vertexStart: 0,
                 vertexCount: 4,
-                instanceCount: draw.instances
+                instanceCount: lists.instanceCount(of: index)
             )
         }
         encoder.endEncoding()
@@ -175,11 +168,4 @@ final class InkEncoder {
             edge: edgeHalfWidthPixels
         )
     }
-}
-
-/// One instanced draw over a range of the draw list.
-private struct InkDraw {
-    let entries: Range<Int>
-    let instances: Int
-    let clear: Bool
 }

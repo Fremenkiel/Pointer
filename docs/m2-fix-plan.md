@@ -136,8 +136,10 @@ At zoom 1, 30 % fewer instances came only with a difference of 40, as in the ben
 
 ### Phase 4: memory
 
-Status on 2026-10-18: tasks 1 and 2 are done. The arena holds 8 bytes per point. The GPU time did not change, and the content pass of 200,000 handwriting strokes took 221 ms.
+Status on 2026-10-18: tasks 1 to 3 are done. The arena holds 8 bytes per point. The GPU time did not change, and the content pass of 200,000 handwriting strokes took 221 ms.
 The size classes are multiples of 16 points that grow by 1.25, 32 classes from 16 to 16,384 points. A stroke of 300 points takes a block of 304, and a stroke of 60 points takes 64.
+
+The arena is a list of buffers of 16 MB. `PointArenaPerformanceTests` uploads 200,000 handwriting strokes with the budget of 192 MB: the slowest upload, with a buffer growth, took 0.049 ms, and the arena ended at 7 buffers, 112 MB. The dense zoom of the frame-loop test lost its late frame of about 28 ms. The first version of the grouped draw list made the CPU work of a pass about 20 % slower. A local value for the lists and one copy per list into the draw list removed most of it: the render-thread time of a pan is now within 10 % of the time before task 3.
 
 1. Store only `x` and `y` in the arena, 8 bytes per point. The shader reads only `.xy`. The `float2` variant ran at the same speed (4.10 ms against 4.12 ms). This halves the arena for the same strokes.
 2. Use size classes in steps of 1.25 instead of powers of two. A 300-point stroke then takes a 304-point block instead of a 512-point block. `SlabAllocator` keeps one size class per slab, with 32 classes instead of 11.
