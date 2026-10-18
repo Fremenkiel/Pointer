@@ -14,7 +14,8 @@ public struct Workspace: Identifiable, Hashable, Sendable {
     /// Makes a workspace with a trimmed title.
     ///
     /// - Throws: `ModelError.invalidTitle` if the trimmed title has a length outside
-    ///   `1...Limits.maxTitleLength` code points.
+    ///   `1...Limits.maxTitleLength` code points, and `ModelError.nullCharacter` if it holds
+    ///   U+0000.
     public init(
         id: WorkspaceID,
         meta: RecordMeta,
@@ -33,9 +34,11 @@ public struct Workspace: Identifiable, Hashable, Sendable {
     /// Returns the title without white space and line breaks at its ends.
     ///
     /// - Throws: `ModelError.invalidTitle` if the trimmed title has a length outside
-    ///   `1...Limits.maxTitleLength` code points (D-57).
+    ///   `1...Limits.maxTitleLength` code points, and `ModelError.nullCharacter` if it holds
+    ///   U+0000 (D-57).
     public static func validatedTitle(_ title: String) throws(ModelError) -> String {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !TextLength.hasNull(trimmed) else { throw .nullCharacter }
         let length = TextLength.of(trimmed)
         guard length >= 1, length <= Limits.maxTitleLength else {
             throw .invalidTitle(length: length)

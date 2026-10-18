@@ -20,7 +20,8 @@ public struct Card: Identifiable, Hashable, Sendable {
     /// - Throws: `ModelError.cardIsOwnCanvas` if `canvasID` is the child canvas of the card,
     ///   `ModelError.invalidGeometry` for a frame that is not finite or is smaller than
     ///   `Limits.minCardWidth` by `Limits.minCardHeight`, and `ModelError.invalidTitle` for a
-    ///   title above `Limits.maxTitleLength` code points.
+    ///   title above `Limits.maxTitleLength` code points or `ModelError.nullCharacter` for a
+    ///   title with U+0000.
     public init(
         id: CardID,
         meta: RecordMeta,
@@ -31,6 +32,7 @@ public struct Card: Identifiable, Hashable, Sendable {
     ) throws(ModelError) {
         guard canvasID != CanvasID(id) else { throw .cardIsOwnCanvas }
         try Self.check(frame)
+        guard !(title.map(TextLength.hasNull) ?? false) else { throw .nullCharacter }
         let titleLength = title.map(TextLength.of) ?? 0
         guard titleLength <= Limits.maxTitleLength else {
             throw .invalidTitle(length: titleLength)

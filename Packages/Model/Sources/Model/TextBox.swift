@@ -21,7 +21,7 @@ public struct TextBox: Identifiable, Hashable, Sendable {
     ///
     /// - Throws: `ModelError.invalidGeometry` if `origin` is not finite, and
     ///   `ModelError.invalidText` if the text has a length outside `1...Limits.maxTextLength`
-    ///   code points (D-57).
+    ///   code points, and `ModelError.nullCharacter` if the text holds U+0000 (D-57).
     public init(
         id: TextBoxID,
         meta: RecordMeta,
@@ -31,6 +31,7 @@ public struct TextBox: Identifiable, Hashable, Sendable {
         sortKey: FractionalIndex
     ) throws(ModelError) {
         guard origin.isFinite else { throw .invalidGeometry(reason: "text box origin") }
+        guard !TextLength.hasNull(text) else { throw .nullCharacter }
         let length = TextLength.of(text)
         guard length >= 1, length <= Limits.maxTextLength else {
             throw .invalidText(length: length)

@@ -42,6 +42,13 @@ struct RecordTests {
         }
     }
 
+    @Test("A title or a text with U+0000 is refused, because SQLite length() stops there")
+    func nullCharacter() {
+        #expect(throws: ModelError.nullCharacter) { try Workspace.validatedTitle("\u{0}abc") }
+        #expect(throws: ModelError.nullCharacter) { try Self.card(title: "a\u{0}") }
+        #expect(throws: ModelError.nullCharacter) { try Self.textBox(text: "x\u{0}y") }
+    }
+
     @Test("A workspace and its root canvas have the same ID")
     func workspaceCanvas() throws {
         let workspace = try Workspace(

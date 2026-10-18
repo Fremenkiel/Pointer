@@ -489,6 +489,7 @@ Status values: Open, Decided, Replaced.
 - Storage.md says that the Swift code checks first and that the database is the last line of defense. If Swift counts grapheme clusters, a title of 100 flags passes the Swift check, but the `CHECK` refuses it. Then each save fails, and after three failures the app stops edits.
 - Options: (a) Swift counts Unicode code points (`unicodeScalars.count`), the same unit as `length()`. The schema stays as it is. A title of emoji reaches the limit with fewer visible characters. (b) Swift counts grapheme clusters, and the `CHECK` constraints change to a larger code point limit, for example 8 times the limit. The schema changes before version 1 ships.
 - Recommendation: (a). The two checks then use one unit, so a value that passes Swift always passes SQLite. The limits are generous for typed titles and notes.
+- Addition by the product owner on 2026-10-18, raised by task 3.3: SQLite `length()` stops at the first U+0000. A title "\0abc" counts 4 in Swift and 0 in SQLite, and text after a U+0000 escapes the limit. Thus `Model` refuses U+0000 in titles and texts with `ModelError.nullCharacter`.
 
 ## Points in the request that conflict or are not complete
 

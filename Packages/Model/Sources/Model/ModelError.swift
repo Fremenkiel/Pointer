@@ -12,6 +12,8 @@ public enum ModelError: Error, Equatable, Sendable {
     case invalidPath(reason: String)
     /// A title has a length in Unicode code points outside its range (D-57).
     case invalidTitle(length: Int)
+    /// A title or a text holds U+0000, which SQLite `length()` does not count (D-57).
+    case nullCharacter
     /// A text has a length in Unicode code points outside `1...Limits.maxTextLength` (D-57).
     case invalidText(length: Int)
     /// A position or a frame is not finite, or a card is smaller than the card minimum.

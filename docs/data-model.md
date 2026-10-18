@@ -117,7 +117,7 @@ Strokes do not need a key. Ink is opaque white, so the drawing order of strokes 
 
 ## 7. Entities
 
-Each initializer checks the limits of its type and throws `ModelError` for a value outside them. A length limit of a title or a text counts Unicode code points, the unit of the SQLite `length()` function (D-57).
+Each initializer checks the limits of its type and throws `ModelError` for a value outside them. A length limit of a title or a text counts Unicode code points, the unit of the SQLite `length()` function (D-57). A title or a text must not hold U+0000, because `length()` stops at it.
 
 ### 7.1 Workspace
 
