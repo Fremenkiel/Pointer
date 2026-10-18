@@ -29,6 +29,10 @@ final class StrokeStore {
         let blockCount: Int
         var block: ArenaBlock?
         var lastDrawnFrame: UInt64 = 0
+        /// `true` after a draw. The clock sweep clears it once before it evicts the stroke.
+        var isReferenced = false
+        /// The index of the stroke in `residentSlots`, or -1 if the stroke has no block.
+        var residentIndex = -1
     }
 
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
@@ -42,6 +46,10 @@ final class StrokeStore {
     /// The bend of each block, measured at the first draw that needs it. NaN until then.
     private var blockBends: [Float] = []
     private(set) var grid = SpatialGrid<Int>(cellSize: gridCellSize)
+    /// The slots of the strokes with an arena block, in no order. The clock sweep walks it.
+    private var residentSlots: [Int] = []
+    /// The position of the clock hand in `residentSlots`.
+    private var clockHand = 0
     let arena: PointArena
 
     /// Makes an empty store.
@@ -89,6 +97,7 @@ final class StrokeStore {
     func residentInfo(of slot: Int, frame: UInt64) -> DrawInfo? {
         precondition(infos.indices.contains(slot), "Stroke slot \(slot) does not exist")
         infos[slot].lastDrawnFrame = frame
+        infos[slot].isReferenced = true
         let info = infos[slot]
         if info.block != nil { return info }
         let points = strokes[slot].points
@@ -101,34 +110,67 @@ final class StrokeStore {
         }
         arena.write(points, to: block)
         infos[slot].block = block
+        infos[slot].residentIndex = residentSlots.count
+        residentSlots.append(slot)
         assert(block.capacity >= info.pointCount, "Block \(block) is too small for slot \(slot)")
         return infos[slot]
     }
 
+    /// Frees blocks with a clock sweep until the arena is below its eviction target, then
+    /// allocates. A sort of all strokes by their last frame took 4.2 ms with 200,000 strokes
+    /// (docs/m2-fix-plan.md, phase 4, task 4).
+    ///
+    /// The hand walks the resident strokes. It skips a stroke that a frame in flight can still
+    /// read, gives a stroke drawn since the last visit a second chance, and frees the others.
     private func evictAndAllocate(_ points: Int, _ frame: UInt64) -> ArenaBlock? {
         precondition(points >= 1, "An allocation needs points, got \(points)")
         let state = signposter.beginInterval("EvictAndAllocate")
         defer { signposter.endInterval("EvictAndAllocate", state) }
         let protectedAfter = frame > Self.framesInFlight ? frame - Self.framesInFlight : 0
-        var candidates = infos.indices.filter {
-            infos[$0].block != nil && infos[$0].lastDrawnFrame < protectedAfter
-        }
-        candidates.sort { infos[$0].lastDrawnFrame < infos[$1].lastDrawnFrame }
         let target = Int(Double(arena.byteBudget) * (1 - Self.evictionMargin))
-        for slot in candidates {
-            guard let block = infos[slot].block else { continue }
-            arena.free(block)
-            infos[slot].block = nil
-            if arena.usedBytes <= target, let result = arena.allocate(points: points) {
-                return result
+        // Two rounds visit each stroke twice: once to clear its mark, once to free it.
+        let steps = 2 * residentSlots.count
+        for _ in 0..<steps where !residentSlots.isEmpty {
+            clockHand %= residentSlots.count
+            let slot = residentSlots[clockHand]
+            if infos[slot].lastDrawnFrame >= protectedAfter {
+                clockHand += 1
+            } else if infos[slot].isReferenced {
+                infos[slot].isReferenced = false
+                clockHand += 1
+            } else {
+                evict(slot)
+                if arena.usedBytes <= target, let result = arena.allocate(points: points) {
+                    return result
+                }
             }
         }
         let result = arena.allocate(points: points)
         assert(
-            result != nil || candidates.allSatisfy { infos[$0].block == nil },
-            "Eviction stopped early"
+            result != nil
+                || residentSlots.allSatisfy { infos[$0].lastDrawnFrame >= protectedAfter },
+            "Eviction stopped while a stroke could still be freed"
         )
         return result
+    }
+
+    /// Frees the block of a stroke and removes it from the resident list. The last resident
+    /// stroke takes its place, so the hand visits it next.
+    private func evict(_ slot: Int) {
+        guard let block = infos[slot].block else {
+            preconditionFailure("Slot \(slot) has no block")
+        }
+        let index = infos[slot].residentIndex
+        precondition(residentSlots.indices.contains(index), "Slot \(slot) is not resident")
+        arena.free(block)
+        infos[slot].block = nil
+        infos[slot].residentIndex = -1
+        let moved = residentSlots.removeLast()
+        if moved != slot {
+            residentSlots[index] = moved
+            infos[moved].residentIndex = index
+        }
+        assert(residentSlots.count <= infos.count, "More resident strokes than strokes")
     }
 
     /// Returns the bend of block `block` of the stroke in `slot`, and measures it at the first
