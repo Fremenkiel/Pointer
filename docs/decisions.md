@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-57 on the same day.
 
 Status values: Open, Decided, Replaced.
 
@@ -64,6 +64,7 @@ Status values: Open, Decided, Replaced.
 | D-54 | Process stop in the crash test of M3 acceptance 1 | A Mac test stops a helper process with `SIGKILL` | Decided (2026-10-18) |
 | D-55 | Saved strokes of the `-fillStrokes` launch argument | Not saved | Decided (2026-10-18) |
 | D-56 | Content of M3 acceptance 3 | 20,000 strokes of 300 points, 5,000 cards, 5,000 text boxes, to the first frame | Decided (2026-10-18) |
+| D-57 | The unit of the title and text length limits | Unicode code points, as SQLite `length()` counts | Decided (2026-10-18) |
 
 ## Details
 
@@ -480,6 +481,14 @@ Status values: Open, Decided, Replaced.
 - M3 acceptance 3 opens a canvas with 10,000 nodes and 20,000 strokes in under 300 ms. It does not give the size of a stroke or a text box, or the end point of the measurement.
 - Recommendation: 20,000 strokes of 300 control points, 5,000 cards, and 5,000 text boxes of 200 characters each. The measurement ends at the first frame, as in architecture.md section 12.
 - Doubt: 300 points per stroke is the size of the M2 dense content. Real handwriting has about 60 points per stroke, so this content is a hard case.
+
+### D-57 Unit of the title and text length limits
+
+- Decided by the product owner on 2026-10-18: option (a), Unicode code points. Raised by task 3.2 of [m3-plan.md](m3-plan.md).
+- [data-model.md](data-model.md) section 7 gives the limits in characters: a workspace title has 1 to 120, a card title 0 to 120, and a text box 1 to `Limits.maxTextLength`. The `CHECK` constraints of [storage.md](storage.md) section 3.3 use the SQLite function `length()`. For a `TEXT` value, `length()` counts Unicode code points. Swift `String.count` counts the characters that the user sees (grapheme clusters). One emoji flag is one Swift character but two code points. A family emoji is one Swift character but up to seven code points.
+- Storage.md says that the Swift code checks first and that the database is the last line of defense. If Swift counts grapheme clusters, a title of 100 flags passes the Swift check, but the `CHECK` refuses it. Then each save fails, and after three failures the app stops edits.
+- Options: (a) Swift counts Unicode code points (`unicodeScalars.count`), the same unit as `length()`. The schema stays as it is. A title of emoji reaches the limit with fewer visible characters. (b) Swift counts grapheme clusters, and the `CHECK` constraints change to a larger code point limit, for example 8 times the limit. The schema changes before version 1 ships.
+- Recommendation: (a). The two checks then use one unit, so a value that passes Swift always passes SQLite. The limits are generous for typed titles and notes.
 
 ## Points in the request that conflict or are not complete
 
