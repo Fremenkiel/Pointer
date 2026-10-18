@@ -71,6 +71,29 @@ struct CanvasRendererTests {
         #expect(renderer.strokeCount == 3)
     }
 
+    @Test("After a new viewport, the old texture stays on the screen until the new one is complete")
+    func viewportFallback() throws {
+        let renderer = try CanvasRenderer(
+            configuration: RendererConfiguration(instanceBudgetPerFrame: 100)
+        )
+        let layer = makeLayer(renderer: renderer)
+        let strokes = (0..<20).map {
+            StrokeBuilder.curve(at: Point(x: -60, y: Double($0) * 3 - 30), seed: $0)
+        }
+        renderer.load(strokes)
+        _ = drain(renderer, layer: layer)
+        layer.drawableSize = CGSize(width: 240, height: 400)
+        renderer.setViewport(viewSize: Size(width: 120, height: 200), displayScale: 2)
+        renderer.renderFrame(into: layer, deadline: nil)
+        let isBuilding = renderer.engine.withRenderer { $0.layer?.front == nil }
+        let showsOld = renderer.engine.withRenderer { $0.layer?.shown != nil }
+        #expect(isBuilding)
+        #expect(showsOld)
+        _ = drain(renderer, layer: layer)
+        let hasFallback = renderer.engine.withRenderer { $0.layer?.fallback != nil }
+        #expect(!hasFallback)
+    }
+
     @Test("A build in chunks completes and stops asking for frames")
     func chunkedBuild() throws {
         let renderer = try CanvasRenderer(
@@ -114,17 +137,20 @@ struct CanvasRendererTests {
         commandBuffer.commit()
         let uniforms = layer.compositeUniforms(
             camera: camera,
+            displayScale: 2,
             drawableSize: Size(width: 400, height: 240)
         )
         #expect(uniforms.scale == SIMD2(1, 1))
         #expect(uniforms.offset == SIMD2(200, 120))
         let moved = layer.compositeUniforms(
             camera: camera.panned(byView: Vector(dx: 10, dy: 0)),
+            displayScale: 2,
             drawableSize: Size(width: 400, height: 240)
         )
         #expect(moved.offset == SIMD2(180, 120))
         let fraction = layer.compositeUniforms(
             camera: camera.panned(byView: Vector(dx: 0.3, dy: -0.2)),
+            displayScale: 2,
             drawableSize: Size(width: 400, height: 240)
         )
         #expect(fraction.offset == SIMD2(199, 120))

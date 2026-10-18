@@ -22,6 +22,8 @@ final class FrameRenderer {
     /// The newest handoff whose strokes wait for the screen, or 0 if none waits.
     private var waitingHandoff: UInt64 = 0
     private var frame: UInt64 = 0
+    /// `true` after a new viewport until the next frame makes a new committed layer.
+    private var needsNewLayer = false
     private var viewSize = Size.zero
     private var displayScale = 1.0
     /// Runs on any thread after the first frame that shows the strokes of a handoff, with the
@@ -68,7 +70,7 @@ final class FrameRenderer {
     /// Before the first frame has a texture, the renderer still needs a frame. Otherwise an
     /// early frame without a drawable size ends the frame loop, and the screen stays black.
     var needsMoreFrames: Bool {
-        guard let layer else { return viewSize.width > 0 && viewSize.height > 0 }
+        guard let layer, !needsNewLayer else { return viewSize.width > 0 && viewSize.height > 0 }
         return layer.isBuilding || layer.isSettling || !pendingSlots.isEmpty || waitingHandoff > 0
     }
 
@@ -81,7 +83,7 @@ final class FrameRenderer {
         guard viewSize != self.viewSize || displayScale != self.displayScale else { return }
         self.viewSize = viewSize
         self.displayScale = displayScale
-        layer = nil
+        needsNewLayer = true
     }
 
     /// Adds strokes without a handoff, for example at load time.
@@ -163,7 +165,7 @@ final class FrameRenderer {
         let width = Int(drawableSize.width)
         let height = Int(drawableSize.height)
         assert(width >= 0 && height >= 0, "Drawable size \(width) x \(height) is negative")
-        if let layer, layer.drawableWidth == width, layer.drawableHeight == height {
+        if let layer, !needsNewLayer, layer.drawableWidth == width, layer.drawableHeight == height {
             return layer
         }
         guard width >= 1, height >= 1 else { return nil }
@@ -171,8 +173,10 @@ final class FrameRenderer {
             layer = try CommittedLayer(
                 resources: resources,
                 drawableWidth: width,
-                drawableHeight: height
+                drawableHeight: height,
+                fallback: layer?.shown
             )
+            needsNewLayer = false
         } catch {
             logger.error("Committed layer failed: \(String(describing: error))")
             return nil
@@ -216,12 +220,16 @@ final class FrameRenderer {
             return
         }
         encoder.label = "Composite"
-        if let front = layer.front {
+        if let front = layer.shown {
             let size = Size(width: Double(texture.width), height: Double(texture.height))
             encoder.setRenderPipelineState(resources.compositePipeline)
             encoder.setFragmentTexture(front.texture, index: 0)
             encoder.setFragmentValue(
-                layer.compositeUniforms(camera: camera, drawableSize: size),
+                layer.compositeUniforms(
+                    camera: camera,
+                    displayScale: displayScale,
+                    drawableSize: size
+                ),
                 index: 0
             )
             encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)

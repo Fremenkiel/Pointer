@@ -27,8 +27,12 @@ final class CommittedLayer {
     /// A camera that stays still for this many frames gets a build at its exact zoom.
     static let stillFramesBeforeExactBuild = 6
 
-    /// The texture that the screen shows, or `nil` before the first build completes.
+    /// The texture with all strokes, or `nil` before the first build completes.
     private(set) var front: InkTarget?
+    /// The front texture of the layer before a new viewport, for example a rotation. The screen
+    /// shows it, scaled, until the first build completes, so a resize shows no black screen
+    /// (docs/m2-fix-plan.md, phase 5, task 6).
+    private(set) var fallback: InkTarget?
     private let textures: [any MTLTexture]
     /// The drawable width in pixels that the textures were made for.
     let drawableWidth: Int
@@ -48,7 +52,12 @@ final class CommittedLayer {
     ///
     /// - Precondition: The drawable size is positive.
     /// - Throws: `RenderingError` if Metal cannot make the textures.
-    init(resources: InkResources, drawableWidth: Int, drawableHeight: Int) throws(RenderingError) {
+    init(
+        resources: InkResources,
+        drawableWidth: Int,
+        drawableHeight: Int,
+        fallback: InkTarget? = nil
+    ) throws(RenderingError) {
         precondition(drawableWidth > 0 && drawableHeight > 0, "Drawable size must be positive")
         let width = Int((Double(drawableWidth) * Self.textureScale).rounded(.up))
         let height = Int((Double(drawableHeight) * Self.textureScale).rounded(.up))
@@ -59,6 +68,7 @@ final class CommittedLayer {
         ]
         self.drawableWidth = drawableWidth
         self.drawableHeight = drawableHeight
+        self.fallback = fallback
         buildSlots.reserveCapacity(Self.initialSlotCapacity)
         assert(textures.count == 2, "The layer alternates two textures")
     }
@@ -199,19 +209,29 @@ final class CommittedLayer {
         }
         frontIndex = 1 - frontIndex
         front = current.target
+        fallback = nil
         build = nil
         assert(front?.texture === textures[frontIndex], "The front index follows the front texture")
     }
 
-    /// Returns the composite values that show the front texture with `camera`.
+    /// The texture that the screen shows: the front texture, or the fallback before the first
+    /// build completes.
+    var shown: InkTarget? { front ?? fallback }
+
+    /// Returns the composite values that show the shown texture with `camera`.
     ///
-    /// A drawable pixel p shows the texture pixel `p * scale + offset`. Both textures use the
-    /// same display scale, so the zoom ratio is the scale.
+    /// A drawable pixel p shows the texture pixel `p * scale + offset`.
     ///
-    /// - Precondition: A front texture exists.
-    func compositeUniforms(camera: Camera, drawableSize: Size) -> CompositeUniforms {
-        guard let front else { preconditionFailure("No front texture to composite") }
-        let ratio = front.camera.zoom / camera.zoom
+    /// - Precondition: A texture is shown, and `displayScale` is positive.
+    func compositeUniforms(
+        camera: Camera,
+        displayScale: Double,
+        drawableSize: Size
+    ) -> CompositeUniforms {
+        precondition(displayScale > 0, "Display scale must be positive, got \(displayScale)")
+        guard let front = shown else { preconditionFailure("No texture to composite") }
+        // Texture pixels per drawable pixel. A fallback can have another display scale.
+        let ratio = front.pixelsPerCanvasPoint / (camera.zoom * displayScale)
         let pixelsPerPoint = front.pixelsPerCanvasPoint
         let shift = camera.center - front.camera.center
         let size = front.pixelSize
