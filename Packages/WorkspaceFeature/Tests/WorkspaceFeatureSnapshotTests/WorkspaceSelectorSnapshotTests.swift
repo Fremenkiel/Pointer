@@ -6,7 +6,13 @@ import Testing
 @testable import WorkspaceFeature
 
 @MainActor
-@Suite("Workspace selector snapshots")
+@Suite(
+    "Workspace selector snapshots",
+    .enabled(
+        if: ViewSnapshot.canReadReferences,
+        "The references are on the Mac, so only the simulator reads them"
+    )
+)
 struct WorkspaceSelectorSnapshotTests {
     @Test("The button shows the name of the current workspace")
     func button() throws {

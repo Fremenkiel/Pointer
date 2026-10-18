@@ -391,6 +391,8 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 - `SQLiteLibraryRepository` is an actor. It owns the only database connection that writes. All SQL goes through it. The actor has a custom serial executor on a `DispatchSerialQueue` (SE-0392), so the blocking SQLite calls run on their own thread and never hold a thread of the shared pool (review A-13).
 - The canvas sends the changed rows to the repository and the IDs of changed strokes to the renderer. It never shares mutable state (see [data-model.md](data-model.md) section 8).
 - PDF export runs in a `Task` off the main actor. Snapshots run in `SnapshotWriter`, an actor with its own read-only connection and its own serial executor, so saves continue while a snapshot runs (D-32). Both report progress to the main actor.
+- `DeviceStateStore` owns `device.sqlite` with its own connection and its own serial executor (D-53). Thus three actors touch SQLite, each on its own queue, and none of them on the shared pool.
+- At launch, `PointerApp` opens the device state, the snapshot writer, and the library in this order, and then makes the one clock of the app (data-model.md section 4). At the move to the background, it writes the pending rows and the device state with extra time from `UIApplication.beginBackgroundTask`. A custom `UIWindow` notes the time of the last touch. After 5 seconds without a touch and with no pending rows, the app sends the idle signal to the snapshot writer (storage.md section 7.2).
 - No code on the main actor waits for disk.
 
 ## 12. Performance budgets

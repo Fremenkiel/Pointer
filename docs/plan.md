@@ -75,6 +75,8 @@ Acceptance:
 
 The tasks are in [m3-plan.md](m3-plan.md).
 
+Status on 2026-10-18: all tasks are in the code, and `make check` passes. Acceptance 1, 3, and 4 pass. Acceptance 2 passes for the file, and the look at the Files app waits for the product owner, as does the manual test of task 3.9. See [m3-plan.md](m3-plan.md) section 4.
+
 Acceptance:
 
 1. A force quit loses at most 2 seconds of ink (STO-06), shown with an automated crash test.

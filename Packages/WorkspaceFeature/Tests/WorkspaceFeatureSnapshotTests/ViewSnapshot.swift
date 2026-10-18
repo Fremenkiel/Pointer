@@ -11,6 +11,16 @@ enum ViewSnapshot {
     static let tolerance = 0.005
     /// A channel difference up to this value counts as equal. It absorbs text antialiasing.
     static let channelTolerance = 8
+    /// True on the simulator. Only the simulator reads the reference PNGs on the Mac, and the
+    /// references come from the simulator of `make snapshots`.
+    nonisolated static var canReadReferences: Bool {
+        #if targetEnvironment(simulator)
+            true
+        #else
+            false
+        #endif
+    }
+
     /// The scale of the rendered image, so that the reference does not depend on the screen.
     static let scale: CGFloat = 2
 

@@ -178,6 +178,8 @@ Status: acceptance 1, 3, and 4 pass. Acceptance 2 passes for the file: the snaps
 3. Run the full checklist of [code-of-code.md](code-of-code.md) section 5.
 4. Rerun the M2 performance tests on the iPad. A change in `CanvasFeature` must not make them more than 10 % slower.
 
+Status on 2026-10-18: steps 1 to 4 are done, and the results are in section 4.9. M3 waits for two checks of the product owner on the iPad: the drawing after a force quit with the last workspace at the last camera (task 3.9), and the `Backups` folder in the Files app (acceptance 2).
+
 ## 4. Results
 
 ### 4.1 Step 0
@@ -264,3 +266,24 @@ Control without a snapshot, 640 saves of 10 strokes on the same library: median 
 | 4. All tests of storage.md section 9 | pass | 84 Persistence tests pass. The restore test belongs to M9 (D-20). |
 
 Baseline of acceptance 3 (PERF-03): median 197.4 ms on the iPad Pro 11-inch (M4).
+
+### 4.9 Close of M3
+
+| Item | Target | Result |
+|---|---|---|
+| Line coverage of `Persistence` (TEST-02) | at least 90 % | 91.56 % |
+| Line coverage of `Model` (TEST-02) | at least 90 % | 93.08 % |
+| Assertion density (CONTRACT-02) | at least 2.0 | Geometry 2.00, Model 2.22, Persistence 2.00, Rendering 2.08 |
+| `make check` | passes | passes |
+| `PointerDeviceTests` on the iPad, Release | pass | 26 XCTest tests pass. 74 Swift Testing tests pass, and the 4 selector snapshots skip on the device by design (D-59). |
+
+M2 performance tests on the iPad Pro 11-inch (M4), Release, against the baselines of [m2-plan.md](m2-plan.md) section 4.4:
+
+| Test | M2 baseline | M3 | Change |
+|---|---|---|---|
+| `testContentPassTwentyThousandStrokes` | 55 ms | 40 ms | 27 % faster |
+| `testContentPassTwoHundredThousandStrokes`, 1 run | 163 ms | 155 ms | 5 % faster |
+| `testContentPassTwoHundredThousandHandwritingStrokes`, 1 run | 219 ms | 221 ms | 1 % slower |
+
+No M2 test is more than 10 % slower. The M2 tests do not use `CanvasViewController`, so the changes of M3 in `CanvasFeature` do not reach them. Those changes add to the frame path only a comparison of two cameras and the rest check of the camera, without an allocation.
+
