@@ -42,10 +42,22 @@ public struct Stroke: Identifiable, Sendable {
         self.origin = origin
         self.width = width
         self.points = points
-        let offsets = points.values.map {
-            Point(x: origin.x + Double($0.x), y: origin.y + Double($0.y))
+        // One loop over the offsets, without a temporary array of points (docs/m2-fix-plan.md,
+        // phase 5). The conversion to Double is exact and the addition keeps the order, so the
+        // bounds equal the bounds of the canvas points.
+        var low = SIMD2<Float>(repeating: .infinity)
+        var high = SIMD2<Float>(repeating: -.infinity)
+        for point in points.values {
+            low = pointwiseMin(low, SIMD2(point.x, point.y))
+            high = pointwiseMax(high, SIMD2(point.x, point.y))
         }
-        bounds = Rect.bounding(offsets).expanded(by: Double(width) / 2)
+        assert(low.x <= high.x && low.y <= high.y, "Stroke \(id) has no finite bounds")
+        bounds = Rect(
+            minX: origin.x + Double(low.x),
+            minY: origin.y + Double(low.y),
+            maxX: origin.x + Double(high.x),
+            maxY: origin.y + Double(high.y)
+        ).expanded(by: Double(width) / 2)
     }
 
     /// Returns the canvas position of the control point at `index`.
