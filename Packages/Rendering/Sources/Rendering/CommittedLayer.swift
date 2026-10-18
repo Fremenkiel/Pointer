@@ -215,9 +215,15 @@ final class CommittedLayer {
         let pixelsPerPoint = front.pixelsPerCanvasPoint
         let shift = camera.center - front.camera.center
         let size = front.pixelSize
-        let offsetX = size.width / 2 + shift.dx * pixelsPerPoint - ratio * drawableSize.width / 2
-        let offsetY = size.height / 2 + shift.dy * pixelsPerPoint - ratio * drawableSize.height / 2
+        var offsetX = size.width / 2 + shift.dx * pixelsPerPoint - ratio * drawableSize.width / 2
+        var offsetY = size.height / 2 + shift.dy * pixelsPerPoint - ratio * drawableSize.height / 2
         assert(offsetX.isFinite && offsetY.isFinite, "Composite offset is not finite")
+        // At a ratio of 1, a whole-pixel offset maps each drawable pixel to one texture pixel, so
+        // the linear filter does not blur the ink during a pan (docs/m2-fix-plan.md, phase 5).
+        if ratio == 1 {
+            offsetX.round()
+            offsetY.round()
+        }
         return CompositeUniforms(
             scale: SIMD2(Float(ratio), Float(ratio)),
             offset: SIMD2(Float(offsetX), Float(offsetY)),

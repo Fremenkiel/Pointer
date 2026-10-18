@@ -89,7 +89,7 @@ struct CanvasRendererTests {
         #expect(drain(renderer, layer: layer) > 1)
     }
 
-    @Test("The composite shows the front texture 1:1 when the camera did not move")
+    @Test("The composite shows the front texture 1:1 at whole-pixel offsets when the zoom is equal")
     func compositeIdentity() throws {
         let resources = try makeResources()
         let layer = try CommittedLayer(
@@ -123,6 +123,11 @@ struct CanvasRendererTests {
             drawableSize: Size(width: 400, height: 240)
         )
         #expect(moved.offset == SIMD2(180, 120))
+        let fraction = layer.compositeUniforms(
+            camera: camera.panned(byView: Vector(dx: 0.3, dy: -0.2)),
+            drawableSize: Size(width: 400, height: 240)
+        )
+        #expect(fraction.offset == SIMD2(199, 120))
     }
 
     private func makeResources() throws -> InkResources {
