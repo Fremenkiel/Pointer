@@ -374,8 +374,11 @@ All limits live in one type, `Limits`, in `Model`. Code uses the names, never th
 | `maxPointsPerStroke` | 16,384 | Control points per stroke, about 68 s at 240 Hz. The converter splits a longer PencilKit stroke into several strokes (section 4.2). |
 | `maxStrokesPerCanvas` | 200,000 | Upper bound for loops and memory. |
 | `maxNodesPerCanvas` | 10,000 | Cards plus text boxes. |
-| `maxTextLength` | 10,000 | Characters per text box (D-29). |
+| `maxTextLength` | 10,000 | Unicode code points per text box (D-29, D-57). |
 | `maxWorkspaces` | 1,000 | Workspace list. |
+| `maxTitleLength` | 120 | Unicode code points per workspace title or card title (D-57). |
+| `maxSortKeyLength` | 64 | Digits of a sort key. A longer key needs a rebalance. |
+| `minCardWidth`, `minCardHeight` | 64, 48 | The smallest card, in canvas points. |
 | `maxHistoryDepth` | 500 | Undo steps per canvas. |
 | `minZoom`, `maxZoom`, `standardZoom` | 0.25, 8.0, 1.0 | Camera (CAN-04). |
 

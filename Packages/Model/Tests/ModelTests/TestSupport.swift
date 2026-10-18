@@ -31,6 +31,17 @@ enum Fixtures {
         rawValue: UUID(uuid: (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
     )
 
+    static let time = HybridTimestamp(wallMillis: 1_700_000_000_000, counter: 0, device: device)
+    static let meta = RecordMeta(created: time)
+
+    static func id<ID: EntityIdentifier>(_ byte: UInt8) -> ID {
+        ID(rawValue: UUID(uuid: (3, byte, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)))
+    }
+
+    static func key(_ rawValue: String = "V") throws -> FractionalIndex {
+        try FractionalIndex(rawValue: rawValue)
+    }
+
     static func factory(millis: UInt64 = 1_700_000_000_000) -> StrokeFactory {
         let clock = FixedWallClock(millis: millis)
         return StrokeFactory(

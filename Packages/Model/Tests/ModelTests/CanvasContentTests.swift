@@ -1,3 +1,4 @@
+import Geometry
 import Testing
 
 @testable import Model
@@ -41,6 +42,44 @@ struct CanvasContentTests {
         }
     }
 
+    @Test("The canvas takes cards and text boxes up to the node limit and refuses one more")
+    func nodeLimit() throws {
+        var content = CanvasContent(canvasID: Fixtures.canvas)
+        var identifiers = IdentifierFactory(
+            wallClock: FixedWallClock(millis: 1),
+            random: SeededRandom(state: 5)
+        )
+        let half = Limits.maxNodesPerCanvas / 2
+        for _ in 0..<half {
+            try content.add(RecordTests.card(id: identifiers.make()))
+            try content.add(RecordTests.textBox(id: identifiers.make(), text: "x"))
+        }
+        #expect(content.nodeCount == Limits.maxNodesPerCanvas)
+        #expect(content.cards.count == half)
+        #expect(content.textBoxes.count == half)
+        #expect(throws: ModelError.nodeLimitReached) {
+            try content.add(RecordTests.card(id: identifiers.make()))
+        }
+        #expect(throws: ModelError.nodeLimitReached) {
+            try content.add(RecordTests.textBox(id: identifiers.make(), text: "x"))
+        }
+    }
+
+    @Test("New content has no nodes and no erase records")
+    func emptyContent() {
+        let content = CanvasContent(canvasID: Fixtures.canvas)
+        #expect(content.nodeCount == 0)
+        #expect(content.erased.isEmpty)
+    }
+
+    @Test("The canvas of a workspace and of a card has the ID of its owner")
+    func canvasIDs() {
+        let workspace: WorkspaceID = Fixtures.id(7)
+        let card: CardID = Fixtures.id(8)
+        #expect(CanvasID(workspace).rawValue == workspace.rawValue)
+        #expect(CanvasID(card).rawValue == card.rawValue)
+    }
+
     @Test("The limits have the values of architecture.md section 10")
     func limits() {
         #expect(Limits.maxPointsPerStroke == 16_384)
@@ -48,5 +87,12 @@ struct CanvasContentTests {
         #expect(Limits.zoomRange == 0.25...8.0)
         #expect(Limits.standardZoom == 1.0)
         #expect(Limits.maxDepth == 32)
+        #expect(Limits.maxNodesPerCanvas == 10_000)
+        #expect(Limits.maxTextLength == 10_000)
+        #expect(Limits.maxWorkspaces == 1_000)
+        #expect(Limits.maxTitleLength == 120)
+        #expect(Limits.maxSortKeyLength == 64)
+        #expect(Limits.minCardWidth == 64)
+        #expect(Limits.minCardHeight == 48)
     }
 }

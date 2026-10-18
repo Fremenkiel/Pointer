@@ -9,4 +9,14 @@ public struct CanvasID: EntityIdentifier {
     public init(rawValue: UUID) {
         self.rawValue = rawValue
     }
+
+    /// Makes the ID of the root canvas of a workspace.
+    public init(_ workspace: WorkspaceID) {
+        self.rawValue = workspace.rawValue
+    }
+
+    /// Makes the ID of the child canvas of a card.
+    public init(_ card: CardID) {
+        self.rawValue = card.rawValue
+    }
 }

@@ -2,7 +2,7 @@
 
 This document defines the data types of Pointer and the rules that they obey. The database schema for these types is in [storage.md](storage.md).
 
-All types in this document live in the `Model` package. They are value types (`struct` or `enum`), except `InkPoints` (section 7.4). They are `Sendable`, and `Codable` where the storage needs it. They import Foundation and `Geometry` only.
+All types in this document live in the `Model` package. They are value types (`struct` or `enum`), except `InkPoints` (section 7.4). They are `Sendable` and immutable (ARCH-06). The storage uses its own row codecs, not `Codable`. They import Foundation and `Geometry` only.
 
 ## 1. Goals
 
@@ -81,10 +81,10 @@ Source: Kulkarni et al., "Logical Physical Clocks" (<https://www.cse.buffalo.edu
 Each stored record has these fields:
 
 ```swift
-struct RecordMeta: Codable, Sendable {
+struct RecordMeta: Hashable, Sendable {
     let created: HybridTimestamp
-    var modified: HybridTimestamp      // set on every change
-    var isDeleted: Bool                // tombstone
+    let modified: HybridTimestamp      // set on every change
+    let isDeleted: Bool                // tombstone
 }
 ```
 
@@ -100,14 +100,16 @@ Rules:
 Cards, text boxes, and workspaces have a `sortKey` of type `FractionalIndex`. A fractional index is a string key. To put an item between two others, you make a new key that sorts between their keys. No other item changes.
 
 ```swift
-struct FractionalIndex: Comparable, Codable, Sendable {
+struct FractionalIndex: Hashable, Comparable, Sendable {
     let rawValue: String   // base-62 digits, compared as bytes
 }
 ```
 
 - `FractionalIndex.between(_:_:)` returns a key that sorts between two keys. Either argument can be `nil` for "start" or "end".
 - If two devices make the same key, the record ID breaks the tie.
-- The key length has a limit of 64 characters. A longer key triggers a rebalance of all keys on that canvas, in one command.
+- The key length has a limit of 64 characters (`Limits.maxSortKeyLength`). If a new key needs more, `between` throws `ModelError.sortKeyNeedsRebalance`. A longer key triggers a rebalance of all keys on that canvas, in one command.
+- A key never ends with the digit "0". Thus a key always fits between two different keys.
+- Between two keys, `between` takes the midpoint of David Greenspan ("Implementing Fractional Indexing", 2020). At an end of the list, it adds one to the first digit that can grow, or takes one from the first digit above 1. A list that grows at one end then needs a new digit only every 60 keys.
 
 Workspaces use the key for their order in the selector. Cards and text boxes use it for their drawing order within their layer.
 
@@ -115,27 +117,29 @@ Strokes do not need a key. Ink is opaque white, so the drawing order of strokes 
 
 ## 7. Entities
 
+Each initializer checks the limits of its type and throws `ModelError` for a value outside them. A length limit of a title or a text counts Unicode code points, the unit of the SQLite `length()` function (D-57).
+
 ### 7.1 Workspace
 
 ```swift
-struct Workspace: Identifiable, Codable, Sendable {
+struct Workspace: Identifiable, Hashable, Sendable {
     let id: WorkspaceID
-    var meta: RecordMeta
-    var title: String          // 1...120 characters, trimmed
-    var sortKey: FractionalIndex
+    let meta: RecordMeta
+    let title: String          // 1...120 code points, trimmed
+    let sortKey: FractionalIndex
 }
 ```
 
 ### 7.2 Card
 
 ```swift
-struct Card: Identifiable, Codable, Sendable {
+struct Card: Identifiable, Hashable, Sendable {
     let id: CardID             // also the ID of its child canvas
-    var meta: RecordMeta
-    var canvasID: CanvasID     // the parent canvas
-    var frame: Rect            // in parent canvas space, Double
-    var title: String?         // 0...120 characters
-    var sortKey: FractionalIndex
+    let meta: RecordMeta
+    let canvasID: CanvasID     // the parent canvas
+    let frame: Rect            // in parent canvas space, Double
+    let title: String?         // 0...120 code points
+    let sortKey: FractionalIndex
 }
 ```
 
@@ -148,13 +152,13 @@ Rules:
 ### 7.3 Text box
 
 ```swift
-struct TextBox: Identifiable, Codable, Sendable {
+struct TextBox: Identifiable, Hashable, Sendable {
     let id: TextBoxID
-    var meta: RecordMeta
-    var canvasID: CanvasID
-    var origin: Point          // top-left corner, canvas space
-    var text: String           // plain text, 1...Limits.maxTextLength characters
-    var sortKey: FractionalIndex
+    let meta: RecordMeta
+    let canvasID: CanvasID
+    let origin: Point          // top-left corner, canvas space
+    let text: String           // plain text, 1...Limits.maxTextLength code points
+    let sortKey: FractionalIndex
 }
 ```
 
@@ -201,11 +205,11 @@ Rules:
 ### 7.5 Erase record
 
 ```swift
-struct EraseRecord: Codable, Sendable {
+struct EraseRecord: Hashable, Sendable {
     let strokeID: StrokeID
     let erased: HybridTimestamp
-    var modified: HybridTimestamp
-    var isDeleted: Bool        // true after an undo of the erase
+    let modified: HybridTimestamp
+    let isDeleted: Bool        // true after an undo of the erase
 }
 ```
 
@@ -228,7 +232,7 @@ struct CanvasContent: Sendable {
 `CanvasContent` is the input and the output of commands. Only the canvas controller holds it, together with the `History` (review A-03). Swift copies a dictionary at the first change after a copy exists. With a second holder, the main actor then copies up to 200,000 entries at a pencil lift.
 
 - The renderer receives deltas: the IDs of added and erased strokes. It keeps its own GPU state.
-- The repository receives the changed rows (see [storage.md](storage.md) section 4).
+- The repository receives the changed rows as `LibraryChange` values through the protocol `LibraryRepository` (see [storage.md](storage.md) section 4).
 - The exporter takes a copy. Export is rare and the user starts it, so the cost of the copy is accepted.
 
 ## 9. Commands
@@ -251,10 +255,10 @@ Rules:
 These values belong to one device. They are not part of the library, and a backup does not need them. They live in `device.sqlite` (see [storage.md](storage.md) section 10, D-53).
 
 ```swift
-struct DeviceState: Sendable {
+struct DeviceState: Hashable, Sendable {
     let deviceID: DeviceID
-    var lastWorkspace: WorkspaceID?
-    var navigationPath: [CardID]         // at most Limits.maxDepth
+    let lastWorkspace: WorkspaceID?
+    let navigationPath: [CardID]         // at most Limits.maxDepth
 }
 ```
 

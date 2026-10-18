@@ -8,10 +8,18 @@ public enum Limits {
     public static let maxStrokesPerCanvas = 200_000
     /// Cards plus text boxes per canvas.
     public static let maxNodesPerCanvas = 10_000
-    /// Characters per text box (D-29).
+    /// Unicode code points per text box (D-29, D-57).
     public static let maxTextLength = 10_000
     /// Workspaces in the library.
     public static let maxWorkspaces = 1_000
+    /// Unicode code points in a workspace title or a card title (D-57).
+    public static let maxTitleLength = 120
+    /// Characters of a sort key. A longer key needs a rebalance (data-model.md section 6).
+    public static let maxSortKeyLength = 64
+    /// The smallest card width in canvas points (data-model.md section 7.2).
+    public static let minCardWidth = 64.0
+    /// The smallest card height in canvas points (data-model.md section 7.2).
+    public static let minCardHeight = 48.0
     /// Undo steps per canvas.
     public static let maxHistoryDepth = 500
     /// The smallest camera zoom (CAN-04).
