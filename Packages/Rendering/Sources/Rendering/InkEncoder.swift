@@ -19,6 +19,13 @@ final class InkEncoder {
     var minimumPixelSpacing = LevelOfDetail.minimumPixelSpacing
     /// `false` uses the pieces of before phase 3, task 3. Tests change it to compare images.
     var usesSmoothPieces = true
+    /// The ink pass, made once (PERF-01, docs/m2-fix-plan.md, phase 5).
+    private let inkPass: MTLRenderPassDescriptor = {
+        let pass = MTLRenderPassDescriptor()
+        pass.colorAttachments[0].storeAction = .store
+        pass.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
+        return pass
+    }()
     /// The entry lists of the passes. A pass moves them into a local value and back.
     private var buckets = EntryBuckets()
 
@@ -125,16 +132,20 @@ final class InkEncoder {
         target: InkTarget,
         clear: Bool
     ) {
-        let pass = MTLRenderPassDescriptor()
+        let pass = inkPass
         pass.colorAttachments[0].texture = target.texture
         pass.colorAttachments[0].loadAction = clear ? .clear : .load
-        pass.colorAttachments[0].storeAction = .store
-        pass.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
-        guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass) else {
+        let made = commandBuffer.makeRenderCommandEncoder(descriptor: pass)
+        // The descriptor lives on, so it must not hold the texture after the pass.
+        pass.colorAttachments[0].texture = nil
+        guard let encoder = made else {
             assertionFailure("Metal gave no render encoder for the ink pass")
             return
         }
-        encoder.label = "Ink"
+        #if DEBUG
+            // A label costs two allocations per pass and helps only in a GPU capture.
+            encoder.label = "Ink"
+        #endif
         encoder.setRenderPipelineState(resources.inkPipeline)
         for (index, bucket) in lists.lists.enumerated() where !bucket.isEmpty {
             let firstEntry = ring.used

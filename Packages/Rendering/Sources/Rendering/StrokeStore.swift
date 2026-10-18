@@ -87,7 +87,6 @@ final class StrokeStore {
     }
 
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
-    private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     private(set) var infos: [DrawInfo] = []
     /// The points by slot, one reference each. Only an upload into the arena and the bend read
     /// them. A full `Stroke` per slot took 128 bytes.
@@ -178,8 +177,8 @@ final class StrokeStore {
     /// read, gives a stroke drawn since the last visit a second chance, and frees the others.
     private func evictAndAllocate(_ points: Int, _ frame: UInt64) -> ArenaBlock? {
         precondition(points >= 1, "An allocation needs points, got \(points)")
-        let state = signposter.beginInterval("EvictAndAllocate")
-        defer { signposter.endInterval("EvictAndAllocate", state) }
+        RenderSignpost.begin("EvictAndAllocate")
+        defer { RenderSignpost.end("EvictAndAllocate") }
         let protectedAfter = frame > Self.framesInFlight ? frame - Self.framesInFlight : 0
         let target = Int(Double(arena.byteBudget) * (1 - Self.evictionMargin))
         // Two rounds visit each stroke twice: once to clear its mark, once to free it.

@@ -13,8 +13,11 @@ final class DrawListRing {
     let capacity: Int
     private let buffers: [any MTLBuffer]
     private let available = DispatchSemaphore(value: bufferCount)
-    private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     private var index = 0
+    /// Frees a buffer when the GPU completes its frame, and emits the GPU time of the frame as
+    /// the signpost event `GPUFrame` (PERF-03). It is the one completed handler of a frame and is
+    /// made once, because each handler and each new closure costs an allocation (PERF-01).
+    private let release: @Sendable (any MTLCommandBuffer) -> Void
     /// The entries that the current frame wrote.
     private(set) var used = 0
 
@@ -35,6 +38,13 @@ final class DrawListRing {
         }
         self.capacity = capacity
         self.buffers = buffers
+        let available = available
+        let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
+        release = { buffer in
+            available.signal()
+            let milliseconds = (buffer.gpuEndTime - buffer.gpuStartTime) * 1000
+            signposter.emitEvent("GPUFrame", "\(milliseconds, format: .fixed(precision: 2)) ms")
+        }
     }
 
     /// The buffer of the current frame.
@@ -52,18 +62,16 @@ final class DrawListRing {
             commandBuffer.status == .notEnqueued,
             "The frame command buffer is already sent"
         )
-        let state = signposter.beginInterval("BeginFrame")
+        RenderSignpost.begin("BeginFrame")
         available.wait()
-        signposter.endInterval("BeginFrame", state)
+        RenderSignpost.end("BeginFrame")
         index = (index + 1) % Self.bufferCount
         used = 0
         assert(
             buffer.length >= capacity * MemoryLayout<StrokeDrawEntry>.stride,
             "Draw list is short"
         )
-        commandBuffer.addCompletedHandler { [available] _ in
-            available.signal()
-        }
+        commandBuffer.addCompletedHandler(release)
     }
 
     /// Writes entries at the end of the current frame in one copy.

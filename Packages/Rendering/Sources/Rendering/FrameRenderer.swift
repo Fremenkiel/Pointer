@@ -36,6 +36,15 @@ final class FrameRenderer {
     /// set it.
     var onCommit: ((any MTLCommandBuffer, any CAMetalDrawable) -> Void)?
 
+    /// The composite pass of each frame, made once (PERF-01, docs/m2-fix-plan.md, phase 5).
+    private let compositePass: MTLRenderPassDescriptor = {
+        let pass = MTLRenderPassDescriptor()
+        pass.colorAttachments[0].loadAction = .clear
+        pass.colorAttachments[0].storeAction = .store
+        pass.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
+        return pass
+    }()
+
     /// The first capacity of the list of strokes that wait for a frame.
     private static let pendingCapacity = 64
 
@@ -123,18 +132,17 @@ final class FrameRenderer {
     ) -> Bool {
         precondition(drawableSize.width.isFinite && drawableSize.height.isFinite, "Size not finite")
         precondition(drawableSize.width >= 0 && drawableSize.height >= 0, "Size is negative")
-        let state = signposter.beginInterval("Frame")
-        defer { signposter.endInterval("Frame", state) }
+        RenderSignpost.begin("Frame")
+        defer { RenderSignpost.end("Frame") }
         guard let layer = committedLayer(for: drawableSize),
             let commandBuffer = resources.queue.makeCommandBuffer()
         else { return false }
         frame += 1
         encoder.ring.beginFrame(commandBuffer)
-        addGPUTimeSignpost(to: commandBuffer)
         encodeContent(layer: layer, commandBuffer: commandBuffer)
-        let drawableState = signposter.beginInterval("NextDrawable")
+        RenderSignpost.begin("NextDrawable")
         let target = drawable.next()
-        signposter.endInterval("NextDrawable", drawableState)
+        RenderSignpost.end("NextDrawable")
         guard let target else {
             commandBuffer.commit()
             return true
@@ -148,16 +156,6 @@ final class FrameRenderer {
             signposter.emitEvent("LateFrame")
         }
         return needsMoreFrames
-    }
-
-    /// Emits the GPU time of each frame as a signpost event, for the budget of D-28 and the
-    /// performance tests (PERF-03).
-    private func addGPUTimeSignpost(to commandBuffer: any MTLCommandBuffer) {
-        let signposter = signposter
-        commandBuffer.addCompletedHandler { buffer in
-            let milliseconds = (buffer.gpuEndTime - buffer.gpuStartTime) * 1000
-            signposter.emitEvent("GPUFrame", "\(milliseconds, format: .fixed(precision: 2)) ms")
-        }
     }
 
     /// A drawable of a new size, for example after a rotation, makes new textures.
@@ -210,16 +208,19 @@ final class FrameRenderer {
             texture.pixelFormat == InkResources.drawableFormat,
             "Drawable format is not BGRA"
         )
-        let pass = MTLRenderPassDescriptor()
+        let pass = compositePass
         pass.colorAttachments[0].texture = texture
-        pass.colorAttachments[0].loadAction = .clear
-        pass.colorAttachments[0].storeAction = .store
-        pass.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
-        guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass) else {
+        let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass)
+        // The descriptor lives on, so it must not hold the drawable after the frame.
+        pass.colorAttachments[0].texture = nil
+        guard let encoder else {
             assertionFailure("Metal gave no render encoder for the composite pass")
             return
         }
-        encoder.label = "Composite"
+        #if DEBUG
+            // A label costs two allocations per frame and helps only in a GPU capture.
+            encoder.label = "Composite"
+        #endif
         if let front = layer.shown {
             let size = Size(width: Double(texture.width), height: Double(texture.height))
             encoder.setRenderPipelineState(resources.compositePipeline)

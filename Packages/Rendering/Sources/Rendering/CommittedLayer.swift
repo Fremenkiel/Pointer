@@ -46,7 +46,6 @@ final class CommittedLayer {
     private var stillFrames = 0
     /// The strokes of the build, in drawing order. Reused, so a build allocates nothing.
     private var buildSlots: [Int] = []
-    private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
 
     /// Makes the two textures for a drawable size.
     ///
@@ -95,8 +94,8 @@ final class CommittedLayer {
     /// - Returns: `true` if a build started.
     func startBuildIfNeeded(camera: Camera, displayScale: Double, store: StrokeStore) -> Bool {
         precondition(displayScale > 0, "Display scale must be positive, got \(displayScale)")
-        let state = signposter.beginInterval("StartBuildIfNeeded")
-        defer { signposter.endInterval("StartBuildIfNeeded", state) }
+        RenderSignpost.begin("StartBuildIfNeeded")
+        defer { RenderSignpost.end("StartBuildIfNeeded") }
         stillFrames = camera == lastCamera ? stillFrames + 1 : 0
         lastCamera = camera
         guard build == nil, needsBuild(camera: camera, displayScale: displayScale) else {
@@ -187,8 +186,8 @@ final class CommittedLayer {
     ) {
         precondition(budget > 0, "Build budget must be positive, got \(budget)")
         guard var current = build else { return }
-        let state = signposter.beginInterval("ContinueBuild")
-        defer { signposter.endInterval("ContinueBuild", state) }
+        RenderSignpost.begin("ContinueBuild")
+        defer { RenderSignpost.end("ContinueBuild") }
         let options = InkPassOptions(
             clear: !current.hasCleared,
             instanceBudget: budget,
