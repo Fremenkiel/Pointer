@@ -43,6 +43,8 @@ Acceptance:
 
 ## M2: Ink on one canvas
 
+Status: done on 2026-10-18. The product owner accepted acceptance 1 (D-40), 2, and 10, and the frame-loop tests and the coverage meet their targets. See [m2-plan.md](m2-plan.md) section 4.5.
+
 - `Geometry`: points, rectangles, transforms, `Camera`, `SpatialGrid`, `StrokeCurve` (D-26).
 - `Model`: `Stroke`, `InkPoint`, `InkPoints`, `CanvasContent`, `Limits`, IDs as UUID version 7 (D-31), `HybridClock`.
 - `InkEngine`: no work in M2. The eraser parts come in M4.
@@ -66,14 +68,17 @@ Acceptance:
 
 ## M3: Storage and workspaces
 
-- `Persistence`: SQLite wrapper, repository actor, schema, point BLOB codec, migrations, automatic snapshots.
+- `Model`: `Workspace`, `Card`, `TextBox`, `EraseRecord`, `RecordMeta`, `FractionalIndex`, `DeviceState`, and the protocol `LibraryRepository`. Cards and text boxes get no UI in M3 (D-50).
+- `Persistence`: SQLite wrapper, repository actor, schema with all tables, row codecs, point BLOB codec, migrations, automatic snapshots.
 - `WorkspaceFeature`: selector in the top left, create, rename, delete.
 - Device state: last workspace and camera.
+
+The tasks are in [m3-plan.md](m3-plan.md).
 
 Acceptance:
 
 1. A force quit loses at most 2 seconds of ink (STO-06), shown with an automated crash test.
-2. A snapshot shows in the Files app under `Backups`, and it opens on a second iPad.
+2. A snapshot shows in the Files app under `Backups`. Copied to a Mac, it opens with `sqlite3` and passes `PRAGMA integrity_check` (D-51).
 3. A canvas with 10,000 nodes and 20,000 strokes opens in under 300 ms on the device.
 4. All corruption tests in [storage.md](storage.md) section 9 pass.
 
@@ -135,6 +140,7 @@ Acceptance:
 
 1. A snapshot from "Back up now" opens with `sqlite3` on a Mac and passes `PRAGMA integrity_check`.
 2. A restore from a snapshot gives a library with the same rows.
+3. A snapshot from one iPad restores on a second iPad, and the second iPad shows the same workspaces and canvases (D-51).
 
 ## M10: Hardening
 

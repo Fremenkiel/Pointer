@@ -231,10 +231,36 @@ The dense zoom had one late frame of 16.7 ms in two of the last five runs. Its r
 
 The pan of 10 strokes is the regression test of the idle pause in [m2-fix-plan.md](m2-fix-plan.md), phase 1. Before the fix, it had 42 late frames.
 
-The one late frame of the dense zoom was 41.7 ms. It came with one render-thread frame of 28.3 ms. Phase 4 targets the arena work that can cause it.
-
 On 2026-10-17 after phase 1, the product owner filmed fast strokes at 240 fps on the same iPad. The ink reached the pencil tip after 4 video frames, so about 16.7 ms. This meets the FEEL-01 limit of 20 ms but not the goal of 13 ms. The M2 film gave about 6 frames, 25 ms (D-40). PencilKit draws the live stroke on the main thread, and the renderer no longer blocks that thread for about 8 ms per frame. This is the likely cause of the gain, but no test isolates it.
 
 The content-pass tests gave 55 ms, 153 ms, and 212 ms in the same run. They show no change against the baselines above.
 
 `PointerDeviceTests` also compiles the files of `Packages/Rendering/Tests/RenderingTests`, except the snapshot tests, which read their reference images from the Mac.
+
+### 4.5 Close of M2 on 2026-10-18
+
+The product owner made the 10-second recordings of acceptance 2 and 10 after the fixes of [m2-fix-plan.md](m2-fix-plan.md) and accepted them.
+
+`FrameLoopTests` ran 5 times on the iPad Pro 11-inch (M4) with iPadOS 26.5, in the Release configuration. Each run measures 479 intervals between presented frames. No run had a late frame, and the longest interval was 8.33 ms in all 30 runs. The table gives the range over the 5 runs:
+
+| Run | Frame rate | Intervals over 12.5 ms | Builds | Uncovered frames | Render-thread ms, p99 | GPU ms per frame, mean |
+|---|---|---|---|---|---|---|
+| Dense, 20,000 strokes, pan | 120.0 | 0 of 479 | 11 | 0 | 4.52 to 4.78 | 0.56 to 0.58 |
+| Dense, 20,000 strokes, pan at 2,000 points per second | 120.0 | 0 of 479 | 11 to 16 | 0 | 4.50 to 4.79 | 0.55 to 0.67 |
+| Dense, 20,000 strokes, zoom | 120.0 | 0 of 479 | 8 | 0 | 4.41 to 4.82 | 0.53 to 0.61 |
+| Handwriting, 200,000 strokes, pan | 120.0 | 0 of 479 | 5 to 11 | 0 | 2.46 to 3.13 | 0.62 to 0.85 |
+| Handwriting, 200,000 strokes, zoom | 120.0 | 0 of 479 | 8 | 0 | 2.04 to 2.16 | 0.52 to 0.61 |
+| Dense, 10 strokes, pan | 120.0 | 0 of 479 | 11 | 0 | 0.23 to 0.25 | 0.37 to 0.38 |
+
+The main-thread time stayed at 0.02 ms or less at the 99th percentile in all runs.
+
+Line coverage on 2026-10-18 (TEST-02). Tier A packages run with `swift test --enable-code-coverage` on the Mac, and the others run with `xcodebuild test -enableCodeCoverage YES` in the iPad Pro 13-inch (M5) simulator. The values count the sources of each package only:
+
+| Package | Tier | Line coverage | Target |
+|---|---|---|---|
+| Geometry | A | 90.9 % (410 of 451 lines) | 90 % |
+| Model | A | 92.6 % (276 of 298 lines) | 90 % |
+| Rendering | B | 80.4 % (1,997 of 2,485 lines) | 70 % |
+| CanvasFeature | C | 43.6 % (233 of 534 lines) | none |
+
+InkEngine and Persistence have no code yet.

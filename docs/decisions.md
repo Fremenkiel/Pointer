@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51.
 
 Status values: Open, Decided, Replaced.
 
@@ -34,12 +34,12 @@ Status values: Open, Decided, Replaced.
 | D-24 | Load a canvas whole or by viewport | Whole canvas, R-tree later if needed | Decided (2026-10-17) |
 | D-25 | SQLite or plain files | SQLite | Decided (2026-10-17) |
 | D-26 | Store raw samples or subdivided points | The control points of the PencilKit curve | Decided (2026-10-17) |
-| D-27 | Save policy: debounce or throttle | Recommendation: throttle, 1 s | Open |
+| D-27 | Save policy: debounce or throttle | Throttle, 1 s, and a write at pencil lift | Decided (2026-10-18) |
 | D-28 | Renderer memory: shared arena or per-stroke buffers, and level of detail | Arena, vertex pulling, level of detail, cached texture while the camera moves | Decided (2026-10-17) |
-| D-29 | Text rendering: glyph atlas or texture per text box, and `maxTextLength` | Recommendation: glyph atlas, 10,000 characters | Open |
-| D-30 | Erase records: flag or delete, and eraser commit at pencil lift | Recommendation: flag, commit at pencil lift | Open |
+| D-29 | Text rendering: glyph atlas or texture per text box, and `maxTextLength` | Glyph atlas, 10,000 characters | Decided (2026-10-18) |
+| D-30 | Erase records: flag or delete, and eraser commit at pencil lift | Flag, commit at pencil lift | Decided (2026-10-18) |
 | D-31 | UUID version 4 or 7 | Version 7 | Decided (2026-10-17) |
-| D-32 | Snapshot procedure: temporary file, second connection, time of the run | Recommendation: all three | Open |
+| D-32 | Snapshot procedure: temporary file, second connection, time of the run | All three | Decided (2026-10-18) |
 | D-33 | Fallback after a failed M1 | PencilKit for input capture only, with the custom renderer | Decided (2026-10-17) |
 | D-34 | Eraser and text tool input next to the live `PKCanvasView` | Turn off the PencilKit drawing gesture for these tools | Decided (2026-10-17) |
 | D-35 | FEEL-02 and the PencilKit drawing gesture recognizer | FEEL-02 keeps only "Ink appears on the first touch sample" | Decided (2026-10-17) |
@@ -57,6 +57,13 @@ Status values: Open, Decided, Replaced.
 | D-47 | Texture margin of phase 2, task 4: 2x or 1.5x | Keep 2x | Decided (2026-10-17) |
 | D-48 | Zoom 1 target of phase 3, task 3 | Accept the gain at zoom 8 only | Decided (2026-10-18) |
 | D-49 | Memory target of phase 4, task 5 | Accept 68.7 MB for the store of 200,000 strokes | Decided (2026-10-18) |
+| D-50 | Nodes in M3 acceptance 3 | M3 adds the card and text box types and tables, with no UI | Decided (2026-10-18) |
+| D-51 | Pass of M3 acceptance 2 | Files shows the snapshot, and `sqlite3` on a Mac opens it. The second iPad moves to M9. | Decided (2026-10-18) |
+| D-52 | First launch, and a delete of the current workspace | Make "Workspace" at the first launch, open the first workspace after a delete | Decided (2026-10-18) |
+| D-53 | Store, write points, and camera limit of the device state | A separate `device.sqlite`. Write at camera rest, workspace change, and background. Drop the least recently used camera. | Decided (2026-10-18) |
+| D-54 | Process stop in the crash test of M3 acceptance 1 | A Mac test stops a helper process with `SIGKILL` | Decided (2026-10-18) |
+| D-55 | Saved strokes of the `-fillStrokes` launch argument | Not saved | Decided (2026-10-18) |
+| D-56 | Content of M3 acceptance 3 | 20,000 strokes of 300 points, 5,000 cards, 5,000 text boxes, to the first frame | Decided (2026-10-18) |
 
 ## Details
 
@@ -236,7 +243,8 @@ Status values: Open, Decided, Replaced.
 
 ### D-27 Save policy
 
-- Open. Review A-02.
+- Decided by the product owner on 2026-10-18: option (a), throttle. [storage.md](storage.md) section 4 has the rule.
+- Review A-02.
 - Options: (a) throttle: write at most once per second while changes are pending, and at pencil lift. (b) debounce: write one second after the last change, as the current design does.
 - Recommendation: (a). Option (b) breaks STO-06 during continuous drawing.
 
@@ -250,14 +258,16 @@ Status values: Open, Decided, Replaced.
 
 ### D-29 Text rendering and text length
 
-- Open. Review A-10.
+- Decided by the product owner on 2026-10-18: option (a), a glyph atlas, and `maxTextLength = 10,000`.
+- Review A-10.
 - Options: (a) a glyph atlas per power-of-two scale, one quad per character. (b) one texture per text box, as the current design does.
 - Recommendation: (a), and `maxTextLength = 10,000`. Option (b) exceeds the Metal texture limit at the current text limit.
 - Doubt: (a) handles SF Mono well, because the font is monospaced. A later proportional font needs a layout step.
 
 ### D-30 Erase records and eraser commit
 
-- Open. Review A-07, A-08, A-09.
+- Decided by the product owner on 2026-10-18: option (a) in both. An erase record has `modified` and `is_deleted`, and the eraser commits one command at pencil lift.
+- Review A-07, A-08, A-09.
 - Options for the record: (a) an erase record gets `modified` and `is_deleted`, and an undo sets the flag. (b) an undo deletes the record, as the current design does.
 - Options for the gesture: (a) a mask in memory during the gesture and one command at pencil lift. (b) a split at every sample, as the current design does.
 - Recommendation: (a) in both. Option (b) for the record breaks the change-upload plan of data-model.md section 11. Option (b) for the gesture writes stroke rows 240 times per second.
@@ -271,7 +281,8 @@ Status values: Open, Decided, Replaced.
 
 ### D-32 Snapshot procedure
 
-- Open. Review A-12, A-13.
+- Decided by the product owner on 2026-10-18: option (a). [storage.md](storage.md) sections 7.1 and 7.2 have the procedure.
+- Review A-12, A-13.
 - Options: (a) write to a temporary file and rename it after success. Run `VACUUM INTO` on a second read-only connection in its own actor. Run it at the first idle moment after 24 hours while the app is active. (b) run it on the repository connection at the background transition, as the current design does.
 - Recommendation: (a). Option (b) can leave a corrupt file in `Backups/` and stops saves while it runs.
 
@@ -415,6 +426,60 @@ Status values: Open, Decided, Replaced.
 - The three changes of the task took the store to 68.7 MB on the simulator: `DrawInfo` takes 48 bytes, the store keeps `InkPoints` references, and the arrays grow with the canvas. The rest is outside the task: the spatial grid takes 33 MB, and the map from stroke ID to slot takes 12 MB. Of the grid, the map from slot to bounds takes about 21 MB.
 - Options: (a) accept 68.7 MB. (b) drop the bounds map of `SpatialGrid`, a change of a Tier A public API, for about 47 MB. (c) a renderer grid of 32-bit slots with `Float` bounds and a smaller ID map, for about 30 MB.
 - Effect: `StrokeStoreMemoryTests` asserts at most 75 MB as a guard against a regression. The memory budget of 300 MB per canvas of architecture.md section 12 still holds.
+
+### D-50 Nodes in M3 acceptance 3
+
+- Decided by the product owner on 2026-10-18: option (a).
+- Raised by the readiness review of M3 on 2026-10-18. M3 acceptance 3 opens a canvas with 10,000 nodes (cards plus text boxes), but cards and text boxes come in M5 and M6.
+- Options: (a) M3 adds the `Card` and `TextBox` types, their tables, and their row codecs, with no UI. (b) M3 tests 20,000 strokes only, and the node part moves to M6.
+- Effect: schema version 1 holds all tables, so M5 and M6 need no migration (GIT-04). The `text_box` table uses the limit of D-29.
+
+### D-51 Pass of M3 acceptance 2
+
+- Decided by the product owner on 2026-10-18: option (a).
+- Raised by the readiness review of M3 on 2026-10-18. M3 acceptance 2 says that a snapshot "opens on a second iPad". Restore comes in M9, and iPadOS has no SQLite tool of its own.
+- Options: (a) the snapshot shows in the Files app under `Backups`, and `sqlite3` on a Mac opens it with a clean `PRAGMA integrity_check`. The test on a second iPad moves to the restore of M9. (b) keep the second iPad in M3.
+- Effect: [plan.md](plan.md) M3 acceptance 2 and M9 acceptance change.
+
+### D-52 First launch, and a delete of the current workspace
+
+- Decided by the product owner on 2026-10-18: option (a) in both. Raised by the M3 plan on 2026-10-18 ([m3-plan.md](m3-plan.md), tasks 3.8 and 3.9).
+- WS-04 opens the last workspace at launch. At the first launch, no workspace exists. WS-03 allows a delete of the current workspace, but no document says what the app shows next.
+- Options for the first launch: (a) make a workspace named "Workspace". (b) show an empty selector that asks for a name.
+- Options after a delete of the current workspace: (a) open the first workspace of the list. If no workspace is left, make a new one named "Workspace". (b) open the workspace above the deleted one in the list.
+- Recommendation: (a) in both. The canvas is never empty of a workspace, so the pen always has a place to draw.
+
+### D-53 Store, write points, and camera limit of the device state
+
+- Decided by the product owner on 2026-10-18: a separate SQLite file `device.sqlite` instead of `device.json`, and option (a) for the write and the limit. [storage.md](storage.md) section 10 has the design.
+- Raised by the M3 plan on 2026-10-18 (task 3.7).
+- `DeviceState` holds the last workspace and at most 1,000 cameras (data-model.md section 10). No document gives the times of the `device.json` writes. No document says which camera goes at the limit.
+- Options for the write: (a) at three events: the camera comes to rest, the workspace changes, and the app moves to the background. (b) with the throttle of the library saves.
+- Options at the limit: (a) drop the camera that was used least recently. (b) drop the oldest entry.
+- Recommendation: (a) in both. A crash then loses at most the last camera movement, and a camera is not work under STO-06.
+- Format: the product owner asked whether JSON fits. At the limit, the JSON file holds about 130 KB, and each read parses all of it, and each write rewrites all of it. The launch needs only the last workspace and its camera. Options: (a) a small SQLite file with one row per camera. (b) a binary property list, about a third of the size, but still a full parse and a full rewrite. (c) JSON. The product owner chose (a): the launch reads only the rows that it needs, a camera change writes one row, and the limit is one `DELETE`.
+
+### D-54 Process stop in the crash test of M3 acceptance 1
+
+- Decided by the product owner on 2026-10-18: option (a). Raised by the M3 plan on 2026-10-18 (task 3.10).
+- M3 acceptance 1 asks for an automated crash test. A test cannot stop its own process and then check the result.
+- Options: (a) a Mac test in `PersistenceTests` starts a helper process. The helper saves strokes through the repository for 10 seconds, and the test stops it with `SIGKILL`. Then the test opens the database and counts the strokes. (b) a UI test on the iPad adds strokes through a debug launch argument and stops the app with `XCUIApplication.terminate()`. Then it launches the app again and counts the strokes on the screen.
+- Recommendation: (a). It tests the repository code that STO-06 depends on, runs in `make test`, and reads the database directly. Option (b) also covers the composition, but it runs only on a device or a simulator, and it cannot read the database.
+- Doubt: (a) needs a small executable target in the `Persistence` package for the helper.
+
+### D-55 Saved strokes of the `-fillStrokes` launch argument
+
+- Decided by the product owner on 2026-10-18: option (a). Raised by the M3 plan on 2026-10-18 (task 3.9).
+- The launch argument fills the canvas for performance tests. With storage, a canvas that saves the fill content puts it into the library.
+- Options: (a) the fill content stays in memory and is never saved. (b) the fill content is saved like drawn strokes.
+- Recommendation: (a). A performance run then does not add up to 200,000 strokes to the library of the device.
+
+### D-56 Content of M3 acceptance 3
+
+- Decided by the product owner on 2026-10-18: the recommendation. Raised by the M3 plan on 2026-10-18 (task 3.10).
+- M3 acceptance 3 opens a canvas with 10,000 nodes and 20,000 strokes in under 300 ms. It does not give the size of a stroke or a text box, or the end point of the measurement.
+- Recommendation: 20,000 strokes of 300 control points, 5,000 cards, and 5,000 text boxes of 200 characters each. The measurement ends at the first frame, as in architecture.md section 12.
+- Doubt: 300 points per stroke is the size of the M2 dense content. Real handwriting has about 60 points per stroke, so this content is a hard case.
 
 ## Points in the request that conflict or are not complete
 

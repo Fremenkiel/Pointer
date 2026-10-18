@@ -70,7 +70,7 @@ struct HybridTimestamp: Comparable, Codable, Sendable {
 1. Read the current wall time in milliseconds.
 2. If the wall time is greater than the last `wallMillis`, use it with `counter = 0`.
 3. Otherwise, use the last `wallMillis` with `counter + 1`.
-4. Store the last value in the device state (see [storage.md](storage.md)), so that the clock never goes back after a restart.
+4. Store the last value in the `library` table, in the same transaction as the rows that use it (see [storage.md](storage.md) section 3.3). The clock then never goes back after a restart or a crash (review A-18).
 
 Comparison order: `wallMillis`, then `counter`, then `device`.
 
@@ -93,7 +93,7 @@ Rules:
 - Each change sets `modified` to a new clock value.
 - A delete sets `isDeleted = true` and sets `modified`. The row stays in the database.
 - An undo of a delete sets `isDeleted = false` and sets `modified`.
-- Code that reads content ignores records with `isDeleted == true`. The repository is the only place that filters them.
+- Code that reads content ignores records with `isDeleted == true`. The repository is the only place that filters them. It does not load deleted records or erased strokes from the database (review A-07).
 
 ## 6. Order
 
@@ -204,10 +204,12 @@ Rules:
 struct EraseRecord: Codable, Sendable {
     let strokeID: StrokeID
     let erased: HybridTimestamp
+    var modified: HybridTimestamp
+    var isDeleted: Bool        // true after an undo of the erase
 }
 ```
 
-The set of erase records of a canvas is the tombstone list for its strokes. An undo of an erase removes the erase record and marks the new parts as erased.
+The set of live erase records of a canvas is the tombstone list for its strokes. An undo of an erase sets `isDeleted = true` on its erase records and sets `modified`. It also adds erase records for the new parts. No row is ever deleted, so a later change upload sees the undo (D-30, review A-09).
 
 ## 8. Content in memory
 
@@ -221,7 +223,9 @@ struct CanvasContent: Sendable {
 }
 ```
 
-`CanvasContent` is the input and the output of commands. Only the canvas controller holds it, together with the `History` (review A-03). Swift copies a dictionary at the first change after a copy exists, so other holders of a copy would make the main actor copy up to 200,000 entries at a pencil lift.
+`erased` holds only the erase records of the current session. The repository loads live strokes only, so the erased strokes of earlier sessions never reach memory or the point arena (review A-07). An undo can only reach an erase of the current session, because the history lives in memory (D-12).
+
+`CanvasContent` is the input and the output of commands. Only the canvas controller holds it, together with the `History` (review A-03). Swift copies a dictionary at the first change after a copy exists. With a second holder, the main actor then copies up to 200,000 entries at a pencil lift.
 
 - The renderer receives deltas: the IDs of added and erased strokes. It keeps its own GPU state.
 - The repository receives the changed rows (see [storage.md](storage.md) section 4).
@@ -244,17 +248,17 @@ Rules:
 
 ## 10. Device state
 
-These values belong to one device. They are not part of the library, and a backup does not need them.
+These values belong to one device. They are not part of the library, and a backup does not need them. They live in `device.sqlite` (see [storage.md](storage.md) section 10, D-53).
 
 ```swift
-struct DeviceState: Codable, Sendable {
+struct DeviceState: Sendable {
     let deviceID: DeviceID
-    var lastTimestamp: HybridTimestamp
     var lastWorkspace: WorkspaceID?
-    var cameras: [CanvasID: Camera]     // last camera per canvas, at most 1,000 entries. Camera is in Geometry.
     var navigationPath: [CardID]         // at most Limits.maxDepth
 }
 ```
+
+The last camera of each canvas is not part of `DeviceState`. `DeviceStateStore` reads the camera of one canvas when the canvas opens and writes it as one row. It keeps at most 1,000 cameras and drops the least recently used one. `Camera` is in `Geometry`.
 
 ## 11. Readiness for sync and backup
 

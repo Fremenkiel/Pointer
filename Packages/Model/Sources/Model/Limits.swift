@@ -8,8 +8,8 @@ public enum Limits {
     public static let maxStrokesPerCanvas = 200_000
     /// Cards plus text boxes per canvas.
     public static let maxNodesPerCanvas = 10_000
-    /// Characters per text box.
-    public static let maxTextLength = 100_000
+    /// Characters per text box (D-29).
+    public static let maxTextLength = 10_000
     /// Workspaces in the library.
     public static let maxWorkspaces = 1_000
     /// Undo steps per canvas.

@@ -31,12 +31,12 @@ The costs:
   Library/
     Application Support/Pointer/
       library.sqlite                   the live database (with -wal and -shm files)
-      device.json                      device state (not part of the library)
+      device.sqlite                    device state (not part of the library, section 10)
     Caches/Pointer/
       previews/<canvas-id>.png         card previews, rebuilt on demand
   Documents/                           visible in Files as "On My iPad > Pointer"
     Backups/
-      Pointer-2026-10-17-2200.sqlite   snapshots, newest first
+      Pointer-2026-10-17-220000.sqlite snapshots, newest first
 ```
 
 Rules:
@@ -83,7 +83,7 @@ CREATE TABLE library (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
 ) STRICT;
--- rows: formatVersion, created, createdBy
+-- rows: formatVersion, created, createdBy, lastTimestamp
 
 CREATE TABLE workspace (
     id         BLOB PRIMARY KEY,
@@ -112,7 +112,7 @@ CREATE TABLE text_box (
     id         BLOB PRIMARY KEY,
     canvas_id  BLOB NOT NULL,
     x REAL NOT NULL, y REAL NOT NULL,
-    text       TEXT NOT NULL CHECK (length(text) BETWEEN 1 AND 100000),
+    text       TEXT NOT NULL CHECK (length(text) BETWEEN 1 AND 10000),
     sort_key   TEXT NOT NULL,
     created    BLOB NOT NULL,
     modified   BLOB NOT NULL,
@@ -136,8 +136,10 @@ CREATE TABLE stroke (
 CREATE INDEX stroke_canvas ON stroke (canvas_id);
 
 CREATE TABLE stroke_erase (
-    stroke_id BLOB PRIMARY KEY REFERENCES stroke (id),
-    erased    BLOB NOT NULL
+    stroke_id  BLOB PRIMARY KEY REFERENCES stroke (id),
+    erased     BLOB NOT NULL,
+    modified   BLOB NOT NULL,
+    is_deleted INTEGER NOT NULL DEFAULT 0 CHECK (is_deleted IN (0, 1))
 ) STRICT;
 ```
 
@@ -148,6 +150,8 @@ Rules:
 - A canvas is not a table. A canvas is all rows with the same `canvas_id` (see [data-model.md](data-model.md) section 2).
 - `canvas_id` has no foreign key, because it points to a workspace or to a card.
 - Strokes never change. An erase adds a row to `stroke_erase`, and a partial erase also adds new stroke rows.
+- An undo of an erase sets `is_deleted = 1` on the erase record and sets `modified`. It never deletes the row, so a later change upload sees the undo (D-30).
+- The `library` row `lastTimestamp` holds the largest clock value that the library contains, as 56 lowercase hex digits of the 28-byte form of section 3.2. Each save writes it in the same transaction as its rows. At launch, the clock continues after its wall time and counter (review A-18).
 
 ### 3.4 Point BLOB
 
@@ -169,10 +173,11 @@ A stroke of 300 points takes 4.8 KB. The layout matches `InkPoint` in memory. Th
 1. A command changes `CanvasContent` on the main actor.
 2. The canvas controller sends a value copy of the changed rows to the repository.
 3. The repository adds the rows to its pending set.
-4. One second after the last change, the repository writes all pending rows in one transaction (`BEGIN IMMEDIATE` ... `COMMIT`). It uses prepared statements and `INSERT ... ON CONFLICT (id) DO UPDATE`.
-5. When the scene goes to the background, the repository writes all pending rows at once. It asks for extra time with `UIApplication.beginBackgroundTask` for this step.
+4. The repository throttles the writes (D-27). If the pending set is not empty and the last write is older than 1 second, it writes all pending rows in one transaction (`BEGIN IMMEDIATE` ... `COMMIT`). It uses prepared statements and `INSERT ... ON CONFLICT (id) DO UPDATE`.
+5. At pencil lift, the canvas asks the repository to save. If the last write is older than 1 second, the repository writes at once. Otherwise, the throttle of step 4 writes at the end of the second.
+6. When the scene goes to the background, the repository writes all pending rows at once. It asks for extra time with `UIApplication.beginBackgroundTask` for this step.
 
-The data loss after a crash is at most the one-second wait plus the time of one write (STO-06).
+A write never waits for a pause in the input. Thus the data loss after a crash is at most 1 second plus the time of one write, also while you draw without a pause (STO-06, review A-02).
 
 If a transaction fails, the repository rolls it back and keeps the rows in the pending set. It logs the error and tries again at the next save. After three failures in a row, the app shows a message and stops new edits until the next save works. It never drops changes in silence.
 
@@ -182,10 +187,12 @@ If a transaction fails, the repository rolls it back and keeps the rows in the p
 2. Read `PRAGMA user_version`. If it is newer than the app knows, open the library read-only and show a message.
 3. If it is older, run the migrations (section 6).
 4. Read all workspaces for the selector.
-5. To open a canvas, read all rows with its `canvas_id` from `card`, `text_box`, `stroke`, and `stroke_erase`. Build the `SpatialGrid` in memory.
+5. To open a canvas, read the live rows with its `canvas_id`: cards and text boxes with `is_deleted = 0`, and strokes without a live erase record (`LEFT JOIN stroke_erase ... ON ... AND stroke_erase.is_deleted = 0 WHERE stroke_erase.stroke_id IS NULL`). Do not load erase records or erased strokes (review A-07). Build the `SpatialGrid` in memory.
 6. For the previews of visible cards, read their canvases one level deep.
 
 The repository loads one canvas at a time. It never loads the whole library into memory.
+
+At launch, the repository removes the tombstones that are older than 30 days (D-18). This covers deleted cards with their subtrees and erased strokes with their erase records (review A-07). Then it runs `PRAGMA incremental_vacuum`, which gives the free pages back to the file system (review A-21, item 6).
 
 A canvas at the stroke limit (200,000 strokes of 300 points) holds about 1 GB of points. That is too much for one load. If tests on the device show a slow open for large canvases, the next step is a load by viewport: an R-tree index on the stroke bounds, and a query for the strokes near the camera only. Version 1 loads the whole canvas (decision D-24).
 
@@ -201,17 +208,22 @@ A canvas at the stroke limit (200,000 strokes of 300 points) holds about 1 GB of
 
 ### 7.1 Snapshots
 
-A snapshot is a complete, consistent copy of the library in one file. The repository makes it with:
+A snapshot is a complete, consistent copy of the library in one file. `SnapshotWriter`, an actor with its own read-only connection and its own serial executor, makes it (D-32):
 
-```sql
-VACUUM INTO '<path>/Pointer-<yyyy-MM-dd-HHmm>.sqlite';
-```
+1. Run `VACUUM INTO` into a new file in `tmp/`:
 
-`VACUUM INTO` reads one consistent view of the database and writes a compact copy. The copy has no `-wal` file and no free pages. Writes wait while it runs.
+   ```sql
+   VACUUM INTO '<tmp>/Pointer-<yyyy-MM-dd-HHmmss>.sqlite.partial';
+   ```
+
+2. If the command succeeds, rename the file into `Documents/Backups/Pointer-<yyyy-MM-dd-HHmmss>.sqlite`. A rename in one volume is atomic, so `Backups/` never holds a partial file.
+3. If the command fails or the app stops, the partial file stays in `tmp/`. At launch, the repository deletes each `*.sqlite.partial` file in `tmp/`.
+
+`VACUUM INTO` reads one consistent view of the database and writes a compact copy. The copy has no `-wal` file and no free pages. In WAL mode, the read does not block the writer, so saves continue while the snapshot runs. If the target file exists, the command fails, so the name has seconds. The live database uses `synchronous = NORMAL`, so SQLite syncs the output file (review A-12).
 
 ### 7.2 Automatic snapshots (STO-02)
 
-When the scene goes to the background, the repository makes a snapshot if the newest snapshot is older than 24 hours. It keeps the newest 7 snapshots and deletes older ones. These values come from decision D-21.
+If the newest snapshot is older than 24 hours, the app makes a snapshot at the first idle moment while it is active (D-32). An idle moment is 5 seconds without input and with an empty pending set. The 5 seconds are a start value. Tune them on a device in M3. The app does not start a snapshot at the move to the background. The app keeps the newest 7 snapshots and deletes older ones. These values come from decision D-21.
 
 The `Info.plist` sets `UIFileSharingEnabled = YES` and `LSSupportsOpeningDocumentsInPlace = YES`. Thus the Files app shows `Documents/Backups/` under "On My iPad > Pointer".
 
@@ -227,10 +239,13 @@ To back up, the user copies the newest snapshot file from the Files app to any p
 
 ### 7.5 Restore
 
-1. The user picks a snapshot file with the document picker.
-2. The app opens it read-only and runs `PRAGMA integrity_check` and `PRAGMA user_version`.
+1. The user picks a snapshot file with the document picker. The app calls `startAccessingSecurityScopedResource()` on the URL before it reads the file, and `stopAccessingSecurityScopedResource()` after the restore.
+2. The app opens it read-only and runs `PRAGMA integrity_check`, `PRAGMA user_version`, and `PRAGMA page_size`.
 3. If the file passes, the app makes a snapshot of the current library first. Then it copies the picked file into the live database with the SQLite online backup API (`sqlite3_backup_init`, `sqlite3_backup_step`, `sqlite3_backup_finish`).
-4. The app reloads all workspaces.
+4. The repository runs the migrations of section 6, because the snapshot can have an older `user_version`.
+5. The app reloads all workspaces.
+
+The live database and each snapshot use a page size of 4,096 bytes. The repository sets `PRAGMA page_size = 4096` before the first table exists. If the page sizes of the source and the WAL destination differ, `sqlite3_backup_step` returns `SQLITE_READONLY` (review A-21, item 7). If the picked file has another page size, the app refuses it with a message.
 
 Restore is part of version 1 (decision D-20).
 
@@ -254,6 +269,39 @@ This version contains no integration. The design keeps these paths open:
 - Constraint tests: each `CHECK` refuses a value one past its limit.
 - Corruption tests: a point BLOB with a wrong length, a damaged database file. The repository must report the fault, keep the rest of the library readable, and never overwrite the file.
 - Crash tests: stop the process between `BEGIN` and `COMMIT` with an injected failure. Then open the database, and make sure that it holds the state before the transaction.
+- Throttle test (M3 acceptance 1): add strokes without a pause for 10 seconds, stop the process, open the database again, and make sure that at most 2 seconds of strokes are missing (review A-02).
+- Partial snapshot test: stop a snapshot before the rename. Make sure that `Backups/` holds no new file and that the next launch deletes the partial file.
 - Snapshot test: make a library, run `VACUUM INTO`, open the snapshot, and compare all rows with the live database.
 - Restore test: restore a snapshot over a different library, and compare all rows with the snapshot.
 - Performance test on the device: open a canvas with 10,000 nodes and 20,000 strokes in under 300 ms.
+
+## 10. Device state
+
+The device state of [data-model.md](data-model.md) section 10 lives in its own SQLite file, `device.sqlite` (D-53). It is not part of the library, so a snapshot and a restore never carry it to another iPad. `DeviceStateStore`, an actor with its own connection and its own serial executor, owns the file. It uses the wrapper and the connection setup of section 3.1.
+
+```sql
+CREATE TABLE device (
+    key   TEXT PRIMARY KEY,
+    value BLOB NOT NULL
+) STRICT;
+-- rows: deviceID (16 bytes), lastWorkspace (16 bytes),
+--       navigationPath (16 bytes per card ID, at most Limits.maxDepth IDs)
+
+CREATE TABLE camera (
+    canvas_id BLOB PRIMARY KEY,
+    center_x  REAL NOT NULL,
+    center_y  REAL NOT NULL,
+    zoom      REAL NOT NULL CHECK (zoom BETWEEN 0.25 AND 8.0),
+    used      INTEGER NOT NULL      -- grows by 1 with each camera write
+) STRICT;
+CREATE INDEX camera_used ON camera (used);
+```
+
+Rules:
+
+- At launch, the store reads the `device` rows and the camera of the last workspace only. A canvas reads its camera when it opens.
+- The store writes at three events: the camera comes to rest, the workspace changes, and the app moves to the background. A camera write changes one row.
+- `used` is a counter, not a clock value, so a change of the system time does not change the order.
+- After a camera write, the store keeps the 1,000 rows with the largest `used` and deletes the others in the same transaction.
+- `PRAGMA user_version` holds the schema version of this file. It has its own migrations, as in section 6.
+- If the file is missing or damaged, the store renames a damaged file to `device.sqlite.damaged`, makes a new file with a new `DeviceID`, and logs the fault. The app does not stop. The camera positions are lost, but no work is lost (STO-06).

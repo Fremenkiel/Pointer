@@ -20,7 +20,7 @@ This document describes how Pointer is built. It covers the modules, the input p
 | Live pen input | PencilKit, `PKCanvasView` at zoom 1 (decisions D-02 and D-33) | The custom input path trailed the pencil in M1. |
 | Chrome (top bars, workspace selector, palette) | SwiftUI views in `UIHostingController` children | Less code for lists, menus, and alerts. Not on the ink path. |
 | Text editing | `UITextView` (TextKit 2), only while you edit | Keyboard, Scribble, selection, and dictation come free. |
-| Frame timing | `UIUpdateLink` (iOS 18+) | Frame loop of the Metal renderer. |
+| Frame timing | `CAMetalDisplayLink` on a render thread (D-42), and `UIUpdateLink` on the main thread for camera animations | The render thread gets each drawable without a block on the main thread (section 5.1). |
 | PDF | `UIGraphicsPDFRenderer`, Core Graphics, Core Text | Vector output and real text. |
 | Storage | SQLite from the system (`import SQLite3`), no wrapper library | See [storage.md](storage.md). |
 | Logging | `os.Logger`, `OSSignposter` | Logging that is off has zero cost. Signposts feed the performance tests. |
@@ -130,7 +130,7 @@ The eraser has a radius of 8 view points. The radius stays the same on the scree
 
 The eraser is partial (decision D-06). `StrokeSplitter` removes the points inside the circle and returns the remaining runs as new strokes. The command records the old stroke ID and the new strokes.
 
-The changes of one eraser gesture (pencil down to pencil up) form one undo step.
+The changes of one eraser gesture (pencil down to pencil up) form one undo step. During the gesture, the eraser keeps a mask per touched stroke in memory: the removed parts. The renderer draws the strokes with their masks. At pencil lift, the eraser computes the final parts once and emits one `EraseStrokes` command (D-30, review A-08).
 
 The stored points are control points, not points on the curve (decision D-26). M4 must define how a cut on the curve maps to the control points of the new parts.
 
@@ -267,7 +267,7 @@ Each stroke stores its origin in `Double` and its points as `Float` offsets from
 
 ### 5.4 Text
 
-The renderer draws text as textures. `TextRasterizer` draws each text box with Core Text into a bitmap. The scale of the bitmap is the zoom rounded up to the next power of two. The cache holds at most 256 textures and removes the least recently used one first.
+The renderer draws text from a glyph atlas (D-29). SF Mono is monospaced, so each character is one quad from the atlas. Core Text draws the glyphs into one atlas per scale, and the scale is the zoom rounded up to the next power of two. The atlas cache has a byte budget, not a count. The size of a text box does not change the size of the cache (review A-10).
 
 While a text box is in edit mode, the renderer hides it. A `UITextView` sits at the same place, with the same font and a transform that matches the camera.
 
@@ -374,7 +374,7 @@ All limits live in one type, `Limits`, in `Model`. Code uses the names, never th
 | `maxPointsPerStroke` | 16,384 | Control points per stroke, about 68 s at 240 Hz. The converter splits a longer PencilKit stroke into several strokes (section 4.2). |
 | `maxStrokesPerCanvas` | 200,000 | Upper bound for loops and memory. |
 | `maxNodesPerCanvas` | 10,000 | Cards plus text boxes. |
-| `maxTextLength` | 100,000 | Characters per text box. |
+| `maxTextLength` | 10,000 | Characters per text box (D-29). |
 | `maxWorkspaces` | 1,000 | Workspace list. |
 | `maxHistoryDepth` | 500 | Undo steps per canvas. |
 | `minZoom`, `maxZoom`, `standardZoom` | 0.25, 8.0, 1.0 | Camera (CAN-04). |
@@ -385,9 +385,9 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 
 - Swift 6 language mode with complete strict concurrency in every target.
 - UI types and the canvas run on the main actor. The renderer encodes its frames on a render thread (D-42, section 5.1). The main actor sends values to it and never waits for a frame.
-- `SQLiteLibraryRepository` is an actor. It owns the only database connection that writes. All SQL goes through it.
+- `SQLiteLibraryRepository` is an actor. It owns the only database connection that writes. All SQL goes through it. The actor has a custom serial executor on a `DispatchSerialQueue` (SE-0392), so the blocking SQLite calls run on their own thread and never hold a thread of the shared pool (review A-13).
 - The canvas sends the changed rows to the repository and the IDs of changed strokes to the renderer. It never shares mutable state (see [data-model.md](data-model.md) section 8).
-- PDF export runs in a `Task` off the main actor. Snapshots run inside the repository actor. They report progress to the main actor.
+- PDF export runs in a `Task` off the main actor. Snapshots run in `SnapshotWriter`, an actor with its own read-only connection and its own serial executor, so saves continue while a snapshot runs (D-32). Both report progress to the main actor.
 - No code on the main actor waits for disk.
 
 ## 12. Performance budgets

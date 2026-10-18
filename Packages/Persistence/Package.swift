@@ -18,7 +18,12 @@ let package = Package(
                 .product(name: "Model", package: "Model")
             ],
             swiftSettings: [.treatAllWarnings(as: .error)]
-        )
+        ),
+        .testTarget(
+            name: "PersistenceTests",
+            dependencies: ["Persistence"],
+            swiftSettings: [.treatAllWarnings(as: .error)]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

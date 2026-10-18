@@ -5,7 +5,7 @@
 public struct HybridClock: Sendable {
     /// The device that makes the values.
     public let device: DeviceID
-    /// The last value that the clock made. The device state stores it from M3 on.
+    /// The last value that the clock made. The library stores it from M3 on.
     public private(set) var last: HybridTimestamp
     private let wallClock: any WallClock
 
