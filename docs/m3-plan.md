@@ -130,6 +130,8 @@ Status: done on 2026-10-18 in commits 249c4c0 and 99f3132. The snapshot test com
 
 Done when: a round-trip test passes for each row. A test with 1,001 cameras keeps the 1,000 most recent ones (TEST-06). A damaged file gives a new state. The time of the launch read on the iPad is in section 4.
 
+Status: done on 2026-10-18. The round-trip test passes for the device ID, the last workspace, the navigation path, and the camera. The camera limit test passes at 0, 1, 1,000, and 1,001 cameras, and a camera write makes that camera the most recent. Five kinds of damage each give a new state and keep `device.sqlite.damaged`. The launch read time is in section 4.7.
+
 ### 3.8 Workspace selector (Tier C)
 
 1. Add the selector of WS-01 to WS-03 in `WorkspaceFeature`: a SwiftUI view in the top left corner with the current name and a list.
@@ -237,3 +239,11 @@ Control without a snapshot, 640 saves of 10 strokes on the same library: median 
 |---|---|---|
 | Line coverage of `Persistence` | at least 90 % | 91.79 % |
 | Assertion density of `Persistence` | at least 2.0 | 2.02 |
+
+### 4.7 Device state
+
+| Item | Target | Result |
+|---|---|---|
+| Launch read on the iPad Pro 11-inch (M4), Release, 1,000 cameras, 20 opens | recorded | median 1.23 ms, slowest 1.45 ms |
+| Line coverage of `Persistence` | at least 90 % | 91.56 % |
+| Assertion density of `Persistence` | at least 2.0 | 2.00 |
