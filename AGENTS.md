@@ -62,6 +62,7 @@ make lint        # swiftlint --strict
 make layers      # Scripts/check-layers.swift
 make density     # Scripts/assertion-density.swift
 make self-test   # runs the check scripts on Scripts/Fixtures
+make plist       # the Files app keys of PointerApp/Info.plist are true
 make check       # all of the above, the full check
 ```
 

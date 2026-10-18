@@ -9,9 +9,9 @@ TIER_A := Geometry Model InkEngine Persistence
 OTHER_PACKAGES := Rendering Export DesignSystem CanvasFeature WorkspaceFeature BackupFeature
 XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -derivedDataPath $(DERIVED_DATA)
 
-.PHONY: check build analyze test format lint layers density self-test
+.PHONY: check build analyze test format lint layers density self-test plist
 
-check: build analyze test format lint layers density self-test
+check: build analyze test format lint layers density self-test plist
 	@echo "All checks passed."
 
 # BUILD-01, BUILD-02: the targets treat warnings as errors.
@@ -61,3 +61,9 @@ density:
 # The check scripts and the SwiftLint rules on Scripts/Fixtures.
 self-test:
 	Scripts/self-test.sh
+
+# STO-02, STO-03: the Files app shows Documents/ only with both keys set to true.
+plist:
+	plutil -extract UIFileSharingEnabled raw PointerApp/Info.plist | grep -qx true
+	plutil -extract LSSupportsOpeningDocumentsInPlace raw PointerApp/Info.plist | grep -qx true
+	@echo "plist: Files app keys present"
