@@ -153,6 +153,14 @@ custom_rules:
     message: "Do not turn off concurrency checks. Make the type Sendable or isolate it to an actor."
     severity: error
 
+  # The check reads one line, so a call that spans lines can pass. The wrapper API takes
+  # StaticString SQL, which cannot hold an interpolation.
+  safe_10_sql_interpolation:
+    name: "SAFE-10"
+    regex: '\bsqlite3_(exec|prepare(_v[23])?)\s*\([^\n]*\\\('
+    message: "Do not build SQL from values. Bind the value to a parameter of a prepared statement."
+    severity: error
+
   scope_02_final_class:
     name: "SCOPE-02"
     regex: '(?<!\bfinal\s)\bclass(?=\s+[A-Z])'

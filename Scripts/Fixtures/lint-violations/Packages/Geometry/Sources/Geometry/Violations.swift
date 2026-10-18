@@ -59,6 +59,11 @@ public struct Violations {
         let path = FileManager.default.currentDirectoryPath
         return path + Bundle.main.bundlePath + ProcessInfo.processInfo.hostName
     }
+
+    /// SAFE-10: SQL text built from a value.
+    func sql(_ title: String) -> Int32 {
+        sqlite3_exec(nil, "DELETE FROM workspace WHERE title = '\(title)'", nil, nil, nil)
+    }
 }
 
 /// SCOPE-02: the class is not final.

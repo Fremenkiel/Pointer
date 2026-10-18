@@ -19,6 +19,7 @@ safe_07_fatal_error
 safe_08_conditional_compilation
 safe_09_unsafe_attributes
 safe_09_unsafe_types
+safe_10_sql_interpolation
 scope_02_final_class
 scope_04_private_property_wrappers
 style_03_raw_ui_values
