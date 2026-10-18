@@ -136,29 +136,33 @@ final class CommittedLayer {
         build = nil
     }
 
-    /// Adds a new stroke: it draws it into the front texture now and adds it to a running build.
+    /// Adds the new strokes of a frame: it draws them into the front texture in one pass and adds
+    /// them to a running build. A full draw list continues the strokes in another pass.
     ///
-    /// - Precondition: `slot` is a stroke of the store.
-    func addStroke(
-        _ slot: Int,
+    /// - Precondition: The slots are strokes of the store.
+    func addStrokes(
+        _ slots: [Int],
         encoder: InkEncoder,
         commandBuffer: any MTLCommandBuffer,
         frame: UInt64
     ) {
-        precondition(slot >= 0, "Stroke slot \(slot) is invalid")
+        precondition(slots.allSatisfy { $0 >= 0 }, "A stroke slot is invalid")
         if build != nil {
-            buildSlots.append(slot)
+            buildSlots.append(contentsOf: slots)
         }
-        guard let front else { return }
+        guard let front, !slots.isEmpty else { return }
         let options = InkPassOptions(clear: false, instanceBudget: .max, frame: frame)
-        let cursor = encoder.encodePass(
-            commandBuffer,
-            target: front,
-            slots: [slot],
-            cursor: 0,
-            options: options
-        )
-        assert(cursor == 1, "The handoff pass draws its one stroke")
+        var cursor = 0
+        for _ in slots.indices where cursor < slots.count {
+            cursor = encoder.encodePass(
+                commandBuffer,
+                target: front,
+                slots: slots,
+                cursor: cursor,
+                options: options
+            )
+        }
+        assert(cursor == slots.count, "The handoff passes draw each new stroke")
     }
 
     /// Draws the next chunk of the build. A complete build becomes the front texture.

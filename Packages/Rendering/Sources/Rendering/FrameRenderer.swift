@@ -182,9 +182,8 @@ final class FrameRenderer {
     }
 
     private func encodeContent(layer: CommittedLayer, commandBuffer: any MTLCommandBuffer) {
-        for slot in pendingSlots {
-            layer.addStroke(slot, encoder: encoder, commandBuffer: commandBuffer, frame: frame)
-        }
+        // One pass for all new strokes of the frame, from the reused list (PERF-01).
+        layer.addStrokes(pendingSlots, encoder: encoder, commandBuffer: commandBuffer, frame: frame)
         pendingSlots.removeAll(keepingCapacity: true)
         _ = layer.startBuildIfNeeded(camera: camera, displayScale: displayScale, store: store)
         layer.continueBuild(

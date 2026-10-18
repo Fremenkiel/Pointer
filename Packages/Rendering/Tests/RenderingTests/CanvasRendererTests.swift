@@ -53,6 +53,24 @@ struct CanvasRendererTests {
         #expect(!renderer.needsMoreFrames)
     }
 
+    @Test("Several strokes of one handoff reach the screen in one frame with one callback")
+    func handoffOfSeveralStrokes() async throws {
+        let renderer = try CanvasRenderer()
+        let layer = makeLayer(renderer: renderer)
+        _ = drain(renderer, layer: layer)
+        var calls = 0
+        let strokes = (0..<3).map {
+            StrokeBuilder.curve(at: Point(x: -60, y: Double($0) * 10), seed: $0)
+        }
+        renderer.add(strokes) { calls += 1 }
+        _ = drain(renderer, layer: layer)
+        for _ in 0..<200 where calls == 0 {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(calls == 1)
+        #expect(renderer.strokeCount == 3)
+    }
+
     @Test("A build in chunks completes and stops asking for frames")
     func chunkedBuild() throws {
         let renderer = try CanvasRenderer(
