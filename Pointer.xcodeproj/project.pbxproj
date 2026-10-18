@@ -19,6 +19,8 @@
 		B0000000000000000000B010 /* Rendering in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D010 /* Rendering */; };
 		B0000000000000000000B011 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D011 /* Persistence */; };
 		B0000000000000000000B012 /* WorkspaceFeature in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D012 /* WorkspaceFeature */; };
+		B0000000000000000000B013 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D013 /* Persistence */; };
+		B0000000000000000000B014 /* Geometry in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D014 /* Geometry */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -99,6 +101,8 @@
 				B0000000000000000000B004 /* DesignSystem in Frameworks */,
 				B0000000000000000000B005 /* Model in Frameworks */,
 				B0000000000000000000B006 /* Rendering in Frameworks */,
+				B0000000000000000000B013 /* Persistence in Frameworks */,
+				B0000000000000000000B014 /* Geometry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -165,6 +169,8 @@
 				B0000000000000000000D004 /* DesignSystem */,
 				B0000000000000000000D005 /* Model */,
 				B0000000000000000000D006 /* Rendering */,
+				B0000000000000000000D013 /* Persistence */,
+				B0000000000000000000D014 /* Geometry */,
 			);
 			productName = PointerApp;
 			productReference = B0000000000000000000F001 /* Pointer.app */;
@@ -547,6 +553,14 @@
 		B0000000000000000000D012 /* WorkspaceFeature */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = WorkspaceFeature;
+		};
+		B0000000000000000000D013 /* Persistence */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Persistence;
+		};
+		B0000000000000000000D014 /* Geometry */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Geometry;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

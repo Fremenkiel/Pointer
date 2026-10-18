@@ -72,6 +72,8 @@ struct HybridTimestamp: Comparable, Codable, Sendable {
 3. Otherwise, use the last `wallMillis` with `counter + 1`.
 4. Store the last value in the `library` table, in the same transaction as the rows that use it (see [storage.md](storage.md) section 3.3). The clock then never goes back after a restart or a crash (review A-18).
 
+The app has one clock, `AppClock` in `CanvasFeature`. The canvas and the workspace selector share it, so the clock values of one iPad grow across all records. At launch, `PointerApp` makes it from the `lastTimestamp` of the library, with the `DeviceID` of this iPad. After a restore from another iPad, the clock keeps the wall time and the counter of `lastTimestamp` and takes the device ID of this iPad.
+
 Comparison order: `wallMillis`, then `counter`, then `device`.
 
 Source: Kulkarni et al., "Logical Physical Clocks" (<https://www.cse.buffalo.edu/~demirbas/publications/hlc.pdf>).

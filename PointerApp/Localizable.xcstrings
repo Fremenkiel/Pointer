@@ -1,7 +1,66 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-
+  "sourceLanguage": "en",
+  "strings": {
+    "OK": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "Pointer cannot save. Drawing stops until a save works again. Your work so far is safe.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pointer cannot save. Drawing stops until a save works again. Your work so far is safe."
+          }
+        }
+      }
+    },
+    "Pointer could not open its library. Your data stays as it is.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pointer could not open its library. Your data stays as it is."
+          }
+        }
+      }
+    },
+    "Pointer could not open this workspace.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pointer could not open this workspace."
+          }
+        }
+      }
+    },
+    "Some content of this canvas is damaged and does not show.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some content of this canvas is damaged and does not show."
+          }
+        }
+      }
+    },
+    "This library comes from a newer version of Pointer. It opens read-only.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This library comes from a newer version of Pointer. It opens read-only."
+          }
+        }
+      }
+    }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }
