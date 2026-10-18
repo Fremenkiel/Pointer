@@ -310,3 +310,4 @@ Rules:
 - After a camera write, the store keeps the 1,000 rows with the largest `used` and deletes the others in the same transaction.
 - `PRAGMA user_version` holds the schema version of this file. It has its own migrations, as in section 6.
 - If the file is missing or damaged, the store renames a damaged file to `device.sqlite.damaged`, makes a new file with a new `DeviceID`, and logs the fault. The app does not stop. The camera positions are lost, but no work is lost (STO-06).
+- A file with a newer schema, a row of a wrong length, or a navigation path above `Limits.maxDepth` counts as damaged. A camera row with a zoom outside the range or a center that is not finite reads as no camera.
