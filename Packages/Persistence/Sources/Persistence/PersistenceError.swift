@@ -13,4 +13,6 @@ public enum PersistenceError: Error, Equatable, Sendable {
     case corruptRow(table: String, reason: String)
     /// A database with schema version 0 already has tables, so it is not a Pointer library.
     case unknownSchema
+    /// A file operation of a snapshot failed, for example the rename into `Backups/`.
+    case fileFailed(reason: String)
 }

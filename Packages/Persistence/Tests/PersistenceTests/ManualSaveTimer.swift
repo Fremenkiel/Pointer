@@ -63,3 +63,16 @@ struct FixedWallClock: WallClock {
 
     func nowMillis() -> UInt64 { millis }
 }
+
+/// A wall clock that the test moves (TEST-04).
+final class MovableWallClock: WallClock {
+    private let millis: OSAllocatedUnfairLock<UInt64>
+
+    init(_ millis: UInt64) {
+        self.millis = OSAllocatedUnfairLock(initialState: millis)
+    }
+
+    func nowMillis() -> UInt64 { millis.withLock { $0 } }
+
+    func advance(byHours hours: UInt64) { millis.withLock { $0 += hours * 3_600_000 } }
+}

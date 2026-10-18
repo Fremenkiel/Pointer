@@ -222,11 +222,13 @@ A snapshot is a complete, consistent copy of the library in one file. `SnapshotW
 2. If the command succeeds, rename the file into `Documents/Backups/Pointer-<yyyy-MM-dd-HHmmss>.sqlite`. A rename in one volume is atomic, so `Backups/` never holds a partial file.
 3. If the command fails or the app stops, the partial file stays in `tmp/`. At launch, the repository deletes each `*.sqlite.partial` file in `tmp/`.
 
+The name uses the local time of the iPad, because the user reads it in the Files app. The change date of the file is the time of the snapshot. The writer uses it for the age and the order of the snapshots. A pre-migration snapshot of a version that exists already stays as it is, because it holds the state before the first try of the migration.
+
 `VACUUM INTO` reads one consistent view of the database and writes a compact copy. The copy has no `-wal` file and no free pages. In WAL mode, the read does not block the writer, so saves continue while the snapshot runs. If the target file exists, the command fails, so the name has seconds. The live database uses `synchronous = NORMAL`, so SQLite syncs the output file (review A-12).
 
 ### 7.2 Automatic snapshots (STO-02)
 
-If the newest snapshot is older than 24 hours, the app makes a snapshot at the first idle moment while it is active (D-32). An idle moment is 5 seconds without input and with an empty pending set. The 5 seconds are a start value. Tune them on a device in M3. The app does not start a snapshot at the move to the background. The app keeps the newest 7 snapshots and deletes older ones. These values come from decision D-21.
+If the newest snapshot is older than 24 hours, the app makes a snapshot at the first idle moment while it is active (D-32). An idle moment is 5 seconds without input and with an empty pending set. The 5 seconds are a start value. Tune them on a device in M3. The app does not start a snapshot at the move to the background. The app keeps the newest 7 daily snapshots and deletes older ones. The pre-migration snapshots do not count, and the app never deletes them. These values come from decision D-21.
 
 The `Info.plist` sets `UIFileSharingEnabled = YES` and `LSSupportsOpeningDocumentsInPlace = YES`. Thus the Files app shows `Documents/Backups/` under "On My iPad > Pointer". The Files app shows the "Pointer" folder only after `Documents/` holds a file. An empty `Documents/` gives no folder. The product owner saw this on the iPad Pro 11-inch (M4) on 2026-10-18. Thus the folder shows after the first snapshot.
 
