@@ -74,6 +74,12 @@ Status: done on 2026-10-18 in commits a252d9f and a010897. The line coverage of 
 
 Done when: the tests cover the open, the pragmas, a bind and a read of each value type, and a failed statement that throws with its message.
 
+Status: done on 2026-10-18 in commits 999582f, a96e6a1, and 439f1f1. The tests cover the open, the settings, a bind and a read of each value type, and failed statements that throw with their SQLite message. The task found three facts:
+
+1. SAFE-10 names a lint rule for SQL text built from values, but `.swiftlint.yml` had none. The rule `safe_10_sql_interpolation` now exists. The wrapper also takes SQL as a `StaticString`, so the compiler refuses SQL with a value in it.
+2. SQLite `length()` stops at the first U+0000. The product owner added to D-57 that `Model` refuses U+0000 in titles and texts.
+3. SQLite stores -0.0 as 0.0. Both compare equal, so no position changes.
+
 ### 3.4 Schema, codecs, and migrations (Tier A)
 
 1. Add schema version 1 with all tables of [storage.md](storage.md) section 3.3, with the changes of D-29 and D-30.
@@ -170,3 +176,11 @@ Done when: all four acceptance criteria of M3 pass, and the results are in secti
 | Line coverage of `Model` | at least 90 % | 93.26 % |
 | Assertion density of `Model` | at least 2.0 | 2.06 |
 | Key length after 1,000 appends at one end | at most 64 | at most 18 |
+
+### 4.3 SQLite wrapper
+
+| Item | Target | Result |
+|---|---|---|
+| Line coverage of `Persistence` | at least 90 % | 93.33 % |
+| Assertion density of `Persistence` | at least 2.0 | 2.00 |
+| Tests of the wrapper | open, settings, each value type, failed statement | 17 tests pass |
