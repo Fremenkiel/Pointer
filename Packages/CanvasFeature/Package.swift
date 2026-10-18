@@ -37,6 +37,7 @@ let package = Package(
                 "CanvasFeature",
                 .product(name: "Geometry", package: "Geometry"),
                 .product(name: "Model", package: "Model"),
+                .product(name: "Persistence", package: "Persistence"),
                 .product(name: "Rendering", package: "Rendering"),
             ],
             swiftSettings: [.treatAllWarnings(as: .error)]

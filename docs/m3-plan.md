@@ -157,6 +157,8 @@ Status: done on 2026-10-18. Four snapshot tests pass: the button, the button wit
 
 Done when: on the iPad, a drawing stays after a force quit and a new launch, and the app opens the last workspace at the last camera.
 
+Status: the code is done (commits 4355249 and ebf274d), and `make check` passes. On the iPad, the app opens, makes the library and the device state, makes the workspace "Workspace" (D-52), and writes the first daily snapshot after 5 idle seconds. The manual test with the pencil (a drawing after a force quit, the last workspace at the last camera) waits for the product owner.
+
 ### 3.10 Acceptance tests
 
 1. Acceptance 1: the crash test of D-54. Strokes arrive without a pause for 10 seconds, the process stops, and at most 2 seconds of strokes are missing.
@@ -166,6 +168,8 @@ Done when: on the iPad, a drawing stays after a force quit and a new launch, and
 5. Measure the read and write speed of SQLite on the iPad and record it in [research.md](research.md) section 5. Review B-4 left this measurement for M3.
 
 Done when: all four acceptance criteria of M3 pass, and the results are in section 4 of this document.
+
+Status: acceptance 1, 3, and 4 pass. Acceptance 2 passes for the file: the snapshot that the iPad wrote passes `PRAGMA integrity_check` on the Mac. The copy came through `devicectl`, not through the Files app. A look at "On My iPad > Pointer > Backups" in the Files app waits for the product owner. The open test raised D-60. The SQLite speeds of the iPad are in [research.md](research.md) section 5.
 
 ### 3.11 Close of M3
 
@@ -249,3 +253,14 @@ Control without a snapshot, 640 saves of 10 strokes on the same library: median 
 | Launch read on the iPad Pro 11-inch (M4), Release, 1,000 cameras, 20 opens | recorded | median 1.23 ms, slowest 1.45 ms |
 | Line coverage of `Persistence` | at least 90 % | 91.56 % |
 | Assertion density of `Persistence` | at least 2.0 | 2.00 |
+
+### 4.8 Acceptance tests
+
+| Acceptance | Target | Result |
+|---|---|---|
+| 1. Crash test of D-54: 10 s of strokes without a pause, then `SIGKILL` | at most 2 s of strokes lost | 5 runs, 646 to 809 strokes saved, the newest one 21, 590, 140, 1,011, and 354 ms before the kill |
+| 2. Snapshot of the iPad, copied to a Mac | `PRAGMA integrity_check` gives `ok` | `ok`, schema version 1, page size 4,096 |
+| 3. Open of the D-56 canvas to the first frame on the iPad Pro 11-inch (M4), Release, 10 opens | under 300 ms | first run: median 198.4 ms, slowest 245.7 ms. Second run: median 197.4 ms, slowest 217.7 ms, of which the load takes about 68 ms |
+| 4. All tests of storage.md section 9 | pass | 84 Persistence tests pass. The restore test belongs to M9 (D-20). |
+
+Baseline of acceptance 3 (PERF-03): median 197.4 ms on the iPad Pro 11-inch (M4).

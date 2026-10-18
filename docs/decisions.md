@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-59 on the same day.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day.
 
 Status values: Open, Decided, Replaced.
 
@@ -67,6 +67,7 @@ Status values: Open, Decided, Replaced.
 | D-57 | The unit of the title and text length limits | Unicode code points, as SQLite `length()` counts | Decided (2026-10-18) |
 | D-58 | Stored form of the `library` rows | Decimal version, hex clock value, lowercase device UUID | Decided (2026-10-18) |
 | D-59 | Window access in the snapshot tests of SwiftUI views | The exception of D-44 in the snapshot helper | Decided (2026-10-18) |
+| D-60 | File access in the open test of M3 acceptance 3 | One inline lint exception, as in D-44 | Decided (2026-10-18) |
 
 ## Details
 
@@ -506,6 +507,13 @@ Status values: Open, Decided, Replaced.
 - Tried on the simulator: `drawHierarchy` and `layer.render(in:)` without a window give black images. SwiftUI `ImageRenderer` needs no window, but it draws no content inside a `ScrollView`, so the workspace list shows no rows.
 - Options: (a) extend D-44: the shared snapshot helper of a feature package reads the window scene through `UIApplication.shared`, with one `// swiftlint:disable:next arch_05_singletons` line that names D-59. (b) `ImageRenderer`, and the list leaves out its `ScrollView` in the test. The image then differs from the real view, and TEST-07 names another renderer. (c) Snapshot only the button, and leave the list without a snapshot.
 - Recommendation: (a). It is the exception that D-44 already allows for one test, in one helper. The rule ARCH-05 and `.swiftlint.yml` stay as they are.
+
+### D-60 File access in the open test of M3 acceptance 3
+
+- Decided by the product owner on 2026-10-18: option (a). Raised by task 3.10 of [m3-plan.md](m3-plan.md).
+- M3 acceptance 3 opens a canvas with the content of D-56 to the first frame. The test needs `Persistence` for the load and `Rendering` for the frame. ARCH-03 bans `Rendering` in the test folders of `Persistence`. So the test lives in the test folder of `CanvasFeature`, which `PointerDeviceTests` also compiles. There, the lint rule of ARCH-04 bans `FileManager`. The test must make a folder for a library of about 95 MB and delete it after the run.
+- Options: (a) one `// swiftlint:disable:next arch_04_file_system` line for the make and one for the delete, with a comment that names D-60, as D-44 does for `UIApplication.shared`. (b) a public function in `Persistence` that makes and removes a library folder, for this test now and the restore of M9 later. (c) two tests: the load in the device tests of `Persistence` and the frame in the M2 test of `Rendering`, with the sum of the two times as the result.
+- Recommendation: (a). It keeps the production code as it is and measures the open in one run. Option (b) adds API before M9 needs it. Option (c) does not measure one open.
 
 ## Points in the request that conflict or are not complete
 

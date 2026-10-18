@@ -195,6 +195,18 @@ Measured cost (2026-10-17, Mac with Apple silicon, APFS, Swift `-O`, best of 5 r
 | Write one 1 MB ink chunk | 0.30 ms | 0.90 ms |
 | Read one 1 MB ink chunk | 0.04 ms | 0.05 ms |
 
+Measured cost on the iPad (2026-10-18, iPad Pro 11-inch (M4), iPadOS 26, SQLite 3.51.0, Release, best of 5 runs, warm cache, task 3.10 of [m3-plan.md](m3-plan.md)). The test writes through `SQLiteLibraryRepository`, so each time includes the codecs and the actor hop. The records are text boxes of about 400 bytes.
+
+| Task | SQLite on the iPad |
+|---|---|
+| Write 1,000 records | 2.30 ms (one transaction), 44.86 ms (1,000 transactions) |
+| Read 1,000 records | 2.14 ms |
+| Save 5 changed records | 0.08 ms |
+| Write and read one stroke of 16,384 points (256 KB) | 0.39 ms |
+| Open a canvas of 20,000 strokes of 300 points and 10,000 nodes (D-56), load only | about 68 ms |
+
+The iPad is 2 to 50 times slower than the Mac for these tasks, but each task stays far below the budgets of [architecture.md](architecture.md) section 12. The open of the D-56 canvas spends about 68 ms in the load and about 130 ms in the first frame.
+
 For many small records, SQLite is about 250 times faster. For large ink chunks, files are equal or faster. In normal use, the difference is below what a user can see: a save takes under 1 ms off the main actor, and ink is most of the data. The limit is the open of a canvas with many cards and text boxes. At 1,000 nodes the files cost about 10 ms. At the limit of 10,000 nodes, about 100 ms is the estimate, which is one third of the 300 ms budget. An iPad is slower than this Mac, and a cold cache is slower than a warm one. Repeat the test on the iPad in M3. After this measurement, the product owner chose SQLite.
 
 Facts that the design uses:
