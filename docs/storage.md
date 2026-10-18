@@ -225,7 +225,7 @@ A snapshot is a complete, consistent copy of the library in one file. `SnapshotW
 
 If the newest snapshot is older than 24 hours, the app makes a snapshot at the first idle moment while it is active (D-32). An idle moment is 5 seconds without input and with an empty pending set. The 5 seconds are a start value. Tune them on a device in M3. The app does not start a snapshot at the move to the background. The app keeps the newest 7 snapshots and deletes older ones. These values come from decision D-21.
 
-The `Info.plist` sets `UIFileSharingEnabled = YES` and `LSSupportsOpeningDocumentsInPlace = YES`. Thus the Files app shows `Documents/Backups/` under "On My iPad > Pointer".
+The `Info.plist` sets `UIFileSharingEnabled = YES` and `LSSupportsOpeningDocumentsInPlace = YES`. Thus the Files app shows `Documents/Backups/` under "On My iPad > Pointer". The Files app shows the "Pointer" folder only after `Documents/` holds a file. An empty `Documents/` gives no folder. The product owner saw this on the iPad Pro 11-inch (M4) on 2026-10-18. Thus the folder shows after the first snapshot.
 
 ### 7.3 Manual copy (STO-03)
 

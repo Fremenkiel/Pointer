@@ -47,6 +47,8 @@ These questions are in [decisions.md](decisions.md). Each one names the task tha
 
 Section 1.
 
+Status: done on 2026-10-18 in commit 5ffd059. `make check` passes with the `plist` target. On the iPad Pro 11-inch (M4), "On My iPad" showed no "Pointer" folder while `Documents/` was empty. After a test file was copied into `Documents/`, the "Pointer" folder showed with the file. [storage.md](storage.md) section 7.2 records this fact.
+
 ### 3.2 Model types (Tier A)
 
 1. Add the ID types `WorkspaceID`, `CardID`, and `TextBoxID` (D-17).
@@ -151,4 +153,10 @@ Done when: all four acceptance criteria of M3 pass, and the results are in secti
 
 ## 4. Results
 
-No results yet.
+### 4.1 Step 0
+
+| Item | Target | Result |
+|---|---|---|
+| `make plist` with both keys `true` | passes | passes |
+| `make plist` with a key `false` or missing | fails | fails (exit 1) |
+| "Pointer" folder in the Files app | shows | shows after `Documents/` holds a file |
