@@ -61,6 +61,8 @@ Status: done on 2026-10-18 in commit 5ffd059. `make check` passes with the `plis
 
 Done when: the line coverage of `Model` is at least 90 % (TEST-02), and `make check` passes.
 
+Status: done on 2026-10-18 in commits a252d9f and a010897. The line coverage of `Model` is 93.26 %, and `make check` passes. The task raised D-57: the length limits count Unicode code points. The protocol `LibraryRepository` uses `ModelError`, so that features need only `Model`. `Persistence` maps its errors to the cases `libraryIsReadOnly` and `storageFailed`.
+
 ### 3.3 SQLite wrapper (Tier A)
 
 1. Add `SQLiteConnection` and `SQLiteStatement` in files named `SQLite*+Unsafe.swift` (SAFE-09). Their public API uses `Data`, `String`, `Double`, and `Int64` only.
@@ -160,3 +162,11 @@ Done when: all four acceptance criteria of M3 pass, and the results are in secti
 | `make plist` with both keys `true` | passes | passes |
 | `make plist` with a key `false` or missing | fails | fails (exit 1) |
 | "Pointer" folder in the Files app | shows | shows after `Documents/` holds a file |
+
+### 4.2 Model types
+
+| Item | Target | Result |
+|---|---|---|
+| Line coverage of `Model` | at least 90 % | 93.26 % |
+| Assertion density of `Model` | at least 2.0 | 2.06 |
+| Key length after 1,000 appends at one end | at most 64 | at most 18 |
