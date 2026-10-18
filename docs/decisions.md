@@ -55,6 +55,7 @@ Status values: Open, Decided, Replaced.
 | D-45 | Dense content of the performance tests | Two contents: the M2 content and the benchmark content | Decided (2026-10-17) |
 | D-46 | Unit of the GPU-time target of phase 3, task 1 | A ratio: at most 0.58 times the GPU time at 0.5 pixels | Decided (2026-10-17) |
 | D-47 | Texture margin of phase 2, task 4: 2x or 1.5x | Keep 2x | Decided (2026-10-17) |
+| D-48 | Zoom 1 target of phase 3, task 3 | Accept the gain at zoom 8 only | Decided (2026-10-18) |
 
 ## Details
 
@@ -397,6 +398,14 @@ Status values: Open, Decided, Replaced.
 - Options: (a) keep 2x. Task 2 passes, and the textures keep 13.5 MB more on the 11-inch iPad and about 20 MB more on the 13-inch iPad. (b) use 1.5x and accept about twice the builds and about 0.5 ms more GPU time per frame. (c) use 1.5x with a smaller margin reserve than a quarter, which gives fewer builds but less room before a pan shows uncovered screen.
 - Recommendation: (a). The memory saving is small against the 300 MB budget of a canvas, and the GPU time of a pan is the cost that the user feels.
 - Effect: `CommittedLayer.textureScale` stays 2. Task 2 of phase 2 keeps its targets.
+
+### D-48 Zoom 1 target of phase 3, task 3
+
+- Decided by the product owner on 2026-10-18: option (a). Task 3 is done with the gain at zoom 8.
+- Raised by phase 3, task 3 of [m2-fix-plan.md](m2-fix-plan.md). The task asks for at least 30 % fewer instances of handwriting at zoom 1 and 8, with a largest pixel difference of at most 17.
+- A run has one piece count for all its segments. Zoom 8 met the target: 44 % fewer instances, difference 15. At zoom 1, 30 % fewer instances came only with a difference of 40, as in the benchmark. The table is in [m2-fix-plan.md](m2-fix-plan.md), phase 3.
+- Options: (a) accept zoom 8 only. (b) accept a difference of 40 at zoom 1 and 58 at zoom 8. (c) give each segment its own piece count, with a per-segment instance table in the shader.
+- Effect: `LevelOfDetail.maxPieceError` stays 0.125 pixels. Handwriting at zoom 1 keeps its instances, about 1 ms of GPU time for a full pass.
 
 ## Points in the request that conflict or are not complete
 

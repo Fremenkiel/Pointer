@@ -105,14 +105,14 @@ Status on 2026-10-17: phase 2 is done. For task 4, the margin stays 2x (D-47). T
 
 ### Phase 3: level of detail
 
-Status on 2026-10-17: task 1 is done, with one target missed by a small amount. At 1.0 pixel, the dense content at zoom 0.25 draws 300,000 instances, and the largest pixel difference is 12. In three runs, the GPU time ratio against 0.5 pixels was 0.61, 0.58, and 0.59 (1.82 against 3.00 ms, 1.79 against 3.09 ms, 1.83 against 3.08 ms). The target of D-46 is at most 0.58, so only one run met it. The run-to-run noise of about 4 % is as large as the miss. After task 2, two more runs gave 0.54 (1.49 against 2.74 ms and 1.49 against 2.73 ms).
+Status on 2026-10-18: task 1 is done, with one target missed by a small amount. At 1.0 pixel, the dense content at zoom 0.25 draws 300,000 instances, and the largest pixel difference is 12. In three runs, the GPU time ratio against 0.5 pixels was 0.61, 0.58, and 0.59 (1.82 against 3.00 ms, 1.79 against 3.09 ms, 1.83 against 3.08 ms). The target of D-46 is at most 0.58, so only one run met it. The run-to-run noise of about 4 % is as large as the miss. After task 2, two more runs gave 0.54 (1.49 against 2.74 ms and 1.49 against 2.73 ms).
 
 Task 2 is done. A test stroke of 1,000 control points 0.001 points apart with one jump of 100 points gives the 31,968 instances of the plan with one level of detail per stroke, and at most 2,100 with the runs. Two changes go beyond the text of the task:
 
 - Neighbor blocks merge when their pieces are equal, and the merged run computes its stride from its own spacing. Without the merge, each run boundary added a used point, and the dense content at zoom 0.25 drew 340,000 instances instead of 300,000.
 - At a run boundary, the neighbor point uses the stride of the neighbor run, not the stride of the run itself. With its own stride, the two curves did not meet, and a split stroke differed from PencilKit by 34 of 255 at zoom 1. A parity test now covers a split stroke.
 
-Task 3 is done for zoom 8 only, and it waits for the product owner for zoom 1. A run has one piece count, the largest of its segments. The rule of the task, 12 pixels where the turn is small, gave 12 % fewer instances at zoom 1 with a difference of 38, and 8 % fewer at zoom 8. The code uses the curvature instead: the pieces keep the chord error at or under a tolerance, and they are never more than by length. The handwriting gave these results:
+Task 3 is done for zoom 8 only. The product owner accepted this for zoom 1 (D-48). Task 4 holds: the shader keeps its structure. Phase 3 is done. A run has one piece count, the largest of its segments. The rule of the task, 12 pixels where the turn is small, gave 12 % fewer instances at zoom 1 with a difference of 38, and 8 % fewer at zoom 8. The code uses the curvature instead: the pieces keep the chord error at or under a tolerance, and they are never more than by length. The handwriting gave these results:
 
 | Tolerance | Zoom 1 instances | Zoom 1 difference | Zoom 8 instances | Zoom 8 difference |
 |---|---|---|---|---|
