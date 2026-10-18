@@ -7,8 +7,10 @@ import os
 /// A `SlabAllocator` hands out the ranges. The buffer grows by doubling up to the byte budget.
 /// The GPU reads the points directly, because Apple GPUs share memory with the CPU.
 final class PointArena {
-    /// The bytes of one point slot: the layout of `InkPoint`.
-    static let bytesPerPoint = MemoryLayout<InkPoint>.stride
+    /// The bytes of one point slot: `x` and `y` of `InkPoint` as a `float2`. The shader reads
+    /// only these, and they halve the arena against the full point (docs/m2-fix-plan.md,
+    /// phase 4, task 1).
+    static let bytesPerPoint = MemoryLayout<SIMD2<Float>>.stride
     /// The bytes of one slab.
     static let bytesPerSlab = SlabAllocator.slabPoints * bytesPerPoint
 

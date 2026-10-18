@@ -136,6 +136,8 @@ At zoom 1, 30 % fewer instances came only with a difference of 40, as in the ben
 
 ### Phase 4: memory
 
+Status on 2026-10-18: task 1 is done. The arena holds 8 bytes per point. The GPU time did not change, and the content pass of 200,000 handwriting strokes took 221 ms.
+
 1. Store only `x` and `y` in the arena, 8 bytes per point. The shader reads only `.xy`. The `float2` variant ran at the same speed (4.10 ms against 4.12 ms). This halves the arena for the same strokes.
 2. Use size classes in steps of 1.25 instead of powers of two. A 300-point stroke then takes a 304-point block instead of a 512-point block. `SlabAllocator` keeps one size class per slab, with 32 classes instead of 11.
 3. Replace the growing buffer with a list of fixed buffers of 16 MB each.

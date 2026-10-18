@@ -244,10 +244,10 @@ The point arena:
 
 1. All control points of a canvas live in one `MTLBuffer` with `.storageModeShared`, the arena. Apple GPUs share memory with the CPU, so the GPU reads the points directly.
 2. A slab allocator (an allocator that hands out ranges of fixed size classes) manages the arena. Each stroke owns one range.
-3. The arena uses the layout of `InkPoint`, 16 bytes per point. The load path copies each point BLOB from SQLite straight into the arena (see [storage.md](storage.md) section 3.4). At the end of a stroke, the renderer copies the new points into the arena once.
+3. The arena stores only `x` and `y` of each point as a `float2`, 8 bytes per point, because the shader reads nothing else. The upload converts each `InkPoint` once. At the end of a stroke, the renderer copies the new points into the arena once.
 4. The arena has a byte budget. Above the budget, the renderer removes the least recently drawn strokes first, with a margin so that a pan at the edge does not remove and add the same strokes again. It never removes a stroke by its distance to the viewport.
 
-`Model` keeps a second copy of the points in `InkPoints` for commands, saves, and the export. The arena replaces the capsule buffers of the earlier design. For 20,000 strokes of 300 points, the two copies take about 96 MB each.
+`Model` keeps a second copy of the points in `InkPoints` for commands, saves, and the export. The arena replaces the capsule buffers of the earlier design. For 20,000 strokes of 300 points, the `InkPoints` copy takes about 96 MB, and the arena takes about 48 MB.
 
 Drawing (vertex pulling, which means that the shader reads the points from the buffer itself):
 

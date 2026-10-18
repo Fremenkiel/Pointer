@@ -15,11 +15,12 @@ extension PointArena {
             "Block \(block) is outside the arena"
         )
         // Safe: the buffer is shared memory of `buffer.length` bytes, and the preconditions keep
-        // the copy inside it. `InkPoint` is a plain struct of four Float values.
-        let target = buffer.contents().advanced(by: block.start * Self.bytesPerPoint)
-        points.values.withUnsafeBytes { source in
-            guard let base = source.baseAddress else { return }
-            target.copyMemory(from: base, byteCount: source.count)
+        // the writes inside it. Each slot is one `SIMD2<Float>`, the `float2` of the shader.
+        let target = buffer.contents()
+            .advanced(by: block.start * Self.bytesPerPoint)
+            .bindMemory(to: SIMD2<Float>.self, capacity: points.count)
+        for (index, point) in points.values.enumerated() {
+            target[index] = SIMD2(point.x, point.y)
         }
     }
 

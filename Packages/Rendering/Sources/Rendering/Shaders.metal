@@ -72,27 +72,27 @@ static uint findEntry(constant StrokeDrawEntry *entries, uint count, uint instan
 // stroke, it is the mirrored phantom point (D-26). At a boundary between two runs, it is the
 // real neighbor point of the stroke at the stride of the neighbor run, so that the curves of
 // the two runs meet exactly (docs/m2-fix-plan.md, phase 3, task 2).
-static float2 controlPoint(const device float4 *points, StrokeDrawEntry entry, RunDetail run,
+static float2 controlPoint(const device float2 *points, StrokeDrawEntry entry, RunDetail run,
                            int j) {
     int last = int(entry.pointCount) - 1;
     int used = (last + run.stride - 1) / run.stride + 1;
     if (j < 0 && run.previousOffset > 0) {
-        return points[int(entry.firstPoint) - run.previousOffset].xy;
+        return points[int(entry.firstPoint) - run.previousOffset];
     }
     if (j < 0) {
-        float2 first = points[entry.firstPoint].xy;
-        float2 second = points[entry.firstPoint + uint(min(run.stride, last))].xy;
+        float2 first = points[entry.firstPoint];
+        float2 second = points[entry.firstPoint + uint(min(run.stride, last))];
         return 2.0 * first - second;
     }
     if (j >= used && run.nextOffset > 0) {
-        return points[entry.firstPoint + uint(last + run.nextOffset)].xy;
+        return points[entry.firstPoint + uint(last + run.nextOffset)];
     }
     if (j >= used) {
-        float2 end = points[entry.firstPoint + uint(last)].xy;
-        float2 before = points[entry.firstPoint + uint(min((used - 2) * run.stride, last))].xy;
+        float2 end = points[entry.firstPoint + uint(last)];
+        float2 before = points[entry.firstPoint + uint(min((used - 2) * run.stride, last))];
         return 2.0 * end - before;
     }
-    return points[entry.firstPoint + uint(min(j * run.stride, last))].xy;
+    return points[entry.firstPoint + uint(min(j * run.stride, last))];
 }
 
 static float2 bSpline(float2 p0, float2 p1, float2 p2, float2 p3, float t) {
@@ -109,7 +109,7 @@ static float2 bSpline(float2 p0, float2 p1, float2 p2, float2 p3, float t) {
 // Each instance is one piece of one curve segment, drawn as a capsule on a quad.
 vertex InkVertexOut inkVertex(uint vertexID [[vertex_id]],
                               uint instanceID [[instance_id]],
-                              const device float4 *points [[buffer(0)]],
+                              const device float2 *points [[buffer(0)]],
                               constant StrokeDrawEntry *entries [[buffer(1)]],
                               constant InkUniforms &uniforms [[buffer(2)]]) {
     StrokeDrawEntry entry = entries[findEntry(entries, uniforms.entryCount, instanceID)];
