@@ -17,75 +17,6 @@ final class StrokeStore {
     /// does not evict and load the same strokes again.
     static let evictionMargin = 0.1
 
-    /// The draw data of one stroke: plain values only, so the per-frame loop copies no
-    /// references and does no reference counting (PERF-01).
-    ///
-    /// The stored fields take 48 bytes per stroke: 32-bit indices and the size class of the
-    /// block instead of its capacity. The M2 layout took 80 bytes (docs/m2-fix-plan.md, phase
-    /// 4, task 5).
-    struct DrawInfo {
-        let origin: Point
-        var lastDrawnFrame: UInt64 = 0
-        let radius: Float
-        private let storedPointCount: Int32
-        private let storedFirstBlock: Int32
-        private var blockStart: Int32 = -1
-        private var storedResidentIndex: Int32 = -1
-        private let storedBlockCount: UInt16
-        private var blockClass: UInt8 = 0
-        /// `true` after a draw. The clock sweep clears it once before it evicts the stroke.
-        var isReferenced = false
-
-        /// Makes the draw data of a stroke without a block.
-        ///
-        /// - Precondition: The values fit into the stored fields.
-        init(origin: Point, radius: Float, pointCount: Int, firstBlock: Int, blockCount: Int) {
-            precondition(pointCount >= 2 && pointCount <= Limits.maxPointsPerStroke, "Bad count")
-            precondition(firstBlock >= 0 && firstBlock <= Int(Int32.max), "Block index too large")
-            precondition(blockCount >= 1 && blockCount <= Int(UInt16.max), "Bad block count")
-            self.origin = origin
-            self.radius = radius
-            storedPointCount = Int32(pointCount)
-            storedFirstBlock = Int32(firstBlock)
-            storedBlockCount = UInt16(blockCount)
-        }
-
-        /// The control points of the stroke.
-        var pointCount: Int { Int(storedPointCount) }
-        /// The index of the first block spacing of the stroke in `blockSpacings`.
-        var firstBlock: Int { Int(storedFirstBlock) }
-        /// The number of blocks of the stroke (`DetailRuns`).
-        var blockCount: Int { Int(storedBlockCount) }
-
-        /// The arena block of the stroke, or `nil` if its points are not in the arena.
-        var block: ArenaBlock? {
-            get {
-                guard blockStart >= 0 else { return nil }
-                let capacity = SlabAllocator.classPoints(Int(blockClass))
-                return ArenaBlock(start: Int(blockStart), capacity: capacity)
-            }
-            set {
-                guard let newValue else {
-                    blockStart = -1
-                    return
-                }
-                precondition(newValue.start <= Int(Int32.max), "Block \(newValue) is too far")
-                blockStart = Int32(newValue.start)
-                blockClass = UInt8(SlabAllocator.classIndex(forPoints: newValue.capacity))
-                assert(block == newValue, "The stored block differs from \(newValue)")
-            }
-        }
-
-        /// The index of the stroke in `residentSlots`, or -1 if the stroke has no block.
-        var residentIndex: Int {
-            get { Int(storedResidentIndex) }
-            set {
-                precondition(newValue >= -1 && newValue <= Int(Int32.max), "Bad index")
-                storedResidentIndex = Int32(newValue)
-            }
-        }
-    }
-
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     private(set) var infos: [DrawInfo] = []
     /// The points by slot, one reference each. Only an upload into the arena and the bend read
@@ -101,6 +32,10 @@ final class StrokeStore {
     private var residentSlots: [Int] = []
     /// The position of the clock hand in `residentSlots`.
     private var clockHand = 0
+    /// The removed strokes whose blocks a frame in flight can still read, in frame order.
+    private var removals: [(slot: Int, frame: UInt64)] = []
+    /// The slots that a new stroke can take, after their removal is complete.
+    private var freeSlots: [Int] = []
     let arena: PointArena
 
     /// Makes an empty store.
@@ -110,8 +45,8 @@ final class StrokeStore {
         self.arena = arena
     }
 
-    /// The number of strokes.
-    var count: Int { infos.count }
+    /// The number of strokes, without the removed ones.
+    var count: Int { slotByID.count }
 
     /// Adds a stroke and returns its slot. A stroke that the store holds keeps its slot.
     ///
@@ -119,27 +54,80 @@ final class StrokeStore {
     @discardableResult  // The handoff needs the slot. The load path does not.
     func add(_ stroke: Stroke) -> Int {
         if let slot = slotByID[stroke.id] { return slot }
-        precondition(
-            infos.count < Limits.maxStrokesPerCanvas,
-            "The renderer holds the stroke limit"
-        )
-        let slot = infos.count
-        let firstBlock = blockSpacings.count
-        BlockSpacing.append(of: stroke.points, to: &blockSpacings)
-        blockBends.append(contentsOf: repeatElement(.nan, count: blockSpacings.count - firstBlock))
+        precondition(count < Limits.maxStrokesPerCanvas, "The renderer holds the stroke limit")
+        let reused = freeSlots.popLast()
+        let slot = reused ?? infos.count
+        let blocks = storeSpacings(of: stroke.points, reusing: reused.map { infos[$0] })
         let info = DrawInfo(
             origin: stroke.origin,
             radius: stroke.width / 2,
             pointCount: stroke.points.count,
-            firstBlock: firstBlock,
-            blockCount: blockSpacings.count - firstBlock
+            firstBlock: blocks.lowerBound,
+            blockCount: blocks.count
         )
-        infos.append(info)
-        points.append(stroke.points)
+        if reused == nil {
+            infos.append(info)
+            points.append(stroke.points)
+        } else {
+            infos[slot] = info
+            points[slot] = stroke.points
+        }
         slotByID[stroke.id] = slot
         grid.insert(slot, bounds: stroke.bounds)
-        assert(infos.count == grid.count && points.count == infos.count, "Store arrays disagree")
+        assert(slotByID.count == grid.count && points.count == infos.count, "Store arrays disagree")
         return slot
+    }
+
+    /// Writes the block spacings of a stroke. A reused slot keeps its old range if the new
+    /// spacings fit into it, so a canvas that erases and draws does not grow the list.
+    ///
+    /// - Returns: The range of the spacings in `blockSpacings`.
+    private func storeSpacings(of strokePoints: InkPoints, reusing old: DrawInfo?) -> Range<Int> {
+        let first = blockSpacings.count
+        BlockSpacing.append(of: strokePoints, to: &blockSpacings)
+        let count = blockSpacings.count - first
+        guard let old, count <= old.blockCount else {
+            blockBends.append(contentsOf: repeatElement(.nan, count: count))
+            return first..<(first + count)
+        }
+        let range = old.firstBlock..<(old.firstBlock + count)
+        // A copy in place: a slice of the same array would make Swift copy the whole array.
+        for offset in 0..<count {
+            blockSpacings[range.lowerBound + offset] = blockSpacings[first + offset]
+        }
+        blockSpacings.removeLast(count)
+        for index in range { blockBends[index] = .nan }
+        assert(blockSpacings.count == first, "The reused range left new spacings behind")
+        return range
+    }
+
+    /// Removes a stroke. Its slot leaves the grid at once. Its arena block stays until no frame
+    /// in flight can read it, and `releaseRemovals(at:)` then frees the slot for a new stroke.
+    ///
+    /// - Precondition: `frame` is the current frame or later than earlier removals.
+    /// - Returns: `false` if the store holds no stroke with the ID.
+    @discardableResult  // A caller can remove a stroke that the renderer never got.
+    func remove(_ id: StrokeID, frame: UInt64) -> Bool {
+        precondition(removals.last.map { $0.frame <= frame } ?? true, "Removals out of order")
+        guard let slot = slotByID.removeValue(forKey: id) else { return false }
+        grid.remove(slot)
+        infos[slot].isRemoved = true
+        removals.append((slot, frame))
+        assert(slotByID.count == grid.count, "The grid still holds a removed stroke")
+        return true
+    }
+
+    /// Frees the blocks and the slots of the strokes removed `framesInFlight` frames before
+    /// `frame` or earlier. The frame renderer calls it at the start of each frame.
+    func releaseRemovals(at frame: UInt64) {
+        let released = removals.prefix { $0.frame + Self.framesInFlight <= frame }.count
+        guard released > 0 else { return }
+        for (slot, _) in removals.prefix(released) {
+            if infos[slot].block != nil { evict(slot) }
+            freeSlots.append(slot)
+        }
+        removals.removeFirst(released)
+        assert(freeSlots.count + removals.count + count == infos.count, "A slot got lost")
     }
 
     /// Makes a stroke ready to draw in frame `frame`, and returns its draw data with its arena
@@ -149,6 +137,7 @@ final class StrokeStore {
     /// - Returns: `nil` if the arena has no room even after eviction. The caller skips the stroke.
     func makeResident(_ slot: Int, frame: UInt64) -> DrawInfo? {
         precondition(infos.indices.contains(slot), "Stroke slot \(slot) does not exist")
+        precondition(!infos[slot].isRemoved, "Stroke slot \(slot) is removed")
         infos[slot].lastDrawnFrame = frame
         infos[slot].isReferenced = true
         let info = infos[slot]

@@ -184,6 +184,8 @@ For task 7, `FrameAllocationTests` counts the allocations of a pan frame without
 
 ### Phase 6: structure for M4
 
+Status on 2026-10-18: tasks 1 and 2 are done. `StrokeStore.remove(_:frame:)` takes a stroke out of the ID map and the grid at once. `releaseRemovals(at:)` frees its arena block three frames later and puts its slot on a free list, and `add` reuses that slot and, if the spacings fit, its spacing range. The public removal API of the renderer comes with the eraser in M4.
+
 1. Rename `StrokeStore.residentInfo(of:frame:)` to a name that says that it uploads, evicts, and marks the stroke as drawn, for example `makeResident(_:frame:)`.
 2. Add a free list of slots, so that M4 can remove a stroke. The removal frees the arena block after three frames and removes the slot from the grid.
 3. Pass a per-frame context value (command buffer and frame number) to `CommittedLayer` and `InkEncoder` instead of separate arguments. Do not reach through `encoder.ring` from `CanvasRenderer`.

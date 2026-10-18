@@ -138,6 +138,7 @@ final class FrameRenderer {
             let commandBuffer = resources.queue.makeCommandBuffer()
         else { return false }
         frame += 1
+        store.releaseRemovals(at: frame)
         encoder.ring.beginFrame(commandBuffer)
         encodeContent(layer: layer, commandBuffer: commandBuffer)
         RenderSignpost.begin("NextDrawable")

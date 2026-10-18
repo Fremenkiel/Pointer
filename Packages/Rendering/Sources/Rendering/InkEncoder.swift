@@ -57,6 +57,11 @@ final class InkEncoder {
         var instances = 0
         for slot in slots[cursor...] {
             let isFirst = position == cursor
+            // A build lists its strokes at its start, so it can hold a stroke removed since.
+            guard !store.infos[slot].isRemoved else {
+                position += 1
+                continue
+            }
             guard lists.entryCount + store.infos[slot].blockCount <= ring.remaining else { break }
             guard isFirst || instances < options.instanceBudget else { break }
             guard isFirst || !Self.isPastDeadline(position - cursor, options.deadline) else {
