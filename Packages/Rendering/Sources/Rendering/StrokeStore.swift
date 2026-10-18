@@ -19,27 +19,79 @@ final class StrokeStore {
 
     /// The draw data of one stroke: plain values only, so the per-frame loop copies no
     /// references and does no reference counting (PERF-01).
+    ///
+    /// The stored fields take 48 bytes per stroke: 32-bit indices and the size class of the
+    /// block instead of its capacity. The M2 layout took 80 bytes (docs/m2-fix-plan.md, phase
+    /// 4, task 5).
     struct DrawInfo {
         let origin: Point
-        let radius: Float
-        let pointCount: Int
-        /// The index of the first block spacing of the stroke in `blockSpacings`.
-        let firstBlock: Int
-        /// The number of blocks of the stroke (`DetailRuns`).
-        let blockCount: Int
-        var block: ArenaBlock?
         var lastDrawnFrame: UInt64 = 0
+        let radius: Float
+        private let storedPointCount: Int32
+        private let storedFirstBlock: Int32
+        private var blockStart: Int32 = -1
+        private var storedResidentIndex: Int32 = -1
+        private let storedBlockCount: UInt16
+        private var blockClass: UInt8 = 0
         /// `true` after a draw. The clock sweep clears it once before it evicts the stroke.
         var isReferenced = false
+
+        /// Makes the draw data of a stroke without a block.
+        ///
+        /// - Precondition: The values fit into the stored fields.
+        init(origin: Point, radius: Float, pointCount: Int, firstBlock: Int, blockCount: Int) {
+            precondition(pointCount >= 2 && pointCount <= Limits.maxPointsPerStroke, "Bad count")
+            precondition(firstBlock >= 0 && firstBlock <= Int(Int32.max), "Block index too large")
+            precondition(blockCount >= 1 && blockCount <= Int(UInt16.max), "Bad block count")
+            self.origin = origin
+            self.radius = radius
+            storedPointCount = Int32(pointCount)
+            storedFirstBlock = Int32(firstBlock)
+            storedBlockCount = UInt16(blockCount)
+        }
+
+        /// The control points of the stroke.
+        var pointCount: Int { Int(storedPointCount) }
+        /// The index of the first block spacing of the stroke in `blockSpacings`.
+        var firstBlock: Int { Int(storedFirstBlock) }
+        /// The number of blocks of the stroke (`DetailRuns`).
+        var blockCount: Int { Int(storedBlockCount) }
+
+        /// The arena block of the stroke, or `nil` if its points are not in the arena.
+        var block: ArenaBlock? {
+            get {
+                guard blockStart >= 0 else { return nil }
+                let capacity = SlabAllocator.classPoints(Int(blockClass))
+                return ArenaBlock(start: Int(blockStart), capacity: capacity)
+            }
+            set {
+                guard let newValue else {
+                    blockStart = -1
+                    return
+                }
+                precondition(newValue.start <= Int(Int32.max), "Block \(newValue) is too far")
+                blockStart = Int32(newValue.start)
+                blockClass = UInt8(SlabAllocator.classIndex(forPoints: newValue.capacity))
+                assert(block == newValue, "The stored block differs from \(newValue)")
+            }
+        }
+
         /// The index of the stroke in `residentSlots`, or -1 if the stroke has no block.
-        var residentIndex = -1
+        var residentIndex: Int {
+            get { Int(storedResidentIndex) }
+            set {
+                precondition(newValue >= -1 && newValue <= Int(Int32.max), "Bad index")
+                storedResidentIndex = Int32(newValue)
+            }
+        }
     }
 
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     private(set) var infos: [DrawInfo] = []
-    /// The strokes by slot. Only an upload into the arena reads them.
-    private var strokes: [Stroke] = []
+    /// The points by slot, one reference each. Only an upload into the arena and the bend read
+    /// them. A full `Stroke` per slot took 128 bytes.
+    private var points: [InkPoints] = []
     private var slotByID: [StrokeID: Int] = [:]
     /// The spacing of each block of each stroke.
     private var blockSpacings: [BlockSpacing] = []
@@ -54,9 +106,9 @@ final class StrokeStore {
 
     /// Makes an empty store.
     init(arena: PointArena) {
+        // The arrays grow with the canvas. A reserve for the stroke limit took about 40 MB for
+        // every canvas (docs/m2-fix-plan.md, phase 4, task 5).
         self.arena = arena
-        infos.reserveCapacity(Limits.maxStrokesPerCanvas)
-        strokes.reserveCapacity(Limits.maxStrokesPerCanvas)
     }
 
     /// The number of strokes.
@@ -84,10 +136,10 @@ final class StrokeStore {
             blockCount: blockSpacings.count - firstBlock
         )
         infos.append(info)
-        strokes.append(stroke)
+        points.append(stroke.points)
         slotByID[stroke.id] = slot
         grid.insert(slot, bounds: stroke.bounds)
-        assert(infos.count == grid.count && strokes.count == infos.count, "Store arrays disagree")
+        assert(infos.count == grid.count && points.count == infos.count, "Store arrays disagree")
         return slot
     }
 
@@ -100,15 +152,17 @@ final class StrokeStore {
         infos[slot].isReferenced = true
         let info = infos[slot]
         if info.block != nil { return info }
-        let points = strokes[slot].points
+        let strokePoints = points[slot]
         guard
-            let block = arena.allocate(points: points.count)
-                ?? evictAndAllocate(points.count, frame)
+            let block = arena.allocate(points: strokePoints.count)
+                ?? evictAndAllocate(strokePoints.count, frame)
         else {
-            logger.error("Point arena is full. A stroke of \(points.count) points is not drawn.")
+            logger.error(
+                "Point arena is full. A stroke of \(strokePoints.count) points is not drawn."
+            )
             return nil
         }
-        arena.write(points, to: block)
+        arena.write(strokePoints, to: block)
         infos[slot].block = block
         infos[slot].residentIndex = residentSlots.count
         residentSlots.append(slot)
@@ -182,7 +236,7 @@ final class StrokeStore {
         precondition(block >= 0 && block < infos[slot].blockCount, "Block \(block) is unknown")
         let index = infos[slot].firstBlock + block
         if !blockBends[index].isNaN { return blockBends[index] }
-        let bend = BlockSpacing.bend(of: strokes[slot].points, block: block)
+        let bend = BlockSpacing.bend(of: points[slot], block: block)
         blockBends[index] = bend
         return bend
     }

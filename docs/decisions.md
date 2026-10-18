@@ -56,6 +56,7 @@ Status values: Open, Decided, Replaced.
 | D-46 | Unit of the GPU-time target of phase 3, task 1 | A ratio: at most 0.58 times the GPU time at 0.5 pixels | Decided (2026-10-17) |
 | D-47 | Texture margin of phase 2, task 4: 2x or 1.5x | Keep 2x | Decided (2026-10-17) |
 | D-48 | Zoom 1 target of phase 3, task 3 | Accept the gain at zoom 8 only | Decided (2026-10-18) |
+| D-49 | Memory target of phase 4, task 5 | Accept 68.7 MB for the store of 200,000 strokes | Decided (2026-10-18) |
 
 ## Details
 
@@ -406,6 +407,14 @@ Status values: Open, Decided, Replaced.
 - A run has one piece count for all its segments. Zoom 8 met the target: 44 % fewer instances, difference 15. At zoom 1, 30 % fewer instances came only with a difference of 40, as in the benchmark. The table is in [m2-fix-plan.md](m2-fix-plan.md), phase 3.
 - Options: (a) accept zoom 8 only. (b) accept a difference of 40 at zoom 1 and 58 at zoom 8. (c) give each segment its own piece count, with a per-segment instance table in the shader.
 - Effect: `LevelOfDetail.maxPieceError` stays 0.125 pixels. Handwriting at zoom 1 keeps its instances, about 1 ms of GPU time for a full pass.
+
+### D-49 Memory target of phase 4, task 5
+
+- Decided by the product owner on 2026-10-18: option (a).
+- Raised by phase 4, task 5 of [m2-fix-plan.md](m2-fix-plan.md). The task asks for at most 30 MB of heap for the renderer store of 200,000 handwriting strokes. The benchmark gave 77 MB.
+- The three changes of the task took the store to 68.7 MB on the simulator: `DrawInfo` takes 48 bytes, the store keeps `InkPoints` references, and the arrays grow with the canvas. The rest is outside the task: the spatial grid takes 33 MB, and the map from stroke ID to slot takes 12 MB. Of the grid, the map from slot to bounds takes about 21 MB.
+- Options: (a) accept 68.7 MB. (b) drop the bounds map of `SpatialGrid`, a change of a Tier A public API, for about 47 MB. (c) a renderer grid of 32-bit slots with `Float` bounds and a smaller ID map, for about 30 MB.
+- Effect: `StrokeStoreMemoryTests` asserts at most 75 MB as a guard against a regression. The memory budget of 300 MB per canvas of architecture.md section 12 still holds.
 
 ## Points in the request that conflict or are not complete
 
