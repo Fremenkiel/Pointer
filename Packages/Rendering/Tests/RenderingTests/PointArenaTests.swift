@@ -51,13 +51,13 @@ struct PointArenaTests {
         let store = StrokeStore(arena: try makeArena(slabs: 1, budgetSlabs: 2))
         let long = (0..<10_000).map { Point(x: Double($0) * 0.1, y: 0) }
         let slots = (0..<3).map { store.add(StrokeBuilder.stroke(long, seed: $0)) }
-        #expect(store.residentInfo(of: slots[0], frame: 1)?.block != nil)
-        #expect(store.residentInfo(of: slots[1], frame: 2)?.block != nil)
-        let third = store.residentInfo(of: slots[2], frame: 10)
+        #expect(store.makeResident(slots[0], frame: 1)?.block != nil)
+        #expect(store.makeResident(slots[1], frame: 2)?.block != nil)
+        let third = store.makeResident(slots[2], frame: 10)
         #expect(third?.block != nil)
         #expect(store.infos[slots[0]].block == nil)
         #expect(store.infos[slots[1]].block != nil)
-        let again = store.residentInfo(of: slots[0], frame: 20)
+        let again = store.makeResident(slots[0], frame: 20)
         #expect(again?.block != nil)
         #expect(store.infos[slots[1]].block == nil)
     }
@@ -68,8 +68,8 @@ struct PointArenaTests {
         let long = (0..<10_000).map { Point(x: Double($0) * 0.1, y: 0) }
         let first = store.add(StrokeBuilder.stroke(long, seed: 1))
         let second = store.add(StrokeBuilder.stroke(long, seed: 2))
-        #expect(store.residentInfo(of: first, frame: 5)?.block != nil)
-        #expect(store.residentInfo(of: second, frame: 6) == nil)
+        #expect(store.makeResident(first, frame: 5)?.block != nil)
+        #expect(store.makeResident(second, frame: 6) == nil)
         #expect(store.infos[first].block != nil)
     }
 }

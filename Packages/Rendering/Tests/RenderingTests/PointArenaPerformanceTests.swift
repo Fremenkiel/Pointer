@@ -32,7 +32,7 @@ final class PointArenaPerformanceTests: XCTestCase {
             for slot in slots {
                 let buffers = arena.buffers.count
                 let start = CACurrentMediaTime()
-                _ = store.residentInfo(of: slot, frame: 1)
+                _ = store.makeResident(slot, frame: 1)
                 let time = (CACurrentMediaTime() - start) * 1000
                 slowest = max(slowest, time)
                 if arena.buffers.count > buffers { slowestGrowth = max(slowestGrowth, time) }
@@ -73,7 +73,7 @@ final class PointArenaPerformanceTests: XCTestCase {
             for (index, slot) in slots.enumerated() {
                 let frame = UInt64(index / 1_000 + 1)
                 let start = CACurrentMediaTime()
-                if store.residentInfo(of: slot, frame: frame) == nil { missing += 1 }
+                if store.makeResident(slot, frame: frame) == nil { missing += 1 }
                 slowest = max(slowest, (CACurrentMediaTime() - start) * 1000)
             }
             let line = String(

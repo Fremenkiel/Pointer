@@ -142,10 +142,12 @@ final class StrokeStore {
         return slot
     }
 
-    /// Returns the draw data of a stroke with its arena block, and copies the points in if needed.
+    /// Makes a stroke ready to draw in frame `frame`, and returns its draw data with its arena
+    /// block. It marks the stroke as drawn in that frame, copies its points into the arena if
+    /// they are not there, and evicts other strokes if the arena is full.
     ///
     /// - Returns: `nil` if the arena has no room even after eviction. The caller skips the stroke.
-    func residentInfo(of slot: Int, frame: UInt64) -> DrawInfo? {
+    func makeResident(_ slot: Int, frame: UInt64) -> DrawInfo? {
         precondition(infos.indices.contains(slot), "Stroke slot \(slot) does not exist")
         infos[slot].lastDrawnFrame = frame
         infos[slot].isReferenced = true

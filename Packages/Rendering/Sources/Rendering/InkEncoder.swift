@@ -84,7 +84,7 @@ final class InkEncoder {
         frame: UInt64,
         into lists: inout EntryBuckets
     ) -> Int {
-        guard let info = store.residentInfo(of: slot, frame: frame), let block = info.block else {
+        guard let info = store.makeResident(slot, frame: frame), let block = info.block else {
             return 0
         }
         // The upload can add an arena buffer, and the new buffer needs a list.
