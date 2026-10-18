@@ -7,4 +7,10 @@ public enum PersistenceError: Error, Equatable, Sendable {
     case valueTooLarge(byteCount: Int)
     /// A connection setting did not take its value, for example the WAL journal mode.
     case settingRefused(name: String, value: String)
+    /// A stored value has the wrong length or form, for example a clock value of 27 bytes.
+    case corruptValue(reason: String)
+    /// A row of `table` cannot become a model value. The reason never holds user content.
+    case corruptRow(table: String, reason: String)
+    /// A database with schema version 0 already has tables, so it is not a Pointer library.
+    case unknownSchema
 }

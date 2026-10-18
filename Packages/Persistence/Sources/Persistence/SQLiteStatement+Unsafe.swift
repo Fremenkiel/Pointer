@@ -1,4 +1,5 @@
 import Foundation
+import Model
 import SQLite3
 
 /// One compiled SQL statement that the owner binds, steps, and resets for each use.
@@ -118,6 +119,9 @@ final class SQLiteStatement {
         try connection.check(sqlite3_clear_bindings(handle), expected: SQLITE_OK)
     }
 
+    /// The number of parameters.
+    var parameterCount: Int32 { sqlite3_bind_parameter_count(handle) }
+
     /// The number of result columns.
     var columnCount: Int32 { sqlite3_column_count(handle) }
 
@@ -185,5 +189,61 @@ final class SQLiteStatement {
             column >= 0 && column < sqlite3_column_count(handle),
             "Column \(column) is not a column of the statement"
         )
+    }
+}
+
+extension SQLiteStatement {
+    /// The bytes of one point in the point BLOB (storage.md section 3.4).
+    static let pointByteCount = 16
+
+    /// Binds the point BLOB of a stroke to the parameter at `index`.
+    ///
+    /// The BLOB holds the points without a header, 16 bytes each, little-endian. The layout
+    /// equals `InkPoint` in memory, so the bind copies the array once.
+    ///
+    /// - Precondition: `index` is a parameter of the statement.
+    /// - Throws: `PersistenceError.valueTooLarge` above `Int32.max` bytes, and
+    ///   `PersistenceError.sqlite` if SQLite refuses the value.
+    func bind(_ points: InkPoints, at index: Int32) throws(PersistenceError) {
+        checkParameter(index)
+        precondition(
+            MemoryLayout<InkPoint>.stride == Self.pointByteCount,
+            "InkPoint is not 16 bytes"
+        )
+        let byteCount = points.count * Self.pointByteCount
+        guard let length = Int32(exactly: byteCount) else {
+            throw .valueTooLarge(byteCount: byteCount)
+        }
+        // Safe: the buffer is valid during the call, and SQLite copies it (SQLITE_TRANSIENT).
+        let code = points.values.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
+            sqlite3_bind_blob(handle, index, bytes.baseAddress, length, Self.transient)
+        }
+        try connection.check(code, expected: SQLITE_OK)
+    }
+
+    /// Returns the points of the point BLOB at `column`, copied in one step after the length
+    /// check (storage.md section 3.4).
+    ///
+    /// - Precondition: `column` is a column of the statement.
+    /// - Throws: `PersistenceError.corruptValue` if `count` is outside
+    ///   `2...Limits.maxPointsPerStroke` or the BLOB does not hold `count` points.
+    func inkPoints(at column: Int32, count: Int) throws(PersistenceError) -> [InkPoint] {
+        checkColumn(column)
+        guard count >= 2, count <= Limits.maxPointsPerStroke else {
+            throw .corruptValue(reason: "point count \(count)")
+        }
+        let bytes = sqlite3_column_blob(handle, column)
+        let byteCount = Int(sqlite3_column_bytes(handle, column))
+        guard let bytes, byteCount == count * Self.pointByteCount else {
+            throw .corruptValue(reason: "point BLOB of \(byteCount) bytes for \(count) points")
+        }
+        // Safe: SQLite keeps `bytes` valid until the next step, and the copy fills all `count`
+        // points of the new array. All Apple platforms are little-endian, as the BLOB.
+        return [InkPoint](unsafeUninitializedCapacity: count) { buffer, initialized in
+            UnsafeMutableRawBufferPointer(buffer).copyMemory(
+                from: UnsafeRawBufferPointer(start: bytes, count: byteCount)
+            )
+            initialized = count
+        }
     }
 }

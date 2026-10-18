@@ -46,7 +46,7 @@ Layer 0  Foundations      InkEngine ---- Model ---- Geometry
 | `Geometry` | 0 | Foundation | `Point`, `Vector`, `Rect`, `Transform` in `Double`. `Camera` and camera math. `SpatialGrid`. `StrokeCurve`, the B-spline math. |
 | `Model` | 0 | `Geometry` | Value types: `Workspace`, `Card`, `TextBox`, `Stroke`, IDs, `HybridClock`, `FractionalIndex`. Commands and `History`. Protocol `LibraryRepository`. |
 | `InkEngine` | 0 | `Model`, `Geometry` | Eraser hit test and stroke split. |
-| `Persistence` | 1 | `Model`, SQLite3 | `SQLiteLibraryRepository` (an actor), a small SQLite wrapper, row codecs, migrations, snapshots, restore. |
+| `Persistence` | 1 | `Model`, `Geometry`, SQLite3 | `SQLiteLibraryRepository` (an actor), a small SQLite wrapper, row codecs, migrations, snapshots, restore. |
 | `Rendering` | 1 | `Model`, `Geometry`, `InkEngine`, Metal | `CanvasRenderer`, the point arena, shaders, the committed texture cache, text texture cache. |
 | `Export` | 1 | `Model`, `Geometry`, `InkEngine`, Core Graphics, Core Text | `PDFExporter`. |
 | `DesignSystem` | 1 | SwiftUI, UIKit | Color, spacing, size, and icon tokens. Shared small views. |

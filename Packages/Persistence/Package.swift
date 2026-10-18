@@ -9,19 +9,26 @@ let package = Package(
         .library(name: "Persistence", targets: ["Persistence"])
     ],
     dependencies: [
-        .package(path: "../Model")
+        .package(path: "../Geometry"),
+        .package(path: "../Model"),
     ],
     targets: [
         .target(
             name: "Persistence",
             dependencies: [
-                .product(name: "Model", package: "Model")
+                .product(name: "Geometry", package: "Geometry"),
+                .product(name: "Model", package: "Model"),
             ],
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
         .testTarget(
             name: "PersistenceTests",
-            dependencies: ["Persistence"],
+            dependencies: [
+                "Persistence",
+                .product(name: "Geometry", package: "Geometry"),
+                .product(name: "Model", package: "Model"),
+            ],
+            resources: [.copy("Fixtures")],
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
     ],

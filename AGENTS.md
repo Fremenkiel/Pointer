@@ -38,6 +38,7 @@ pointer/
     Model/                 Layer 0: value types, IDs, clock, commands, history, limits
     InkEngine/             Layer 0: eraser hit test and stroke split
     Persistence/           Layer 1: SQLite repository, migrations, snapshots, restore
+      Tests/PersistenceTests/Fixtures/  fixture database and its SQL per schema version (TEST-08)
     Rendering/             Layer 1: Metal renderer and shaders
       Tests/RenderingTests/References/  reference PNGs of the snapshot tests (TEST-07)
     Export/                Layer 1: PDF export
