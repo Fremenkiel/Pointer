@@ -35,4 +35,13 @@ public protocol LibraryRepository: Actor {
     ///
     /// - Throws: `ModelError.libraryIsReadOnly` if the library has a newer schema.
     func send(_ changes: [LibraryChange]) throws(ModelError)
+
+    /// Asks for a save at pencil lift. If the last write is older than the throttle interval, the
+    /// save runs at once. Otherwise, it runs at the end of the interval (storage.md section 4).
+    func requestSave()
+
+    /// Writes all pending rows at once, for the move to the background (storage.md section 4).
+    ///
+    /// - Throws: `ModelError.storageFailed` if the save fails. The rows stay pending.
+    func saveNow() throws(ModelError)
 }
