@@ -11,6 +11,7 @@ struct IdentifierTests {
         let uuid = UUIDVersion7.make(millis: 0x0123_4567_89AB, random: &random)
         #expect(UUIDVersion7.version(of: uuid) == 7)
         #expect(UUIDVersion7.millis(of: uuid) == 0x0123_4567_89AB)
+        #expect(uuid.uuid.8 >> 6 == 0b10)
         #expect(uuid.uuid.8 & 0xC0 == 0x80)
     }
 

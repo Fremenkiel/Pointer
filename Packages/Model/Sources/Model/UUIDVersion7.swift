@@ -17,23 +17,27 @@ public enum UUIDVersion7 {
         random: inout some RandomNumberGenerator
     ) -> UUID {
         precondition(millis <= maxMillis, "UUID time \(millis) does not fit into 48 bits")
-        var bytes = [UInt8](repeating: 0, count: 16)
-        for index in 0..<6 {
-            bytes[index] = UInt8(truncatingIfNeeded: millis >> (40 - 8 * UInt64(index)))
-        }
-        for index in 6..<16 {
-            bytes[index] = UInt8.random(in: UInt8.min...UInt8.max, using: &random)
-        }
-        bytes[6] = 0x70 | (bytes[6] & 0x0F)
-        bytes[8] = 0x80 | (bytes[8] & 0x3F)
+        // Two 64-bit halves instead of an array of 16 bytes, so an ID allocates nothing
+        // (docs/m2-fix-plan.md, phase 5). The high half holds the time, the version 7, and 12
+        // random bits. The low half holds the variant 0b10 and 62 random bits.
+        let high = millis << 16 | 0x7000 | (random.next() & 0x0FFF)
+        let low = 0x8000_0000_0000_0000 | (random.next() & 0x3FFF_FFFF_FFFF_FFFF)
         let uuid = UUID(
             uuid: (
-                bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-                bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
+                byte(high, 0), byte(high, 1), byte(high, 2), byte(high, 3),
+                byte(high, 4), byte(high, 5), byte(high, 6), byte(high, 7),
+                byte(low, 0), byte(low, 1), byte(low, 2), byte(low, 3),
+                byte(low, 4), byte(low, 5), byte(low, 6), byte(low, 7)
             )
         )
         assert(version(of: uuid) == 7, "UUID \(uuid) is not version 7")
+        assert(uuid.uuid.8 >> 6 == 0b10, "UUID \(uuid) has not the RFC 9562 variant")
         return uuid
+    }
+
+    /// Returns byte `index` of a value, counted from the most significant byte.
+    private static func byte(_ value: UInt64, _ index: Int) -> UInt8 {
+        UInt8(truncatingIfNeeded: value >> (56 - 8 * UInt64(index)))
     }
 
     /// Returns the version number of a UUID, from bits 48 to 51.
