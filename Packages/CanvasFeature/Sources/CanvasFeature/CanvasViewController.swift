@@ -5,7 +5,8 @@ import Rendering
 import UIKit
 import os
 
-/// The canvas screen: ink on one canvas with pen input, pan, and zoom (M2).
+/// The canvas screen: ink on one canvas with pen input, pan, and zoom (M2), saved to the
+/// library (M3).
 @MainActor
 public final class CanvasViewController: UIViewController {
     private let renderer: CanvasRenderer
@@ -18,21 +19,29 @@ public final class CanvasViewController: UIViewController {
     private let panRecognizer = UIPanGestureRecognizer()
     private let pinchRecognizer = UIPinchGestureRecognizer()
     private let pencilObserver = PencilTouchObserver()
+    private let repository: (any LibraryRepository)?
+    private let onCameraRest: @MainActor (Camera) -> Void
+    /// True after a camera change, until the camera comes to rest.
+    private var isCameraMoving = false
 
     /// Makes the canvas screen.
     ///
-    /// - Precondition: The initial strokes belong to the canvas and fit its limit.
+    /// - Precondition: The loaded and the transient strokes fit the stroke limit together.
     public init(dependencies: CanvasDependencies) {
         precondition(
-            dependencies.initialStrokes.count <= Limits.maxStrokesPerCanvas,
+            dependencies.content.strokes.count + dependencies.transientStrokes.count
+                <= Limits.maxStrokesPerCanvas,
             "The canvas holds at most \(Limits.maxStrokesPerCanvas) strokes"
         )
         renderer = dependencies.renderer
+        if let camera = dependencies.camera { renderer.camera = camera }
         canvasView = CanvasView(renderer: renderer)
-        content = CanvasContent(canvasID: dependencies.canvasID)
+        content = dependencies.content
+        repository = dependencies.repository
+        onCameraRest = dependencies.onCameraRest
         cameraController = CameraController(camera: renderer.camera, viewSize: .zero)
         let converter = PencilKitStrokeConverter(
-            factory: dependencies.strokeFactory,
+            clock: dependencies.clock,
             canvasID: dependencies.canvasID
         )
         handoff = LiveStrokeHandoff(
@@ -41,12 +50,26 @@ public final class CanvasViewController: UIViewController {
             converter: converter
         )
         super.init(nibName: nil, bundle: nil)
-        add(dependencies.initialStrokes)
-        renderer.load(dependencies.initialStrokes)
+        // The fill content stays in memory and is never saved (D-55).
+        add(dependencies.transientStrokes)
+        renderer.load(Array(content.strokes.values))
         assert(
-            content.strokes.count == dependencies.initialStrokes.count,
-            "Each initial stroke is in the content"
+            content.strokes.count
+                == dependencies.content.strokes.count + dependencies.transientStrokes.count,
+            "Each loaded and each transient stroke is in the content"
         )
+    }
+
+    /// The canvas that the screen shows.
+    public var canvasID: CanvasID { content.canvasID }
+
+    /// The camera that the canvas shows now.
+    public var camera: Camera { cameraController.camera }
+
+    /// False while the library cannot save. The pencil then draws nothing (storage.md 4).
+    public var isEditingEnabled: Bool {
+        get { canvasView.liveCanvas.drawingGestureRecognizer.isEnabled }
+        set { canvasView.liveCanvas.drawingGestureRecognizer.isEnabled = newValue }
     }
 
     @available(*, unavailable)
@@ -64,7 +87,10 @@ public final class CanvasViewController: UIViewController {
     override public func viewDidLoad() {
         super.viewDidLoad()
         canvasView.liveCanvas.delegate = self
-        handoff.onStrokes = { [weak self] strokes in self?.add(strokes) }
+        handoff.onStrokes = { [weak self] strokes in
+            guard let self else { return }
+            save(add(strokes))
+        }
         handoff.remainingCapacity = { [weak self] in
             Limits.maxStrokesPerCanvas - (self?.content.strokes.count ?? Limits.maxStrokesPerCanvas)
         }
@@ -82,14 +108,47 @@ public final class CanvasViewController: UIViewController {
         Size(width: canvasView.bounds.width, height: canvasView.bounds.height)
     }
 
-    private func add(_ strokes: [Stroke]) {
+    /// Adds strokes to the content and returns the ones that it took. At the stroke limit, a
+    /// stroke is refused and logged. The result is unused at the start, because the loaded
+    /// strokes are in the library already.
+    @discardableResult
+    private func add(_ strokes: [Stroke]) -> [Stroke] {
+        var accepted: [Stroke] = []
+        accepted.reserveCapacity(strokes.count)
         for stroke in strokes {
             do {
                 try content.add(stroke)
+                accepted.append(stroke)
             } catch {
                 logger.error("The canvas is at its stroke limit. A stroke is not stored.")
             }
         }
+        assert(accepted.count <= strokes.count, "More strokes accepted than given")
+        return accepted
+    }
+
+    /// Sends the new strokes to the pending set of the library (storage.md section 4).
+    private func save(_ strokes: [Stroke]) {
+        guard let repository, !strokes.isEmpty else { return }
+        let rows = strokes.map(LibraryChange.stroke)
+        let logger = logger
+        Task {
+            do {
+                try await repository.send(rows)
+            } catch {
+                logger.error("The library did not take \(rows.count) strokes: \(error)")
+            }
+        }
+    }
+
+    /// Tells the app once that the camera is at rest: no gesture and no animation (D-53).
+    private func cameraMayRest() {
+        let isGestureActive = [panRecognizer, pinchRecognizer].contains {
+            $0.state == .began || $0.state == .changed
+        }
+        guard isCameraMoving, !isGestureActive, !cameraController.isAnimating else { return }
+        isCameraMoving = false
+        onCameraRest(cameraController.camera)
     }
 
     private func installGestures() {
@@ -126,6 +185,7 @@ public final class CanvasViewController: UIViewController {
             cameraController.endPan(velocity: Vector(dx: velocity.x, dy: velocity.y))
         }
         applyCamera()
+        cameraMayRest()
     }
 
     @objc private func handlePinch(_ recognizer: UIPinchGestureRecognizer) {
@@ -142,17 +202,20 @@ public final class CanvasViewController: UIViewController {
             return
         }
         applyCamera()
+        cameraMayRest()
     }
 
     private func stepCamera(to time: TimeInterval) -> Bool {
         let isAnimating = cameraController.step(to: time)
         applyCamera()
+        if !isAnimating { cameraMayRest() }
         return isAnimating
     }
 
     /// Sends the camera to the renderer and the matching pen width to the live canvas.
     private func applyCamera() {
         let camera = cameraController.camera
+        if camera != renderer.camera { isCameraMoving = true }
         if camera.zoom != renderer.camera.zoom {
             canvasView.liveCanvas.tool = PenTool.inkingTool(zoom: camera.zoom)
         }
@@ -178,6 +241,8 @@ extension CanvasViewController: PKCanvasViewDelegate {
     /// The pencil lifted. Handed-off strokes can leave the drawing.
     public func canvasViewDidEndUsingTool(_ canvasView: PKCanvasView) {
         handoff.isToolInUse = false
+        guard let repository else { return }
+        Task { await repository.requestSave() }
     }
 }
 

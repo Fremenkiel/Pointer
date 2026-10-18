@@ -5,6 +5,8 @@ import PencilKit
 import Rendering
 import UIKit
 
+@testable import CanvasFeature
+
 /// A wall clock that returns a fixed time (TEST-04).
 struct FixedWallClock: WallClock {
     func nowMillis() -> UInt64 { 1_700_000_000_000 }
@@ -31,13 +33,16 @@ enum Fixtures {
         rawValue: UUID(uuid: (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
     )
 
-    static func factory() -> StrokeFactory {
-        StrokeFactory(
-            identifiers: IdentifierFactory(
-                wallClock: FixedWallClock(),
-                random: SeededRandom(state: 5)
-            ),
-            clock: HybridClock(device: device, wallClock: FixedWallClock())
+    @MainActor
+    static func clock() -> AppClock {
+        AppClock(
+            factory: StrokeFactory(
+                identifiers: IdentifierFactory(
+                    wallClock: FixedWallClock(),
+                    random: SeededRandom(state: 5)
+                ),
+                clock: HybridClock(device: device, wallClock: FixedWallClock())
+            )
         )
     }
 

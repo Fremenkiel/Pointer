@@ -6,6 +6,7 @@ import UIKit
 
 @testable import CanvasFeature
 
+@MainActor
 @Suite("PencilKit stroke converter")
 struct PencilKitStrokeConverterTests {
     private let viewSize = Size(width: 1000, height: 800)
@@ -17,8 +18,8 @@ struct PencilKitStrokeConverterTests {
             pointSize: 6
         )
         let camera = Camera(center: Point(x: 1_000_000, y: 1_000_000), zoom: 4)
-        var converter = PencilKitStrokeConverter(
-            factory: Fixtures.factory(),
+        let converter = PencilKitStrokeConverter(
+            clock: Fixtures.clock(),
             canvasID: Fixtures.canvas
         )
         let converted = try converter.convert(live, camera: camera, viewSize: viewSize)
@@ -36,8 +37,8 @@ struct PencilKitStrokeConverterTests {
             pointSize: 3
         )
         live.transform = CGAffineTransform(translationX: 500, y: 400)
-        var converter = PencilKitStrokeConverter(
-            factory: Fixtures.factory(),
+        let converter = PencilKitStrokeConverter(
+            clock: Fixtures.clock(),
             canvasID: Fixtures.canvas
         )
         let converted = try converter.convert(
@@ -54,8 +55,8 @@ struct PencilKitStrokeConverterTests {
     func split() throws {
         let points = (0...Limits.maxPointsPerStroke).map { CGPoint(x: Double($0) * 0.01, y: 0) }
         let live = Fixtures.pencilKitStroke(points, pointSize: 3)
-        var converter = PencilKitStrokeConverter(
-            factory: Fixtures.factory(),
+        let converter = PencilKitStrokeConverter(
+            clock: Fixtures.clock(),
             canvasID: Fixtures.canvas
         )
         let strokes = try converter.convert(
@@ -74,8 +75,8 @@ struct PencilKitStrokeConverterTests {
             pointSize: 1
         )
         #expect(PencilKitStrokeConverter.drawnWidth(of: live.path) == nil)
-        var converter = PencilKitStrokeConverter(
-            factory: Fixtures.factory(),
+        let converter = PencilKitStrokeConverter(
+            clock: Fixtures.clock(),
             canvasID: Fixtures.canvas
         )
         let converted = try converter.convert(

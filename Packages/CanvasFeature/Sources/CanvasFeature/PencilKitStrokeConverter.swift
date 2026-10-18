@@ -11,8 +11,8 @@ struct PencilKitStrokeConverter {
     /// `2 * (s - 2)` points wide (docs/m2-plan.md section 1, fact 2).
     static let monolineSizeOffset = 2.0
 
-    /// The factory that makes the IDs and the clock values.
-    var factory: StrokeFactory
+    /// The clock of the app, which makes the IDs and the clock values.
+    let clock: AppClock
     /// The canvas that gets the strokes.
     let canvasID: CanvasID
 
@@ -20,7 +20,8 @@ struct PencilKitStrokeConverter {
     ///
     /// - Throws: `ModelError` if the path has no points or a value that is not finite.
     /// - Returns: One stroke, or several strokes for a path above the point limit.
-    mutating func convert(
+    @MainActor
+    func convert(
         _ stroke: PKStroke,
         camera: Camera,
         viewSize: Size
@@ -38,7 +39,7 @@ struct PencilKitStrokeConverter {
             camera.viewToCanvas(viewSize: viewSize)
         )
         let path = PenPath(samples: samples, toCanvas: toCanvas, width: width)
-        let strokes = try factory.makeStrokes(from: path, canvasID: canvasID)
+        let strokes = try clock.factory.makeStrokes(from: path, canvasID: canvasID)
         assert(!strokes.isEmpty, "A path with samples gives a stroke")
         return strokes
     }

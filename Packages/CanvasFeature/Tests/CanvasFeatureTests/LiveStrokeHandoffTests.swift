@@ -27,7 +27,7 @@ struct LiveStrokeHandoffTests {
         layer.drawableSize = CGSize(width: 400, height: 240)
         renderer.setViewport(viewSize: viewSize, displayScale: 2)
         let converter = PencilKitStrokeConverter(
-            factory: Fixtures.factory(),
+            clock: Fixtures.clock(),
             canvasID: Fixtures.canvas
         )
         let handoff = LiveStrokeHandoff(

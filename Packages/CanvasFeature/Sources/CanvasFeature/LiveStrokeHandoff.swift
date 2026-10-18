@@ -15,7 +15,7 @@ import os
 final class LiveStrokeHandoff {
     private let canvasView: PKCanvasView
     private let renderer: CanvasRenderer
-    private var converter: PencilKitStrokeConverter
+    private let converter: PencilKitStrokeConverter
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Canvas")
     /// Strokes of the drawing that went to the renderer.
     private var handedOff: Set<StrokeKey> = []

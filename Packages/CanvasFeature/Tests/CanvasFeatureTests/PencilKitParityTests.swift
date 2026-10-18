@@ -79,8 +79,8 @@ struct PencilKitParityTests {
         let pointSize = PencilKitStrokeConverter.pointSize(drawingWidth: PenTool.width * zoom)
         let live = Fixtures.pencilKitStroke(Fixtures.wave(), pointSize: pointSize)
         let camera = Camera(center: Point(x: 1_000, y: -2_000), zoom: zoom)
-        var converter = PencilKitStrokeConverter(
-            factory: Fixtures.factory(),
+        let converter = PencilKitStrokeConverter(
+            clock: Fixtures.clock(),
             canvasID: Fixtures.canvas
         )
         let strokes = try converter.convert(live, camera: camera, viewSize: viewSize)
@@ -118,8 +118,8 @@ struct PencilKitParityTests {
         let pointSize = PencilKitStrokeConverter.pointSize(drawingWidth: PenTool.width)
         let live = Fixtures.pencilKitStroke(Self.jumpPath(), pointSize: pointSize)
         let camera = Camera(center: .zero, zoom: 1)
-        var converter = PencilKitStrokeConverter(
-            factory: Fixtures.factory(),
+        let converter = PencilKitStrokeConverter(
+            clock: Fixtures.clock(),
             canvasID: Fixtures.canvas
         )
         let strokes = try converter.convert(live, camera: camera, viewSize: viewSize)
