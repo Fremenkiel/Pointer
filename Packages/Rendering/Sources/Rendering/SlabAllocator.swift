@@ -1,3 +1,4 @@
+import Foundation
 import Model
 
 /// Hands out point ranges of fixed size classes from equal slabs (architecture.md 5.3).
@@ -9,8 +10,23 @@ struct SlabAllocator {
     static let slabPoints = Limits.maxPointsPerStroke
     /// The smallest size class.
     static let smallestClassPoints = 16
-    /// The number of size classes: 16, 32, and so on up to `slabPoints`.
-    static let classCount = 11
+    /// The number of size classes.
+    static let classCount = 32
+    /// The growth from one size class to the next. With powers of two, a stroke of 300 points
+    /// took a block of 512 (docs/m2-fix-plan.md, phase 4, task 2).
+    static let classGrowth = 1.25
+    /// The points of each size class: `smallestClassPoints` times `classGrowth` per class,
+    /// rounded up to a multiple of 16, and `slabPoints` for the last class.
+    static let classSizes: [Int] = {
+        var sizes = [smallestClassPoints]
+        for index in 1..<classCount {
+            let grown = Double(smallestClassPoints) * pow(classGrowth, Double(index))
+            let rounded = Int((grown / 16).rounded(.up)) * 16
+            sizes.append(min(max(rounded, sizes[index - 1] + 16), slabPoints))
+        }
+        sizes[classCount - 1] = slabPoints
+        return sizes
+    }()
 
     private struct Slab {
         var classIndex: Int?
@@ -38,19 +54,16 @@ struct SlabAllocator {
     /// - Precondition: `points` is in `1...slabPoints`.
     static func classIndex(forPoints points: Int) -> Int {
         precondition(points >= 1 && points <= slabPoints, "Block of \(points) points out of range")
-        var index = 0
-        var capacity = smallestClassPoints
-        while capacity < points && index < classCount - 1 {
-            capacity *= 2
-            index += 1
+        guard let index = classSizes.firstIndex(where: { $0 >= points }) else {
+            preconditionFailure("No size class holds \(points) points")
         }
-        assert(capacity >= points, "Class \(index) is too small for \(points) points")
+        assert(classSizes[index] >= points, "Class \(index) is too small for \(points) points")
         return index
     }
 
     /// Returns the point slots of one block of a size class.
     static func classPoints(_ classIndex: Int) -> Int {
-        smallestClassPoints << classIndex
+        classSizes[classIndex]
     }
 
     /// Adds free slabs at the end of the arena.

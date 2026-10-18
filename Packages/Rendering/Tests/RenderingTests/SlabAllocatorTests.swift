@@ -6,7 +6,7 @@ import Testing
 struct SlabAllocatorTests {
     @Test(
         "A stroke gets the smallest class that holds it",
-        arguments: [(1, 16), (16, 16), (17, 32), (300, 512), (16_384, 16_384)]
+        arguments: [(1, 16), (16, 16), (17, 32), (300, 304), (1_000, 1_120), (16_384, 16_384)]
     )
     func classes(points: Int, capacity: Int) throws {
         var allocator = SlabAllocator(slabCount: 1)
@@ -20,14 +20,15 @@ struct SlabAllocatorTests {
     func noOverlap() throws {
         var allocator = SlabAllocator(slabCount: 1)
         var starts = Set<Int>()
-        for _ in 0..<(SlabAllocator.slabPoints / 1024) {
-            let allocated1 = allocator.allocate(points: 1000)
-
-            let block = try #require(allocated1)
-            #expect(block.start % 1024 == 0)
+        let capacity = SlabAllocator.classPoints(SlabAllocator.classIndex(forPoints: 1000))
+        let perSlab = SlabAllocator.slabPoints / capacity
+        for _ in 0..<perSlab {
+            let allocated = allocator.allocate(points: 1000)
+            let block = try #require(allocated)
+            #expect(block.start % capacity == 0)
             starts.insert(block.start)
         }
-        #expect(starts.count == SlabAllocator.slabPoints / 1024)
+        #expect(starts.count == perSlab)
         let allocated8 = allocator.allocate(points: 1000)
 
         #expect(allocated8 == nil)
@@ -53,18 +54,18 @@ struct SlabAllocatorTests {
     @Test("A full slab takes blocks again after a free")
     func refill() throws {
         var allocator = SlabAllocator(slabCount: 1)
-        let allocated4 = allocator.allocate(points: 8192)
-
+        let capacity = SlabAllocator.classPoints(SlabAllocator.classIndex(forPoints: 4000))
+        let perSlab = SlabAllocator.slabPoints / capacity
+        let allocated4 = allocator.allocate(points: 4000)
         let first = try #require(allocated4)
-        let allocated6 = allocator.allocate(points: 8192)
-
-        #expect(allocated6 != nil)
-        let allocated10 = allocator.allocate(points: 8192)
-
+        for _ in 1..<perSlab {
+            let allocated6 = allocator.allocate(points: 4000)
+            #expect(allocated6 != nil)
+        }
+        let allocated10 = allocator.allocate(points: 4000)
         #expect(allocated10 == nil)
         allocator.free(first)
-        let allocated11 = allocator.allocate(points: 8192)
-
+        let allocated11 = allocator.allocate(points: 4000)
         #expect(allocated11 == first)
     }
 
