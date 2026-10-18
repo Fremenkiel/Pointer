@@ -103,6 +103,13 @@ Status: done on 2026-10-18 in commit 6c63408. The round-trip tests pass for each
 
 Done when: the crash test with an injected failure between `BEGIN` and `COMMIT` passes. The throttle test passes with a clock that moves 10 seconds. A corrupt point BLOB gives a fault for that stroke, and the other strokes of the canvas still load (storage.md section 9).
 
+Status: done on 2026-10-18 in commits bb9fbbd, ac05381, 05b9150, cec3a3c, and fd3207f. The crash test, the throttle test over 10 seconds of manual time, and the corrupt BLOB test pass. D-58 defines the stored form of the `library` rows. Notes for later tasks:
+
+1. The migration runner reports the old version that needs a snapshot. The repository awaits the snapshot function of `open(snapshot:)` and then runs the migration. Task 3.6 supplies the function.
+2. `lastTimestamp` can come from another device after a restore. Task 3.9 must give the clock the wall time and the counter of `lastTimestamp` with the `DeviceID` of this iPad, because `HybridClock` requires its own device.
+3. The faults go to the main actor through one ordered stream: `savesFailing`, `savesRecovered`, and `rowsSkipped`.
+4. `PointerDeviceTests` now links `Persistence` and takes the folder `Tests/PersistenceDeviceTests`.
+
 ### 3.6 Snapshot writer (Tier A)
 
 1. Add `SnapshotWriter`, an actor with its own read-only connection and its own serial executor (D-32).
@@ -196,3 +203,15 @@ Done when: all four acceptance criteria of M3 pass, and the results are in secti
 | Round trip of each row type and the point BLOB | passes | passes |
 | `CHECK` at the limit and one past it | refuses one past | refuses one past |
 | Fixture of version 1 | opens and reads | opens and reads |
+
+### 4.5 Repository actor
+
+Save times on the iPad Pro 11-inch (M4), Release configuration, 50 saves each (PERF-03):
+
+| Item | Target | Result |
+|---|---|---|
+| Save of 10 strokes of 300 points (one second of fast handwriting) | at most 50 ms | median 0.11 ms, slowest 0.14 ms |
+| Save of 240 strokes of 300 points | at most 50 ms | median 2.18 ms, slowest 9.43 ms |
+| Line coverage of `Persistence` | at least 90 % | 91.85 % |
+| Assertion density of `Persistence` | at least 2.0 | 2.06 |
+| Rows lost in 10 s of strokes without a pause | at most 1 s | at most 1 s at each step of 100 ms |
