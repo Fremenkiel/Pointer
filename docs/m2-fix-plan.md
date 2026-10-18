@@ -167,7 +167,7 @@ Task 6 is rejected by the product owner on 2026-10-18. 200,000 strokes make 399,
 
 ### Phase 5: small fixes
 
-Status on 2026-10-18: tasks 1, 2, and 4 to 7 are done. Task 3 waits for the product owner: the PencilKit tool setter took 0.03 ms on average and 0.44 ms at most on the iPad Pro 11-inch (M4), measured on a `PKCanvasView` outside a window.
+Status on 2026-10-18: phase 5 is done. Tasks 1, 2, and 4 to 7 are done. The product owner rejected task 3: the PencilKit tool setter took 0.03 ms on average and 0.44 ms at most on the iPad Pro 11-inch (M4), measured on a `PKCanvasView` outside a window, and a tool set only at rest can give a live stroke the old width.
 
 For task 7, `FrameAllocationTests` counts the allocations of a pan frame without a build: 15, the same as a bare Metal frame with one render pass and one completed handler (D-43). Three causes besides the two of the task took 18 allocations: each `OSSignposter` interval made an `OSSignpostIntervalState` object (3 allocations each, 4 intervals per frame), each encoder label took 2, and each completed handler took 1. The hot paths now use `os_signpost` with an `OSLog` (`RenderSignpost`), the labels exist in Debug builds only, and the frame has one completed handler, which also emits the `GPUFrame` event.
 
