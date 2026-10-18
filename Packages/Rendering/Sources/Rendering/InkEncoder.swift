@@ -16,6 +16,8 @@ final class InkEncoder {
     let ring: DrawListRing
     /// The level-of-detail spacing of the draws. Tests change it to compare values.
     var minimumPixelSpacing = LevelOfDetail.minimumPixelSpacing
+    /// `false` uses the pieces of before phase 3, task 3. Tests change it to compare images.
+    var usesSmoothPieces = true
 
     /// Makes an encoder.
     init(resources: InkResources, store: StrokeStore, ring: DrawListRing) {
@@ -89,30 +91,35 @@ final class InkEncoder {
         DetailRuns.forEach(
             pointCount: info.pointCount,
             spacings: store.spacings(of: info),
-            pixelsPerCanvasPoint: target.pixelsPerCanvasPoint,
-            minimumPixelSpacing: minimumPixelSpacing
-        ) { run in
-            let detail = StrokeDrawEntry.packDetail(
-                stride: run.stride,
-                pieces: run.pieces,
-                nextOffset: run.nextOffset
-            )
-            ring.append(
-                StrokeDrawEntry(
-                    origin: origin,
-                    firstPoint: UInt32(block.start + run.start),
-                    pointCount: UInt32(run.end - run.start + 1),
-                    firstSegment: StrokeDrawEntry.packStart(
-                        start: run.start,
-                        previousOffset: run.previousOffset
-                    ),
-                    detail: detail,
-                    firstInstance: UInt32(firstInstance + instances),
-                    radius: info.radius
+            scale: DetailScale(
+                pixelsPerCanvasPoint: target.pixelsPerCanvasPoint,
+                minimum: minimumPixelSpacing,
+                usesSmoothPieces: usesSmoothPieces
+            ),
+            bend: { store.bend(slot: slot, block: $0) },
+            body: { run in
+                let detail = StrokeDrawEntry.packDetail(
+                    stride: run.stride,
+                    pieces: run.pieces,
+                    nextOffset: run.nextOffset
                 )
-            )
-            instances += run.instanceCount
-        }
+                ring.append(
+                    StrokeDrawEntry(
+                        origin: origin,
+                        firstPoint: UInt32(block.start + run.start),
+                        pointCount: UInt32(run.end - run.start + 1),
+                        firstSegment: StrokeDrawEntry.packStart(
+                            start: run.start,
+                            previousOffset: run.previousOffset
+                        ),
+                        detail: detail,
+                        firstInstance: UInt32(firstInstance + instances),
+                        radius: info.radius
+                    )
+                )
+                instances += run.instanceCount
+            }
+        )
         assert(instances > 0, "A resident stroke draws one instance at least")
         return instances
     }

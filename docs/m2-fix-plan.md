@@ -112,6 +112,17 @@ Task 2 is done. A test stroke of 1,000 control points 0.001 points apart with on
 - Neighbor blocks merge when their pieces are equal, and the merged run computes its stride from its own spacing. Without the merge, each run boundary added a used point, and the dense content at zoom 0.25 drew 340,000 instances instead of 300,000.
 - At a run boundary, the neighbor point uses the stride of the neighbor run, not the stride of the run itself. With its own stride, the two curves did not meet, and a split stroke differed from PencilKit by 34 of 255 at zoom 1. A parity test now covers a split stroke.
 
+Task 3 is done for zoom 8 only, and it waits for the product owner for zoom 1. A run has one piece count, the largest of its segments. The rule of the task, 12 pixels where the turn is small, gave 12 % fewer instances at zoom 1 with a difference of 38, and 8 % fewer at zoom 8. The code uses the curvature instead: the pieces keep the chord error at or under a tolerance, and they are never more than by length. The handwriting gave these results:
+
+| Tolerance | Zoom 1 instances | Zoom 1 difference | Zoom 8 instances | Zoom 8 difference |
+|---|---|---|---|---|
+| By length, before task 3 | 136,998 | 0 | 19,116 | 0 |
+| 0.125 pixels, in the code | 136,998 (0 %) | 0 | 10,620 (−44 %) | 15 |
+| 0.25 pixels | 136,998 (0 %) | 0 | 7,434 (−61 %) | 30 |
+| 0.5 pixels | 91,332 (−33 %) | 40 | 5,310 (−72 %) | 58 |
+
+At zoom 1, 30 % fewer instances came only with a difference of 40, as in the benchmark. Zoom 0.25 and the dense content do not change. The bend is measured at the first draw that needs it: measured at load time, it made the content pass of 200,000 handwriting strokes 16 % slower than its baseline.
+
 1. Set `LevelOfDetail.minimumPixelSpacing` to 1.0.
    - Done when: the dense content at zoom 0.25 has at most 300,000 instances, and its GPU time is at most 0.58 times the GPU time at 0.5 pixels (D-46). The largest pixel difference is at or under 17. The benchmark gave 300,000 instances, 2.62 ms against 4.68 ms (0.56), and 12 of 255. `LevelOfDetailPerformanceTests` gave 1.81 ms against 3.10 ms (0.58) on 2026-10-17.
    - Do not use 2.0. It gave a pixel difference of 58.

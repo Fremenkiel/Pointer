@@ -1,3 +1,4 @@
+import Foundation
 import Model
 import Testing
 
@@ -20,16 +21,24 @@ struct DetailRunsTests {
         return InkPoints(values)
     }
 
-    private func runs(of points: InkPoints, pixelsPerCanvasPoint: Double) -> [DetailRun] {
-        var spacings: [SIMD2<Float>] = []
-        DetailRuns.appendSpacings(of: points, to: &spacings)
+    private func runs(
+        of points: InkPoints,
+        pixelsPerCanvasPoint: Double,
+        usesSmoothPieces: Bool = true
+    ) -> [DetailRun] {
+        var spacings: [BlockSpacing] = []
+        BlockSpacing.append(of: points, to: &spacings)
         var result: [DetailRun] = []
         DetailRuns.forEach(
             pointCount: points.count,
             spacings: spacings[...],
-            pixelsPerCanvasPoint: pixelsPerCanvasPoint,
-            minimumPixelSpacing: LevelOfDetail.minimumPixelSpacing
-        ) { result.append($0) }
+            scale: DetailScale(
+                pixelsPerCanvasPoint: pixelsPerCanvasPoint,
+                usesSmoothPieces: usesSmoothPieces
+            ),
+            bend: { BlockSpacing.bend(of: points, block: $0) },
+            body: { result.append($0) }
+        )
         return result
     }
 
@@ -58,10 +67,10 @@ struct DetailRunsTests {
         #expect(result.first?.instanceCount == whole.instanceCount)
     }
 
-    @Test("One long segment no longer sets the pieces of the whole stroke")
+    @Test("With pieces by length, one long segment no longer sets the pieces of the whole stroke")
     func longSegment() {
         let stroke = points(count: 1_000, spacing: 0.001, jump: 100, jumpIndex: 500)
-        let result = runs(of: stroke, pixelsPerCanvasPoint: 16)
+        let result = runs(of: stroke, pixelsPerCanvasPoint: 16, usesSmoothPieces: false)
         let total = result.reduce(0) { $0 + $1.instanceCount }
         #expect(total <= 2_100)
         #expect(result.count > 1)
@@ -70,7 +79,7 @@ struct DetailRunsTests {
     @Test("The runs cover the stroke without a gap")
     func coverage() {
         let stroke = points(count: 1_000, spacing: 0.001, jump: 100, jumpIndex: 500)
-        let result = runs(of: stroke, pixelsPerCanvasPoint: 16)
+        let result = runs(of: stroke, pixelsPerCanvasPoint: 16, usesSmoothPieces: false)
         #expect(result.first?.start == 0)
         #expect(result.last?.end == 999)
         for (previous, next) in zip(result, result.dropFirst()) {
@@ -81,7 +90,7 @@ struct DetailRunsTests {
     @Test("Neighbor offsets use the strides of the neighbor runs, and 0 at the stroke ends")
     func neighborOffsets() {
         let stroke = points(count: 1_000, spacing: 0.001, jump: 100, jumpIndex: 500)
-        let result = runs(of: stroke, pixelsPerCanvasPoint: 16)
+        let result = runs(of: stroke, pixelsPerCanvasPoint: 16, usesSmoothPieces: false)
         #expect(result.first?.previousOffset == 0)
         #expect(result.last?.nextOffset == 0)
         for (previous, next) in zip(result, result.dropFirst()) {
@@ -95,6 +104,25 @@ struct DetailRunsTests {
         let packed = StrokeDrawEntry.packStart(start: 16_383, previousOffset: 4_095)
         #expect(packed & 0x3FFF == 16_383)
         #expect((packed >> 14) & 0xFFF == 4_095)
+    }
+
+    @Test("A straight stroke draws one piece per segment at any zoom")
+    func straightStroke() {
+        let stroke = points(count: 60, spacing: 2)
+        #expect(runs(of: stroke, pixelsPerCanvasPoint: 16).allSatisfy { $0.pieces == 1 })
+    }
+
+    @Test("A curved stroke draws more pieces at a higher zoom")
+    func curvedStroke() {
+        let values = (0..<60).map { index -> InkPoint in
+            let t = Float(index)
+            return InkPoint(x: t * 2, y: sin(t * 0.7) * 9, force: -1, time: t / 240)
+        }
+        let stroke = InkPoints(values)
+        let low = runs(of: stroke, pixelsPerCanvasPoint: 2).map(\.pieces).max() ?? 0
+        let high = runs(of: stroke, pixelsPerCanvasPoint: 16).map(\.pieces).max() ?? 0
+        #expect(low >= 1)
+        #expect(high > low)
     }
 
     @Test("The detail value packs the stride, the pieces, and the next offset")

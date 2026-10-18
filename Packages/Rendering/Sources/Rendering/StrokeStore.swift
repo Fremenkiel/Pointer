@@ -37,8 +37,10 @@ final class StrokeStore {
     /// The strokes by slot. Only an upload into the arena reads them.
     private var strokes: [Stroke] = []
     private var slotByID: [StrokeID: Int] = [:]
-    /// The mean and the largest neighbor spacing of each block of each stroke, in canvas points.
-    private var blockSpacings: [SIMD2<Float>] = []
+    /// The spacing of each block of each stroke.
+    private var blockSpacings: [BlockSpacing] = []
+    /// The bend of each block, measured at the first draw that needs it. NaN until then.
+    private var blockBends: [Float] = []
     private(set) var grid = SpatialGrid<Int>(cellSize: gridCellSize)
     let arena: PointArena
 
@@ -64,7 +66,8 @@ final class StrokeStore {
         )
         let slot = infos.count
         let firstBlock = blockSpacings.count
-        DetailRuns.appendSpacings(of: stroke.points, to: &blockSpacings)
+        BlockSpacing.append(of: stroke.points, to: &blockSpacings)
+        blockBends.append(contentsOf: repeatElement(.nan, count: blockSpacings.count - firstBlock))
         let info = DrawInfo(
             origin: stroke.origin,
             radius: stroke.width / 2,
@@ -128,10 +131,24 @@ final class StrokeStore {
         return result
     }
 
+    /// Returns the bend of block `block` of the stroke in `slot`, and measures it at the first
+    /// call (`BlockSpacing.bend(of:block:)`).
+    ///
+    /// - Precondition: The slot and the block exist.
+    func bend(slot: Int, block: Int) -> Float {
+        precondition(infos.indices.contains(slot), "Stroke slot \(slot) does not exist")
+        precondition(block >= 0 && block < infos[slot].blockCount, "Block \(block) is unknown")
+        let index = infos[slot].firstBlock + block
+        if !blockBends[index].isNaN { return blockBends[index] }
+        let bend = BlockSpacing.bend(of: strokes[slot].points, block: block)
+        blockBends[index] = bend
+        return bend
+    }
+
     /// Returns the block spacings of a stroke.
     ///
     /// - Precondition: `info` is the draw data of a stroke of this store.
-    func spacings(of info: DrawInfo) -> ArraySlice<SIMD2<Float>> {
+    func spacings(of info: DrawInfo) -> ArraySlice<BlockSpacing> {
         precondition(info.firstBlock + info.blockCount <= blockSpacings.count, "Unknown blocks")
         precondition(info.blockCount >= 1, "A stroke has one block at least")
         return blockSpacings[info.firstBlock..<(info.firstBlock + info.blockCount)]

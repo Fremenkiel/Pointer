@@ -73,9 +73,14 @@ final class InkRig {
             DetailRuns.forEach(
                 pointCount: info.pointCount,
                 spacings: store.spacings(of: info),
-                pixelsPerCanvasPoint: target.pixelsPerCanvasPoint,
-                minimumPixelSpacing: encoder.minimumPixelSpacing
-            ) { total += $0.instanceCount }
+                scale: DetailScale(
+                    pixelsPerCanvasPoint: target.pixelsPerCanvasPoint,
+                    minimum: encoder.minimumPixelSpacing,
+                    usesSmoothPieces: encoder.usesSmoothPieces
+                ),
+                bend: { store.bend(slot: slot, block: $0) },
+                body: { total += $0.instanceCount }
+            )
         }
         return total
     }

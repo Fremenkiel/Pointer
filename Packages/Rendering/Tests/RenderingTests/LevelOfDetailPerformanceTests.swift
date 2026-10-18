@@ -9,8 +9,11 @@ import XCTest
 /// valid on a device only, so the simulator skips these tests.
 @MainActor
 final class LevelOfDetailPerformanceTests: XCTestCase {
-    /// The spacings to compare. The first one is the M2 value and gives the reference image.
-    private static let spacings = [0.5, 0.75, 1.0]
+    /// The spacings and piece rules to compare. The first one is the M2 value and gives the
+    /// reference image. The last one adds the smooth pieces of phase 3, task 3.
+    private static let variants: [(spacing: Double, usesSmoothPieces: Bool)] = [
+        (0.5, false), (0.75, false), (1.0, false), (1.0, true),
+    ]
     /// The largest pixel difference of M2 acceptance 4.
     private static let maxDifference = 17
     /// The texture of the committed layer on the iPad Pro 11-inch: twice the drawable.
@@ -63,17 +66,19 @@ final class LevelOfDetailPerformanceTests: XCTestCase {
             // warms it up.
             _ = medianTime(rig: rig, slots: slots, target: target)
             var reference: [UInt8]?
-            for spacing in Self.spacings {
+            for (spacing, usesSmoothPieces) in Self.variants {
                 rig.encoder.minimumPixelSpacing = spacing
+                rig.encoder.usesSmoothPieces = usesSmoothPieces
                 let time = medianTime(rig: rig, slots: slots, target: target)
                 let image = CoverageReader.pixels(of: texture)
                 let difference = CoverageReader.largestDifference(reference ?? image, image)
                 reference = reference ?? image
                 let instances = rig.instanceCount(slots: slots, target: target)
                 let line = String(
-                    format: "%@ at %.2f px: %d strokes, %d instances, %.2f GPU ms, diff %d",
+                    format: "%@ at %.2f px%@: %d strokes, %d instances, %.2f GPU ms, diff %d",
                     name,
                     spacing,
+                    usesSmoothPieces ? " smooth" : "",
                     slots.count,
                     instances,
                     time,

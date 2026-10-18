@@ -23,47 +23,21 @@ enum DetailRuns {
         return count
     }
 
-    /// Appends the mean and the largest neighbor spacing of each block of a stroke.
-    ///
-    /// - Precondition: The stroke has 2 points at least.
-    static func appendSpacings(of points: InkPoints, to spacings: inout [SIMD2<Float>]) {
-        let values = points.values
-        let blocks = blockCount(pointCount: values.count)
-        let before = spacings.count
-        for block in 0..<blocks {
-            let first = block * segmentsPerBlock
-            let last = min(first + segmentsPerBlock, values.count - 1)
-            var total: Float = 0
-            var largest: Float = 0
-            for index in (first + 1)...last {
-                let dx = values[index].x - values[index - 1].x
-                let dy = values[index].y - values[index - 1].y
-                let length = (dx * dx + dy * dy).squareRoot()
-                total += length
-                largest = max(largest, length)
-            }
-            // Equal segments can give a mean one rounding step above the largest spacing.
-            spacings.append(SIMD2(min(total / Float(last - first), largest), largest))
-        }
-        assert(spacings.count == before + blocks, "Each block has one spacing")
-    }
-
     /// Calls `body` with each run of a stroke, in order.
     ///
     /// - Precondition: One spacing per block, and a positive pixel scale and spacing.
     static func forEach(
         pointCount: Int,
-        spacings: ArraySlice<SIMD2<Float>>,
-        pixelsPerCanvasPoint: Double,
-        minimumPixelSpacing: Double,
-        _ body: (DetailRun) -> Void
+        spacings: ArraySlice<BlockSpacing>,
+        scale: DetailScale,
+        bend: (Int) -> Float,
+        body: (DetailRun) -> Void
     ) {
         precondition(
             spacings.count == blockCount(pointCount: pointCount),
             "Stroke of \(pointCount) points has \(spacings.count) block spacings"
         )
-        precondition(pixelsPerCanvasPoint > 0, "Pixel scale must be positive")
-        let scale = Scale(pixelsPerCanvasPoint: pixelsPerCanvasPoint, minimum: minimumPixelSpacing)
+        precondition(scale.pixelsPerCanvasPoint > 0, "Pixel scale must be positive")
         var linker = RunLinker(pointCount: pointCount)
         var pending: Span?
         for (offset, spacing) in spacings.enumerated() {
@@ -71,9 +45,10 @@ enum DetailRuns {
             let block = Span(
                 start: start,
                 end: min(start + segmentsPerBlock, pointCount - 1),
+                block: offset,
                 spacing
             )
-            let pieces = block.detail(scale).piecesPerSegment
+            let pieces = block.detail(scale, bend: bend).piecesPerSegment
             guard let current = pending else {
                 pending = block.with(pieces: pieces)
                 continue
@@ -81,13 +56,13 @@ enum DetailRuns {
             if current.pieces == pieces {
                 pending = current.merged(with: block)
             } else {
-                linker.add(current.run(scale), body)
+                linker.add(current.run(scale, bend: bend), body)
                 pending = block.with(pieces: pieces)
             }
         }
         guard let last = pending else { preconditionFailure("A stroke has one run at least") }
         assert(last.end == pointCount - 1, "The last run ends at the last point")
-        linker.add(last.run(scale), body)
+        linker.add(last.run(scale, bend: bend), body)
         linker.finish(body)
     }
 }
@@ -125,53 +100,73 @@ private struct RunLinker {
     }
 }
 
-/// The pixel scale and the spacing of one level-of-detail computation.
-private struct Scale {
+/// The pixel scale and the rules of one level-of-detail computation.
+struct DetailScale {
+    /// Pixels per canvas point of the target.
     let pixelsPerCanvasPoint: Double
-    let minimum: Double
+    /// The smallest screen distance between two used control points.
+    var minimum = LevelOfDetail.minimumPixelSpacing
+    /// `false` cuts the segments by length, into pieces of `LevelOfDetail.targetPiecePixels`, as
+    /// before phase 3, task 3. Only the tests turn it off.
+    var usesSmoothPieces = true
 }
 
 /// A part of a stroke with its total length and its largest neighbor spacing.
 private struct Span {
     let start: Int
     let end: Int
+    /// The first and the last block of the span, in the stroke.
+    let blocks: ClosedRange<Int>
     let length: Float
     let largest: Float
     /// The pieces per segment of the first block, the merge key.
     var pieces = 0
 
-    init(start: Int, end: Int, _ spacing: SIMD2<Float>) {
+    init(start: Int, end: Int, block: Int, _ spacing: BlockSpacing) {
         precondition(end > start, "A span has one segment at least")
         self.start = start
         self.end = end
-        length = spacing.x * Float(end - start)
-        largest = spacing.y
+        blocks = block...block
+        length = spacing.mean * Float(end - start)
+        largest = spacing.largest
     }
 
-    private init(start: Int, end: Int, length: Float, largest: Float, pieces: Int) {
+    private init(start: Int, end: Int, blocks: ClosedRange<Int>, length: Float, largest: Float) {
         self.start = start
         self.end = end
+        self.blocks = blocks
         self.length = length
         self.largest = largest
-        self.pieces = pieces
     }
 
     func with(pieces: Int) -> Span {
-        Span(start: start, end: end, length: length, largest: largest, pieces: pieces)
+        var span = Span(start: start, end: end, blocks: blocks, length: length, largest: largest)
+        span.pieces = pieces
+        return span
     }
 
     func merged(with next: Span) -> Span {
         precondition(next.start == end, "Merged spans must touch")
+        precondition(next.blocks.lowerBound == blocks.upperBound + 1, "Merged blocks must touch")
         return Span(
             start: start,
             end: next.end,
+            blocks: blocks.lowerBound...next.blocks.upperBound,
             length: length + next.length,
-            largest: max(largest, next.largest),
-            pieces: pieces
-        )
+            largest: max(largest, next.largest)
+        ).with(pieces: pieces)
     }
 
-    func detail(_ scale: Scale) -> LevelOfDetail {
+    /// The bend can only lower the pieces, so the span asks for it only if the length rule
+    /// gives more than one piece. At low zoom, no block measures its bend.
+    func detail(_ scale: DetailScale, bend: (Int) -> Float) -> LevelOfDetail {
+        let byLength = detail(scale, bend: nil)
+        guard scale.usesSmoothPieces, byLength.piecesPerSegment > 1 else { return byLength }
+        let largestBend = blocks.reduce(Float(0)) { max($0, bend($1)) }
+        return detail(scale, bend: Double(largestBend))
+    }
+
+    private func detail(_ scale: DetailScale, bend: Double?) -> LevelOfDetail {
         // A rounding step can give a mean above the largest spacing.
         let mean = min(Double(length) / Double(end - start), Double(largest))
         return LevelOfDetail(
@@ -179,12 +174,13 @@ private struct Span {
             meanSpacing: mean,
             maxSpacing: Double(largest),
             pixelsPerCanvasPoint: scale.pixelsPerCanvasPoint,
-            minimumPixelSpacing: scale.minimum
+            minimumPixelSpacing: scale.minimum,
+            bend: bend
         )
     }
 
-    func run(_ scale: Scale) -> DetailRun {
-        let detail = detail(scale)
+    func run(_ scale: DetailScale, bend: (Int) -> Float) -> DetailRun {
+        let detail = detail(scale, bend: bend)
         let stride = min(detail.stride, DetailRuns.maxStride)
         assert(stride >= 1, "A run has a stride of 1 at least")
         return DetailRun(start: start, end: end, stride: stride, pieces: detail.piecesPerSegment)
