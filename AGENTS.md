@@ -46,6 +46,8 @@ pointer/
     DesignSystem/          Layer 1: tokens and shared small views
     CanvasFeature/         Layer 2: canvas screen
     WorkspaceFeature/      Layer 2: workspace selector
+      Tests/WorkspaceFeatureSnapshotTests/  view snapshots, part of PointerDeviceTests only (D-59)
+        References/        reference PNGs of the snapshot tests (TEST-07)
     BackupFeature/         Layer 2: backup command and restore
   Scripts/                 check-layers.swift, assertion-density.swift, self-test.sh
     Fixtures/              small trees that the self-test runs the check scripts on
@@ -59,6 +61,7 @@ Run the commands from the repository root. They need Xcode 27 and SwiftLint 0.65
 make build       # build the app for iOS, warnings are errors
 make analyze     # xcodebuild analyze, zero findings
 make test        # package tests: Tier A on the Mac, the others on an iPad simulator
+make snapshots   # snapshot tests of SwiftUI views in PointerDeviceTests on the simulator
 make format      # swift format lint
 make lint        # swiftlint --strict
 make layers      # Scripts/check-layers.swift

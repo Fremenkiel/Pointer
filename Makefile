@@ -9,9 +9,9 @@ TIER_A := Geometry Model InkEngine Persistence
 OTHER_PACKAGES := Rendering Export DesignSystem CanvasFeature WorkspaceFeature BackupFeature
 XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -derivedDataPath $(DERIVED_DATA)
 
-.PHONY: check build analyze test format lint layers density self-test plist
+.PHONY: check build analyze test snapshots format lint layers density self-test plist
 
-check: build analyze test format lint layers density self-test plist
+check: build analyze test snapshots format lint layers density self-test plist
 	@echo "All checks passed."
 
 # BUILD-01, BUILD-02: the targets treat warnings as errors.
@@ -42,6 +42,13 @@ test:
 		fi; \
 	done
 	@echo "test: done"
+
+# TEST-07: the snapshot tests of SwiftUI views need the window scene of the app, so they run in
+# PointerDeviceTests on the simulator (D-59).
+snapshots:
+	$(XCODEBUILD) -destination '$(SIMULATOR)' -quiet \
+		-only-testing:PointerDeviceTests/WorkspaceSelectorSnapshotTests test
+	@echo "snapshots: done"
 
 # STYLE-04. The fixtures hold deliberate violations, so the formatter skips them.
 format:

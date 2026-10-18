@@ -143,6 +143,8 @@ Status: done on 2026-10-18. The round-trip test passes for the device ID, the la
 
 Done when: the snapshot test passes, and tests cover create, rename, delete, and the limit.
 
+Status: done on 2026-10-18. Four snapshot tests pass: the button, the button with a long name, the list, and the list at the limit. Thirteen model tests cover the first launch and the delete of the current workspace (D-52), the last workspace at launch (WS-04), switch, create, rename, delete, the limit, a bad title, and storage errors. The task raised D-59: the snapshot tests of SwiftUI views run in `PointerDeviceTests` with the window scene of the app, through the new `make snapshots` target. The selector takes its clock values and IDs through closures, so the app can give it the one clock that the canvas also uses (task 3.9).
+
 ### 3.9 Composition and canvas
 
 1. `PointerApp` opens the repository and the device state. It makes the clock from the `lastTimestamp` of the library and the `DeviceID` of the device state.
