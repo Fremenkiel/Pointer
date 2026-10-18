@@ -10,47 +10,59 @@ struct MigrationRunner {
         case newer(version: Int64)
     }
 
-    /// Writes the pre-migration snapshot of a database with the given old version.
-    typealias Backup = (_ oldVersion: Int64) throws(PersistenceError) -> Void
-
     private let migrations: [Migration]
-    private let backup: Backup
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Persistence")
 
     /// Makes a runner.
     ///
     /// - Precondition: `migrations` is not empty and has the versions 1, 2, 3, and so on.
-    init(migrations: [Migration], backup: @escaping Backup) {
+    init(migrations: [Migration]) {
         precondition(!migrations.isEmpty, "A runner needs at least one migration")
         precondition(
             migrations.map(\.version) == Array(1...Int64(migrations.count)),
             "Migration versions must count up from 1"
         )
         self.migrations = migrations
-        self.backup = backup
     }
 
     /// The newest schema version of the runner.
     var targetVersion: Int64 { Int64(migrations.count) }
 
+    /// Returns the old version if the database needs a pre-migration snapshot before `run`.
+    ///
+    /// An empty database of version 0 needs none, because it holds no data.
+    ///
+    /// - Throws: `PersistenceError.sqlite` if the version does not read.
+    func snapshotVersion(of connection: SQLiteConnection) throws(PersistenceError) -> Int64? {
+        let version = try connection.integer("PRAGMA user_version")
+        return version > 0 && version < targetVersion ? version : nil
+    }
+
     /// Runs the missing migrations on `connection` in one transaction.
     ///
-    /// An empty database gets the newest schema without a snapshot. An older database gets a
-    /// snapshot first. If a step fails, the transaction rolls back and the old schema stays.
+    /// An empty database gets the newest schema. If a step fails, the transaction rolls back and
+    /// the old schema stays.
     ///
+    /// - Precondition: If `snapshotVersion(of:)` gives a version, the snapshot exists, and the
+    ///   caller says so with `hasSnapshot` (storage.md section 6).
     /// - Returns: `.newer` without a change if the database is newer than the runner knows.
-    /// - Throws: `PersistenceError.unknownSchema` for version 0 with tables, the error of
-    ///   `backup`, or `PersistenceError.sqlite` for a failed step.
-    func run(on connection: SQLiteConnection) throws(PersistenceError) -> Outcome {
+    /// - Throws: `PersistenceError.unknownSchema` for version 0 with tables, or
+    ///   `PersistenceError.sqlite` for a failed step.
+    func run(
+        on connection: SQLiteConnection,
+        hasSnapshot: Bool
+    ) throws(PersistenceError) -> Outcome {
         let version = try connection.integer("PRAGMA user_version")
         guard version <= targetVersion else { return .newer(version: version) }
         guard version < targetVersion else { return .current }
+        precondition(
+            version == 0 || hasSnapshot,
+            "Version \(version) migrates only after a snapshot"
+        )
         if version == 0 {
             guard try connection.integer("SELECT count(*) FROM sqlite_schema") == 0 else {
                 throw .unknownSchema
             }
-        } else {
-            try backup(version)
         }
         try migrate(connection, from: version)
         return .current

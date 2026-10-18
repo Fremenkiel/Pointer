@@ -24,10 +24,9 @@ struct FixtureTests {
     @Test("The fixture of version 1 opens without a migration and gives the expected live rows")
     func readsRows() throws {
         let fixture = try TestLibrary(fixture: "library-v1")
-        let backups = Recorder()
-        let runner = MigrationRunner(migrations: Migration.library) { backups.add($0) }
-        #expect(try runner.run(on: fixture.connection) == .current)
-        #expect(backups.versions.isEmpty)
+        let runner = MigrationRunner(migrations: Migration.library)
+        #expect(try runner.snapshotVersion(of: fixture.connection) == nil)
+        #expect(try runner.run(on: fixture.connection, hasSnapshot: false) == .current)
 
         let workspaces = try fixture.rows(WorkspaceRow.selectLive, WorkspaceRow.read)
         #expect(workspaces == [try Values.workspace()])

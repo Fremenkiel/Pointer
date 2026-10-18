@@ -13,8 +13,8 @@ struct TestLibrary {
     init(file: String = "library.sqlite") throws {
         folder = try TemporaryFolder()
         connection = try SQLiteConnection(path: folder.path(file), mode: .readWrite)
-        let runner = MigrationRunner(migrations: Migration.library) { _ in }
-        _ = try runner.run(on: connection)
+        let runner = MigrationRunner(migrations: Migration.library)
+        _ = try runner.run(on: connection, hasSnapshot: false)
     }
 
     /// Opens a copy of a fixture database of the test bundle.
