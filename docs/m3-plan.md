@@ -119,6 +119,8 @@ Status: done on 2026-10-18 in commits bb9fbbd, ac05381, 05b9150, cec3a3c, and fd
 
 Done when: the snapshot test compares all rows of the snapshot with the live database. A snapshot that stops before the rename leaves no file in `Backups/`. A save during a snapshot does not wait for the snapshot.
 
+Status: done on 2026-10-18 in commits 249c4c0 and 99f3132. The snapshot test compares all rows of each table in both directions and passes `PRAGMA integrity_check`. A snapshot that stops before the rename leaves no file in `Backups/`. On the Mac and on the iPad, saves run and finish while a snapshot runs. One save per snapshot, the save at its end, waits 40 to 45 ms on the iPad, most likely for the final sync of the snapshot file. It is below the budget of 50 ms and off the main actor, and it happens at most once a day. Task 3.9 supplies the idle signal.
+
 ### 3.7 Device state (Tier A)
 
 1. Add `DeviceStateStore`, an actor that owns `device.sqlite` in `Library/Application Support/Pointer/` (storage.md sections 2 and 10, D-53). It uses the wrapper of task 3.3.
@@ -215,3 +217,23 @@ Save times on the iPad Pro 11-inch (M4), Release configuration, 50 saves each (P
 | Line coverage of `Persistence` | at least 90 % | 91.85 % |
 | Assertion density of `Persistence` | at least 2.0 | 2.06 |
 | Rows lost in 10 s of strokes without a pause | at most 1 s | at most 1 s at each step of 100 ms |
+
+### 4.6 Snapshot writer
+
+iPad Pro 11-inch (M4), Release configuration. The library holds 20,000 strokes of 300 points (the strokes of D-56). Saves of 10 strokes run again and again while the snapshot runs. Each line is one run.
+
+| Run | Snapshot (95 MB) | Saves during it | Median | 99th percentile | Slowest save |
+|---|---|---|---|---|---|
+| 1 | 253 ms | 641 | - | - | 44.71 ms |
+| 2 | 234 ms | 645 | 0.27 ms | 0.80 ms | 39.56 ms |
+| 3 | 232 ms | 630 | 0.26 ms | 0.81 ms | 39.76 ms |
+| 4 | 233 ms | 630 | 0.27 ms | 0.73 ms | 39.50 ms |
+| 5 | 232 ms | 632 | 0.27 ms | 0.77 ms | 40.57 ms (the last save) |
+| 6 | 237 ms | 644 | 0.27 ms | 0.79 ms | 41.09 ms (the last save) |
+
+Control without a snapshot, 640 saves of 10 strokes on the same library: median 0.16 ms, 99th percentile 7.3 to 7.6 ms, slowest 8.53 and 10.22 ms. The checkpoints of the WAL file cause the slower saves. Budget: 50 ms per save.
+
+| Item | Target | Result |
+|---|---|---|
+| Line coverage of `Persistence` | at least 90 % | 91.79 % |
+| Assertion density of `Persistence` | at least 2.0 | 2.02 |
