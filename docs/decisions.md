@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-57 on the same day.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-58 on the same day.
 
 Status values: Open, Decided, Replaced.
 
@@ -65,6 +65,7 @@ Status values: Open, Decided, Replaced.
 | D-55 | Saved strokes of the `-fillStrokes` launch argument | Not saved | Decided (2026-10-18) |
 | D-56 | Content of M3 acceptance 3 | 20,000 strokes of 300 points, 5,000 cards, 5,000 text boxes, to the first frame | Decided (2026-10-18) |
 | D-57 | The unit of the title and text length limits | Unicode code points, as SQLite `length()` counts | Decided (2026-10-18) |
+| D-58 | Stored form of the `library` rows | Decimal version, hex clock value, lowercase device UUID | Decided (2026-10-18) |
 
 ## Details
 
@@ -490,6 +491,12 @@ Status values: Open, Decided, Replaced.
 - Options: (a) Swift counts Unicode code points (`unicodeScalars.count`), the same unit as `length()`. The schema stays as it is. A title of emoji reaches the limit with fewer visible characters. (b) Swift counts grapheme clusters, and the `CHECK` constraints change to a larger code point limit, for example 8 times the limit. The schema changes before version 1 ships.
 - Recommendation: (a). The two checks then use one unit, so a value that passes Swift always passes SQLite. The limits are generous for typed titles and notes.
 - Addition by the product owner on 2026-10-18, raised by task 3.3: SQLite `length()` stops at the first U+0000. A title "\0abc" counts 4 in Swift and 0 in SQLite, and text after a U+0000 escapes the limit. Thus `Model` refuses U+0000 in titles and texts with `ModelError.nullCharacter`.
+
+### D-58 Stored form of the `library` rows
+
+- Decided by the product owner on 2026-10-18: the recommendation. Raised by task 3.5 of [m3-plan.md](m3-plan.md).
+- [storage.md](storage.md) section 3.3 names four rows of the `library` table, but it gives the stored form of `lastTimestamp` only.
+- Recommendation: `formatVersion` holds the schema version at creation as decimal text, for example "1". `created` holds the clock value of the creation in the 56-digit hex form of `lastTimestamp`. `createdBy` holds the device ID as a lowercase UUID string. The repository writes the four rows when it creates the library.
 
 ## Points in the request that conflict or are not complete
 

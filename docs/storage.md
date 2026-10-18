@@ -83,7 +83,10 @@ CREATE TABLE library (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
 ) STRICT;
--- rows: formatVersion, created, createdBy, lastTimestamp
+-- rows: formatVersion  schema version at creation, decimal text, for example "1"
+--       created        clock value of the creation, 56 lowercase hex digits
+--       createdBy      device ID, lowercase UUID string
+--       lastTimestamp  largest clock value of the library, 56 lowercase hex digits (D-58)
 
 CREATE TABLE workspace (
     id         BLOB PRIMARY KEY,
