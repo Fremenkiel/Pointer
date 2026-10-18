@@ -42,11 +42,10 @@
 			);
 			target = B0000000000000000000A001 /* PointerApp */;
 		};
-		B0000000000000000000E002 /* Exceptions for "RenderingTests" folder in "PointerDeviceTests" target */ = {
+		B0000000000000000000E002 /* Exceptions for "Packages/Rendering/Tests/RenderingTests" folder in "PointerDeviceTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				InkImageTests.swift,
-				References,
 				Snapshot.swift,
 			);
 			target = B0000000000000000000A002 /* PointerDeviceTests */;
@@ -62,15 +61,15 @@
 			path = PointerApp;
 			sourceTree = "<group>";
 		};
-		B0000000000000000000G004 /* CanvasFeatureTests */ = {
+		B0000000000000000000G004 /* Packages/CanvasFeature/Tests/CanvasFeatureTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Packages/CanvasFeature/Tests/CanvasFeatureTests;
 			sourceTree = "<group>";
 		};
-		B0000000000000000000G005 /* RenderingTests */ = {
+		B0000000000000000000G005 /* Packages/Rendering/Tests/RenderingTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				B0000000000000000000E002 /* Exceptions for "RenderingTests" folder in "PointerDeviceTests" target */,
+				B0000000000000000000E002 /* Exceptions for "Packages/Rendering/Tests/RenderingTests" folder in "PointerDeviceTests" target */,
 			);
 			path = Packages/Rendering/Tests/RenderingTests;
 			sourceTree = "<group>";
@@ -109,8 +108,8 @@
 			isa = PBXGroup;
 			children = (
 				B0000000000000000000G002 /* PointerApp */,
-				B0000000000000000000G004 /* CanvasFeatureTests */,
-				B0000000000000000000G005 /* RenderingTests */,
+				B0000000000000000000G004 /* Packages/CanvasFeature/Tests/CanvasFeatureTests */,
+				B0000000000000000000G005 /* Packages/Rendering/Tests/RenderingTests */,
 				B0000000000000000000G003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -168,8 +167,8 @@
 				B0000000000000000000T001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				B0000000000000000000G004 /* CanvasFeatureTests */,
-				B0000000000000000000G005 /* RenderingTests */,
+				B0000000000000000000G004 /* Packages/CanvasFeature/Tests/CanvasFeatureTests */,
+				B0000000000000000000G005 /* Packages/Rendering/Tests/RenderingTests */,
 			);
 			name = PointerDeviceTests;
 			packageProductDependencies = (
