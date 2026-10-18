@@ -89,6 +89,8 @@ Status: done on 2026-10-18 in commits 999582f, a96e6a1, and 439f1f1. The tests c
 
 Done when: a round-trip test passes for each row type and the point BLOB. Each `CHECK` refuses a value one past its limit. The fixture test opens version 1 and reads the expected rows.
 
+Status: done on 2026-10-18 in commit 6c63408. The round-trip tests pass for each row type and the point BLOB, also at 16,384 points. Each `CHECK` takes its limit and refuses one past it. The fixture test opens version 1 without a migration, compares its schema with a new library, and reads the expected live rows. The decoder also refuses a point that is not finite, because such a point breaks the `Rect` precondition of the stroke bounds. The pre-migration snapshot is a function that task 3.6 supplies. Task 3.5 writes the `library` rows.
+
 ### 3.5 Repository actor (Tier A)
 
 1. Add `SQLiteLibraryRepository`, an actor with a custom serial executor on a `DispatchSerialQueue` (architecture.md section 11).
@@ -184,3 +186,13 @@ Done when: all four acceptance criteria of M3 pass, and the results are in secti
 | Line coverage of `Persistence` | at least 90 % | 93.33 % |
 | Assertion density of `Persistence` | at least 2.0 | 2.00 |
 | Tests of the wrapper | open, settings, each value type, failed statement | 17 tests pass |
+
+### 4.4 Schema, codecs, and migrations
+
+| Item | Target | Result |
+|---|---|---|
+| Line coverage of `Persistence` | at least 90 % | 93.10 % |
+| Assertion density of `Persistence` | at least 2.0 | 2.00 |
+| Round trip of each row type and the point BLOB | passes | passes |
+| `CHECK` at the limit and one past it | refuses one past | refuses one past |
+| Fixture of version 1 | opens and reads | opens and reads |
