@@ -70,4 +70,23 @@ struct ValueCodecTests {
             try ValueCodec.identifier(Data(count: count), as: StrokeID.self)
         }
     }
+
+    @Test("A clock value goes to 56 lowercase hex digits and back unchanged (D-58)")
+    func hexRoundTrip() throws {
+        let hex = ValueCodec.hex(Values.early)
+        #expect(hex == "0000018bcfe56800000000000100000000000000000000000000000000".prefix(56))
+        #expect(hex.count == 56)
+        #expect(try ValueCodec.timestamp(hex: hex) == Values.early)
+    }
+
+    @Test(
+        "A hex clock value with a wrong length, capitals, or a non-hex character throws",
+        arguments: [
+            String(repeating: "0", count: 55), String(repeating: "A", count: 56),
+            String(repeating: "g", count: 56),
+        ]
+    )
+    func badHex(hex: String) {
+        #expect(throws: PersistenceError.self) { try ValueCodec.timestamp(hex: hex) }
+    }
 }

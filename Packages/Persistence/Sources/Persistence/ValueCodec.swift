@@ -10,6 +10,8 @@ enum ValueCodec {
     private static let wallByteCount = 8
     private static let counterByteCount = 4
     private static let bitsPerByte = 8
+    private static let hexRadix = 16
+    private static let hexDigitsPerByte = 2
 
     /// Returns the 28-byte big-endian form of `timestamp`. The byte order equals the clock order.
     static func data(_ timestamp: HybridTimestamp) -> Data {
@@ -35,6 +37,35 @@ enum ValueCodec {
         let counter = UInt32(truncatingIfNeeded: bigEndian(bytes[wallByteCount..<counterEnd]))
         let device = DeviceID(rawValue: try uuid(Data(bytes[counterEnd...])))
         return HybridTimestamp(wallMillis: wall, counter: counter, device: device)
+    }
+
+    /// Returns the clock value as 56 lowercase hex digits, the form of the `library` rows (D-58).
+    static func hex(_ timestamp: HybridTimestamp) -> String {
+        let digits = data(timestamp).map { byte in
+            String(byte, radix: hexRadix).leftPadded(to: hexDigitsPerByte)
+        }
+        return digits.joined()
+    }
+
+    /// Returns the clock value of 56 lowercase hex digits.
+    ///
+    /// - Throws: `PersistenceError.corruptValue` for another length or a character that is not a
+    ///   lowercase hex digit.
+    static func timestamp(hex: String) throws(PersistenceError) -> HybridTimestamp {
+        let characters = Array(hex)
+        guard characters.count == timestampByteCount * hexDigitsPerByte, hex == hex.lowercased()
+        else {
+            throw .corruptValue(reason: "hex clock value of \(characters.count) characters")
+        }
+        var data = Data(capacity: timestampByteCount)
+        for start in stride(from: 0, to: characters.count, by: hexDigitsPerByte) {
+            let pair = String(characters[start..<start + hexDigitsPerByte])
+            guard let byte = UInt8(pair, radix: hexRadix) else {
+                throw .corruptValue(reason: "hex clock value has a character that is not hex")
+            }
+            data.append(byte)
+        }
+        return try timestamp(data)
     }
 
     /// Returns the 16 bytes of the UUID of `identifier`.
@@ -88,5 +119,12 @@ enum ValueCodec {
             "A big-endian value of \(bytes.count) bytes does not fit"
         )
         return bytes.reduce(UInt64(0)) { ($0 << bitsPerByte) | UInt64($1) }
+    }
+}
+
+extension String {
+    /// Returns the string with leading zeros up to `length` characters.
+    fileprivate func leftPadded(to length: Int) -> String {
+        String(repeating: "0", count: max(0, length - count)) + self
     }
 }
