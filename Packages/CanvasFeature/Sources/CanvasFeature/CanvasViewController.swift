@@ -36,6 +36,8 @@ public final class CanvasViewController: UIViewController {
         renderer = dependencies.renderer
         if let camera = dependencies.camera { renderer.camera = camera }
         canvasView = CanvasView(renderer: renderer)
+        // `applyCamera` sets the width only when the zoom changes, so a stored zoom needs it here.
+        canvasView.liveCanvas.tool = PenTool.inkingTool(zoom: renderer.camera.zoom)
         content = dependencies.content
         repository = dependencies.repository
         onCameraRest = dependencies.onCameraRest
