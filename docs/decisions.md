@@ -80,6 +80,7 @@ Status values: Open, Decided, Replaced.
 | D-70 | A tool change during a pencil touch | The change takes effect at the next pencil down | Decided (2026-10-19) |
 | D-71 | Short parts and the stroke limit after a cut | Drop parts shorter than the pen width. An erase can go past the stroke limit. | Decided (2026-10-19) |
 | D-72 | The shape bound of D-65 after a cut | Keep the cut rule. The change is at most half the distance to the dropped point. | Decided (2026-10-19) |
+| D-73 | The stroke count after an erase passes the stroke limit | Open. Recommendation: a hard bound of 210,000 strokes | Open (2026-10-19) |
 
 ## Details
 
@@ -657,6 +658,23 @@ Status values: Open, Decided, Replaced.
   - (c) Change the cut rule to option (c) or (d) of D-65: a trim range or a refit.
 - Recommendation: (a). It keeps the code, and it states a bound that the test can check for every segment.
 - Effect: D-65, architecture.md section 4.4, and the task 3.2 target state the bound of half the distance. The test checks it for each part.
+
+### D-73 The stroke count after an erase passes the stroke limit
+
+- Open. Raised by M4 task 3.3 on 2026-10-19.
+- D-71 lets an erase take a canvas past `Limits.maxStrokesPerCanvas` (200,000), because an erase never fails. The pen then refuses new strokes. M4 task 3.1 implements this in `Model`.
+- Three other parts of the code stop at the limit:
+  - The load of a canvas in `Persistence` reads at most 200,000 strokes. It skips the other rows and reports a fault (storage.md section 5). After a new launch, the strokes above the limit do not show, and the app reports damaged data.
+  - `CanvasViewController` stops with a precondition failure if the loaded strokes do not fit the limit.
+  - `StrokeStore.add` in `Rendering` stops with a precondition failure at the limit. The parts of an erase at the limit thus stop the app.
+- No document gives a bound for the count above the limit. Each erase can add parts, so the count can grow with each erase. FLOW-03 needs a named bound for each collection.
+- Options:
+  - (a) Add `Limits.maxStrokesAfterErase`, for example 210,000, 5 % above the limit. The load, the canvas, and the renderer accept up to this bound. An erase whose parts would pass it removes the strokes that it touches whole, without parts. Thus an erase never fails and never passes the bound.
+  - (b) Same bound as (a), but an erase whose parts would pass it fails with the limit message. This breaks "an erase never fails" of D-71 at the bound only.
+  - (c) Change D-71: an erase at the limit removes the strokes that it touches whole, so the count never passes 200,000.
+- Recommendation: (a). It keeps D-71 for each normal case, and every part of the code has one named bound. The load reads at most 210,000 strokes, so its time and memory grow by at most 5 % at the bound.
+- Effect: the pen keeps its limit of 200,000. The load, `CanvasViewController`, the renderer, and `EraseStrokes` use the new bound. Architecture.md section 10 and storage.md section 5 get the new limit.
+- Tasks that wait: M4 task 3.5 sends the parts of an erase to the renderer. Tasks 3.3 and 3.4 do not depend on the decision.
 
 ## Points in the request that conflict or are not complete
 

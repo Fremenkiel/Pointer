@@ -80,6 +80,15 @@ Done when: a snapshot test draws three crossing strokes, removes the middle one,
 
 Requirement and rules: UNDO-02, TEST-07, D-38, D-66.
 
+Status: done on 2026-10-19 in commit 113d4c1, and `make check` passes. The snapshot test `redraw-remove-middle` passes. Its comparison with a fresh build of the two other strokes gives a largest difference of at most 1 in each pixel of the texture. A stroke removed after the first chunk of a build is not in the finished build, for each of the three strokes. The task made these choices inside the decisions:
+
+- The inbox holds one ordered list of edits for handoffs, erases, undo steps, and redo steps. Thus an add and its undo in the same frame keep their order.
+- The clear of the area is a triangle with a clear pipeline and a scissor rectangle, because the load action of Metal clears the whole texture.
+- The scissor rectangle has a margin of 3 pixels for the anti-aliased edge.
+- `RedrawTests.swift` uses `Snapshot.swift`, so it stays out of `PointerDeviceTests`, as `InkImageTests.swift` does.
+
+While this task ran, it raised D-73: D-71 lets an erase pass the stroke limit, but the load, the canvas, and the renderer stop at it. Task 3.5 waits for D-73.
+
 ### 3.4 Eraser mask (Tier B)
 
 1. Add a mask texture of the format `.r8Unorm` and the size of the committed texture.
