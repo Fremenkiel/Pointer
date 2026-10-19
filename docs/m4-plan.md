@@ -269,7 +269,7 @@ The changes since the first run:
 2. Commit b6e529f: an erase, its undo, and its redo redraw only the area of the eraser path. The redraw draws only the segments that can touch the area, and the added strokes are not drawn in full.
 3. Commit a64adcd: the canvas keeps its session when it leaves the screen, not at each step.
 
-The runs after these changes found the main cost on the render thread: `StrokeStore.remove` of 1,000 to 2,000 strokes took 20 to 47 ms. The search in a cell of `SpatialGrid` ran as unspecialized generic code from another module. Commit 1 of the grid fix makes the removal inlinable: 2,000 removals take 1.3 ms on the Mac instead of 72 ms.
+The runs after these changes found the main cost on the render thread: `StrokeStore.remove` of 1,000 to 2,000 strokes took 20 to 47 ms. The search in a cell of `SpatialGrid` ran as unspecialized generic code from another module. Commit aad6475 makes the removal inlinable: 2,000 removals take 1.3 ms on the Mac instead of 72 ms.
 
 The run after all changes, on the iPad Pro 11-inch (M4) in Release, with 5 rounds:
 
