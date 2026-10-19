@@ -287,3 +287,14 @@ M2 performance tests on the iPad Pro 11-inch (M4), Release, against the baseline
 
 No M2 test is more than 10 % slower. The M2 tests do not use `CanvasViewController`, so the changes of M3 in `CanvasFeature` do not reach them. Those changes add to the frame path only a comparison of two cameras and the rest check of the camera, without an allocation.
 
+### 4.10 Open bug: the tail of a fast stroke vanishes at the handoff
+
+Found by the product owner on 2026-10-19 during the manual test of task 3.9. When a short stroke is drawn fast, the last part of it, about half an inch, vanishes when the PencilKit overlay goes away. Slow strokes are fine. The bug exists already at `bc90ad8`, the last commit before M3, so M3 did not cause it. The facts so far:
+
+1. PencilKit calls `drawingDidChange` once per stroke, with the complete path. The handoff takes all points.
+2. The library holds the complete stroke. Its last point maps to the last PencilKit point.
+3. `CanvasRenderer.renderImage` draws the full tail, as far as PencilKit does.
+4. A later screenshot of the iPad shows the full tails, so a later rebuild of the committed texture brings them back.
+
+The cause lies in the on-screen path of a new stroke in `Rendering`. A separate task fixes it.
+
