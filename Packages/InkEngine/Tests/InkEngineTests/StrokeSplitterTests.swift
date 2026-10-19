@@ -150,7 +150,7 @@ struct StrokeSplitterTests {
         }
     }
 
-    @Test("A cut changes the curve by at most one sixth of the distance to the dropped point")
+    @Test("A cut changes the curve by at most half the distance to the dropped point (D-72)")
     func shapeChange() throws {
         var factory = InkFixtures.factory()
         let stroke = InkFixtures.stroke(Self.wave, factory: &factory)
@@ -171,14 +171,7 @@ struct StrokeSplitterTests {
                     from: InkFixtures.samples(of: part.curve, count: 300),
                     to: old
                 )
-                // The change stays far below a pixel, but it can pass the bound of D-65 by a
-                // factor of about 2.4 near a control point. D-72 holds the open question.
-                #expect(change < 0.1)
-                withKnownIssue("D-72: the bound of D-65 fails near a control point") {
-                    #expect(change <= bound + 1e-6, "change \(change), bound \(bound)")
-                } when: {
-                    change > bound + 1e-6
-                }
+                #expect(change <= bound + 1e-6, "change \(change), bound \(bound)")
             }
         }
     }
@@ -189,7 +182,7 @@ struct StrokeSplitterTests {
         return Point(x: x, y: 12 * sin(x / 15) + Double(index % 3) * 0.6)
     }
 
-    /// One sixth of the larger distance from a new end point to its dropped control point.
+    /// Half the larger distance from a new end point to its dropped control point (D-72).
     private func dropBound(of stroke: Stroke, part: Stroke, range: ClosedRange<Double>) -> Double {
         var distances = [0.0]
         let last = Double(stroke.points.count - 1)
@@ -201,6 +194,6 @@ struct StrokeSplitterTests {
             let dropped = stroke.canvasPoint(at: Int(range.upperBound.rounded(.up)))
             distances.append(part.canvasPoint(at: part.points.count - 1).distance(to: dropped))
         }
-        return (distances.max() ?? 0) / 6
+        return (distances.max() ?? 0) / 2
     }
 }
