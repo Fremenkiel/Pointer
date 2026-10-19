@@ -29,6 +29,7 @@ let package = Package(
                 .product(name: "Persistence", package: "Persistence"),
                 .product(name: "Rendering", package: "Rendering"),
             ],
+            resources: [.process("Resources")],
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
         .testTarget(

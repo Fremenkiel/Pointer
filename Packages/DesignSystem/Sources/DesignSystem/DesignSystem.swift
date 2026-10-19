@@ -16,6 +16,8 @@ public enum DesignSystem {
         public static let chromeSelection = SwiftUI.Color(white: 0.26)
         /// The text of a secondary line, for example a message.
         public static let chromeSecondary = SwiftUI.Color(white: 0.65)
+        /// The icon of a control that is off, for example undo with an empty history.
+        public static let chromeDisabled = SwiftUI.Color(white: 0.4)
     }
 
     /// The spacing tokens, in points.
@@ -65,5 +67,9 @@ public enum DesignSystem {
         public static let rename = "pencil"
         /// Deletes an item.
         public static let delete = "trash"
+        /// Undoes the last step (UNDO-01).
+        public static let undo = "arrow.uturn.backward"
+        /// Redoes the last undone step (UNDO-01).
+        public static let redo = "arrow.uturn.forward"
     }
 }

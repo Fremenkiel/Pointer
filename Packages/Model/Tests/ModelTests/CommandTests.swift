@@ -128,4 +128,35 @@ struct CommandTests {
         #expect(second.modified > first.modified)
         #expect(!second.isDeleted)
     }
+
+    @Test("A new load takes the session records back, and an undo after it restores the stroke")
+    func adoptAfterReload() throws {
+        var (rig, loaded) = try Self.rig()
+        let command = EraseStrokes(removed: [loaded[0]], parts: [rig.stroke(x: 70)])
+        _ = try rig.apply(command)
+        let session = rig.content.erased
+        // The library loads the live strokes only: the parts, without the removed stroke.
+        var reloaded = CanvasContent(canvasID: Fixtures.canvas)
+        for stroke in rig.content.strokes.values {
+            try reloaded.add(stroke)
+        }
+        let stale = EraseRecord(
+            strokeID: loaded[1].id,
+            erased: Fixtures.time,
+            modified: Fixtures.time,
+            isDeleted: false
+        )
+        #expect(
+            reloaded.adoptSessionRecords(session.merging([loaded[1].id: stale]) { a, _ in a }) == 1
+        )
+        rig.content = reloaded
+        let rows = try rig.revert(command)
+        #expect(
+            rows.compactMap(\.eraseRecord).allSatisfy {
+                $0.strokeID == loaded[0].id ? $0.isDeleted : !$0.isDeleted
+            }
+        )
+        #expect(rig.content.strokes[loaded[0].id] != nil)
+        #expect(rows.compactMap(\.stroke).isEmpty)
+    }
 }

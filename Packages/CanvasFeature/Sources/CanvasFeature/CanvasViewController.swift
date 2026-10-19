@@ -17,6 +17,10 @@ public final class CanvasViewController: UIViewController {
     var content: CanvasContent
     /// The undo and redo steps of the canvas (D-12).
     var history = History()
+    /// The histories of the app, or `nil` for a canvas whose history ends with it.
+    let sessions: CanvasSessions?
+    /// The state of the undo and redo buttons.
+    let historyControls = HistoryControls()
     /// The tool and the rules of a tool change (D-70).
     private(set) var toolState = ToolState()
     /// The samples of the running eraser gesture in view space, or `nil` without a gesture.
@@ -48,6 +52,13 @@ public final class CanvasViewController: UIViewController {
         content = dependencies.content
         clock = dependencies.clock
         repository = dependencies.repository
+        sessions = dependencies.sessions
+        if let session = dependencies.sessions?.session(for: dependencies.canvasID) {
+            history = session.history
+            // The content is new, so it holds no erase record yet.
+            let skipped = content.adoptSessionRecords(session.erased)
+            assert(skipped == 0, "\(skipped) erase records of the session do not fit the load")
+        }
         onCameraRest = dependencies.onCameraRest
         cameraController = CameraController(camera: renderer.camera, viewSize: .zero)
         let converter = PencilKitStrokeConverter(
@@ -115,15 +126,19 @@ public final class CanvasViewController: UIViewController {
     override public func viewDidLoad() {
         super.viewDidLoad()
         canvasView.liveCanvas.delegate = self
-        handoff.onStrokes = { [weak self] strokes in
-            guard let self else { return }
-            send(add(strokes).map(LibraryChange.stroke))
-        }
+        handoff.onStrokes = { [weak self] strokes in self?.addPenStrokes(strokes) }
         handoff.remainingCapacity = { [weak self] in
             Limits.maxStrokesPerCanvas - (self?.content.strokes.count ?? Limits.maxStrokesPerCanvas)
         }
         canvasView.inkView.onFrame = { [weak self] time in self?.stepCamera(to: time) ?? false }
         installGestures()
+        installHistoryButtons()
+    }
+
+    /// Takes the key commands of the hardware keyboard.
+    override public func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        becomeFirstResponder()
     }
 
     /// Keeps the camera controller on the size of the view.
@@ -134,6 +149,17 @@ public final class CanvasViewController: UIViewController {
 
     private var viewSize: Size {
         Size(width: canvasView.bounds.width, height: canvasView.bounds.height)
+    }
+
+    /// Adds the strokes of one pen path as one undo step (task 3.6 of docs/m4-plan.md). The
+    /// handoff gave them to the renderer already.
+    func addPenStrokes(_ strokes: [Stroke]) {
+        guard !strokes.isEmpty else { return }
+        do {
+            send(try perform(AddStroke(strokes: strokes)))
+        } catch {
+            logger.error("The canvas did not take a pen stroke: \(String(describing: error))")
+        }
     }
 
     /// Adds strokes to the content and returns the ones that it took. At the stroke limit, a

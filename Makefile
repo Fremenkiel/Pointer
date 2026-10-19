@@ -47,7 +47,8 @@ test:
 # PointerDeviceTests on the simulator (D-59).
 snapshots:
 	$(XCODEBUILD) -destination '$(SIMULATOR)' -quiet \
-		-only-testing:PointerDeviceTests/WorkspaceSelectorSnapshotTests test
+		-only-testing:PointerDeviceTests/WorkspaceSelectorSnapshotTests \
+		-only-testing:PointerDeviceTests/HistoryButtonsSnapshotTests test
 	@echo "snapshots: done"
 
 # STYLE-04. The fixtures hold deliberate violations, so the formatter skips them.

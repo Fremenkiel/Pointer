@@ -45,6 +45,8 @@ pointer/
     Export/                Layer 1: PDF export
     DesignSystem/          Layer 1: tokens and shared small views
     CanvasFeature/         Layer 2: canvas screen
+      Tests/CanvasFeatureSnapshotTests/     view snapshots, part of PointerDeviceTests only (D-59)
+        References/        reference PNGs of the snapshot tests (TEST-07)
     WorkspaceFeature/      Layer 2: workspace selector
       Tests/WorkspaceFeatureSnapshotTests/  view snapshots, part of PointerDeviceTests only (D-59)
         References/        reference PNGs of the snapshot tests (TEST-07)

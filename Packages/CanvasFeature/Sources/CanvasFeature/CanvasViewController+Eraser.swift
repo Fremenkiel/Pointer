@@ -37,7 +37,7 @@ extension CanvasViewController {
             return
         }
         do {
-            let rows = try history.perform(command, on: &content, clock: &clock.factory.clock)
+            let rows = try perform(command)
             renderer.change(
                 removing: command.removed.map(\.id),
                 adding: command.parts,

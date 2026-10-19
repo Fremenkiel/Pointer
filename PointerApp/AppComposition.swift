@@ -20,6 +20,8 @@ final class AppComposition {
     var writer: SnapshotWriter?
     var clock: AppClock?
     var selector: WorkspaceSelectorModel?
+    /// The undo history of each canvas while the app runs, across workspace switches (D-12).
+    let sessions = CanvasSessions()
     /// The camera of the last workspace from the launch read. The first canvas uses it.
     var launchCamera: (canvas: CanvasID, camera: Camera)?
     var isReadOnly = false
@@ -163,6 +165,7 @@ final class AppComposition {
             )
             dependencies.camera = camera
             dependencies.repository = repository
+            dependencies.sessions = sessions
             dependencies.transientStrokes = fillStrokes(
                 canvasID: canvasID,
                 saved: content.strokes.count

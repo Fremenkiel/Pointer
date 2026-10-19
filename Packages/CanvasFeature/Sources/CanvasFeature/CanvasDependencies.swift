@@ -17,6 +17,8 @@ public struct CanvasDependencies {
     public var transientStrokes: [Stroke] = []
     /// The library that saves the new strokes, or `nil` for a canvas without storage.
     public var repository: (any LibraryRepository)?
+    /// The undo histories of the app, or `nil` for a canvas whose history ends with it (D-12).
+    public var sessions: CanvasSessions?
     /// Receives the camera when it comes to rest, for the device state (D-53).
     public var onCameraRest: @MainActor (Camera) -> Void = { _ in }
 

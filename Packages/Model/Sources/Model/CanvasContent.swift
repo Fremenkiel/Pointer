@@ -111,4 +111,27 @@ public struct CanvasContent: Sendable {
         erased[stroke.id] = tombstone
         return tombstone
     }
+
+    /// Takes the erase records of the session back after a new load of the canvas, so that an
+    /// undo after a workspace switch finds them (D-12).
+    ///
+    /// The library loads no erased stroke, so a stroke with a live record is not in `strokes`,
+    /// and a stroke with a tombstone is. A record that does not fit the loaded strokes is skipped:
+    /// the history step of its stroke then fails with a `CommandError`.
+    ///
+    /// - Precondition: The content holds no erase record yet.
+    /// - Returns: The number of skipped records.
+    public mutating func adoptSessionRecords(_ records: [StrokeID: EraseRecord]) -> Int {
+        precondition(erased.isEmpty, "The content already holds erase records")
+        var skipped = 0
+        for (id, record) in records {
+            guard record.strokeID == id, record.isDeleted == (strokes[id] != nil) else {
+                skipped += 1
+                continue
+            }
+            erased[id] = record
+        }
+        assert(erased.count + skipped == records.count, "Each record is taken or skipped")
+        return skipped
+    }
 }
