@@ -79,7 +79,7 @@ Status values: Open, Decided, Replaced.
 | D-69 | What M4 acceptance 2 measures | The command on the Mac, and the lift to the first frame on the iPad | Decided (2026-10-19) |
 | D-70 | A tool change during a pencil touch | The change takes effect at the next pencil down | Decided (2026-10-19) |
 | D-71 | Short parts and the stroke limit after a cut | Drop parts shorter than the pen width. An erase can go past the stroke limit. | Decided (2026-10-19) |
-| D-72 | The shape bound of D-65 after a cut | Open. Recommendation: keep the cut rule and state the measured bound | Open (2026-10-19) |
+| D-72 | The shape bound of D-65 after a cut | Keep the cut rule. The change is at most half the distance to the dropped point. | Decided (2026-10-19) |
 
 ## Details
 
@@ -568,7 +568,7 @@ Status values: Open, Decided, Replaced.
 - A stroke stores the control points of a uniform cubic B-spline (D-26). The eraser cuts the curve at a parameter value, not at a control point. Each end of a stroke uses a phantom point that mirrors the second point through the end point. Thus no part of the old curve can be stored exactly as a new stroke with the same rule.
 - Options:
   - (a) Cut at control points. A part keeps the control points outside the eraser circle and nothing else. Simple, but a part can end up to one point spacing away from the eraser edge, inside or outside the circle.
-  - (b) Add the cut point. A part keeps the control points outside the circle and gets the point of the curve at the cut as its new end point. The part ends exactly at the eraser edge. The shape changes only in the two segments next to the cut. The change is at most one sixth of the distance between the cut point and the dropped control point.
+  - (b) Add the cut point. A part keeps the control points outside the circle and gets the point of the curve at the cut as its new end point. The part ends exactly at the eraser edge. The shape changes only in the two segments next to the cut. The change is at most one sixth of the distance between the cut point and the dropped control point. D-72 corrects this bound to half the distance.
   - (c) Trim range. A part keeps all control points of the old stroke and stores a start and an end parameter. The shape stays exact. This changes D-26, `Stroke`, the schema (version 2 with a migration and a fixture), the shader, and the export.
   - (d) Refit. Sample the remaining curve and fit new control points within a tolerance. More points and more code than (b), with a shape that is only close.
 - Recommendation: (b). It keeps D-26 and the schema, and the change of shape stays below a pixel at normal point spacing. A Tier A test measures the largest change against the old curve.
@@ -645,7 +645,8 @@ Status values: Open, Decided, Replaced.
 
 ### D-72 The shape bound of D-65 after a cut
 
-- Open. Raised by M4 task 3.2 on 2026-10-19.
+- Decided by the product owner on 2026-10-19: option (a).
+- Raised by M4 task 3.2 on 2026-10-19.
 - D-65 and architecture.md section 4.4 say that a cut changes the curve by at most one sixth of the distance between the new end point and the dropped control point. Task 3.2 makes a test of this bound a "Done when" target.
 - The test fails. The cut rule of D-65 works as written, but the bound is too small. Near a cut close to a control point, the largest change is up to 2.4 times the bound, so about 0.4 times the distance.
 - The cause: the bound holds for the second segment of a part. There, only the dropped control point changes, and its weight is at most one sixth. In the first segment, the phantom point at the new end also changes, and the new end point has a weight of up to four sixths.
@@ -655,7 +656,7 @@ Status values: Open, Decided, Replaced.
   - (b) Keep the bound of one sixth for the second segment only. Add a test that the first segment changes by less than 0.1 canvas points at normal point spacing.
   - (c) Change the cut rule to option (c) or (d) of D-65: a trim range or a refit.
 - Recommendation: (a). It keeps the code, and it states a bound that the test can check for every segment.
-- Effect until a decision: the test of the bound records a known issue that names D-72. Each other target of task 3.2 passes.
+- Effect: D-65, architecture.md section 4.4, and the task 3.2 target state the bound of half the distance. The test checks it for each part.
 
 ## Points in the request that conflict or are not complete
 

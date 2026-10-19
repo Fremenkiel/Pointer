@@ -59,11 +59,11 @@ Status: done on 2026-10-19 in commit 652326a. 66 `Model` tests pass, and the lin
 4. Each part gets a new `StrokeID` and the `created` value of the clock. The width and the canvas stay the same as in the old stroke.
 5. Add a Tier A test that times `apply` and `revert` of an `EraseStrokes` with 1,000 strokes cut in two (D-69).
 
-Done when: these tests pass. A cut in the middle of a stroke leaves two parts. A cut at an end leaves one part. A path that misses the stroke leaves it as it is. A path over the whole stroke leaves no part. A stroke of one sample, which stores the point twice, goes away whole. A test measures the largest distance between a part and the old curve. It is at most one sixth of the distance from the new end point to the dropped control point. A part shorter than the pen width is dropped. The timing test records its result in section 4. Line coverage of `InkEngine` is at least 90 %, and its assertion density is at least 2.0.
+Done when: these tests pass. A cut in the middle of a stroke leaves two parts. A cut at an end leaves one part. A path that misses the stroke leaves it as it is. A path over the whole stroke leaves no part. A stroke of one sample, which stores the point twice, goes away whole. A test measures the largest distance between a part and the old curve. It is at most half the distance from the new end point to the dropped control point (D-72). A part shorter than the pen width is dropped. The timing test records its result in section 4. Line coverage of `InkEngine` is at least 90 %, and its assertion density is at least 2.0.
 
 Requirement and rules: TOOL-04, TEST-02, TEST-05, CONTRACT-02, D-06, D-26, D-65, D-69, D-71.
 
-Status: blocked by D-72. The code is in commit 40c0cba, and `make check` passes. Each target passes except the bound of the shape change. The cut rule of D-65 works, but a cut near a control point changes the curve by up to 2.4 times the bound of one sixth. The largest change in the tests is 0.043 canvas points. The test of the bound records a known issue that names D-72. The task made these choices inside the decisions:
+Status: done on 2026-10-19 in commits 40c0cba and 07c8562, and `make check` passes. The first test found that the bound of one sixth of D-65 fails near a control point, by up to 2.4 times. The product owner decided D-72: the cut rule stays, and the bound is half the distance. Each target now passes. The task made these choices inside the decisions:
 
 - The eraser covers a circle at each sample and the band between neighbor samples, so a fast pencil leaves no gap.
 - A curve point is covered if its distance to the eraser path is less than the radius plus half the stroke width.
@@ -161,7 +161,7 @@ Done when: both acceptance criteria pass, and the results are in section 4.
 |---|---|---|
 | A cut in the middle, a cut at an end, a miss, a whole stroke, a dot | 2, 1, 0 changes, 0, 0 parts | passes |
 | A part shorter than the pen width | dropped | passes |
-| Largest change of a part against the old curve (D-65) | at most 1/6 of the distance to the dropped point | fails, up to 2.4 times the bound (D-72) |
+| Largest change of a part against the old curve (D-72) | at most 1/2 of the distance to the dropped point | passes. The first measurement against 1/6 failed by up to 2.4 times. |
 | Largest change of a part in absolute terms, control points 1.7 to 3 points apart | none set | 0.012 to 0.043 canvas points |
 | Line coverage of `InkEngine` (TEST-02) | at least 90 % | 91.40 % |
 | Assertion density of `InkEngine` (CONTRACT-02) | at least 2.0 | 2.05 |
