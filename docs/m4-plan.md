@@ -42,6 +42,15 @@ Done when: each command passes the apply-then-revert test of TEST-09. A second t
 
 Requirement and rules: UNDO-02, UNDO-03, TEST-02, TEST-06, TEST-09, D-12, D-30, D-67, D-68.
 
+Status: done on 2026-10-19 in commit 652326a. 66 `Model` tests pass, and the line coverage of `Model` is 91.92 %. The task made these choices inside the decisions:
+
+- `AddStroke` holds all strokes of one pen path, so a path that the converter splits gives one step.
+- A command checks the content before it changes it. A thrown `CommandError` leaves the content and the history as they were.
+- A first apply returns the new stroke rows. A redo returns only the changed erase records, because the stroke rows exist.
+- A second erase of a stroke keeps the time of its first erase, because the stored row keeps it too (`EraseRow.upsert`).
+- The undo of an erase fails at the stroke limit only if it adds more strokes than it removes. An undo that shrinks the canvas never fails.
+- After the undo of an erase, the records of the removed strokes are tombstones, and the parts have live records. The test of D-67 makes sure that a stroke is live exactly when its record is a tombstone.
+
 ### 3.2 Hit test and stroke split (Tier A)
 
 1. Add the hit test to `InkEngine`. It takes the eraser path in canvas space, the radius in canvas units, and a stroke. It returns the curve parameters where the curve enters and leaves the circles. The test of a segment includes the half width of the stroke.
@@ -128,4 +137,13 @@ Done when: both acceptance criteria pass, and the results are in section 4.
 
 ## 4. Results
 
-No results yet.
+### 4.1 Commands and history
+
+| Item | Target | Result |
+|---|---|---|
+| Apply-then-revert test of `AddStroke`, 1 and 3 strokes (TEST-09) | live content equal | passes |
+| Apply-then-revert test of `EraseStrokes`, 0 and 2 parts (TEST-09) | live content equal | passes |
+| Erase records after the revert (D-67) | tombstones of live strokes | passes |
+| History of 0, 1, 500, and 501 steps (TEST-06) | at most 500 steps | passes |
+| Line coverage of `Model` (TEST-02) | at least 90 % | 91.92 % |
+| Assertion density of `Model` (CONTRACT-02) | at least 2.0 | 2.24 |
