@@ -159,6 +159,14 @@ Done when: snapshot tests cover the palette and the button for each tool (TEST-0
 
 Requirement and rules: TOOL-07, PEN-03, PEN-05, PEN-06, TEST-07, D-23, D-63, D-64.
 
+Status: the code is done in commit c0553fa, and `make check` passes. Four snapshot tests cover the palette and the button for the pen and for the eraser. Four tests cover the squeeze settings "Ignore" and "Run Shortcut", the anchor at the tip and at the last pencil location, the phase of the squeeze, and a pick in the palette. The squeeze and the button on the iPad wait for the product owner (task 3.9). The task made these choices inside the decisions:
+
+- The palette is a popover with an arrow. At a squeeze, it points at the tip. At a tap on the button, it opens under the button. A tap outside closes it.
+- Undo and redo in the palette keep it open, so that several steps need one squeeze.
+- The canvas gives the button as `toolButton`, and `AppViewController` places it to the right of the workspace selector. A switch of the workspace swaps the button with the canvas.
+- The pencil interaction handles the squeeze only. The double tap of PEN-01 stays in M7.
+- The new tokens are `Icon.pen` (`pencil.tip`) and `Icon.eraser` (`eraser`).
+
 ### 3.8 Acceptance tests
 
 1. Acceptance 1: the tests of task 3.1 for `AddStroke` and `EraseStrokes`.
