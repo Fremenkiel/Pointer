@@ -305,5 +305,5 @@ The investigation of 2026-10-19 found that the cause lies before Pointer gets th
 
 So PencilKit drops the end of a fast stroke at the lift, in its own overlay. Fact 3 above compared the final path, which never held the dropped end. Fact 4 shows only that the stored stroke is complete. Decision D-61 must choose the fix.
 
-The same build lost some whole strokes after the 1.5 s delay. The cause is not known yet. A removal of handed-off strokes that runs before PencilKit adds the next stroke to its drawing is a possible cause. It needs its own test.
+The same build lost some whole strokes after the 1.5 s delay. The normal build does not lose them (product owner, 2026-10-19), so only the delay of the diagnostic build caused it.
 

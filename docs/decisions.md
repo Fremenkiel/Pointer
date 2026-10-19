@@ -520,9 +520,9 @@ Status values: Open, Decided, Replaced.
 
 - Open. Raised by the open bug of [m3-plan.md](m3-plan.md) section 4.10 on 2026-10-19.
 - At the pencil lift, the final `PKStroke` of a fast stroke ends 18 to 60 points before the last pencil touch. The live PencilKit ink reaches the pencil, so its end vanishes at the lift. The product owner saw the end vanish while the overlay still showed the stroke. For a slow stroke, the gap is 2 to 11 points. Pointer stores and draws the final path exactly (D-26), so the renderer does not cause the loss.
-- Not known yet: whether PencilKit drops the end in every app, or only with the setup of Pointer, for example the monoline ink.
+- Apple Notes also drops the end of a fast stroke (product owner, 2026-10-19). So the setup of Pointer does not cause it.
 - Options: (a) accept the end that PencilKit gives. FEEL-03 then fails for fast strokes, by the behavior of PencilKit. (b) add control points after the last control point from the pencil touches that the final path does not reach. The stored stroke then reaches the pencil, but the PencilKit overlay still drops the end at the lift for a moment. This changes D-26. (c) find a PencilKit setup that keeps the end, if the cause is in the setup of Pointer.
-- Recommendation: first find out whether Apple Notes with the monoline pen also drops the end of a fast stroke. If it does not, look for (c). If it does, the choice is between (a) and (b).
+- Option (c) is not possible, because Apple Notes drops the end too. The choice is between (a) and (b).
 
 ## Points in the request that conflict or are not complete
 
