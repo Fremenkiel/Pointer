@@ -79,6 +79,7 @@ Status values: Open, Decided, Replaced.
 | D-69 | What M4 acceptance 2 measures | The command on the Mac, and the lift to the first frame on the iPad | Decided (2026-10-19) |
 | D-70 | A tool change during a pencil touch | The change takes effect at the next pencil down | Decided (2026-10-19) |
 | D-71 | Short parts and the stroke limit after a cut | Drop parts shorter than the pen width. An erase can go past the stroke limit. | Decided (2026-10-19) |
+| D-72 | The shape bound of D-65 after a cut | Open. Recommendation: keep the cut rule and state the measured bound | Open (2026-10-19) |
 
 ## Details
 
@@ -641,6 +642,20 @@ Status values: Open, Decided, Replaced.
 - Options for short parts: (a) drop a part whose curve is shorter than the pen width. (b) keep every part.
 - Options for the limit: (a) an erase can go past the limit. The pen then refuses new strokes with the limit message. (b) an erase at the limit fails with the limit message.
 - Recommendation: (a) in both. A speck is never what the user wants. An erase must never fail, and the parts of one gesture can only pass the limit by a small amount.
+
+### D-72 The shape bound of D-65 after a cut
+
+- Open. Raised by M4 task 3.2 on 2026-10-19.
+- D-65 and architecture.md section 4.4 say that a cut changes the curve by at most one sixth of the distance between the new end point and the dropped control point. Task 3.2 makes a test of this bound a "Done when" target.
+- The test fails. The cut rule of D-65 works as written, but the bound is too small. Near a cut close to a control point, the largest change is up to 2.4 times the bound, so about 0.4 times the distance.
+- The cause: the bound holds for the second segment of a part. There, only the dropped control point changes, and its weight is at most one sixth. In the first segment, the phantom point at the new end also changes, and the new end point has a weight of up to four sixths.
+- The change stays small in absolute terms. With control points 1.7 to 3 points apart, a smooth wave, a tight circle with a radius of 10 points, and a noisy line gave a largest change of 0.012, 0.032, and 0.043 canvas points. At zoom 8, 0.043 canvas points are 0.34 pixels.
+- Options:
+  - (a) Keep the cut rule of D-65. Change the bound in D-65, architecture.md section 4.4, and the test to "at most half the distance between the new end point and the dropped control point".
+  - (b) Keep the bound of one sixth for the second segment only. Add a test that the first segment changes by less than 0.1 canvas points at normal point spacing.
+  - (c) Change the cut rule to option (c) or (d) of D-65: a trim range or a refit.
+- Recommendation: (a). It keeps the code, and it states a bound that the test can check for every segment.
+- Effect until a decision: the test of the bound records a known issue that names D-72. Each other target of task 3.2 passes.
 
 ## Points in the request that conflict or are not complete
 

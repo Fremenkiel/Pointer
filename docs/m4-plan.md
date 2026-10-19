@@ -63,6 +63,13 @@ Done when: these tests pass. A cut in the middle of a stroke leaves two parts. A
 
 Requirement and rules: TOOL-04, TEST-02, TEST-05, CONTRACT-02, D-06, D-26, D-65, D-69, D-71.
 
+Status: blocked by D-72. The code is in commit 40c0cba, and `make check` passes. Each target passes except the bound of the shape change. The cut rule of D-65 works, but a cut near a control point changes the curve by up to 2.4 times the bound of one sixth. The largest change in the tests is 0.043 canvas points. The test of the bound records a known issue that names D-72. The task made these choices inside the decisions:
+
+- The eraser covers a circle at each sample and the band between neighbor samples, so a fast pencil leaves no gap.
+- A curve point is covered if its distance to the eraser path is less than the radius plus half the stroke width.
+- The hit test finds the segments near the path with one pass of outcodes over the points. It samples only those segments and refines each cut with 14 bisection steps.
+- The size of an eraser gesture has the bound `EraserPath.maxSamples`, equal to `Limits.maxPointsPerStroke`.
+
 ### 3.3 Remove strokes and redraw an area (Tier B)
 
 1. Add a public call to `CanvasRenderer` that removes strokes and adds strokes in one change, with an `onPresented` callback. The renderer uses it for an erase, an undo, and a redo.
@@ -147,3 +154,26 @@ Done when: both acceptance criteria pass, and the results are in section 4.
 | History of 0, 1, 500, and 501 steps (TEST-06) | at most 500 steps | passes |
 | Line coverage of `Model` (TEST-02) | at least 90 % | 91.92 % |
 | Assertion density of `Model` (CONTRACT-02) | at least 2.0 | 2.24 |
+
+### 4.2 Hit test and stroke split
+
+| Item | Target | Result |
+|---|---|---|
+| A cut in the middle, a cut at an end, a miss, a whole stroke, a dot | 2, 1, 0 changes, 0, 0 parts | passes |
+| A part shorter than the pen width | dropped | passes |
+| Largest change of a part against the old curve (D-65) | at most 1/6 of the distance to the dropped point | fails, up to 2.4 times the bound (D-72) |
+| Largest change of a part in absolute terms, control points 1.7 to 3 points apart | none set | 0.012 to 0.043 canvas points |
+| Line coverage of `InkEngine` (TEST-02) | at least 90 % | 91.40 % |
+| Assertion density of `InkEngine` (CONTRACT-02) | at least 2.0 | 2.05 |
+
+Timing of the D-69 content: 1,000 parallel strokes of 300 points, one eraser line of 2,001 samples that cuts each stroke in two. Median of 3 runs on the Mac, release build:
+
+| Step | Debug build | Release build |
+|---|---|---|
+| Split: hit test and parts of 1,000 strokes | 215 ms | 6.0 ms |
+| `apply` of `EraseStrokes` | 2.2 ms | 0.83 ms |
+| `revert` of `EraseStrokes` | 2.4 ms | 0.88 ms |
+| `apply` again (redo) | 2.2 ms | 0.69 ms |
+
+The Tier A test fails if `apply`, `revert`, or the redo takes 16 ms or more. The split runs at the lift, so the device test of task 3.8 counts it in the step of the erase.
+
