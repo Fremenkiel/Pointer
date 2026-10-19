@@ -20,7 +20,16 @@ let package = Package(
                 .product(name: "Model", package: "Model"),
             ],
             swiftSettings: [.treatAllWarnings(as: .error)]
-        )
+        ),
+        .testTarget(
+            name: "InkEngineTests",
+            dependencies: [
+                "InkEngine",
+                .product(name: "Geometry", package: "Geometry"),
+                .product(name: "Model", package: "Model"),
+            ],
+            swiftSettings: [.treatAllWarnings(as: .error)]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
