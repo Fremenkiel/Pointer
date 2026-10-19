@@ -524,6 +524,13 @@ Status values: Open, Decided, Replaced.
 - Options: (a) accept the end that PencilKit gives. FEEL-03 then fails for fast strokes, by the behavior of PencilKit. (b) add control points after the last control point from the pencil touches that the final path does not reach. The stored stroke then reaches the pencil, but the PencilKit overlay still drops the end at the lift for a moment. This changes D-26. (c) find a PencilKit setup that keeps the end, if the cause is in the setup of Pointer.
 - Option (c) is not possible, because Apple Notes drops the end too. The choice is between (a) and (b).
 
+### D-62 Window access in the open and memory tests of the canvas
+
+- Decided by the product owner on 2026-10-19: option (a).
+- The review of M3 on 2026-10-19 found that the open test of M3 acceptance 3 measured a stand-in path: the load and an offscreen image. The real open on the screen took 254 to 270 ms without nodes, not 197 ms. The memory budget of architecture.md section 12 had no test. Both tests must open the canvas in the window of the test host, so that its render thread runs. Only `UIApplication.shared` reaches that window, and the lint rule of ARCH-05 bans it in the test folder of `CanvasFeature`.
+- Options: (a) one `// swiftlint:disable:next arch_05_singletons` line in the shared open code of the tests, with a comment that names D-62, as D-44 does. (b) a path exclusion for `Packages/CanvasFeature/Tests/` in `.swiftlint.yml`. (c) no window: the tests draw frames by hand on a `CAMetalLayer`, without the render thread and the display link.
+- Effect: the rule ARCH-05 and `.swiftlint.yml` stay as they are.
+
 ## Points in the request that conflict or are not complete
 
 1. "Only three tools" and "drawing data structures": cards need a way in (D-08), and diagrams need a way to move things (D-10).

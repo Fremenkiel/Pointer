@@ -267,6 +267,15 @@ Control without a snapshot, 640 saves of 10 strokes on the same library: median 
 
 Baseline of acceptance 3 (PERF-03): median 197.4 ms on the iPad Pro 11-inch (M4).
 
+The review of 2026-10-19 found that this test measured a stand-in path: the load and an offscreen image, without the canvas screen and its render thread. The test now opens the canvas in the window of the test host, as the app does at a workspace switch (D-62). The clock stops at the end of the first frame that holds all strokes. A new test measures the memory budget of architecture.md section 12 with the same open.
+
+| Item | Target | Result |
+|---|---|---|
+| Open of the D-56 canvas on the screen, iPad Pro 11-inch (M4), Release, 10 opens | under 300 ms | median 274.8 ms, slowest 282.8 ms, of which the load takes 69 to 96 ms |
+| Memory growth of one open of the D-56 canvas, from the start of the load to the first frame, 3 runs | under 300 MB | 252, 253, and 253 MB, with the peak equal to the held value |
+
+New baselines (PERF-03): the open, median 274.8 ms. The memory, 253 MB. The memory test makes one open per run. A second open reuses the memory that the first canvas gave back to the allocator of the process.
+
 ### 4.9 Close of M3
 
 | Item | Target | Result |

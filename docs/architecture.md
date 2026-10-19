@@ -402,8 +402,8 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 | Pencil to ink | 13 ms goal, 20 ms limit | High-speed camera and the presented-time log (see [research.md](research.md) 3.4) |
 | Frame time while drawing | Under 3 ms CPU from the pencil event to the end of encoding, under 4 ms GPU | `OSSignposter` intervals in an `XCTOSSignpostMetric` test |
 | Dropped frames while drawing or panning | 0 per 10 s | Animation Hitches template |
-| Open a workspace with 20,000 strokes | Under 300 ms to first frame | `XCTClockMetric` |
+| Open a workspace with 20,000 strokes | Under 300 ms to first frame | `CanvasOpenPerformanceTests`: the open on the screen, timed with `ContinuousClock` |
 | Save after a stroke | Off the main actor, under 50 ms | Signpost |
-| Memory for a canvas with 20,000 strokes | Under 300 MB | `XCTMemoryMetric` |
+| Memory for a canvas with 20,000 strokes | Under 300 MB | `CanvasMemoryPerformanceTests`: the peak growth of `os_proc_available_memory` during the open |
 
 Performance tests run on a real iPad. If a measure is more than 10% worse than its baseline, the test fails.
