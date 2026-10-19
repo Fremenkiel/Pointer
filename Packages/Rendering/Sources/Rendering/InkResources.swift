@@ -12,6 +12,8 @@ final class InkResources {
     let queue: any MTLCommandQueue
     let inkPipeline: any MTLRenderPipelineState
     let compositePipeline: any MTLRenderPipelineState
+    /// Writes zero coverage, without blending. The redraw of an area uses it with a scissor.
+    let clearPipeline: any MTLRenderPipelineState
 
     /// Makes the resources on a device.
     ///
@@ -30,6 +32,7 @@ final class InkResources {
         self.queue = queue
         inkPipeline = try Self.makeInkPipeline(device: device, library: library)
         compositePipeline = try Self.makeCompositePipeline(device: device, library: library)
+        clearPipeline = try Self.makeClearPipeline(device: device, library: library)
     }
 
     /// The ink pipeline blends with `max` (D-38, review A-06). The result of a pixel is the
@@ -71,6 +74,22 @@ final class InkResources {
         }
         attachment.pixelFormat = drawableFormat
         assert(!attachment.isBlendingEnabled, "The composite pass replaces the drawable")
+        return try makePipeline(device: device, descriptor: descriptor)
+    }
+
+    private static func makeClearPipeline(
+        device: any MTLDevice,
+        library: any MTLLibrary
+    ) throws(RenderingError) -> any MTLRenderPipelineState {
+        let descriptor = MTLRenderPipelineDescriptor()
+        descriptor.label = "Clear"
+        descriptor.vertexFunction = library.makeFunction(name: "compositeVertex")
+        descriptor.fragmentFunction = library.makeFunction(name: "clearFragment")
+        guard let attachment = descriptor.colorAttachments[0] else {
+            throw .pipelineFailed("clear color attachment")
+        }
+        attachment.pixelFormat = committedFormat
+        assert(!attachment.isBlendingEnabled, "The clear replaces the coverage")
         return try makePipeline(device: device, descriptor: descriptor)
     }
 

@@ -104,15 +104,33 @@ public final class CanvasRenderer {
     ///
     /// - Precondition: The renderer holds room for the strokes.
     public func add(_ strokes: [Stroke], onPresented: @escaping @MainActor () -> Void) {
-        precondition(strokes.count <= Limits.maxStrokesPerCanvas, "Too many strokes")
+        change(removing: [], adding: strokes, onPresented: onPresented)
+    }
+
+    /// Removes strokes and adds strokes in one change, for an erase, an undo, or a redo.
+    /// `onPresented` runs after the first frame that shows the result.
+    ///
+    /// The renderer clears the area of the removed strokes in the committed texture and draws the
+    /// strokes there again (architecture.md 5.2, D-66). A removed ID that the renderer does not
+    /// hold is ignored.
+    ///
+    /// - Precondition: The renderer holds room for the added strokes.
+    public func change(
+        removing removed: [StrokeID],
+        adding added: [Stroke],
+        onPresented: @escaping @MainActor () -> Void
+    ) {
+        precondition(added.count <= Limits.maxStrokesPerCanvas, "Too many strokes")
+        precondition(removed.count <= Limits.maxStrokesPerCanvas, "Too many removed strokes")
         lastHandoff += 1
         let handoff = lastHandoff
         callbacks.append((handoff, onPresented))
+        let edit = RenderEdit(removed: removed, added: added)
         engine.post { box in
-            box.added += strokes
-            box.addedHandoff = handoff
+            box.edits.append(edit)
+            box.editHandoff = handoff
         }
-        assert(!callbacks.isEmpty, "The handoff waits for its frame")
+        assert(!callbacks.isEmpty, "The change waits for its frame")
     }
 
     /// Draws one frame into the layer on the main thread. The tests use it instead of the render

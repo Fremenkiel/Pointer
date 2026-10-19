@@ -12,10 +12,10 @@ struct RenderInbox {
     var viewport: (size: Size, scale: Double)?
     /// Strokes to load without a handoff.
     var loaded: [Stroke] = []
-    /// Strokes of handoffs, in order.
-    var added: [Stroke] = []
-    /// The number of the newest handoff in `added`, or 0.
-    var addedHandoff: UInt64 = 0
+    /// The edits of handoffs, erases, undo steps, and redo steps, in order.
+    var edits: [RenderEdit] = []
+    /// The number of the newest handoff in `edits`, or 0.
+    var editHandoff: UInt64 = 0
     /// `true` if the last frame took a new camera, so the camera is likely in motion.
     var cameraMovedInLastFrame = false
     /// `true` while the render thread waits for the camera of the current display frame.
@@ -33,25 +33,25 @@ struct RenderInbox {
     var rendererHasWork = false
 
     /// `true` if a change waits that needs a frame, other than a camera change.
-    var hasContentChange: Bool { viewport != nil || !loaded.isEmpty || !added.isEmpty }
+    var hasContentChange: Bool { viewport != nil || !loaded.isEmpty || !edits.isEmpty }
 
     /// Moves the waiting changes out. The camera stays as the newest value.
     mutating func take() -> RenderInput {
-        precondition(added.isEmpty || addedHandoff > 0, "Handoff strokes need a handoff number")
+        precondition(edits.isEmpty || editHandoff > 0, "Edits need a handoff number")
         let input = RenderInput(
             camera: hasNewCamera ? camera : nil,
             viewport: viewport,
             loaded: loaded,
-            added: added,
-            addedHandoff: addedHandoff,
+            edits: edits,
+            editHandoff: editHandoff,
             observer: observer
         )
         cameraMovedInLastFrame = hasNewCamera
         hasNewCamera = false
         viewport = nil
         loaded = []
-        added = []
-        addedHandoff = 0
+        edits = []
+        editHandoff = 0
         assert(!hasContentChange, "The inbox is empty after a take")
         return input
     }

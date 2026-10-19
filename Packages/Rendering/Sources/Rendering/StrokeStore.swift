@@ -101,6 +101,14 @@ final class StrokeStore {
         return range
     }
 
+    /// Returns the bounds of a stroke, or `nil` if the store does not hold it.
+    func bounds(of id: StrokeID) -> Rect? {
+        guard let slot = slotByID[id] else { return nil }
+        let bounds = grid.bounds(of: slot)
+        assert(bounds != nil, "Stroke slot \(slot) is not in the grid")
+        return bounds
+    }
+
     /// Removes a stroke. Its slot leaves the grid at once. Its arena block stays until no frame
     /// in flight can read it, and `releaseRemovals(at:)` then frees the slot for a new stroke.
     ///

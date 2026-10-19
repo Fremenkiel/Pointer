@@ -46,6 +46,11 @@ final class CommittedLayer {
     private var stillFrames = 0
     /// The strokes of the build, in drawing order. Reused, so a build allocates nothing.
     private var buildSlots: [Int] = []
+    /// The strokes of a redraw. Reused like `buildSlots`.
+    private var redrawSlots: [Int] = []
+    /// The pixels around a changed area that the redraw clears too: the anti-aliased edge of
+    /// the ink (`InkEncoder.edgeHalfWidthPixels`) and one pixel for the rounding.
+    static let redrawMarginPixels = 3.0
 
     /// Makes the two textures for a drawable size.
     ///
@@ -171,6 +176,69 @@ final class CommittedLayer {
             )
         }
         assert(cursor == slots.count, "The handoff passes draw each new stroke")
+    }
+
+    /// Clears a canvas area in the front texture and in a running build, and draws the strokes
+    /// of the store there again (architecture.md 5.2, D-66).
+    ///
+    /// The ink blends with `max`, so a removed stroke cannot be subtracted. A build that has not
+    /// drawn yet needs nothing, because it skips the removed strokes.
+    ///
+    /// - Precondition: `area` is finite.
+    func redraw(_ area: Rect, store: StrokeStore, encoder: InkEncoder, context: FrameContext) {
+        precondition(area.origin.isFinite, "Redraw area is not finite")
+        RenderSignpost.begin("Redraw")
+        defer { RenderSignpost.end("Redraw") }
+        var targets: [InkTarget] = []
+        if let front { targets.append(front) }
+        if let build, build.hasCleared { targets.append(build.target) }
+        for target in targets {
+            guard let scissor = Self.scissor(for: area, in: target) else { continue }
+            let margin = Self.redrawMarginPixels / target.pixelsPerCanvasPoint
+            redrawSlots.removeAll(keepingCapacity: true)
+            store.grid.forEachItem(touching: area.expanded(by: margin)) { redrawSlots.append($0) }
+            var options = InkPassOptions(clear: false, instanceBudget: .max)
+            options.scissor = scissor
+            options.clearsScissor = true
+            var cursor = 0
+            // Each pass draws one stroke at least, so the loop ends. A full draw list ends a pass.
+            // The first pass runs also without strokes, because it clears the area.
+            let passLimit = redrawSlots.count + 1
+            for _ in 0..<passLimit where cursor < redrawSlots.count || options.clearsScissor {
+                cursor = encoder.encodePass(
+                    context,
+                    target: target,
+                    slots: redrawSlots,
+                    cursor: cursor,
+                    options: options
+                )
+                options.clearsScissor = false
+            }
+            assert(cursor == redrawSlots.count, "The redraw drew each stroke of the area")
+        }
+    }
+
+    /// Returns the pixel rectangle of a canvas area in a target, with the redraw margin, or `nil`
+    /// if the area lies outside the target.
+    static func scissor(for area: Rect, in target: InkTarget) -> MTLScissorRect? {
+        let pixels = target.pixelsPerCanvasPoint
+        let texture = target.canvasRect
+        let minX = ((area.minX - texture.minX) * pixels - redrawMarginPixels).rounded(.down)
+        let minY = ((area.minY - texture.minY) * pixels - redrawMarginPixels).rounded(.down)
+        let maxX = ((area.maxX - texture.minX) * pixels + redrawMarginPixels).rounded(.up)
+        let maxY = ((area.maxY - texture.minY) * pixels + redrawMarginPixels).rounded(.up)
+        let width = Double(target.texture.width)
+        let height = Double(target.texture.height)
+        let low = (x: min(max(minX, 0), width), y: min(max(minY, 0), height))
+        let high = (x: min(max(maxX, 0), width), y: min(max(maxY, 0), height))
+        guard high.x > low.x, high.y > low.y else { return nil }
+        assert(low.x >= 0 && low.y >= 0, "Scissor starts outside the texture")
+        return MTLScissorRect(
+            x: Int(low.x),
+            y: Int(low.y),
+            width: Int(high.x - low.x),
+            height: Int(high.y - low.y)
+        )
     }
 
     /// Draws the next chunk of the build. A complete build becomes the front texture.

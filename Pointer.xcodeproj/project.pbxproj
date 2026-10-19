@@ -50,6 +50,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				InkImageTests.swift,
+				RedrawTests.swift,
 				Snapshot.swift,
 			);
 			target = B0000000000000000000A002 /* PointerDeviceTests */;

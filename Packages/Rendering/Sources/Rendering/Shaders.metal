@@ -175,3 +175,8 @@ fragment float4 compositeFragment(CompositeVertexOut in [[stage_in]],
     float value = committed.sample(linearSampler, texel / uniforms.textureSize).r;
     return float4(value, value, value, 1.0);
 }
+
+// Zero coverage. With a scissor rectangle, it clears one area of a committed texture (D-66).
+fragment half4 clearFragment(CompositeVertexOut in [[stage_in]]) {
+    return half4(0.0);
+}

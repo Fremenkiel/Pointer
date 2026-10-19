@@ -9,13 +9,13 @@ struct RenderInput: Sendable {
     let viewport: (size: Size, scale: Double)?
     /// Strokes to load.
     let loaded: [Stroke]
-    /// Strokes of handoffs.
-    let added: [Stroke]
-    /// The newest handoff of `added`, or 0.
-    let addedHandoff: UInt64
+    /// The edits, in order.
+    let edits: [RenderEdit]
+    /// The newest handoff of `edits`, or 0.
+    let editHandoff: UInt64
     /// The test observer.
     let observer: (any FrameObserving)?
 
     /// `true` if the frame has a change to draw.
-    var hasChange: Bool { camera != nil || viewport != nil || !loaded.isEmpty || !added.isEmpty }
+    var hasChange: Bool { camera != nil || viewport != nil || !loaded.isEmpty || !edits.isEmpty }
 }

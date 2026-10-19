@@ -80,7 +80,7 @@ final class InkEncoder {
                 || ring.remaining < store.infos[slots[cursor]].blockCount,
             "A pass must advance unless the draw list is full"
         )
-        encode(lists, into: context.commandBuffer, target: target, clear: options.clear)
+        encode(lists, into: context.commandBuffer, target: target, options: options)
         swap(&lists, &buckets)
         return position
     }
@@ -140,11 +140,12 @@ final class InkEncoder {
         _ lists: EntryBuckets,
         into commandBuffer: any MTLCommandBuffer,
         target: InkTarget,
-        clear: Bool
+        options: InkPassOptions
     ) {
+        precondition(!options.clearsScissor || options.scissor != nil, "A clear needs a scissor")
         let pass = inkPass
         pass.colorAttachments[0].texture = target.texture
-        pass.colorAttachments[0].loadAction = clear ? .clear : .load
+        pass.colorAttachments[0].loadAction = options.clear ? .clear : .load
         let made = commandBuffer.makeRenderCommandEncoder(descriptor: pass)
         // The descriptor lives on, so it must not hold the texture after the pass.
         pass.colorAttachments[0].texture = nil
@@ -156,6 +157,14 @@ final class InkEncoder {
             // A label costs two allocations per pass and helps only in a GPU capture.
             encoder.label = "Ink"
         #endif
+        if let scissor = options.scissor {
+            encoder.setScissorRect(scissor)
+        }
+        if options.clearsScissor {
+            // The load action clears the whole texture, so a triangle clears the rectangle.
+            encoder.setRenderPipelineState(resources.clearPipeline)
+            encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+        }
         encoder.setRenderPipelineState(resources.inkPipeline)
         for (index, bucket) in lists.lists.enumerated() where !bucket.isEmpty {
             let firstEntry = ring.used

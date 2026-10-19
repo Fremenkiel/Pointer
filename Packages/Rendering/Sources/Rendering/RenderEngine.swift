@@ -170,7 +170,7 @@ final class RenderEngine: Sendable {
     }
 
     private static func apply(_ input: RenderInput, to renderer: FrameRenderer) {
-        assert(input.added.isEmpty || input.addedHandoff > 0, "Handoff strokes need a number")
+        assert(input.edits.isEmpty || input.editHandoff > 0, "Edits need a handoff number")
         if let viewport = input.viewport {
             renderer.setViewport(viewSize: viewport.size, displayScale: viewport.scale)
         }
@@ -180,8 +180,11 @@ final class RenderEngine: Sendable {
         if !input.loaded.isEmpty {
             renderer.load(input.loaded)
         }
-        if !input.added.isEmpty {
-            renderer.add(input.added, handoff: input.addedHandoff)
+        for edit in input.edits {
+            renderer.apply(edit)
+        }
+        if !input.edits.isEmpty {
+            renderer.markHandoff(input.editHandoff)
         }
         if let observer = input.observer {
             renderer.onCommit = { observer.willCommit($0, drawable: $1) }

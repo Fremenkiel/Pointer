@@ -22,6 +22,8 @@ final class FrameRenderer {
     /// The newest handoff whose strokes wait for the screen, or 0 if none waits.
     private var waitingHandoff: UInt64 = 0
     private var frame: UInt64 = 0
+    /// The canvas area of the strokes removed since the last frame, or `nil` (D-66).
+    private var dirtyArea: Rect?
     /// `true` after a new viewport until the next frame makes a new committed layer.
     private var needsNewLayer = false
     private var viewSize = Size.zero
@@ -81,6 +83,7 @@ final class FrameRenderer {
     var needsMoreFrames: Bool {
         guard let layer, !needsNewLayer else { return viewSize.width > 0 && viewSize.height > 0 }
         return layer.isBuilding || layer.isSettling || !pendingSlots.isEmpty || waitingHandoff > 0
+            || dirtyArea != nil
     }
 
     /// Sets the size of the view and the display scale. A change rebuilds the committed layer.
@@ -107,17 +110,42 @@ final class FrameRenderer {
         assert(store.count >= strokes.count, "The store holds the loaded strokes")
     }
 
-    /// Adds the finished strokes of handoff number `handoff`.
+    /// Applies one edit: it removes strokes, notes their area for a redraw in the next frame,
+    /// and adds the new strokes (D-66). A removed ID that the store does not hold is ignored.
     ///
-    /// - Precondition: The renderer holds room for the strokes, and `handoff` is positive.
-    func add(_ strokes: [Stroke], handoff: UInt64) {
-        precondition(store.count + strokes.count <= Limits.maxStrokesPerCanvas, "Too many strokes")
-        precondition(handoff > 0, "Handoff numbers start at 1")
-        for stroke in strokes {
+    /// - Precondition: The renderer holds room for the added strokes.
+    func apply(_ edit: RenderEdit) {
+        precondition(
+            store.count + edit.added.count <= Limits.maxStrokesPerCanvas + edit.removed.count,
+            "Too many strokes"
+        )
+        for id in edit.removed {
+            guard let bounds = store.bounds(of: id) else { continue }
+            // The next frame is the first one that can no longer read the stroke.
+            store.remove(id, frame: frame + 1)
+            dirtyArea = dirtyArea.map { Self.union($0, bounds) } ?? bounds
+        }
+        for stroke in edit.added {
             pendingSlots.append(store.add(stroke))
         }
+        assert(pendingSlots.count >= edit.added.count, "Each new stroke waits for the next frame")
+    }
+
+    /// Notes that the edits of handoff number `handoff` wait for the screen.
+    ///
+    /// - Precondition: `handoff` is positive.
+    func markHandoff(_ handoff: UInt64) {
+        precondition(handoff > 0, "Handoff numbers start at 1")
         waitingHandoff = max(waitingHandoff, handoff)
-        assert(pendingSlots.count >= strokes.count, "Each new stroke waits for the next frame")
+    }
+
+    private static func union(_ first: Rect, _ second: Rect) -> Rect {
+        Rect(
+            minX: min(first.minX, second.minX),
+            minY: min(first.minY, second.minY),
+            maxX: max(first.maxX, second.maxX),
+            maxY: max(first.maxY, second.maxY)
+        )
     }
 
     /// Draws one frame. The frame takes the drawable from `drawable` after the content passes,
@@ -186,6 +214,10 @@ final class FrameRenderer {
     }
 
     private func encodeContent(layer: CommittedLayer, context: FrameContext) {
+        if let area = dirtyArea {
+            layer.redraw(area, store: store, encoder: encoder, context: context)
+            dirtyArea = nil
+        }
         // One pass for all new strokes of the frame, from the reused list (PERF-01).
         layer.addStrokes(pendingSlots, encoder: encoder, context: context)
         pendingSlots.removeAll(keepingCapacity: true)
