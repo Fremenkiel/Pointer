@@ -121,6 +121,14 @@ Done when: unit tests of the tool state cover the change at the next pencil down
 
 Requirement and rules: TOOL-01, TOOL-04, STO-06, D-30, D-34, D-70, D-71.
 
+Status: the code is done in commit eeb2a5e, and `make check` passes. Three tests of the tool state cover a change while the pencil is up, a change during a touch, and the editing flag for each tool. Four tests of the canvas cover an erase that cuts a stroke in two, the first sample after a tool change, a cancelled gesture, a pen touch, a library that cannot save, and the drawing gesture of PencilKit. The erase sends 2 stroke rows and 1 erase record and asks for one save. The check with the pencil on the iPad waits for the product owner (task 3.9). D-73 is still open: an erase at the stroke limit still stops the renderer. The task made these choices inside the decisions:
+
+- `PencilTouchObserver` gives each pencil sample, the coalesced samples included, to the canvas. It already sees every pencil touch next to the drawing gesture of PencilKit.
+- A cancelled touch ends the mask and changes nothing.
+- The candidates of the split come from one pass over the bounds of the live strokes, not from a grid. The renderer holds the only grid on its render thread, and a second grid in the canvas would add time to the open of D-56.
+- The split runs inside the signpost interval `EraseSplit`.
+- The steps go through a `History` of the canvas controller. Task 3.6 moves it to the app.
+
 ### 3.6 Undo and redo (Tier C)
 
 1. Keep one `History` for each canvas while the app runs (D-12). `PointerApp` holds the histories by `CanvasID`, so a workspace switch keeps them.
