@@ -175,7 +175,7 @@ Status: the code is done in commit c0553fa, and `make check` passes. Four snapsh
 
 Done when: both acceptance criteria pass, and the results are in section 4.
 
-Status: open. Acceptance 2 fails on the iPad, and the second run waits for the unlocked iPad. Acceptance 1 passes with the tests of task 3.1. Item 3 is the test `EraserToolTests.firstSample`, which runs on the simulator and in `PointerDeviceTests`. Section 4.5 has the measured times and the changes since the first run. The test of acceptance 2 makes these choices inside D-69:
+Status: blocked by D-74. Acceptance 2 fails on the iPad: an empty change already takes 13 to 16 ms from the call to its presented frame. Acceptance 1 passes with the tests of task 3.1. Item 3 is the test `EraserToolTests.firstSample`, which runs on the simulator and in `PointerDeviceTests`. Section 4.5 has the measured times and the changes since the first run. The test of acceptance 2 makes these choices inside D-69:
 
 - The canvas holds the content in memory without a library, because the save runs off the main actor with its own budget of 50 ms.
 - The camera has zoom 0.5, so the 1,000 strokes, 1.5 points apart, fit on the screen. The eraser line has 261 samples.
@@ -269,5 +269,23 @@ The changes since the first run:
 2. Commit b6e529f: an erase, its undo, and its redo redraw only the area of the eraser path. The redraw draws only the segments that can touch the area, and the added strokes are not drawn in full.
 3. Commit a64adcd: the canvas keeps its session when it leaves the screen, not at each step.
 
-The second run waits for the iPad, which locked itself during the wait for the build.
+The runs after these changes found the main cost on the render thread: `StrokeStore.remove` of 1,000 to 2,000 strokes took 20 to 47 ms. The search in a cell of `SpatialGrid` ran as unspecialized generic code from another module. Commit 1 of the grid fix makes the removal inlinable: 2,000 removals take 1.3 ms on the Mac instead of 72 ms.
+
+The run after all changes, on the iPad Pro 11-inch (M4) in Release, with 5 rounds:
+
+| Step | Target | Median | Slowest |
+|---|---|---|---|
+| Empty change, the floor of the frame pipeline | none | 14.2 ms | 16.4 ms |
+| Erase, from the lift to the presented frame | under 16 ms | 37.5 ms | 42.1 ms |
+| Undo | under 16 ms | 29.6 ms | 31.6 ms |
+| Redo | under 16 ms | 29.8 ms | 33.0 ms |
+
+| Part | Time |
+|---|---|
+| Erase on the main thread: split, apply, and the post to the renderer | 24 to 27 ms |
+| Undo or redo on the main thread | 6 to 10 ms |
+| The render thread, CPU of the frame with the change | 6 to 14 ms |
+| The GPU, the frame with the change | 1 to 3 ms |
+
+The floor of the pipeline uses the whole budget, so D-74 asks where the clock ends. A last run to confirm the numbers without the temporary timers did not start, because the iPad locked itself again.
 

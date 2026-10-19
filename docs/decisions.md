@@ -81,6 +81,7 @@ Status values: Open, Decided, Replaced.
 | D-71 | Short parts and the stroke limit after a cut | Drop parts shorter than the pen width. An erase can go past the stroke limit. | Decided (2026-10-19) |
 | D-72 | The shape bound of D-65 after a cut | Keep the cut rule. The change is at most half the distance to the dropped point. | Decided (2026-10-19) |
 | D-73 | The stroke count after an erase passes the stroke limit | Open. Recommendation: a hard bound of 210,000 strokes | Open (2026-10-19) |
+| D-74 | The end point of the clock in M4 acceptance 2 | Open. Recommendation: the end of the GPU work of the first frame | Open (2026-10-19) |
 
 ## Details
 
@@ -675,6 +676,19 @@ Status values: Open, Decided, Replaced.
 - Recommendation: (a). It keeps D-71 for each normal case, and every part of the code has one named bound. The load reads at most 210,000 strokes, so its time and memory grow by at most 5 % at the bound.
 - Effect: the pen keeps its limit of 200,000. The load, `CanvasViewController`, the renderer, and `EraseStrokes` use the new bound. Architecture.md section 10 and storage.md section 5 get the new limit.
 - Tasks that wait: M4 task 3.5 sends the parts of an erase to the renderer. Tasks 3.3 and 3.4 do not depend on the decision.
+
+### D-74 The end point of the clock in M4 acceptance 2
+
+- Open. Raised by M4 task 3.8 on 2026-10-19.
+- D-69 runs the clock from the pencil lift, or from the undo or redo call, to the end of the first frame that shows the result. The budget is 16 ms per step. The test takes the presented callback of that frame as its end.
+- On the iPad Pro 11-inch (M4) in Release, an empty change takes 13 to 16 ms from the call to its presented callback. The frame loop sleeps when idle, so a change waits for the next display frame. With a frame latency of 2 (architecture.md section 5.1), the frame shows about two display frames later. Thus the pipeline alone uses the whole budget, and no step with work can pass.
+- The steps after the fixes of task 3.8, medians of 5 rounds: erase 37.5 ms, undo 29.6 ms, redo 29.8 ms. The work in them: the main thread takes 24 to 27 ms for an erase and 6 to 10 ms for an undo or a redo. The render thread takes 6 to 14 ms of CPU and 1 to 3 ms of GPU for the frame of the change.
+- Options:
+  - (a) End the clock when the GPU completes the first frame that holds the change, not at its presentation. The budget of 16 ms then covers the work of the main thread, the render thread, and the GPU, and the wait for the display frame. The pipeline latency stays covered by the pen latency budget of FEEL-01.
+  - (b) Keep the presented end and raise the budget to the pipeline floor plus 16 ms, about 32 ms.
+  - (c) Keep D-69 as written. The acceptance then cannot pass on this iPad.
+- Recommendation: (a). It measures the work that the code controls. The erase then still needs a faster split, about 14 ms on the iPad today. Undo and redo are close.
+- Effect: task 3.8 waits for this decision.
 
 ## Points in the request that conflict or are not complete
 
