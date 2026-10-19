@@ -166,7 +166,7 @@ Done when: both acceptance criteria pass, and the results are in section 4.
 | Line coverage of `InkEngine` (TEST-02) | at least 90 % | 91.40 % |
 | Assertion density of `InkEngine` (CONTRACT-02) | at least 2.0 | 2.05 |
 
-Timing of the D-69 content: 1,000 parallel strokes of 300 points, one eraser line of 2,001 samples that cuts each stroke in two. Median of 3 runs on the Mac, release build:
+Timing of the D-69 content: 1,000 parallel strokes of 300 points, one eraser line of 2,001 samples that cuts each stroke in two. On the Mac, the release values are the median of 3 runs, and the debug values come from 1 run:
 
 | Step | Debug build | Release build |
 |---|---|---|
