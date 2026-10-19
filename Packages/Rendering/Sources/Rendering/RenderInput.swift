@@ -13,9 +13,18 @@ struct RenderInput: Sendable {
     let edits: [RenderEdit]
     /// The newest handoff of `edits`, or 0.
     let editHandoff: UInt64
+    /// The radius in view points of an eraser gesture that starts, or `nil`.
+    let eraserStart: Double?
+    /// The new eraser samples in view space. The engine gives the list back for reuse.
+    var eraserSamples: [Point]
+    /// `true` if the eraser gesture ends.
+    let endsEraser: Bool
     /// The test observer.
     let observer: (any FrameObserving)?
 
     /// `true` if the frame has a change to draw.
-    var hasChange: Bool { camera != nil || viewport != nil || !loaded.isEmpty || !edits.isEmpty }
+    var hasChange: Bool {
+        camera != nil || viewport != nil || !loaded.isEmpty || !edits.isEmpty
+            || eraserStart != nil || !eraserSamples.isEmpty || endsEraser
+    }
 }

@@ -34,6 +34,8 @@ final class CommittedLayer {
     /// (docs/m2-fix-plan.md, phase 5, task 6).
     private(set) var fallback: InkTarget?
     private let textures: [any MTLTexture]
+    /// The eraser mask: the size of a committed texture, one coverage channel (D-66).
+    let mask: any MTLTexture
     /// The drawable width in pixels that the textures were made for.
     let drawableWidth: Int
     /// The drawable height in pixels that the textures were made for.
@@ -70,6 +72,7 @@ final class CommittedLayer {
             try resources.makeTarget(width: width, height: height, format: format),
             try resources.makeTarget(width: width, height: height, format: format),
         ]
+        mask = try resources.makeTarget(width: width, height: height, format: format)
         self.drawableWidth = drawableWidth
         self.drawableHeight = drawableHeight
         self.fallback = fallback

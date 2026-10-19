@@ -16,6 +16,14 @@ struct RenderInbox {
     var edits: [RenderEdit] = []
     /// The number of the newest handoff in `edits`, or 0.
     var editHandoff: UInt64 = 0
+    /// The radius in view points of an eraser gesture that starts, or `nil`.
+    var eraserStart: Double?
+    /// The eraser samples in view space that no frame took yet.
+    var eraserSamples: [Point] = []
+    /// The sample list that the last frame gave back, kept for reuse (PERF-01).
+    var spareEraserSamples: [Point] = []
+    /// `true` after the end of an eraser gesture that no frame took yet.
+    var endsEraser = false
     /// `true` if the last frame took a new camera, so the camera is likely in motion.
     var cameraMovedInLastFrame = false
     /// `true` while the render thread waits for the camera of the current display frame.
@@ -33,7 +41,10 @@ struct RenderInbox {
     var rendererHasWork = false
 
     /// `true` if a change waits that needs a frame, other than a camera change.
-    var hasContentChange: Bool { viewport != nil || !loaded.isEmpty || !edits.isEmpty }
+    var hasContentChange: Bool {
+        viewport != nil || !loaded.isEmpty || !edits.isEmpty || eraserStart != nil
+            || !eraserSamples.isEmpty || endsEraser
+    }
 
     /// Moves the waiting changes out. The camera stays as the newest value.
     mutating func take() -> RenderInput {
@@ -44,8 +55,15 @@ struct RenderInbox {
             loaded: loaded,
             edits: edits,
             editHandoff: editHandoff,
+            eraserStart: eraserStart,
+            eraserSamples: eraserSamples,
+            endsEraser: endsEraser,
             observer: observer
         )
+        eraserStart = nil
+        eraserSamples = spareEraserSamples
+        spareEraserSamples = []
+        endsEraser = false
         cameraMovedInLastFrame = hasNewCamera
         hasNewCamera = false
         viewport = nil

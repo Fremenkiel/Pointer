@@ -133,6 +133,38 @@ public final class CanvasRenderer {
         assert(!callbacks.isEmpty, "The change waits for its frame")
     }
 
+    /// Starts an eraser gesture. Each sample of the gesture then hides the ink under a circle of
+    /// `radius` view points until `endErase()` (D-66).
+    ///
+    /// - Precondition: `radius` is positive and finite.
+    public func beginErase(radius: Double) {
+        precondition(radius > 0 && radius.isFinite, "Eraser radius must be positive, got \(radius)")
+        engine.post { box in
+            // A new start replaces a gesture that no frame ended yet, with its samples.
+            box.eraserStart = radius
+            box.endsEraser = false
+            box.eraserSamples.removeAll(keepingCapacity: true)
+            if box.eraserSamples.capacity < Self.eraserSampleCapacity {
+                box.eraserSamples.reserveCapacity(Self.eraserSampleCapacity)
+            }
+        }
+    }
+
+    /// Adds one eraser sample in view space. It allocates nothing (PERF-01).
+    public func addEraserSample(_ point: Point) {
+        guard point.isFinite else { return }
+        engine.post { box in box.eraserSamples.append(point) }
+    }
+
+    /// Ends the eraser gesture. Call it together with the change of the erase, so that one frame
+    /// shows the result and clears the mask (D-66).
+    public func endErase() {
+        engine.post { box in box.endsEraser = true }
+    }
+
+    /// The first capacity of the sample list of the inbox: more samples than one frame gets.
+    static let eraserSampleCapacity = 64
+
     /// Draws one frame into the layer on the main thread. The tests use it instead of the render
     /// thread of `InkView`.
     ///

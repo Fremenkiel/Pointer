@@ -49,6 +49,7 @@
 		B0000000000000000000E002 /* Exceptions for "Packages/Rendering/Tests/RenderingTests" folder in "PointerDeviceTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				EraserMaskTests.swift,
 				InkImageTests.swift,
 				RedrawTests.swift,
 				Snapshot.swift,

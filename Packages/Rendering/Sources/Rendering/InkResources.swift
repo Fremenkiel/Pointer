@@ -12,6 +12,10 @@ final class InkResources {
     let queue: any MTLCommandQueue
     let inkPipeline: any MTLRenderPipelineState
     let compositePipeline: any MTLRenderPipelineState
+    /// Draws the composite pass through the eraser mask (D-66).
+    let compositeMaskedPipeline: any MTLRenderPipelineState
+    /// Stamps eraser capsules into the mask with `max` blending.
+    let eraserPipeline: any MTLRenderPipelineState
     /// Writes zero coverage, without blending. The redraw of an area uses it with a scissor.
     let clearPipeline: any MTLRenderPipelineState
 
@@ -33,6 +37,16 @@ final class InkResources {
         inkPipeline = try Self.makeInkPipeline(device: device, library: library)
         compositePipeline = try Self.makeCompositePipeline(device: device, library: library)
         clearPipeline = try Self.makeClearPipeline(device: device, library: library)
+        compositeMaskedPipeline = try Self.makeCompositePipeline(
+            device: device,
+            library: library,
+            fragment: "compositeMaskedFragment"
+        )
+        eraserPipeline = try Self.makeInkPipeline(
+            device: device,
+            library: library,
+            functions: ("eraserVertex", "eraserFragment")
+        )
     }
 
     /// The ink pipeline blends with `max` (D-38, review A-06). The result of a pixel is the
@@ -40,12 +54,13 @@ final class InkResources {
     /// notches, and the draw order does not matter.
     private static func makeInkPipeline(
         device: any MTLDevice,
-        library: any MTLLibrary
+        library: any MTLLibrary,
+        functions: (vertex: String, fragment: String) = ("inkVertex", "inkFragment")
     ) throws(RenderingError) -> any MTLRenderPipelineState {
         let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.label = "Ink"
-        descriptor.vertexFunction = library.makeFunction(name: "inkVertex")
-        descriptor.fragmentFunction = library.makeFunction(name: "inkFragment")
+        descriptor.label = functions.vertex
+        descriptor.vertexFunction = library.makeFunction(name: functions.vertex)
+        descriptor.fragmentFunction = library.makeFunction(name: functions.fragment)
         guard let attachment = descriptor.colorAttachments[0] else {
             throw .pipelineFailed("ink color attachment")
         }
@@ -63,12 +78,13 @@ final class InkResources {
 
     private static func makeCompositePipeline(
         device: any MTLDevice,
-        library: any MTLLibrary
+        library: any MTLLibrary,
+        fragment: String = "compositeFragment"
     ) throws(RenderingError) -> any MTLRenderPipelineState {
         let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.label = "Composite"
+        descriptor.label = fragment
         descriptor.vertexFunction = library.makeFunction(name: "compositeVertex")
-        descriptor.fragmentFunction = library.makeFunction(name: "compositeFragment")
+        descriptor.fragmentFunction = library.makeFunction(name: fragment)
         guard let attachment = descriptor.colorAttachments[0] else {
             throw .pipelineFailed("composite color attachment")
         }

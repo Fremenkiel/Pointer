@@ -80,3 +80,17 @@ struct CompositeUniforms {
     /// The size of the committed texture, in pixels.
     var textureSize: SIMD2<Float>
 }
+
+/// One eraser stamp in mask pixels. The layout matches `EraserStamp` in Shaders.metal.
+struct EraserStamp {
+    /// The pixel position of the earlier sample.
+    var start: SIMD2<Float>
+    /// The pixel position of the newer sample.
+    var end: SIMD2<Float>
+    /// The size of the mask, in pixels.
+    var targetSize: SIMD2<Float>
+    /// The eraser radius, in pixels.
+    var radius: Float
+    /// Half the width of the anti-aliased edge, in pixels.
+    var edge: Float
+}

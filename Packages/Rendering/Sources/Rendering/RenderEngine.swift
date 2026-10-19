@@ -102,7 +102,7 @@ final class RenderEngine: Sendable {
     ) -> FrameOutcome {
         precondition(drawableSize.width.isFinite && drawableSize.height.isFinite, "Size not finite")
         waitForCameraIfMoving()
-        let input = inbox.withLock { $0.take() }
+        var input = inbox.withLock { $0.take() }
         let result = core.withLock { renderer -> FrameResult in
             Self.draw(
                 input,
@@ -113,9 +113,16 @@ final class RenderEngine: Sendable {
             )
         }
         assert(result.didDraw || !result.needsMore, "A frame without work asks for more frames")
+        // The sample list goes back to the inbox, so the next frame allocates no list (PERF-01).
+        var samples: [Point] = []
+        swap(&samples, &input.eraserSamples)
+        samples.removeAll(keepingCapacity: true)
         inbox.withLock { box in
             box.strokeCount = result.count
             box.rendererHasWork = result.needsMore
+            if box.spareEraserSamples.capacity < samples.capacity {
+                box.spareEraserSamples = samples
+            }
         }
         if let record = result.record { input.observer?.didRender(record) }
         return FrameOutcome(didDraw: result.didDraw, needsMore: result.needsMore)
@@ -180,6 +187,11 @@ final class RenderEngine: Sendable {
         if !input.loaded.isEmpty {
             renderer.load(input.loaded)
         }
+        renderer.applyEraser(
+            start: input.eraserStart,
+            samples: input.eraserSamples,
+            ends: input.endsEraser
+        )
         for edit in input.edits {
             renderer.apply(edit)
         }

@@ -22,6 +22,8 @@ final class FrameRenderer {
     /// The newest handoff whose strokes wait for the screen, or 0 if none waits.
     private var waitingHandoff: UInt64 = 0
     private var frame: UInt64 = 0
+    /// The eraser circles of the running gesture (D-66).
+    private(set) var eraserMask = EraserMask()
     /// The canvas area of the strokes removed since the last frame, or `nil` (D-66).
     private var dirtyArea: Rect?
     /// `true` after a new viewport until the next frame makes a new committed layer.
@@ -83,7 +85,7 @@ final class FrameRenderer {
     var needsMoreFrames: Bool {
         guard let layer, !needsNewLayer else { return viewSize.width > 0 && viewSize.height > 0 }
         return layer.isBuilding || layer.isSettling || !pendingSlots.isEmpty || waitingHandoff > 0
-            || dirtyArea != nil
+            || dirtyArea != nil || eraserMask.hasNewSamples
     }
 
     /// Sets the size of the view and the display scale. A change rebuilds the committed layer.
@@ -131,6 +133,22 @@ final class FrameRenderer {
         assert(pendingSlots.count >= edit.added.count, "Each new stroke waits for the next frame")
     }
 
+    /// Applies the eraser input of a frame: a start, new samples in view space, and an end, in
+    /// this order. The camera of the frame converts the samples to canvas space.
+    func applyEraser(start radius: Double?, samples: [Point], ends: Bool) {
+        if let radius {
+            precondition(radius > 0, "Eraser radius must be positive, got \(radius)")
+            eraserMask.begin(radius: radius / camera.zoom)
+        }
+        for sample in samples {
+            eraserMask.append(camera.canvasPoint(fromView: sample, viewSize: viewSize))
+        }
+        if ends {
+            eraserMask.end()
+        }
+        assert(!ends || !eraserMask.isActive, "An ended gesture is not active")
+    }
+
     /// Notes that the edits of handoff number `handoff` wait for the screen.
     ///
     /// - Precondition: `handoff` is positive.
@@ -170,6 +188,14 @@ final class FrameRenderer {
         let context = FrameContext(commandBuffer: commandBuffer, frame: frame)
         encoder.beginFrame(context)
         encodeContent(layer: layer, context: context)
+        if let front = layer.front {
+            eraserMask.encode(
+                into: layer.mask,
+                front: front,
+                resources: resources,
+                commandBuffer: commandBuffer
+            )
+        }
         RenderSignpost.begin("NextDrawable")
         let target = drawable.next()
         RenderSignpost.end("NextDrawable")
@@ -256,8 +282,15 @@ final class FrameRenderer {
         #endif
         if let front = layer.shown {
             let size = Size(width: Double(texture.width), height: Double(texture.height))
-            encoder.setRenderPipelineState(resources.compositePipeline)
+            // The mask uses the mapping of the front texture, so a fallback shows no mask.
+            let isMasked = eraserMask.hasStamps && front.texture === layer.front?.texture
+            encoder.setRenderPipelineState(
+                isMasked ? resources.compositeMaskedPipeline : resources.compositePipeline
+            )
             encoder.setFragmentTexture(front.texture, index: 0)
+            if isMasked {
+                encoder.setFragmentTexture(layer.mask, index: 1)
+            }
             encoder.setFragmentValue(
                 layer.compositeUniforms(
                     camera: camera,

@@ -46,6 +46,15 @@ struct CompositeUniforms {
     float2 textureSize;   // committed texture, pixels
 };
 
+// One eraser stamp: a capsule from one sample to the next, in mask pixels (D-66). 32 bytes.
+struct EraserStamp {
+    float2 start;
+    float2 end;
+    float2 targetSize;    // pixels
+    float radius;         // pixels
+    float edge;           // half width of the edge ramp, pixels
+};
+
 struct InkVertexOut {
     float4 position [[position]];
     float2 start [[flat]];
@@ -179,4 +188,47 @@ fragment float4 compositeFragment(CompositeVertexOut in [[stage_in]],
 // Zero coverage. With a scissor rectangle, it clears one area of a committed texture (D-66).
 fragment half4 clearFragment(CompositeVertexOut in [[stage_in]]) {
     return half4(0.0);
+}
+
+// The capsule of one eraser stamp on a quad, like one piece of ink.
+vertex InkVertexOut eraserVertex(uint vertexID [[vertex_id]],
+                                 constant EraserStamp &stamp [[buffer(0)]]) {
+    float2 a = stamp.start;
+    float2 b = stamp.end;
+    float2 delta = b - a;
+    float len = length(delta);
+    float2 direction = len > 1e-6 ? delta / len : float2(1.0, 0.0);
+    float2 normal = float2(-direction.y, direction.x);
+    float pad = stamp.radius + stamp.edge + 1.0;
+    float2 corner = float2((vertexID & 1) ? 1.0 : -1.0, (vertexID & 2) ? 1.0 : -1.0);
+    float2 pixel = (corner.x < 0.0 ? a - direction * pad : b + direction * pad) + normal * pad * corner.y;
+
+    InkVertexOut out;
+    out.position = float4(pixel.x / stamp.targetSize.x * 2.0 - 1.0,
+                          1.0 - pixel.y / stamp.targetSize.y * 2.0, 0.0, 1.0);
+    out.start = a;
+    out.end = b;
+    out.radius = stamp.radius;
+    return out;
+}
+
+// The coverage of an eraser stamp, with the same edge as the ink.
+fragment half4 eraserFragment(InkVertexOut in [[stage_in]], constant EraserStamp &stamp [[buffer(0)]]) {
+    float2 pa = in.position.xy - in.start;
+    float2 ba = in.end - in.start;
+    float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-12), 0.0, 1.0);
+    float distanceToEdge = length(pa - ba * h) - in.radius;
+    return half4(1.0 - smoothstep(-stamp.edge, stamp.edge, distanceToEdge));
+}
+
+// The composite pass while the eraser moves: the mask hides the ink under the stamps (D-66).
+// The mask has the size and the mapping of the committed texture.
+fragment float4 compositeMaskedFragment(CompositeVertexOut in [[stage_in]],
+                                        texture2d<float> committed [[texture(0)]],
+                                        texture2d<float> mask [[texture(1)]],
+                                        constant CompositeUniforms &uniforms [[buffer(0)]]) {
+    constexpr sampler linearSampler(address::clamp_to_zero, filter::linear);
+    float2 texel = (in.position.xy * uniforms.scale + uniforms.offset) / uniforms.textureSize;
+    float value = committed.sample(linearSampler, texel).r * (1.0 - mask.sample(linearSampler, texel).r);
+    return float4(value, value, value, 1.0);
 }
