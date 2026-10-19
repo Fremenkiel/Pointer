@@ -1,7 +1,8 @@
 import QuartzCore
 import UIKit
 
-/// Reports pencil touches to the palm guard without taking part in gesture recognition.
+/// Reports pencil touches to the palm guard and the samples of each touch to the eraser,
+/// without taking part in gesture recognition (D-34).
 ///
 /// It never recognizes, it does not cancel or delay touches, and it recognizes together with
 /// every other gesture recognizer, so the drawing recognizer of PencilKit is not affected.
@@ -9,8 +10,11 @@ import UIKit
 final class PencilTouchObserver: UIGestureRecognizer, UIGestureRecognizerDelegate {
     /// Called when a pencil touch begins.
     var onBegan: (() -> Void)?
-    /// Called with the touch time when a pencil touch ends or is cancelled.
-    var onEnded: ((TimeInterval) -> Void)?
+    /// Called with each sample of a pencil touch in the coordinates of the view, the coalesced
+    /// samples included.
+    var onSample: ((CGPoint) -> Void)?
+    /// Called with the touch time when a pencil touch ends, and `true` if UIKit cancelled it.
+    var onEnded: ((TimeInterval, Bool) -> Void)?
     private var trackedTouches = 0
 
     /// Makes an observer.
@@ -26,19 +30,30 @@ final class PencilTouchObserver: UIGestureRecognizer, UIGestureRecognizerDelegat
     /// Reports each new pencil touch.
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         trackedTouches += touches.count
-        for _ in touches {
+        for touch in touches {
             onBegan?()
+            onSample?(touch.location(in: view))
         }
     }
 
-    /// Reports each pencil touch that ended.
+    /// Reports the samples of each moved pencil touch.
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
+        for touch in touches {
+            report(touch, event: event)
+        }
+    }
+
+    /// Reports the last samples and the end of each pencil touch.
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
-        finish(touches)
+        for touch in touches {
+            report(touch, event: event)
+        }
+        finish(touches, isCancelled: false)
     }
 
     /// Reports each pencil touch that was cancelled.
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
-        finish(touches)
+        finish(touches, isCancelled: true)
     }
 
     /// Ends the pencil touches that UIKit did not report, for example after it failed the
@@ -48,7 +63,7 @@ final class PencilTouchObserver: UIGestureRecognizer, UIGestureRecognizerDelegat
     override func reset() {
         super.reset()
         for _ in 0..<trackedTouches {
-            onEnded?(CACurrentMediaTime())
+            onEnded?(CACurrentMediaTime(), true)
         }
         trackedTouches = 0
     }
@@ -61,9 +76,18 @@ final class PencilTouchObserver: UIGestureRecognizer, UIGestureRecognizerDelegat
         true
     }
 
-    private func finish(_ touches: Set<UITouch>) {
+    /// Reports the coalesced samples of a touch, or the touch itself without them.
+    private func report(_ touch: UITouch, event: UIEvent) {
+        guard let onSample else { return }
+        let samples = event.coalescedTouches(for: touch) ?? [touch]
+        for sample in samples {
+            onSample(sample.location(in: view))
+        }
+    }
+
+    private func finish(_ touches: Set<UITouch>, isCancelled: Bool) {
         for touch in touches {
-            onEnded?(touch.timestamp)
+            onEnded?(touch.timestamp, isCancelled)
         }
         trackedTouches = max(0, trackedTouches - touches.count)
         if trackedTouches == 0 {

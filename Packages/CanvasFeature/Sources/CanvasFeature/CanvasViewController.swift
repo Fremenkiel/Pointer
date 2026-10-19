@@ -9,17 +9,24 @@ import os
 /// library (M3).
 @MainActor
 public final class CanvasViewController: UIViewController {
-    private let renderer: CanvasRenderer
+    let renderer: CanvasRenderer
     private let handoff: LiveStrokeHandoff
-    private let canvasView: CanvasView
-    private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Canvas")
-    private var content: CanvasContent
-    private var cameraController: CameraController
+    let canvasView: CanvasView
+    let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Canvas")
+    let clock: AppClock
+    var content: CanvasContent
+    /// The undo and redo steps of the canvas (D-12).
+    var history = History()
+    /// The tool and the rules of a tool change (D-70).
+    private(set) var toolState = ToolState()
+    /// The samples of the running eraser gesture in view space, or `nil` without a gesture.
+    var eraserSamples: [Point]?
+    private(set) var cameraController: CameraController
     private var palmGuard = PalmGuard()
     private let panRecognizer = UIPanGestureRecognizer()
     private let pinchRecognizer = UIPinchGestureRecognizer()
     private let pencilObserver = PencilTouchObserver()
-    private let repository: (any LibraryRepository)?
+    let repository: (any LibraryRepository)?
     private let onCameraRest: @MainActor (Camera) -> Void
     /// True after a camera change, until the camera comes to rest.
     private var isCameraMoving = false
@@ -39,6 +46,7 @@ public final class CanvasViewController: UIViewController {
         // `applyCamera` sets the width only when the zoom changes, so a stored zoom needs it here.
         canvasView.liveCanvas.tool = PenTool.inkingTool(zoom: renderer.camera.zoom)
         content = dependencies.content
+        clock = dependencies.clock
         repository = dependencies.repository
         onCameraRest = dependencies.onCameraRest
         cameraController = CameraController(camera: renderer.camera, viewSize: .zero)
@@ -68,10 +76,28 @@ public final class CanvasViewController: UIViewController {
     /// The camera that the canvas shows now.
     public var camera: Camera { cameraController.camera }
 
-    /// False while the library cannot save. The pencil then draws nothing (storage.md 4).
+    /// False while the library cannot save. The pencil then draws and erases nothing (storage.md
+    /// 4, D-70).
     public var isEditingEnabled: Bool {
-        get { canvasView.liveCanvas.drawingGestureRecognizer.isEnabled }
-        set { canvasView.liveCanvas.drawingGestureRecognizer.isEnabled = newValue }
+        get { toolState.isEditingEnabled }
+        set {
+            toolState.isEditingEnabled = newValue
+            applyToolState()
+        }
+    }
+
+    /// The tool that the user picked last.
+    public var tool: Tool { toolState.selected }
+
+    /// Picks a tool. It takes effect at the next pencil down (D-70).
+    public func select(_ tool: Tool) {
+        toolState.select(tool)
+        applyToolState()
+    }
+
+    /// Turns the drawing gesture of PencilKit on only for an active pen (D-34, D-70).
+    private func applyToolState() {
+        canvasView.liveCanvas.drawingGestureRecognizer.isEnabled = toolState.isDrawingEnabled
     }
 
     @available(*, unavailable)
@@ -91,7 +117,7 @@ public final class CanvasViewController: UIViewController {
         canvasView.liveCanvas.delegate = self
         handoff.onStrokes = { [weak self] strokes in
             guard let self else { return }
-            save(add(strokes))
+            send(add(strokes).map(LibraryChange.stroke))
         }
         handoff.remainingCapacity = { [weak self] in
             Limits.maxStrokesPerCanvas - (self?.content.strokes.count ?? Limits.maxStrokesPerCanvas)
@@ -129,16 +155,15 @@ public final class CanvasViewController: UIViewController {
         return accepted
     }
 
-    /// Sends the new strokes to the pending set of the library (storage.md section 4).
-    private func save(_ strokes: [Stroke]) {
-        guard let repository, !strokes.isEmpty else { return }
-        let rows = strokes.map(LibraryChange.stroke)
+    /// Sends changed rows to the pending set of the library (storage.md section 4).
+    func send(_ rows: [LibraryChange]) {
+        guard let repository, !rows.isEmpty else { return }
         let logger = logger
         Task {
             do {
                 try await repository.send(rows)
             } catch {
-                logger.error("The library did not take \(rows.count) strokes: \(error)")
+                logger.error("The library did not take \(rows.count) rows: \(error)")
             }
         }
     }
@@ -163,18 +188,44 @@ public final class CanvasViewController: UIViewController {
         panRecognizer.addTarget(self, action: #selector(handlePan(_:)))
         pinchRecognizer.addTarget(self, action: #selector(handlePinch(_:)))
         pencilObserver.onBegan = { [weak self] in self?.pencilBegan() }
-        pencilObserver.onEnded = { [weak self] time in self?.palmGuard.pencilEnded(at: time) }
+        pencilObserver.onSample = { [weak self] location in
+            self?.pencilMoved(to: Point(x: location.x, y: location.y))
+        }
+        pencilObserver.onEnded = { [weak self] time, isCancelled in
+            self?.pencilEnded(at: time, isCancelled: isCancelled)
+        }
         canvasView.addGestureRecognizer(pencilObserver)
     }
 
-    /// The camera stops, and running finger gestures end (D-36).
-    private func pencilBegan() {
+    /// The camera stops, and running finger gestures end (D-36). The selected tool becomes the
+    /// tool of the touch (D-70).
+    func pencilBegan() {
+        if toolState.pencilDown() == .eraser, toolState.isErasingEnabled {
+            beginErase()
+        }
         palmGuard.pencilBegan()
         cameraController.stopAnimation()
         for recognizer in [panRecognizer, pinchRecognizer] where recognizer.state != .possible {
             recognizer.isEnabled = false
             recognizer.isEnabled = true
         }
+    }
+
+    /// Gives a pencil sample to a running eraser gesture.
+    func pencilMoved(to location: Point) {
+        guard eraserSamples != nil else { return }
+        addEraserSample(location)
+    }
+
+    /// Ends the pencil touch: the eraser gesture ends, and a tool picked during the touch becomes
+    /// active.
+    func pencilEnded(at time: TimeInterval, isCancelled: Bool) {
+        palmGuard.pencilEnded(at: time)
+        if eraserSamples != nil {
+            finishErase(isCancelled: isCancelled)
+        }
+        toolState.pencilUp()
+        applyToolState()
     }
 
     @objc private func handlePan(_ recognizer: UIPanGestureRecognizer) {
