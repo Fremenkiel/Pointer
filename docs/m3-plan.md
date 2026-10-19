@@ -157,7 +157,7 @@ Status: done on 2026-10-18. Four snapshot tests pass: the button, the button wit
 
 Done when: on the iPad, a drawing stays after a force quit and a new launch, and the app opens the last workspace at the last camera.
 
-Status: the code is done (commits 4355249 and ebf274d), and `make check` passes. On the iPad, the app opens, makes the library and the device state, makes the workspace "Workspace" (D-52), and writes the first daily snapshot after 5 idle seconds. The manual test with the pencil (a drawing after a force quit, the last workspace at the last camera) waits for the product owner.
+Status: the code is done (commits 4355249 and ebf274d), and `make check` passes. On the iPad, the app opens, makes the library and the device state, makes the workspace "Workspace" (D-52), and writes the first daily snapshot after 5 idle seconds. On 2026-10-19, the drawing stayed after a force quit, and the app opened the last workspace at the last camera (section 4.11).
 
 ### 3.10 Acceptance tests
 
@@ -169,7 +169,7 @@ Status: the code is done (commits 4355249 and ebf274d), and `make check` passes.
 
 Done when: all four acceptance criteria of M3 pass, and the results are in section 4 of this document.
 
-Status: acceptance 1, 3, and 4 pass. Acceptance 2 passes for the file: the snapshot that the iPad wrote passes `PRAGMA integrity_check` on the Mac. The copy came through `devicectl`, not through the Files app. A look at "On My iPad > Pointer > Backups" in the Files app waits for the product owner. The open test raised D-60. The SQLite speeds of the iPad are in [research.md](research.md) section 5.
+Status: acceptance 1, 3, and 4 pass. Acceptance 2 passes for the file: the snapshot that the iPad wrote passes `PRAGMA integrity_check` on the Mac. The copy came through `devicectl`, not through the Files app. On 2026-10-19, the Files app showed the snapshot under "On My iPad > Pointer > Backups" (section 4.11). The open test raised D-60. The SQLite speeds of the iPad are in [research.md](research.md) section 5.
 
 ### 3.11 Close of M3
 
@@ -178,7 +178,7 @@ Status: acceptance 1, 3, and 4 pass. Acceptance 2 passes for the file: the snaps
 3. Run the full checklist of [code-of-code.md](code-of-code.md) section 5.
 4. Rerun the M2 performance tests on the iPad. A change in `CanvasFeature` must not make them more than 10 % slower.
 
-Status on 2026-10-18: steps 1 to 4 are done, and the results are in section 4.9. M3 waits for two checks of the product owner on the iPad: the drawing after a force quit with the last workspace at the last camera (task 3.9), and the `Backups` folder in the Files app (acceptance 2).
+Status: done on 2026-10-19. Steps 1 to 4 are done, and the results are in section 4.9. The two checks on the iPad passed (section 4.11).
 
 ## 4. Results
 
@@ -316,3 +316,15 @@ So PencilKit drops the end of a fast stroke at the lift, in its own overlay. App
 
 The same build lost some whole strokes after the 1.5 s delay. The normal build does not lose them (product owner, 2026-10-19), so only the delay of the diagnostic build caused it.
 
+
+### 4.11 Checks on the iPad on 2026-10-19
+
+The iPad Pro 11-inch (M4) ran a Release build of commit `88a79a6`. The library held 168 strokes in two workspaces from the earlier manual tests.
+
+| Check | Target | Result |
+|---|---|---|
+| Task 3.9: a drawing after a force quit | the strokes stay | 168 strokes before and after a `SIGKILL` through `devicectl`. `PRAGMA integrity_check` gives `ok` before and after. |
+| Task 3.9: the last workspace at the last camera | the same screen | `lastWorkspace` and the camera row did not change. The screenshot after the new launch is identical to the one before the kill. |
+| Acceptance 2: the snapshot in the Files app | shows | "On My iPad > Pointer" shows `Backups` with 1 item, `Pointer-2026-10-18-195242.sqlite` |
+
+No pencil was available for this check, so no stroke was drawn just before the kill. Acceptance 1 tests that case with the crash test of D-54. The Files app also shows `diag-tail.log`, a file of the diagnostic build of section 4.10. The normal build does not write it.

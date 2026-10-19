@@ -1,0 +1,131 @@
+# M4 work plan: eraser and undo
+
+This document breaks milestone M4 of [plan.md](plan.md) into tasks. The acceptance criteria stay in [plan.md](plan.md). The tasks build on D-06, D-12, D-30, D-34, and D-63 to D-71. The product owner decided D-63 to D-71 on 2026-10-19. Do the tasks in the order of section 3.
+
+## 1. Facts from the code at the start of M4
+
+1. `InkEngine` is empty. `Model` has no commands and no `History`. `Limits.maxHistoryDepth` exists.
+2. `Persistence` already saves erase records. `EraseRow.upsert` updates `modified` and `is_deleted` of an existing record. A save writes strokes before erase records, because of the foreign key. The pending set keeps one row per ID, so a burst of undo and redo steps writes each row once.
+3. `CanvasRenderer` can only load and add strokes. `StrokeStore.remove(_:frame:)` exists but has no public caller. `CommittedLayer` draws new strokes into the front texture, or runs a full build in chunks.
+4. `CanvasViewController.isEditingEnabled` uses `drawingGestureRecognizer.isEnabled` to mean "the library can save" (D-70).
+5. `PointerApp` makes a new `CanvasViewController` at each workspace switch. A history that lives in the controller dies at the switch, but D-12 keeps the history of each canvas while the app runs.
+6. `AppClock` holds the `StrokeFactory` with the one `HybridClock` of the app and the ID source.
+
+## 2. Decisions
+
+All questions of M4 have a decision. No task waits for the product owner.
+
+| ID | Decision | Task |
+|---|---|---|
+| D-63 | A squeeze of the pencil opens the tool palette | 3.7 |
+| D-64 | A button in the top left shows the current tool and opens the same palette | 3.7 |
+| D-65 | A part keeps the control points between its cuts and gets the curve point at each cut as its new end | 3.2 |
+| D-66 | A mask texture while the eraser moves, a redraw of the changed area at the lift and at each undo and redo | 3.3, 3.4 |
+| D-67 | The apply-then-revert test compares the live content | 3.1 |
+| D-68 | Commands hold `Stroke` values, and `strokes` holds the live strokes only | 3.1 |
+| D-69 | Acceptance 2 is a Tier A test of the command and a device test from the lift to the first frame | 3.2, 3.8 |
+| D-70 | A tool change takes effect at the next pencil down. `isEditingEnabled` gets its own value. | 3.5 |
+| D-71 | Drop parts shorter than the pen width. An erase can go past the stroke limit. | 3.2, 3.5 |
+
+## 3. Tasks
+
+### 3.1 Commands and history (Tier A)
+
+1. Add the protocol `CanvasCommand` and the typed error `CommandError` of [data-model.md](data-model.md) section 9. `apply` and `revert` also return the changed rows as `[LibraryChange]`, so the canvas sends them to the repository without a second pass.
+2. Add `remove(_:)` and `restore(_:)` for strokes to `CanvasContent`, and the session erase records that go with them. A restore can go past `Limits.maxStrokesPerCanvas` only for the parts of an erase (D-71).
+3. Add `AddStroke`. Its revert removes the stroke and writes an erase record. A redo sets `isDeleted = true` on that record (D-68).
+4. Add `EraseStrokes` with the removed strokes and the new parts as `Stroke` values. Its revert follows [data-model.md](data-model.md) section 7.5.
+5. Add `History`: an undo list and a redo list, at most `Limits.maxHistoryDepth` steps, the oldest step dropped first. A new command clears the redo list (architecture.md section 8).
+6. Add a test helper that compares the live content of two `CanvasContent` values (D-67).
+
+Done when: each command passes the apply-then-revert test of TEST-09. A second test makes sure that each erase record after a revert is a tombstone. A parameterized test covers a history of 0, 1, 500, and 501 steps (TEST-06). Line coverage of `Model` stays at least 90 %.
+
+Requirement and rules: UNDO-02, UNDO-03, TEST-02, TEST-06, TEST-09, D-12, D-30, D-67, D-68.
+
+### 3.2 Hit test and stroke split (Tier A)
+
+1. Add the hit test to `InkEngine`. It takes the eraser path in canvas space, the radius in canvas units, and a stroke. It returns the curve parameters where the curve enters and leaves the circles. The test of a segment includes the half width of the stroke.
+2. Add `StrokeSplitter`. It makes one part for each range of the curve outside the circles, with the cut rule of D-65. The new end point gets the force and the time of the curve at the cut.
+3. Drop a part whose curve is shorter than the pen width (D-71).
+4. Each part gets a new `StrokeID` and the `created` value of the clock. The width and the canvas stay the same as in the old stroke.
+5. Add a Tier A test that times `apply` and `revert` of an `EraseStrokes` with 1,000 strokes cut in two (D-69).
+
+Done when: these tests pass. A cut in the middle of a stroke leaves two parts. A cut at an end leaves one part. A path that misses the stroke leaves it as it is. A path over the whole stroke leaves no part. A stroke of one sample, which stores the point twice, goes away whole. A test measures the largest distance between a part and the old curve. It is at most one sixth of the distance from the new end point to the dropped control point. A part shorter than the pen width is dropped. The timing test records its result in section 4. Line coverage of `InkEngine` is at least 90 %, and its assertion density is at least 2.0.
+
+Requirement and rules: TOOL-04, TEST-02, TEST-05, CONTRACT-02, D-06, D-26, D-65, D-69, D-71.
+
+### 3.3 Remove strokes and redraw an area (Tier B)
+
+1. Add a public call to `CanvasRenderer` that removes strokes and adds strokes in one change, with an `onPresented` callback. The renderer uses it for an erase, an undo, and a redo.
+2. In `CommittedLayer`, clear the changed rectangle of the front texture with a scissor rectangle. Then draw the strokes that the `SpatialGrid` finds there (architecture.md section 5.2, D-66). A build that runs takes the change too.
+3. Add an `OSSignposter` interval around the redraw.
+
+Done when: a snapshot test draws three crossing strokes, removes the middle one, and compares the image with a reference (TEST-07). The other two strokes keep every pixel in the cleared rectangle. A test removes a stroke during a build, and the finished build does not show it.
+
+Requirement and rules: UNDO-02, TEST-07, D-38, D-66.
+
+### 3.4 Eraser mask (Tier B)
+
+1. Add a mask texture of the format `.r8Unorm` and the size of the committed texture.
+2. Add the eraser samples to the inbox of the renderer. Each frame, the render thread stamps a circle of the eraser radius for each new sample into the mask.
+3. The composite pass hides the ink under the mask (architecture.md section 5.2).
+4. The change of task 3.3 clears the mask at the lift.
+
+Done when: a snapshot test stamps an eraser path across a stroke and compares the image with a reference. A frame with 4 new samples stays inside the frame budget of architecture.md section 12. The display link pauses again after the gesture.
+
+Requirement and rules: TOOL-04, FEEL-04, TEST-07, D-42, D-66.
+
+### 3.5 Eraser tool (Tier C)
+
+1. Add the tool state of the canvas: pen or eraser. The text tool comes in M5.
+2. Give `isEditingEnabled` its own stored value. The drawing gesture recognizer is on only while the tool is the pen and editing is allowed. The eraser also stops while editing is not allowed (D-70).
+3. A tool change takes effect at the next pencil down (D-70).
+4. With the eraser, read the `.pencil` touches directly (D-34). Send each sample to the renderer for the mask.
+5. At the lift, run the split of task 3.2 and apply one `EraseStrokes`. Send the change to the renderer and the rows to the repository, and ask for a save (D-30).
+
+Done when: unit tests of the tool state cover the change at the next pencil down and the editing flag. On the iPad, an erase across handwriting cuts the strokes, and the parts stay after a new launch.
+
+Requirement and rules: TOOL-01, TOOL-04, STO-06, D-30, D-34, D-70, D-71.
+
+### 3.6 Undo and redo (Tier C)
+
+1. Keep one `History` for each canvas while the app runs (D-12). `PointerApp` holds the histories by `CanvasID`, so a workspace switch keeps them.
+2. Each handoff of a pen stroke adds one `AddStroke` step. A stroke that the converter splits at `Limits.maxPointsPerStroke` gives one step.
+3. Add undo and redo buttons in the top right corner (UNDO-01), with tokens from `DesignSystem`. A button is off while its list is empty.
+4. Add Command-Z and Shift-Command-Z through `UIKeyCommand`.
+5. An undo or a redo sends its change to the renderer and its rows to the repository, and asks for a save.
+
+Done when: a snapshot test covers the buttons on and off (TEST-07). On the iPad, a stroke, an erase, two undo steps, and two redo steps give the expected canvas. The history of a workspace stays after a switch to another workspace and back.
+
+Requirement and rules: UNDO-01, UNDO-02, UNDO-04, TEST-07, D-12.
+
+### 3.7 Squeeze palette and current-tool button (Tier C)
+
+1. Add the tool palette with pen, eraser, undo, and redo (PEN-03, D-63). A tap on a tool selects it and closes the palette.
+2. Install one `UIPencilInteraction`. A squeeze opens the palette with the rules of architecture.md section 4.5.
+3. Add the current-tool button in the top left corner, next to the workspace selector. A finger tap opens the same palette under the button (D-64).
+4. Use tokens from `DesignSystem`. The app plays no haptic event (PEN-06).
+
+Done when: snapshot tests cover the palette and the button for each tool (TEST-07). On the iPad, a squeeze opens the palette at the pencil tip, and a tap on the button opens it under the button.
+
+Requirement and rules: TOOL-07, PEN-03, PEN-05, PEN-06, TEST-07, D-23, D-63, D-64.
+
+### 3.8 Acceptance tests
+
+1. Acceptance 1: the tests of task 3.1 for `AddStroke` and `EraseStrokes`.
+2. Acceptance 2: a performance test in `PointerDeviceTests` on the iPad Pro 11-inch (M4) in Release (D-69). The canvas holds the 20,000 strokes of D-56 and 1,000 parallel strokes of 300 points. One eraser line cuts each of the 1,000 strokes in two. The clock runs from the lift, or from the undo or redo call, to the end of the first frame that shows the result. Each step must take under 16 ms. Record the baseline in section 4 (PERF-03).
+3. A device test changes the tool to the eraser and erases at once. The first sample cuts the stroke under it (D-34, D-70).
+
+Done when: both acceptance criteria pass, and the results are in section 4.
+
+### 3.9 Close of M4
+
+1. The line coverage of `Model` and `InkEngine` is at least 90 % (TEST-02).
+2. The documents in `docs/` match the code.
+3. Run the full checklist of [code-of-code.md](code-of-code.md) section 5.
+4. Run the M2 and M3 performance tests again on the iPad. No test is more than 10 % slower.
+5. The product owner tests the eraser, the undo, the redo, the squeeze, and the button with the pencil on the iPad.
+
+## 4. Results
+
+No results yet.

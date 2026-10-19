@@ -69,6 +69,16 @@ Status values: Open, Decided, Replaced.
 | D-59 | Window access in the snapshot tests of SwiftUI views | The exception of D-44 in the snapshot helper | Decided (2026-10-18) |
 | D-60 | File access in the open test of M3 acceptance 3 | One inline lint exception, as in D-44 | Decided (2026-10-18) |
 | D-61 | The end of a fast stroke that PencilKit drops at the pencil lift | Accept the stroke that PencilKit gives | Decided (2026-10-19) |
+| D-62 | Window access in the open and memory tests of the canvas | One inline lint exception, as in D-44 | Decided (2026-10-19) |
+| D-63 | How to change the tool in M4 | A squeeze of the pencil opens the tool bar | Decided (2026-10-19) |
+| D-64 | Tool change without a squeeze | A button in the top left shows the current tool and opens the palette | Decided (2026-10-19) |
+| D-65 | Control points of the parts after a cut | Keep the outside control points and add the cut point as the new end | Decided (2026-10-19) |
+| D-66 | Eraser feedback and the committed texture | A mask texture during the gesture, a redraw of the area at the lift | Decided (2026-10-19) |
+| D-67 | The start state in the test of an erase command | Compare the live content | Decided (2026-10-19) |
+| D-68 | Undo of an added stroke, and the strokes in memory | Commands hold `Stroke` values, `strokes` holds live strokes only | Decided (2026-10-19) |
+| D-69 | What M4 acceptance 2 measures | The command on the Mac, and the lift to the first frame on the iPad | Decided (2026-10-19) |
+| D-70 | A tool change during a pencil touch | The change takes effect at the next pencil down | Decided (2026-10-19) |
+| D-71 | Short parts and the stroke limit after a cut | Drop parts shorter than the pen width. An erase can go past the stroke limit. | Decided (2026-10-19) |
 
 ## Details
 
@@ -530,6 +540,107 @@ Status values: Open, Decided, Replaced.
 - The review of M3 on 2026-10-19 found that the open test of M3 acceptance 3 measured a stand-in path: the load and an offscreen image. The real open on the screen took 254 to 270 ms without nodes, not 197 ms. The memory budget of architecture.md section 12 had no test. Both tests must open the canvas in the window of the test host, so that its render thread runs. Only `UIApplication.shared` reaches that window, and the lint rule of ARCH-05 bans it in the test folder of `CanvasFeature`.
 - Options: (a) one `// swiftlint:disable:next arch_05_singletons` line in the shared open code of the tests, with a comment that names D-62, as D-44 does. (b) a path exclusion for `Packages/CanvasFeature/Tests/` in `.swiftlint.yml`. (c) no window: the tests draw frames by hand on a `CAMetalLayer`, without the render thread and the display link.
 - Effect: the rule ARCH-05 and `.swiftlint.yml` stay as they are.
+
+### D-63 How to change the tool in M4
+
+- Decided by the product owner on 2026-10-19: a squeeze of the pencil opens the tool bar. The tool bar of TOOL-07 is the palette of PEN-03.
+- Raised by the review of M4 readiness on 2026-10-19. M4 adds the eraser, but no milestone before M7 gave a way to choose it.
+- Effect: the squeeze palette moves from M7 to M4. Its text entry comes with the text tool in M5. Architecture.md section 4.5 gives the squeeze rules.
+- Effect: a squeeze needs Apple Pencil Pro and a squeeze setting other than "Ignore". D-64 covers the other cases.
+
+### D-64 Tool change without a squeeze
+
+- Decided by the product owner on 2026-10-19: option (a).
+- Raised by D-63 on 2026-10-19.
+- PEN-05 says that the app works with every Apple Pencil model. Only Apple Pencil Pro has a squeeze. Apple Pencil (USB-C) has no squeeze and no double tap. If the squeeze setting is "Ignore" or "Run Shortcut", the app gets no squeeze. In these cases, the user cannot leave the pen tool. M7 acceptance 3 also requires that every feature that does not need tap or squeeze works with Apple Pencil (USB-C).
+- Options:
+  - (a) A small button in the top left corner shows the current tool. A finger tap on it opens the same palette. The squeeze stays the fast path.
+  - (b) Move the double tap of PEN-01 from M7 to M4 as well. This helps Apple Pencil 2, but not Apple Pencil (USB-C).
+  - (c) Support the tool change by squeeze only. Pencils without a squeeze then have the pen only. This breaks PEN-05.
+- Recommendation: (a). It covers every pencil and every setting, and it matches the words of TOOL-07: "shows the current tool". It costs one small view.
+- Doubt: (a) adds one more control to the screen.
+
+### D-65 Control points of the parts after a cut
+
+- Decided by the product owner on 2026-10-19: option (b). The two questions at the end of this entry moved to D-71.
+- Raised by architecture.md section 4.4 and the review of M4 readiness on 2026-10-19.
+- A stroke stores the control points of a uniform cubic B-spline (D-26). The eraser cuts the curve at a parameter value, not at a control point. Each end of a stroke uses a phantom point that mirrors the second point through the end point. Thus no part of the old curve can be stored exactly as a new stroke with the same rule.
+- Options:
+  - (a) Cut at control points. A part keeps the control points outside the eraser circle and nothing else. Simple, but a part can end up to one point spacing away from the eraser edge, inside or outside the circle.
+  - (b) Add the cut point. A part keeps the control points outside the circle and gets the point of the curve at the cut as its new end point. The part ends exactly at the eraser edge. The shape changes only in the two segments next to the cut. The change is at most one sixth of the distance between the cut point and the dropped control point.
+  - (c) Trim range. A part keeps all control points of the old stroke and stores a start and an end parameter. The shape stays exact. This changes D-26, `Stroke`, the schema (version 2 with a migration and a fixture), the shader, and the export.
+  - (d) Refit. Sample the remaining curve and fit new control points within a tolerance. More points and more code than (b), with a shape that is only close.
+- Recommendation: (b). It keeps D-26 and the schema, and the change of shape stays below a pixel at normal point spacing. A Tier A test measures the largest change against the old curve.
+- The questions of short parts and of the stroke limit are in D-71.
+
+### D-66 Eraser feedback and the committed texture
+
+- Decided by the product owner on 2026-10-19: the recommendation: option (a) while the pencil moves, and option (d) at the lift.
+- Raised by architecture.md sections 4.4 and 5.1 and the review of M4 readiness on 2026-10-19.
+- The committed texture (the cached image of all finished ink) only adds strokes today. With `max` blending (D-38), the renderer cannot subtract a stroke. Architecture.md section 4.4 says that the renderer draws strokes with masks during the gesture, but no document defines a mask. `UIUpdateLink` cannot drive the render thread (D-42).
+- Options for the feedback while the pencil moves:
+  - (a) Mask texture. The render thread stamps the eraser circles into a second `.r8Unorm` texture. The composite pass removes the ink under the stamps. Each frame costs a few circles. At the lift, the real parts replace the stamps. The cut edges of (D-65) can differ from the circle by a fraction of a point, so a small change can show at the lift.
+  - (b) Masked redraw. The render thread runs the hit test on each sample and keeps the removed parameter ranges per stroke. Each frame clears the dirty rectangle of the committed texture and draws the strokes there without their removed ranges. The picture matches the final parts, but the cost grows with the ink in the rectangle.
+  - (c) Full build. After each change, the renderer starts the chunked build that exists now. No new code, but the erased ink stays on the screen until the build ends, which takes several frames on a large canvas.
+- Options for the end of the gesture: (d) redraw the dirty rectangle once with the final parts, or (c) a full build.
+- Recommendation: (a) with (d). It gives the shortest path from the pencil to the screen, and it changes the commit of D-30 only on the render side. If the change at the lift shows on the device, use (b).
+- Effect: the steps of architecture.md section 4.4 change. The hit test and the split then run once at the lift, not on each sample.
+- Effect: the redraw of an area also serves each undo and redo that removes ink.
+- Effect: the mask must hide ink only. When text and cards join the committed layer in M5 and M6, the ink needs its own texture, or the mask must skip them.
+
+### D-67 The start state in the test of an erase command
+
+- Decided by the product owner on 2026-10-19: option (a).
+- Raised by the review of M4 readiness on 2026-10-19.
+- TEST-09 and data-model.md section 9 require that `revert` after `apply` gives content equal to the start state, except for `modified` values. Data-model.md section 7.5 says that an undo of an erase keeps the old erase records with `isDeleted = true` and adds erase records for the new parts. So after the revert, `erased` is not equal to the start state.
+- Options:
+  - (a) Compare the live content: the strokes, cards, and text boxes that are not erased or deleted. The test ignores `erased` and the `modified` values. A second test makes sure that each erase record after the revert is a tombstone of an erase.
+  - (b) Compare all of `CanvasContent`. The revert then removes the session records from `erased`, and the canvas sends tombstone rows to the repository from another list. Memory and disk then differ, which data-model.md section 8 does not allow.
+- Recommendation: (a). It tests what the user sees, and it keeps the rule of D-30 that no row is deleted.
+- Effect: TEST-09 and data-model.md section 9 get one sentence each about the live content.
+
+### D-68 Undo of an added stroke, and the strokes in memory
+
+- Decided by the product owner on 2026-10-19: option (b).
+- Raised by the review of M4 readiness on 2026-10-19.
+- A stroke row never changes and has no tombstone. No document says how an undo of `AddStroke` hides the stroke. Review A-07 recommends that commands hold IDs only, and that the undo adds an erase record. No document took over that recommendation.
+- Options:
+  - (a) Commands hold IDs only. Erased strokes stay in `CanvasContent.strokes`, and every reader filters them with `erased`. This matches review A-07.
+  - (b) Commands hold `Stroke` values. An erase or an undo of an add removes the stroke from `strokes` and writes an erase record. A redo puts the same value back. `InkPoints` is a shared reference (review A-03), so the command costs one reference per stroke and never copies points.
+- Recommendation: (b). `strokes` then holds the live strokes only, as the renderer, the export, and the limit check expect. The memory cost equals the cost of (a), because the points live once.
+- Effect: the undo of `AddStroke` writes an erase record for the stroke, and its redo sets `isDeleted = true` on that record.
+
+### D-69 What M4 acceptance 2 measures
+
+- Decided by the product owner on 2026-10-19: option (c), with the device and the content of the recommendation.
+- Raised by the review of M4 readiness on 2026-10-19.
+- M4 acceptance 2 asks for "under 16 ms per step". The steps are an erase of 1,000 strokes in one gesture, its undo, and its redo. It does not give the start and the end of the measurement, the content, or the device.
+- Options:
+  - (a) The command only: `apply` and `revert` of `EraseStrokes` on `CanvasContent`, on the Mac and on the iPad.
+  - (b) From the pencil lift or the button tap to the end of the first frame that shows the result. The test runs on the iPad in Release. The save runs off the main actor and has its own budget of 50 ms.
+  - (c) Both, with (a) as a Tier A test and (b) as the acceptance test.
+- Recommendation: (c), on the iPad Pro 11-inch (M4), in Release. The content: 1,000 parallel strokes of 300 points on top of the 20,000 strokes of D-56. One eraser line crosses all 1,000 strokes and cuts each in two parts.
+
+### D-70 A tool change during a pencil touch
+
+- Decided by the product owner on 2026-10-19: option (a).
+- Raised by the doubt of D-34 and the review of M4 readiness on 2026-10-19.
+- D-34 turns off the drawing gesture of PencilKit for the eraser. A tool change while the pencil touches the screen can lose the first eraser sample, or cut a pen stroke. The code also uses the same flag for a second purpose: `CanvasViewController.isEditingEnabled` turns off drawing when the library cannot save. Thus a switch to the eraser looks like a failed library, and the eraser does not stop when saves fail.
+- Options for the change:
+  - (a) A tool change takes effect at the next pencil down. The current stroke or erase ends with the old tool.
+  - (b) A tool change ends the current stroke or erase at once and starts the new tool.
+- Recommendation: (a). A squeeze or a tap on the palette comes while the pencil is up in normal use, so (a) costs nothing. A device test changes the tool and erases at once, and checks the first sample.
+- Effect: `isEditingEnabled` gets its own stored value. The drawing gesture is on only for the pen tool while editing is allowed. The eraser also checks `isEditingEnabled`.
+
+### D-71 Short parts and the stroke limit after a cut
+
+- Decided by the product owner on 2026-10-19: option (a) in both.
+- Raised by D-65 on 2026-10-19.
+- A cut can leave a part that is only a fraction of a point long. On the screen, such a part is a speck that the user did not want.
+- A cut can make two strokes from one, so an erase can raise the stroke count. `CanvasContent.add(_:)` refuses a stroke at `Limits.maxStrokesPerCanvas`.
+- Options for short parts: (a) drop a part whose curve is shorter than the pen width. (b) keep every part.
+- Options for the limit: (a) an erase can go past the limit. The pen then refuses new strokes with the limit message. (b) an erase at the limit fails with the limit message.
+- Recommendation: (a) in both. A speck is never what the user wants. An erase must never fail, and the parts of one gesture can only pass the limit by a small amount.
 
 ## Points in the request that conflict or are not complete
 

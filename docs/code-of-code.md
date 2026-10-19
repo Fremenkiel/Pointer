@@ -167,7 +167,7 @@ func split(_ stroke: Stroke, by center: Point, radius: Double) -> [StrokePart] {
 - `TEST-06` Use parameterized tests (`@Test(arguments:)`) for limits and edges: zero, one, the limit, and the limit plus one.
 - `TEST-07` Each UI component and each renderer output has a snapshot test. The test renders to an image with `UIGraphicsImageRenderer` or an offscreen Metal texture. It compares the image with a reference PNG in the repository, with a tolerance of 0.5% of the pixels. No snapshot library.
 - `TEST-08` Each schema version has a fixture database and a migration test (see [data-model.md](data-model.md) section 12).
-- `TEST-09` Each command has a test that applies it, reverts it, and compares the result with the start state.
+- `TEST-09` Each command has a test that applies it, reverts it, and compares the result with the start state. The comparison covers the live content (D-67).
 
 Test pyramid: most tests are unit tests in Tier A. Fewer tests cover Tier B with snapshots. A few UI tests cover the main flows: create a workspace, draw, open a card, leave a card, undo, export.
 

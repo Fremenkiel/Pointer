@@ -42,7 +42,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 - TOOL-04: The eraser removes ink where the pencil touches it and cuts the stroke at that place (D-06).
 - TOOL-05: The text tool creates a text box where the pencil taps. The keyboard opens. Scribble (handwriting into text fields) works in the text box.
 - TOOL-06: A finger tap on an existing text box starts editing it.
-- TOOL-07: A small tool bar shows the current tool and lets you change it with a tap.
+- TOOL-07: A small tool bar shows the current tool and lets you change it with a tap. A squeeze of the pencil opens it as the palette of PEN-03 (D-63). A button in the top left corner shows the current tool, and a finger tap on it opens the same palette (D-64).
 
 ### 3.3 Apple Pencil
 

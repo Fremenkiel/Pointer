@@ -229,7 +229,7 @@ struct CanvasContent: Sendable {
 }
 ```
 
-`erased` holds only the erase records of the current session. The repository loads live strokes only, so the erased strokes of earlier sessions never reach memory or the point arena (review A-07). An undo can only reach an erase of the current session, because the history lives in memory (D-12).
+`strokes` holds the live strokes only. An erase, or an undo of an added stroke, removes the stroke from `strokes`. The command keeps the `Stroke` value for a later undo or redo (D-68). `erased` holds only the erase records of the current session. The repository loads live strokes only, so the erased strokes of earlier sessions never reach memory or the point arena (review A-07). An undo can only reach an erase of the current session, because the history lives in memory (D-12).
 
 `CanvasContent` is the input and the output of commands. Only the canvas controller holds it, together with the `History` (review A-03). Swift copies a dictionary at the first change after a copy exists. With a second holder, the main actor then copies up to 200,000 entries at a pencil lift.
 
@@ -249,7 +249,7 @@ protocol CanvasCommand: Sendable {
 Rules:
 
 - Each command makes the smallest change that does the job.
-- `revert` after `apply` gives back content that is equal to the content before `apply`, except for `modified` clock values. A unit test for each command makes sure that this rule holds.
+- `revert` after `apply` gives back live content that is equal to the live content before `apply`, except for `modified` clock values. The live content is the strokes, cards, and text boxes that are not erased or deleted. The erase records stay as tombstones and are not part of the comparison (D-67). A unit test for each command makes sure that this rule holds. A second test makes sure that each erase record after a revert is a tombstone.
 - Commands never touch disk. The repository saves the changed records after the command (see [storage.md](storage.md)).
 
 ## 10. Device state

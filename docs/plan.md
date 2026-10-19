@@ -75,7 +75,7 @@ Acceptance:
 
 The tasks are in [m3-plan.md](m3-plan.md).
 
-Status on 2026-10-18: all tasks are in the code, and `make check` passes. Acceptance 1, 3, and 4 pass. Acceptance 2 passes for the file, and the look at the Files app waits for the product owner, as does the manual test of task 3.9. See [m3-plan.md](m3-plan.md) section 4.
+Status: done on 2026-10-19. All four acceptance criteria pass, and `make check` passes. The open on the screen has the baseline 274.8 ms (D-62). See [m3-plan.md](m3-plan.md) section 4.
 
 Acceptance:
 
@@ -86,14 +86,18 @@ Acceptance:
 
 ## M4: Eraser and undo
 
-- `InkEngine`: eraser hit test and `StrokeSplitter` (or whole-stroke, per D-06).
-- `Model`: `History` and all ink commands.
+- `InkEngine`: eraser hit test and `StrokeSplitter`, partial (D-06), with the cut rule of D-65.
+- `Model`: `History` and all ink commands. Commands hold `Stroke` values (D-68).
+- `Rendering`: the eraser mask and the redraw of a changed area (D-66).
 - Undo and redo buttons in the top right corner. Command-Z on a hardware keyboard.
+- `CanvasFeature`: the squeeze palette with pen, eraser, undo, and redo (D-63). The current-tool button in the top left opens the same palette (D-64). A tool change takes effect at the next pencil down (D-70).
+
+The tasks are in [m4-plan.md](m4-plan.md).
 
 Acceptance:
 
-1. Each command passes the apply-then-revert test (TEST-09).
-2. Erase, undo, and redo of 1,000 strokes in one gesture takes under 16 ms per step.
+1. Each command passes the apply-then-revert test (TEST-09, D-67).
+2. Erase, undo, and redo of 1,000 strokes in one gesture takes under 16 ms per step (D-69). A Tier A test times `apply` and `revert` of the command. A device test on the iPad Pro 11-inch (M4) in Release times each step. The clock runs from the pencil lift or the button tap to the end of the first frame that shows the result. The canvas holds the 20,000 strokes of D-56 and 1,000 parallel strokes of 300 points. One eraser line cuts each of the 1,000 strokes in two.
 
 ## M5: Text boxes
 
@@ -116,7 +120,7 @@ Acceptance:
 
 ## M7: Apple Pencil interactions
 
-- Double tap, squeeze palette, hover dot.
+- Double tap and hover dot. The squeeze palette comes in M4 (D-63).
 
 Acceptance:
 
