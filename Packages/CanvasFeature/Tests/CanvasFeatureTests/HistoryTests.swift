@@ -87,6 +87,7 @@ struct CanvasHistoryTests {
         try loaded.add(line)
         let first = try makeController(content: loaded, sessions: sessions, clock: clock)
         erase(first)
+        first.willMove(toParent: nil)
         let parts = first.content.strokes
         // A switch makes a new screen. The library loads the live strokes only.
         var reloaded = CanvasContent(canvasID: Fixtures.canvas)

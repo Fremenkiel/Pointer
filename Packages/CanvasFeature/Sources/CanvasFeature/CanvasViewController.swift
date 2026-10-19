@@ -152,6 +152,12 @@ public final class CanvasViewController: UIViewController {
         installToolControls()
     }
 
+    /// Keeps the session when the canvas leaves its parent, for example at a workspace switch.
+    override public func willMove(toParent parent: UIViewController?) {
+        super.willMove(toParent: parent)
+        if parent == nil { saveSession() }
+    }
+
     /// Takes the key commands of the hardware keyboard.
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)

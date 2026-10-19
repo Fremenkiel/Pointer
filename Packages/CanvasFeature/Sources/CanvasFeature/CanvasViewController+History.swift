@@ -1,4 +1,5 @@
 import DesignSystem
+import Geometry
 import Model
 import SwiftUI
 import UIKit
@@ -7,14 +8,16 @@ import UIKit
 extension CanvasViewController {
     /// Undoes the newest step of this canvas. It does nothing if the undo list is empty.
     public func undo() {
-        runStep { history, content, clock throws(CommandError) in
+        let area = Self.area(of: history.undoSteps.last)
+        runStep(area: area) { history, content, clock throws(CommandError) in
             try history.undo(on: &content, clock: &clock)
         }
     }
 
     /// Redoes the newest undone step of this canvas. It does nothing if the redo list is empty.
     public func redo() {
-        runStep { history, content, clock throws(CommandError) in
+        let area = Self.area(of: history.redoSteps.last)
+        runStep(area: area) { history, content, clock throws(CommandError) in
             try history.redo(on: &content, clock: &clock)
         }
     }
@@ -31,7 +34,13 @@ extension CanvasViewController {
 
     /// Runs an undo or a redo, then sends the change to the renderer and the rows to the library,
     /// and asks for a save.
+    /// Returns the changed area of a step, or `nil` to redraw the area of its removed strokes.
+    private static func area(of command: (any CanvasCommand)?) -> Rect? {
+        (command as? EraseStrokes)?.area
+    }
+
     private func runStep(
+        area: Rect?,
         _ step: (inout History, inout CanvasContent, inout HybridClock) throws(CommandError) ->
             [LibraryChange]
     ) {
@@ -47,6 +56,7 @@ extension CanvasViewController {
         renderer.change(
             removing: removed,
             adding: added,
+            area: area,
             onPresented: { [weak self] in self?.onStepPresented?() }
         )
         send(rows)
@@ -77,12 +87,18 @@ extension CanvasViewController {
         return (removed, added)
     }
 
-    /// Keeps the session of the canvas and updates the buttons.
-    func historyDidChange() {
+    /// Keeps the session of the canvas for the time the app runs (D-12). The canvas calls it when
+    /// it leaves the screen, not at each step: a copy at each step made the next step copy the
+    /// erase records of the session (M4 task 3.8).
+    func saveSession() {
         sessions?.save(
             CanvasSession(history: history, erased: content.erased),
             for: content.canvasID
         )
+    }
+
+    /// Updates the buttons after a step.
+    func historyDidChange() {
         historyControls.canUndo = history.canUndo
         historyControls.canRedo = history.canRedo
     }
