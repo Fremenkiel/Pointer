@@ -68,6 +68,7 @@ Status values: Open, Decided, Replaced.
 | D-58 | Stored form of the `library` rows | Decimal version, hex clock value, lowercase device UUID | Decided (2026-10-18) |
 | D-59 | Window access in the snapshot tests of SwiftUI views | The exception of D-44 in the snapshot helper | Decided (2026-10-18) |
 | D-60 | File access in the open test of M3 acceptance 3 | One inline lint exception, as in D-44 | Decided (2026-10-18) |
+| D-61 | The end of a fast stroke that PencilKit drops at the pencil lift | | Open |
 
 ## Details
 
@@ -514,6 +515,14 @@ Status values: Open, Decided, Replaced.
 - M3 acceptance 3 opens a canvas with the content of D-56 to the first frame. The test needs `Persistence` for the load and `Rendering` for the frame. ARCH-03 bans `Rendering` in the test folders of `Persistence`. So the test lives in the test folder of `CanvasFeature`, which `PointerDeviceTests` also compiles. There, the lint rule of ARCH-04 bans `FileManager`. The test must make a folder for a library of about 95 MB and delete it after the run.
 - Options: (a) one `// swiftlint:disable:next arch_04_file_system` line for the make and one for the delete, with a comment that names D-60, as D-44 does for `UIApplication.shared`. (b) a public function in `Persistence` that makes and removes a library folder, for this test now and the restore of M9 later. (c) two tests: the load in the device tests of `Persistence` and the frame in the M2 test of `Rendering`, with the sum of the two times as the result.
 - Recommendation: (a). It keeps the production code as it is and measures the open in one run. Option (b) adds API before M9 needs it. Option (c) does not measure one open.
+
+### D-61 The end of a fast stroke that PencilKit drops at the pencil lift
+
+- Open. Raised by the open bug of [m3-plan.md](m3-plan.md) section 4.10 on 2026-10-19.
+- At the pencil lift, the final `PKStroke` of a fast stroke ends 18 to 60 points before the last pencil touch. The live PencilKit ink reaches the pencil, so its end vanishes at the lift. The product owner saw the end vanish while the overlay still showed the stroke. For a slow stroke, the gap is 2 to 11 points. Pointer stores and draws the final path exactly (D-26), so the renderer does not cause the loss.
+- Not known yet: whether PencilKit drops the end in every app, or only with the setup of Pointer, for example the monoline ink.
+- Options: (a) accept the end that PencilKit gives. FEEL-03 then fails for fast strokes, by the behavior of PencilKit. (b) add control points after the last control point from the pencil touches that the final path does not reach. The stored stroke then reaches the pencil, but the PencilKit overlay still drops the end at the lift for a moment. This changes D-26. (c) find a PencilKit setup that keeps the end, if the cause is in the setup of Pointer.
+- Recommendation: first find out whether Apple Notes with the monoline pen also drops the end of a fast stroke. If it does not, look for (c). If it does, the choice is between (a) and (b).
 
 ## Points in the request that conflict or are not complete
 

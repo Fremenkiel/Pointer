@@ -296,5 +296,14 @@ Found by the product owner on 2026-10-19 during the manual test of task 3.9. Whe
 3. `CanvasRenderer.renderImage` draws the full tail, as far as PencilKit does.
 4. A later screenshot of the iPad shows the full tails, so a later rebuild of the committed texture brings them back.
 
-The cause lies in the on-screen path of a new stroke in `Rendering`. A separate task fixes it.
+The investigation of 2026-10-19 found that the cause lies before Pointer gets the stroke, not in `Rendering`:
+
+1. On the iPad, the 20 points of a failing stroke went through `CanvasRenderer.renderFrame(into:deadline:)`. The shown committed texture held the whole tail, as far as the offline image. 40 strokes in a row kept their tails too.
+2. On the iPad, `InkView` ran with its render thread and display link in a window. When each presented callback ran, the shown texture covered all 20 points of each of 30 strokes.
+3. A diagnostic build compared the last pencil touch with the last control point of the final `PKStroke`. For 14 fast strokes, the path ended 18 to 60 points before the last touch. For 5 slow strokes, it ended 2 to 11 points before it.
+4. The same build kept the overlay for 1.5 s after the handoff. The product owner saw the end vanish at the pencil lift, while the overlay still showed the stroke.
+
+So PencilKit drops the end of a fast stroke at the lift, in its own overlay. Fact 3 above compared the final path, which never held the dropped end. Fact 4 shows only that the stored stroke is complete. Decision D-61 must choose the fix.
+
+The same build lost some whole strokes after the 1.5 s delay. The cause is not known yet. A removal of handed-off strokes that runs before PencilKit adds the next stroke to its drawing is a possible cause. It needs its own test.
 
