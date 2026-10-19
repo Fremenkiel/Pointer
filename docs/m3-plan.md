@@ -287,7 +287,7 @@ M2 performance tests on the iPad Pro 11-inch (M4), Release, against the baseline
 
 No M2 test is more than 10 % slower. The M2 tests do not use `CanvasViewController`, so the changes of M3 in `CanvasFeature` do not reach them. Those changes add to the frame path only a comparison of two cameras and the rest check of the camera, without an allocation.
 
-### 4.10 Open bug: the tail of a fast stroke vanishes at the handoff
+### 4.10 Closed bug: the tail of a fast stroke vanishes at the handoff
 
 Found by the product owner on 2026-10-19 during the manual test of task 3.9. When a short stroke is drawn fast, the last part of it, about half an inch, vanishes when the PencilKit overlay goes away. Slow strokes are fine. The bug exists already at `bc90ad8`, the last commit before M3, so M3 did not cause it. The facts so far:
 
@@ -303,7 +303,7 @@ The investigation of 2026-10-19 found that the cause lies before Pointer gets th
 3. A diagnostic build compared the last pencil touch with the last control point of the final `PKStroke`. For 14 fast strokes, the path ended 18 to 60 points before the last touch. For 5 slow strokes, it ended 2 to 11 points before it.
 4. The same build kept the overlay for 1.5 s after the handoff. The product owner saw the end vanish at the pencil lift, while the overlay still showed the stroke.
 
-So PencilKit drops the end of a fast stroke at the lift, in its own overlay. Fact 3 above compared the final path, which never held the dropped end. Fact 4 shows only that the stored stroke is complete. Decision D-61 must choose the fix.
+So PencilKit drops the end of a fast stroke at the lift, in its own overlay. Apple Notes drops it too. Fact 3 above compared the final path, which never held the dropped end. Fact 4 shows only that the stored stroke is complete. The product owner accepted the stroke that PencilKit gives (D-61), so the bug is closed without a code change.
 
 The same build lost some whole strokes after the 1.5 s delay. The normal build does not lose them (product owner, 2026-10-19), so only the delay of the diagnostic build caused it.
 

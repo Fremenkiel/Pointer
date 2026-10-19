@@ -92,7 +92,7 @@ PencilKit gives no samples before pencil lift. The pen tool works in these steps
 
 The `PKDrawing` of the `PKCanvasView` holds at most the strokes that wait for the handoff. Pointer never stores PencilKit data.
 
-The finished stroke must look the same as the live stroke (FEEL-03). In the M1 hybrid spike, the product owner saw a clear difference in style and width at the handoff. M2 must fix it (see [plan.md](plan.md), M2). Possible causes to test:
+The finished stroke must look the same as the live stroke (FEEL-03). One exception is accepted (D-61): at the pencil lift, PencilKit drops the end of a fast stroke from its own live ink, up to about 60 points. Pointer keeps the stroke that PencilKit gives. In the M1 hybrid spike, the product owner saw a clear difference in style and width at the handoff. M2 must fix it (see [plan.md](plan.md), M2). Possible causes to test:
 
 - The PencilKit monoline width and the capsule width use different definitions. The spike drew capsules with half the tool width as the radius and ignored the point sizes of the `PKStroke`.
 - The monoline rendering of PencilKit has its own edge and end shape, which capsules do not copy.

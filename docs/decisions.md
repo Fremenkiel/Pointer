@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 on 2026-10-19.
 
 Status values: Open, Decided, Replaced.
 
@@ -68,7 +68,7 @@ Status values: Open, Decided, Replaced.
 | D-58 | Stored form of the `library` rows | Decimal version, hex clock value, lowercase device UUID | Decided (2026-10-18) |
 | D-59 | Window access in the snapshot tests of SwiftUI views | The exception of D-44 in the snapshot helper | Decided (2026-10-18) |
 | D-60 | File access in the open test of M3 acceptance 3 | One inline lint exception, as in D-44 | Decided (2026-10-18) |
-| D-61 | The end of a fast stroke that PencilKit drops at the pencil lift | | Open |
+| D-61 | The end of a fast stroke that PencilKit drops at the pencil lift | Accept the stroke that PencilKit gives | Decided (2026-10-19) |
 
 ## Details
 
@@ -518,7 +518,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-61 The end of a fast stroke that PencilKit drops at the pencil lift
 
-- Open. Raised by the open bug of [m3-plan.md](m3-plan.md) section 4.10 on 2026-10-19.
+- Decided by the product owner on 2026-10-19: option (a). Pointer keeps the stroke that PencilKit gives, as Apple Notes does. FEEL-03 does not hold for the end of a fast stroke. Raised by the open bug of [m3-plan.md](m3-plan.md) section 4.10.
 - At the pencil lift, the final `PKStroke` of a fast stroke ends 18 to 60 points before the last pencil touch. The live PencilKit ink reaches the pencil, so its end vanishes at the lift. The product owner saw the end vanish while the overlay still showed the stroke. For a slow stroke, the gap is 2 to 11 points. Pointer stores and draws the final path exactly (D-26), so the renderer does not cause the loss.
 - Apple Notes also drops the end of a fast stroke (product owner, 2026-10-19). So the setup of Pointer does not cause it.
 - Options: (a) accept the end that PencilKit gives. FEEL-03 then fails for fast strokes, by the behavior of PencilKit. (b) add control points after the last control point from the pencil touches that the final path does not reach. The stored stroke then reaches the pencil, but the PencilKit overlay still drops the end at the lift for a moment. This changes D-26. (c) find a PencilKit setup that keeps the end, if the cause is in the setup of Pointer.
