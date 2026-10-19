@@ -90,9 +90,15 @@ private struct Probe {
     /// Adds the covered ranges of one segment. `start` holds the start of an open range.
     func scan(segment: Int, start: inout Double?, ranges: inout [ClosedRange<Double>]) {
         let hull = spline.hullBounds(ofSegment: segment).expanded(by: reach - path.radius)
+        let low = Double(segment)
+        // The segment stays inside the convex hull of its 4 points, and a band is convex. If one
+        // band holds all 4 points, it holds the whole segment, which then needs no samples.
+        if isHullCovered(segment: segment, hull: hull) {
+            if start == nil { start = low }
+            return
+        }
         let isNear = hull.intersects(nearBounds)
         let segmentBands = isNear ? bands.filter { path.bandBounds[$0].intersects(hull) } : []
-        let low = Double(segment)
         // An open range ends at a covered point, which lies in this hull, so it has bands.
         guard !segmentBands.isEmpty else {
             assert(start == nil, "Range open at segment \(segment) without bands")
@@ -119,6 +125,23 @@ private struct Probe {
             wasCovered = covered
         }
         assert(steps >= 1, "A segment takes at least one step")
+    }
+
+    /// Returns `true` if one band holds the 4 points that shape the segment.
+    private func isHullCovered(segment: Int, hull: Rect) -> Bool {
+        precondition(segment >= 0 && segment < spline.segmentCount, "Segment \(segment) unknown")
+        guard hull.intersects(nearBounds) else { return false }
+        let origin = spline.stroke.origin
+        for band in bands where path.bandBounds[band].intersects(hull) {
+            var holdsAll = true
+            for index in (segment - 1)...(segment + 2) where holdsAll {
+                let value = spline.point(at: index)
+                let point = Point(x: origin.x + Double(value.x), y: origin.y + Double(value.y))
+                holdsAll = path.distance(from: point, toBand: band) < reach
+            }
+            if holdsAll { return true }
+        }
+        return false
     }
 
     private func sampleCount(segment: Int) -> Int {
