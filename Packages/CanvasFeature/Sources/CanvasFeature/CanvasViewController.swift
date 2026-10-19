@@ -2,6 +2,7 @@ import Geometry
 import Model
 import PencilKit
 import Rendering
+import SwiftUI
 import UIKit
 import os
 
@@ -21,6 +22,17 @@ public final class CanvasViewController: UIViewController {
     let sessions: CanvasSessions?
     /// The state of the undo and redo buttons.
     let historyControls = HistoryControls()
+    /// The state of the current-tool button and the palette.
+    let toolControls = ToolControls()
+    /// The host of the current-tool button.
+    private(set) lazy var toolButtonHost = UIHostingController(
+        rootView: CurrentToolButton(controls: toolControls)
+    )
+    /// The current-tool button. The app places it next to the workspace selector (D-64).
+    public var toolButton: UIViewController { toolButtonHost }
+    /// The last pencil location in view space. A squeeze without a hover pose opens the palette
+    /// there.
+    var lastPencilLocation: CGPoint?
     /// The tool and the rules of a tool change (D-70).
     private(set) var toolState = ToolState()
     /// The samples of the running eraser gesture in view space, or `nil` without a gesture.
@@ -103,6 +115,7 @@ public final class CanvasViewController: UIViewController {
     /// Picks a tool. It takes effect at the next pencil down (D-70).
     public func select(_ tool: Tool) {
         toolState.select(tool)
+        toolControls.selected = tool
         applyToolState()
     }
 
@@ -133,6 +146,7 @@ public final class CanvasViewController: UIViewController {
         canvasView.inkView.onFrame = { [weak self] time in self?.stepCamera(to: time) ?? false }
         installGestures()
         installHistoryButtons()
+        installToolControls()
     }
 
     /// Takes the key commands of the hardware keyboard.
@@ -239,6 +253,7 @@ public final class CanvasViewController: UIViewController {
 
     /// Gives a pencil sample to a running eraser gesture.
     func pencilMoved(to location: Point) {
+        lastPencilLocation = CGPoint(x: location.x, y: location.y)
         guard eraserSamples != nil else { return }
         addEraserSample(location)
     }

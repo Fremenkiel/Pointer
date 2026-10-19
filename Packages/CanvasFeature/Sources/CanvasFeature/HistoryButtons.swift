@@ -24,17 +24,7 @@ struct HistoryButtons: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .font(DesignSystem.Font.chromeTitle)
-                .foregroundStyle(
-                    isEnabled
-                        ? DesignSystem.Color.chromeForeground : DesignSystem.Color.chromeDisabled
-                )
-                .frame(width: DesignSystem.Size.tapTarget, height: DesignSystem.Size.tapTarget)
-                .background(
-                    DesignSystem.Color.chromeBackground,
-                    in: RoundedRectangle(cornerRadius: DesignSystem.Size.cornerRadius)
-                )
+            ChromeIcon(icon: icon, isEnabled: isEnabled)
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)

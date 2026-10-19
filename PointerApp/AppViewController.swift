@@ -9,6 +9,8 @@ import WorkspaceFeature
 final class AppViewController: UIViewController {
     private(set) var canvas: CanvasViewController?
     private var selector: UIViewController?
+    /// The current-tool button of the shown canvas, next to the selector (D-64).
+    private var toolButton: UIViewController?
 
     /// Sets the black background of the root view.
     override func viewDidLoad() {
@@ -29,6 +31,40 @@ final class AppViewController: UIViewController {
         view.insertSubview(newCanvas.view, at: 0)
         newCanvas.didMove(toParent: self)
         canvas = newCanvas
+        showToolButton(newCanvas.toolButton)
+    }
+
+    /// Shows the current-tool button of the canvas to the right of the selector (D-64).
+    private func showToolButton(_ button: UIViewController) {
+        if let old = toolButton {
+            old.willMove(toParent: nil)
+            old.view.removeFromSuperview()
+            old.removeFromParent()
+        }
+        addChild(button)
+        button.view.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(button.view)
+        let guide = view.safeAreaLayoutGuide
+        let leading =
+            selector.map {
+                button.view.leadingAnchor.constraint(
+                    equalTo: $0.view.trailingAnchor,
+                    constant: DesignSystem.Spacing.small
+                )
+            }
+            ?? button.view.leadingAnchor.constraint(
+                equalTo: guide.leadingAnchor,
+                constant: DesignSystem.Spacing.large
+            )
+        NSLayoutConstraint.activate([
+            button.view.topAnchor.constraint(
+                equalTo: guide.topAnchor,
+                constant: DesignSystem.Spacing.large
+            ),
+            leading,
+        ])
+        button.didMove(toParent: self)
+        toolButton = button
     }
 
     /// Shows the workspace selector in the top left corner.
@@ -53,6 +89,9 @@ final class AppViewController: UIViewController {
         ])
         host.didMove(toParent: self)
         selector = host
+        if let button = toolButton {
+            showToolButton(button)
+        }
     }
 
     /// Shows a message with one button. A message that comes while another one shows waits for

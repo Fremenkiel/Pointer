@@ -1,12 +1,22 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "Undo": {
+    "Eraser": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Undo"
+            "value": "Eraser"
+          }
+        }
+      }
+    },
+    "Pen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pen"
           }
         }
       }
@@ -17,6 +27,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Redo"
+          }
+        }
+      }
+    },
+    "Tools": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tools"
+          }
+        }
+      }
+    },
+    "Undo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo"
           }
         }
       }
