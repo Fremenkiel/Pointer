@@ -175,7 +175,7 @@ Status: the code is done in commit c0553fa, and `make check` passes. Four snapsh
 
 Done when: both acceptance criteria pass, and the results are in section 4.
 
-Status: blocked, because the iPad is locked. The test of acceptance 2 is in commit 59ba4cc, and `make check` passes. On 2026-10-19, `xcodebuild` stopped with "Unlock Kevin's iPad to Continue". Acceptance 1 passes with the tests of task 3.1. Item 3 is the test `EraserToolTests.firstSample`, which runs on the simulator and in `PointerDeviceTests`. The test of acceptance 2 makes these choices inside D-69:
+Status: open. Acceptance 2 fails on the iPad, and the second run waits for the unlocked iPad. Acceptance 1 passes with the tests of task 3.1. Item 3 is the test `EraserToolTests.firstSample`, which runs on the simulator and in `PointerDeviceTests`. Section 4.5 has the measured times and the changes since the first run. The test of acceptance 2 makes these choices inside D-69:
 
 - The canvas holds the content in memory without a library, because the save runs off the main actor with its own budget of 50 ms.
 - The camera has zoom 0.5, so the 1,000 strokes, 1.5 points apart, fit on the screen. The eraser line has 261 samples.
@@ -241,4 +241,33 @@ The Tier A test fails if `apply`, `revert`, or the redo takes 16 ms or more. The
 | The frame loop after the gesture | can sleep | passes |
 
 New baselines (PERF-03): the eraser frame, CPU median 0.12 ms and GPU median 0.41 ms.
+
+### 4.5 Acceptance 2 on the iPad
+
+The first run on 2026-10-19 used commit 00fb525, on the iPad Pro 11-inch (M4) in Release, with 5 rounds:
+
+| Step | Target | Median | Slowest |
+|---|---|---|---|
+| Erase, from the lift to the first frame | under 16 ms | 82 ms | 93 ms |
+| Undo | under 16 ms | 70 ms | 79 ms |
+| Redo | under 16 ms | 64 ms | 77 ms |
+
+A breakdown with temporary timers in the same build:
+
+| Part | Time |
+|---|---|
+| Erase: candidate filter over 21,000 strokes | 1.2 ms |
+| Erase: hit test of 1,080 candidates | 20.3 ms, of which the band query takes 2.7 ms |
+| Erase: parts of 1,000 strokes | 2.8 ms |
+| Erase: `EraseStrokes.apply` | 1.6 to 3.1 ms |
+| Undo and redo: the step, with the copy of the session | 5 to 10 ms |
+| The frame after the call: the redraw of the bounds of all removed strokes, and the full draw of all added strokes | about 50 ms |
+
+The changes since the first run:
+
+1. Commit 3a6209a: a segment whose 4 points lie in one eraser band needs no samples. The hit test of this content went from 7.1 ms to 5.1 ms on the Mac. The iPad was about 2.8 times slower than the Mac in this test.
+2. Commit b6e529f: an erase, its undo, and its redo redraw only the area of the eraser path. The redraw draws only the segments that can touch the area, and the added strokes are not drawn in full.
+3. Commit a64adcd: the canvas keeps its session when it leaves the screen, not at each step.
+
+The second run waits for the iPad, which locked itself during the wait for the build.
 
