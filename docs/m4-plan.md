@@ -141,6 +141,13 @@ Done when: a snapshot test covers the buttons on and off (TEST-07). On the iPad,
 
 Requirement and rules: UNDO-01, UNDO-02, UNDO-04, TEST-07, D-12.
 
+Status: the code is done in commit 881b061, and `make check` passes. Three snapshot tests cover the buttons with both on, both off, and undo on with redo off. Four tests of the canvas cover a stroke, an erase, two undo steps, and two redo steps, the history after a switch to a new screen of the same canvas, the key commands, and the bound of the sessions. The device run of these tests is part of task 3.9. The task made these choices inside the decisions:
+
+- `PointerApp` holds `CanvasSessions`. A `CanvasSession` keeps the `History` and the erase records of the session of one canvas. A new load reads no erase record, so without them an undo after a switch would put a stroke back on the screen while its stored erase record stays live. `CanvasContent.adoptSessionRecords(_:)` takes them back at the open of a canvas.
+- The sessions have the bound `Limits.maxWorkspaces`, because each canvas of M4 belongs to a workspace. Past the bound, the least recently used session goes.
+- An undo or a redo finds its renderer change from its rows: a new stroke row or a tombstone adds a stroke, and a live erase record removes one.
+- The buttons use the new tokens `Icon.undo`, `Icon.redo`, and `Color.chromeDisabled`. Their snapshots are in the new folder `Tests/CanvasFeatureSnapshotTests` of `PointerDeviceTests`, as the selector snapshots are (D-59). `make snapshots` runs them.
+
 ### 3.7 Squeeze palette and current-tool button (Tier C)
 
 1. Add the tool palette with pen, eraser, undo, and redo (PEN-03, D-63). A tap on a tool selects it and closes the palette.
