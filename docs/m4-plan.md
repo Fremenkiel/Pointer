@@ -100,6 +100,15 @@ Done when: a snapshot test stamps an eraser path across a stroke and compares th
 
 Requirement and rules: TOOL-04, FEEL-04, TEST-07, D-42, D-66.
 
+Status: done on 2026-10-19 in commit b19fa13, and `make check` passes. The snapshot test `eraser-mask` passes: the ink under the path is hidden, and the ink beside it stays. A frame with 4 new samples takes 0.12 ms CPU and 0.41 ms GPU (medians) on the iPad, against 3 ms and 4 ms (section 4.4). After the end of the gesture, the renderer needs no frame, and the frame loop can sleep. The task made these choices inside the decisions:
+
+- The renderer converts each sample from view space to canvas space with the camera of the frame. The mask uses the mapping of the front texture. If the front texture changes during a gesture, the next frame clears the mask and stamps all samples again.
+- Each stamp is a capsule from the sample before, the same shape as the band of the hit test of task 3.2.
+- The composite pass uses a second pipeline with the mask only while the gesture has stamps, so a frame without an eraser reads no mask.
+- `CanvasRenderer.endErase()` ends the mask. The eraser tool calls it together with the change of task 3.3, so one frame shows the result and drops the mask.
+- The sample lists go back and forth between the inbox and the frame, so a frame allocates no list (PERF-01).
+- The budget test is an XCTest in `PointerDeviceTests`, because the simulator gives no device drawables and no real GPU times. `EraserMaskTests.swift` uses `Snapshot.swift`, so it stays out of `PointerDeviceTests`.
+
 ### 3.5 Eraser tool (Tier C)
 
 1. Add the tool state of the canvas: pen or eraser. The text tool comes in M5.
@@ -185,4 +194,22 @@ Timing of the D-69 content: 1,000 parallel strokes of 300 points, one eraser lin
 | `apply` again (redo) | 2.2 ms | 0.69 ms |
 
 The Tier A test fails if `apply`, `revert`, or the redo takes 16 ms or more. The split runs at the lift, so the device test of task 3.8 counts it in the step of the erase.
+
+### 4.3 Remove strokes and redraw an area
+
+| Item | Target | Result |
+|---|---|---|
+| Snapshot `redraw-remove-middle` (TEST-07) | matches | passes |
+| The two other strokes after the redraw, against a fresh build of them | every pixel kept | largest difference at most 1 of 255 |
+| A stroke removed during a build, for each of the 3 strokes | not in the finished build | passes |
+
+### 4.4 Eraser mask
+
+| Item | Target | Result |
+|---|---|---|
+| Snapshot `eraser-mask` (TEST-07) | matches | passes |
+| A frame with 4 new samples, iPad Pro 11-inch (M4), Release, 20,000 strokes of the M2 content, 60 frames | under 3 ms CPU, under 4 ms GPU | CPU median 0.12 ms, largest 0.24 ms. GPU median 0.41 ms, largest 3.01 ms. |
+| The frame loop after the gesture | can sleep | passes |
+
+New baselines (PERF-03): the eraser frame, CPU median 0.12 ms and GPU median 0.41 ms.
 
