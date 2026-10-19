@@ -38,7 +38,18 @@ final class EraseUndoPerformanceTests: XCTestCase {
         Self.show(canvas, in: host)
         defer { Self.close(canvas) }
         try await settle(renderer)
-        var times: [String: [Double]] = [:]
+        // The floor of the frame pipeline: an empty change, from the call to its presented frame.
+        var empty: [Double] = []
+        for _ in 0..<Self.rounds {
+            empty.append(
+                try await step(canvas, renderer) {
+                    renderer.change(removing: [], adding: [], area: nil) {
+                        canvas.onStepPresented?()
+                    }
+                }
+            )
+        }
+        var times: [String: [Double]] = ["empty change": empty]
         for _ in 0..<Self.rounds {
             times["erase", default: []].append(try await erase(canvas, renderer: renderer))
             times["undo", default: []].append(try await step(canvas, renderer) { canvas.undo() })
@@ -47,18 +58,27 @@ final class EraseUndoPerformanceTests: XCTestCase {
         }
         let calls = callMilliseconds.map { String(format: "%.1f", $0) }
         XCTContext.runActivity(named: "calls: " + calls.joined(separator: " ")) { _ in }
+        _ = report(times["empty change"] ?? [], name: "empty change")
         for name in ["erase", "undo", "redo"] {
-            let sorted = (times[name] ?? []).sorted()
-            let line = String(
-                format: "%@: median %.2f ms, slowest %.2f ms over %d steps",
-                name,
-                sorted[sorted.count / 2],
-                sorted.last ?? 0,
-                sorted.count
-            )
-            XCTContext.runActivity(named: line) { _ in }
-            XCTAssertLessThan(sorted.last ?? .infinity, Self.budgetMilliseconds, line)
+            let (slowest, line) = report(times[name] ?? [], name: name)
+            XCTAssertLessThan(slowest, Self.budgetMilliseconds, line)
         }
+    }
+
+    /// Writes the median and the slowest time of a step as an activity.
+    ///
+    /// - Returns: The slowest time and the line.
+    private func report(_ values: [Double], name: String) -> (slowest: Double, line: String) {
+        let sorted = values.sorted()
+        let line = String(
+            format: "%@: median %.2f ms, slowest %.2f ms over %d steps",
+            name,
+            sorted.isEmpty ? 0 : sorted[sorted.count / 2],
+            sorted.last ?? 0,
+            sorted.count
+        )
+        XCTContext.runActivity(named: line) { _ in }
+        return (sorted.last ?? .infinity, line)
     }
 
     private static func show(_ canvas: CanvasViewController, in host: UIViewController) {
