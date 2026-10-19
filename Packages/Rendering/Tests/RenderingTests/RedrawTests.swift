@@ -187,4 +187,47 @@ struct RedrawTests {
         #expect(edge.x == 0)
         #expect(edge.width == Int(2 * 10 + CommittedLayer.redrawMarginPixels))
     }
+
+    @Test("A redraw of an area shows the added parts there and keeps the ink outside")
+    func areaRedraw() throws {
+        let subject = try makeSubject(Self.crossing)
+        try build(subject)
+        let cut = Self.crossing[1]
+        // The parts of the middle line outside the strip -10...10, as an erase leaves them.
+        let left = StrokeBuilder.stroke(
+            Self.diagonal(from: Point(x: -90, y: 5), to: Point(x: -12, y: 0.5)),
+            seed: 4
+        )
+        let right = StrokeBuilder.stroke(
+            Self.diagonal(from: Point(x: 12, y: -0.5), to: Point(x: 90, y: -5)),
+            seed: 5
+        )
+        #expect(subject.store.remove(cut.id, frame: 2))
+        subject.store.add(left)
+        subject.store.add(right)
+        let area = Rect(minX: -10, minY: -120, maxX: 10, maxY: 120)
+        try subject.runFrame(2) { context in
+            subject.layer.redraw(
+                area,
+                store: subject.store,
+                encoder: subject.encoder,
+                context: context
+            )
+        }
+        let result = try subject.frontCoverage()
+        let expected = try coverage(of: [Self.crossing[0], Self.crossing[2], left, right])
+        let texture = try #require(subject.layer.front?.texture)
+        // Inside the strip, the result equals a fresh build. Outside it, the old line stays.
+        let pixels = 2.0
+        let low = Int((Double(texture.width) / 2 + area.minX * pixels).rounded(.down))
+        let high = Int((Double(texture.width) / 2 + area.maxX * pixels).rounded(.up))
+        var largest = 0
+        for row in 0..<texture.height {
+            for column in low..<high {
+                let index = row * texture.width + column
+                largest = max(largest, abs(Int(result[index]) - Int(expected[index])))
+            }
+        }
+        #expect(largest <= 1)
+    }
 }

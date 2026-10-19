@@ -104,7 +104,7 @@ public final class CanvasRenderer {
     ///
     /// - Precondition: The renderer holds room for the strokes.
     public func add(_ strokes: [Stroke], onPresented: @escaping @MainActor () -> Void) {
-        change(removing: [], adding: strokes, onPresented: onPresented)
+        change(removing: [], adding: strokes, area: nil, onPresented: onPresented)
     }
 
     /// Removes strokes and adds strokes in one change, for an erase, an undo, or a redo.
@@ -114,10 +114,15 @@ public final class CanvasRenderer {
     /// strokes there again (architecture.md 5.2, D-66). A removed ID that the renderer does not
     /// hold is ignored.
     ///
+    /// With an `area`, the renderer redraws only that area, and the added strokes show only
+    /// inside it. The caller must make sure that their ink outside the area is on the screen
+    /// already, as for the parts of an erase.
+    ///
     /// - Precondition: The renderer holds room for the added strokes.
     public func change(
         removing removed: [StrokeID],
         adding added: [Stroke],
+        area: Rect?,
         onPresented: @escaping @MainActor () -> Void
     ) {
         precondition(added.count <= Limits.maxStrokesPerCanvas, "Too many strokes")
@@ -125,7 +130,7 @@ public final class CanvasRenderer {
         lastHandoff += 1
         let handoff = lastHandoff
         callbacks.append((handoff, onPresented))
-        let edit = RenderEdit(removed: removed, added: added)
+        let edit = RenderEdit(removed: removed, added: added, area: area)
         engine.post { box in
             box.edits.append(edit)
             box.editHandoff = handoff

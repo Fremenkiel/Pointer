@@ -72,7 +72,13 @@ final class InkEncoder {
             guard isFirst || !Self.isPastDeadline(position - cursor, options.deadline) else {
                 break
             }
-            instances += appendEntries(slot, target: target, frame: context.frame, into: &lists)
+            instances += appendEntries(
+                slot,
+                target: target,
+                frame: context.frame,
+                clip: options.clip,
+                into: &lists
+            )
             position += 1
         }
         assert(
@@ -92,6 +98,7 @@ final class InkEncoder {
         _ slot: Int,
         target: InkTarget,
         frame: UInt64,
+        clip: Rect?,
         into lists: inout EntryBuckets
     ) -> Int {
         guard let info = store.makeResident(slot, frame: frame), let block = info.block else {
@@ -105,6 +112,33 @@ final class InkEncoder {
         let delta = info.origin - target.camera.center
         let origin = SIMD2(Float(delta.dx), Float(delta.dy))
         var instances = 0
+        forEachRun(slot, info: info, target: target, clip: clip) { run in
+            let entry = StrokeDrawEntry(
+                run,
+                origin: origin,
+                bufferOffset: offset,
+                firstInstance: firstInstance + instances,
+                radius: info.radius
+            )
+            lists.append(entry, instanceCount: run.instanceCount, to: bucket)
+            instances += run.instanceCount
+        }
+        assert(instances > 0 || clip != nil, "A resident stroke draws one instance at least")
+        return instances
+    }
+
+    /// Calls `body` with each level-of-detail run of a stroke, or with the parts of each run
+    /// that can touch `clip`.
+    private func forEachRun(
+        _ slot: Int,
+        info: StrokeStore.DrawInfo,
+        target: InkTarget,
+        clip: Rect?,
+        body: (DetailRun) -> Void
+    ) {
+        precondition(info.pointCount >= 2, "Stroke slot \(slot) has fewer than 2 points")
+        let box = clip.map { clipBox($0, info: info, target: target) }
+        let strokePoints = box == nil ? nil : store.points(of: slot).values
         DetailRuns.forEach(
             pointCount: info.pointCount,
             spacings: store.spacings(of: info),
@@ -115,19 +149,31 @@ final class InkEncoder {
             ),
             bend: { store.bend(slot: slot, block: $0) },
             body: { run in
-                let entry = StrokeDrawEntry(
-                    run,
-                    origin: origin,
-                    bufferOffset: offset,
-                    firstInstance: firstInstance + instances,
-                    radius: info.radius
-                )
-                lists.append(entry, instanceCount: run.instanceCount, to: bucket)
-                instances += run.instanceCount
+                if let box, let strokePoints {
+                    run.forEachClipped(points: strokePoints, box: box, body: body)
+                } else {
+                    body(run)
+                }
             }
         )
-        assert(instances > 0, "A resident stroke draws one instance at least")
-        return instances
+    }
+
+    /// Returns a canvas area as a box in the offsets of a stroke, grown by the line radius and
+    /// the anti-aliased edge, so that the clipped draw keeps each pixel of the area.
+    private func clipBox(_ area: Rect, info: StrokeStore.DrawInfo, target: InkTarget) -> ClipBox {
+        let margin =
+            Double(info.radius) + Double(Self.edgeHalfWidthPixels + 1) / target.pixelsPerCanvasPoint
+        assert(margin > 0, "A clip margin is positive")
+        return ClipBox(
+            low: SIMD2(
+                Float(area.minX - margin - info.origin.x),
+                Float(area.minY - margin - info.origin.y)
+            ),
+            high: SIMD2(
+                Float(area.maxX + margin - info.origin.x),
+                Float(area.maxY + margin - info.origin.y)
+            )
+        )
     }
 
     /// Reading the clock costs time too, so the pass checks it every few strokes.

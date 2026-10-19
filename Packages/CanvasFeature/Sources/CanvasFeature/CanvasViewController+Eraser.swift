@@ -41,6 +41,7 @@ extension CanvasViewController {
             renderer.change(
                 removing: command.removed.map(\.id),
                 adding: command.parts,
+                area: command.area,
                 onPresented: { [weak self] in self?.onStepPresented?() }
             )
             send(rows)

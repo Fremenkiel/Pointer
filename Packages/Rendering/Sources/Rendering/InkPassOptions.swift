@@ -1,4 +1,5 @@
 import Foundation
+import Geometry
 import Metal
 
 /// The options of one ink pass.
@@ -13,4 +14,7 @@ struct InkPassOptions {
     var scissor: MTLScissorRect?
     /// `true` sets the pixels of `scissor` to zero before the draw (D-66).
     var clearsScissor = false
+    /// The canvas area that the pass draws, or `nil` for whole strokes. With an area, the pass
+    /// draws only the segments that can touch it, for the redraw of a change (D-66).
+    var clip: Rect?
 }

@@ -35,6 +35,9 @@ public enum Eraser {
         }
         assert(removed.count <= candidates.count, "More strokes removed than given")
         guard !removed.isEmpty else { return nil }
-        return EraseStrokes(removed: removed, parts: parts)
+        // Covered ink lies within the radius plus the width of the path, and the round end of
+        // a part stays inside it too.
+        let width = removed.map { Double($0.width) }.max() ?? 0
+        return EraseStrokes(removed: removed, parts: parts, area: pathBounds.expanded(by: width))
     }
 }

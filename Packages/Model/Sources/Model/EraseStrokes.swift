@@ -1,3 +1,5 @@
+import Geometry
+
 /// One eraser gesture: the strokes that it removed and the parts that it left (D-06, D-30).
 ///
 /// The parts can take the canvas past `Limits.maxStrokesPerCanvas`, because an erase never
@@ -8,11 +10,15 @@ public struct EraseStrokes: CanvasCommand {
     public let removed: [Stroke]
     /// The new strokes outside the eraser circles.
     public let parts: [Stroke]
+    /// The canvas area where the ink changes, or `nil` if it is not known. Outside it, the
+    /// parts show the same ink as the removed strokes, so the renderer redraws only this area
+    /// at the erase, its undo, and its redo (D-66).
+    public let area: Rect?
 
     /// Makes the command.
     ///
     /// - Precondition: At least one removed stroke, and each stroke ID appears once.
-    public init(removed: [Stroke], parts: [Stroke]) {
+    public init(removed: [Stroke], parts: [Stroke], area: Rect? = nil) {
         precondition(!removed.isEmpty, "EraseStrokes needs a removed stroke")
         precondition(
             Set(removed.map(\.id) + parts.map(\.id)).count == removed.count + parts.count,
@@ -20,6 +26,7 @@ public struct EraseStrokes: CanvasCommand {
         )
         self.removed = removed
         self.parts = parts
+        self.area = area
     }
 
     /// Removes the cut strokes and adds the parts. A first apply returns the rows of the new

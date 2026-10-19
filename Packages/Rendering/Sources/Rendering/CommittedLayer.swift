@@ -153,6 +153,13 @@ final class CommittedLayer {
         build = nil
     }
 
+    /// Adds a stroke to a running build only, for a stroke whose ink is on the front texture
+    /// already, as the parts of an erase.
+    func addToBuild(_ slot: Int) {
+        precondition(slot >= 0, "Stroke slot \(slot) is invalid")
+        if build != nil { buildSlots.append(slot) }
+    }
+
     /// Adds the new strokes of a frame: it draws them into the front texture in one pass and adds
     /// them to a running build. A full draw list continues the strokes in another pass.
     ///
@@ -203,6 +210,7 @@ final class CommittedLayer {
             var options = InkPassOptions(clear: false, instanceBudget: .max)
             options.scissor = scissor
             options.clearsScissor = true
+            options.clip = area.expanded(by: margin)
             var cursor = 0
             // Each pass draws one stroke at least, so the loop ends. A full draw list ends a pass.
             // The first pass runs also without strokes, because it clears the area.

@@ -225,6 +225,14 @@ final class StrokeStore {
         assert(residentSlots.count <= infos.count, "More resident strokes than strokes")
     }
 
+    /// Returns the points of the stroke in `slot`.
+    ///
+    /// - Precondition: The slot exists.
+    func points(of slot: Int) -> InkPoints {
+        precondition(points.indices.contains(slot), "Stroke slot \(slot) does not exist")
+        return points[slot]
+    }
+
     /// Returns the bend of block `block` of the stroke in `slot`, and measures it at the first
     /// call (`BlockSpacing.bend(of:block:)`).
     ///

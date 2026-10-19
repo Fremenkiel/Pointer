@@ -18,17 +18,19 @@ final class FrameRenderer {
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     /// The committed layer, or `nil` before the first frame with a drawable size.
     private(set) var layer: CommittedLayer?
-    private var pendingSlots: [Int] = []
+    /// The new strokes that the next frame draws into the front texture.
+    var pendingSlots: [Int] = []
     /// The newest handoff whose strokes wait for the screen, or 0 if none waits.
-    private var waitingHandoff: UInt64 = 0
-    private var frame: UInt64 = 0
+    var waitingHandoff: UInt64 = 0
+    /// The number of the last frame.
+    private(set) var frame: UInt64 = 0
     /// The eraser circles of the running gesture (D-66).
-    private(set) var eraserMask = EraserMask()
+    var eraserMask = EraserMask()
     /// The canvas area of the strokes removed since the last frame, or `nil` (D-66).
-    private var dirtyArea: Rect?
+    var dirtyArea: Rect?
     /// `true` after a new viewport until the next frame makes a new committed layer.
     private var needsNewLayer = false
-    private var viewSize = Size.zero
+    private(set) var viewSize = Size.zero
     private var displayScale = 1.0
     /// Runs on any thread after the first frame that shows the strokes of a handoff, with the
     /// number of the newest handoff in that frame.
@@ -110,60 +112,6 @@ final class FrameRenderer {
         }
         layer?.invalidate()
         assert(store.count >= strokes.count, "The store holds the loaded strokes")
-    }
-
-    /// Applies one edit: it removes strokes, notes their area for a redraw in the next frame,
-    /// and adds the new strokes (D-66). A removed ID that the store does not hold is ignored.
-    ///
-    /// - Precondition: The renderer holds room for the added strokes.
-    func apply(_ edit: RenderEdit) {
-        precondition(
-            store.count + edit.added.count <= Limits.maxStrokesPerCanvas + edit.removed.count,
-            "Too many strokes"
-        )
-        for id in edit.removed {
-            guard let bounds = store.bounds(of: id) else { continue }
-            // The next frame is the first one that can no longer read the stroke.
-            store.remove(id, frame: frame + 1)
-            dirtyArea = dirtyArea.map { Self.union($0, bounds) } ?? bounds
-        }
-        for stroke in edit.added {
-            pendingSlots.append(store.add(stroke))
-        }
-        assert(pendingSlots.count >= edit.added.count, "Each new stroke waits for the next frame")
-    }
-
-    /// Applies the eraser input of a frame: a start, new samples in view space, and an end, in
-    /// this order. The camera of the frame converts the samples to canvas space.
-    func applyEraser(start radius: Double?, samples: [Point], ends: Bool) {
-        if let radius {
-            precondition(radius > 0, "Eraser radius must be positive, got \(radius)")
-            eraserMask.begin(radius: radius / camera.zoom)
-        }
-        for sample in samples {
-            eraserMask.append(camera.canvasPoint(fromView: sample, viewSize: viewSize))
-        }
-        if ends {
-            eraserMask.end()
-        }
-        assert(!ends || !eraserMask.isActive, "An ended gesture is not active")
-    }
-
-    /// Notes that the edits of handoff number `handoff` wait for the screen.
-    ///
-    /// - Precondition: `handoff` is positive.
-    func markHandoff(_ handoff: UInt64) {
-        precondition(handoff > 0, "Handoff numbers start at 1")
-        waitingHandoff = max(waitingHandoff, handoff)
-    }
-
-    private static func union(_ first: Rect, _ second: Rect) -> Rect {
-        Rect(
-            minX: min(first.minX, second.minX),
-            minY: min(first.minY, second.minY),
-            maxX: max(first.maxX, second.maxX),
-            maxY: max(first.maxY, second.maxY)
-        )
     }
 
     /// Draws one frame. The frame takes the drawable from `drawable` after the content passes,
