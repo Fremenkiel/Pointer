@@ -175,6 +175,12 @@ Status: the code is done in commit c0553fa, and `make check` passes. Four snapsh
 
 Done when: both acceptance criteria pass, and the results are in section 4.
 
+Status: blocked, because the iPad is locked. The test of acceptance 2 is in commit 59ba4cc, and `make check` passes. On 2026-10-19, `xcodebuild` stopped with "Unlock Kevin's iPad to Continue". Acceptance 1 passes with the tests of task 3.1. Item 3 is the test `EraserToolTests.firstSample`, which runs on the simulator and in `PointerDeviceTests`. The test of acceptance 2 makes these choices inside D-69:
+
+- The canvas holds the content in memory without a library, because the save runs off the main actor with its own budget of 50 ms.
+- The camera has zoom 0.5, so the 1,000 strokes, 1.5 points apart, fit on the screen. The eraser line has 261 samples.
+- The end of a step is the presented callback of its first frame on the main actor. The test runs 5 rounds and fails if the slowest step of a kind takes 16 ms or more.
+
 ### 3.9 Close of M4
 
 1. The line coverage of `Model` and `InkEngine` is at least 90 % (TEST-02).
