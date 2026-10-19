@@ -4,9 +4,10 @@
 /// where the overlap of the item bounds and the query starts.
 public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     /// One item in a cell.
-    private struct Entry: Sendable {
-        let id: ID
-        let bounds: Rect
+    @usableFromInline
+    struct Entry: Sendable {
+        @usableFromInline let id: ID
+        @usableFromInline let bounds: Rect
     }
 
     /// The side length of a cell, in canvas points.
@@ -14,8 +15,10 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     /// The largest cell coordinate. Coordinates further out land in the edge cells.
     public static var maxCellCoordinate: Int { 1 << 30 }
 
-    private var cells: [GridCell: [Entry]] = [:]
-    private var boundsByID: [ID: Rect] = [:]
+    // The removal is inlinable, so that a caller in another module gets code for its own ID
+    // type. Unspecialized, 2,000 removals took 72 ms on the Mac (M4 task 3.8).
+    @usableFromInline var cells: [GridCell: [Entry]] = [:]
+    @usableFromInline var boundsByID: [ID: Rect] = [:]
 
     /// Makes an empty grid.
     ///
@@ -59,6 +62,7 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     ///
     /// - Returns: `true` if the grid held the item.
     @discardableResult  // The caller often removes an item that it knows is there.
+    @inlinable
     public mutating func remove(_ id: ID) -> Bool {
         guard let bounds = boundsByID.removeValue(forKey: id) else { return false }
         let range = cellRange(for: bounds)
@@ -117,25 +121,32 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
         }
     }
 
-    private mutating func removeEntry(_ id: ID, from cell: GridCell) {
-        guard var entries = cells[cell], let index = entries.firstIndex(where: { $0.id == id })
-        else {
+    @inlinable
+    mutating func removeEntry(_ id: ID, from cell: GridCell) {
+        guard let index = cells[cell]?.firstIndex(where: { $0.id == id }) else {
             assertionFailure("Grid cell \(cell) does not hold \(id)")
             return
         }
-        assert(entries[index].id == id, "Grid entry \(index) of \(cell) is not \(id)")
-        entries.swapAt(index, entries.count - 1)
-        entries.removeLast()
-        cells[cell] = entries.isEmpty ? nil : entries
+        // The changes go through the optional chain, so the array changes in place. A copy into
+        // a local `var` made each removal copy the whole cell (M4 task 3.8).
+        let last = (cells[cell]?.count ?? 1) - 1
+        cells[cell]?.swapAt(index, last)
+        cells[cell]?.removeLast()
+        if cells[cell]?.isEmpty == true {
+            cells[cell] = nil
+        }
+        assert(cells[cell]?.contains { $0.id == id } != true, "Grid cell \(cell) still holds \(id)")
     }
 
-    private func coordinate(_ value: Double) -> Int {
+    @inlinable
+    func coordinate(_ value: Double) -> Int {
         let limit = Double(Self.maxCellCoordinate)
         let scaled = (value / cellSize).rounded(.down)
         return Int(min(max(scaled, -limit), limit))
     }
 
-    private func cellRange(for rect: Rect) -> CellRange {
+    @inlinable
+    func cellRange(for rect: Rect) -> CellRange {
         CellRange(
             columns: coordinate(rect.minX)...coordinate(rect.maxX),
             rows: coordinate(rect.minY)...coordinate(rect.maxY)
@@ -144,9 +155,16 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
 }
 
 /// A rectangle of grid cells.
-private struct CellRange {
-    let columns: ClosedRange<Int>
-    let rows: ClosedRange<Int>
+@usableFromInline
+struct CellRange {
+    @usableFromInline let columns: ClosedRange<Int>
+    @usableFromInline let rows: ClosedRange<Int>
+
+    @inlinable
+    init(columns: ClosedRange<Int>, rows: ClosedRange<Int>) {
+        self.columns = columns
+        self.rows = rows
+    }
 
     var cellCount: Int { columns.count * rows.count }
 
