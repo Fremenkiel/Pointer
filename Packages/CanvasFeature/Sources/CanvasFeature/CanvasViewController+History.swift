@@ -44,7 +44,11 @@ extension CanvasViewController {
         }
         guard !rows.isEmpty else { return }
         let (removed, added) = renderDelta(of: rows)
-        renderer.change(removing: removed, adding: added, onPresented: {})
+        renderer.change(
+            removing: removed,
+            adding: added,
+            onPresented: { [weak self] in self?.onStepPresented?() }
+        )
         send(rows)
         requestSave()
         historyDidChange()
