@@ -132,7 +132,7 @@ At pencil lift, the eraser tool does these steps once (D-30, review A-08):
 2. Find the strokes whose bounds touch the bounds of the path, with one pass over the bounds of the live strokes. The only `SpatialGrid` of the canvas lives on the render thread.
 3. For each of these strokes, `StrokeHitTest` finds the curve parameters where the distance to the path equals the eraser radius plus half the stroke width. The path covers a circle at each sample and the band between neighbor samples.
 4. `StrokeSplitter` makes one new stroke for each part of the curve outside the path. Steps 3 and 4 run in up to 8 chunks on several threads. The parts get their IDs and clock values afterward, in order.
-5. The tool emits one `EraseStrokes` command with the removed strokes, the new parts, and the area of the path. The renderer then redraws that area and clears the mask in the same frame.
+5. The tool emits one `EraseStrokes` command with the removed strokes, the new parts, and the area of the change. The area holds the path, the 3 old control points on each side of each cut, the first and the last 3 control points of each part, and half the width. A stroke that leaves no part adds its whole bounds (F-07 of [m4-fix-plan.md](m4-fix-plan.md)). The renderer then redraws that area and clears the mask in the same frame.
 
 The changes of one eraser gesture (pencil down to pencil up) form one undo step.
 

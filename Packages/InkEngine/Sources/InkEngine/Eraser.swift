@@ -10,10 +10,15 @@ public enum Eraser {
     /// The most chunks of the split. The iPad Pro (M4) has 4 performance cores.
     static let maxChunks = 8
 
-    /// One stroke that the path touches, with the shapes of its parts.
+    /// The control points on each side of a cut whose segments change with it (D-65, D-72).
+    static let changedPointsPerSide = 3
+
+    /// One stroke that the path touches, with the shapes of its parts and the canvas area where
+    /// its ink changes.
     private struct Cut: Sendable {
         let stroke: Stroke
         let shapes: [Stroke]
+        let changed: Rect
     }
 
     /// Returns the command of a gesture, or `nil` if the path touches no stroke.
@@ -50,13 +55,56 @@ public enum Eraser {
         }
         assert(cuts.count <= candidates.count, "More strokes removed than given")
         // Covered ink lies within the radius plus the width of the path, and the round end of
-        // a part stays inside it too.
+        // a part stays inside it too. The curve of a part also changes next to a cut (F-07).
         let width = cuts.map { Double($0.stroke.width) }.max() ?? 0
-        return EraseStrokes(
-            removed: cuts.map(\.stroke),
-            parts: parts,
-            area: pathBounds.expanded(by: width)
+        let area = cuts.reduce(pathBounds.expanded(by: width)) { union($0, $1.changed) }
+        return EraseStrokes(removed: cuts.map(\.stroke), parts: parts, area: area)
+    }
+
+    /// Returns the area where the ink of a cut stroke changes: the old control points next to
+    /// each cut, the first and the last control points of each part, and half the width. A
+    /// stroke without a part changes whole (D-71).
+    ///
+    /// - Precondition: `covered` is not empty.
+    private static func changedArea(
+        of stroke: Stroke,
+        covered: [ClosedRange<Double>],
+        shapes: [Stroke]
+    ) -> Rect {
+        precondition(!covered.isEmpty, "A cut stroke has a covered range")
+        let half = Double(stroke.width) / 2
+        guard !shapes.isEmpty else { return stroke.bounds.expanded(by: half) }
+        let side = changedPointsPerSide
+        let last = stroke.points.count - 1
+        var area: Rect?
+        for range in covered {
+            let low = max(Int(range.lowerBound.rounded(.down)) - side + 1, 0)
+            let high = min(Int(range.upperBound.rounded(.up)) + side - 1, last)
+            for index in low...high { area = union(area, stroke.canvasPoint(at: index)) }
+        }
+        for shape in shapes {
+            let count = shape.points.count
+            for index in 0..<count where index < side || index >= count - side {
+                area = union(area, shape.canvasPoint(at: index))
+            }
+        }
+        guard let area else { preconditionFailure("A cut changes the ink somewhere") }
+        assert(area.minX <= area.maxX && area.minY <= area.maxY, "The changed area is inverted")
+        return area.expanded(by: half)
+    }
+
+    private static func union(_ first: Rect, _ second: Rect) -> Rect {
+        Rect(
+            minX: min(first.minX, second.minX),
+            minY: min(first.minY, second.minY),
+            maxX: max(first.maxX, second.maxX),
+            maxY: max(first.maxY, second.maxY)
         )
+    }
+
+    private static func union(_ rect: Rect?, _ point: Point) -> Rect {
+        let dot = Rect(minX: point.x, minY: point.y, maxX: point.x, maxY: point.y)
+        return rect.map { union($0, dot) } ?? dot
     }
 
     /// Returns the strokes that the path covers, with the shapes of their parts, in the order of
@@ -76,9 +124,9 @@ public enum Eraser {
             for stroke in strokes[range] {
                 let covered = StrokeHitTest.coveredRanges(of: stroke, by: path)
                 guard !covered.isEmpty else { continue }
-                local.append(
-                    Cut(stroke: stroke, shapes: StrokeSplitter.shapes(of: stroke, outside: covered))
-                )
+                let shapes = StrokeSplitter.shapes(of: stroke, outside: covered)
+                let changed = changedArea(of: stroke, covered: covered, shapes: shapes)
+                local.append(Cut(stroke: stroke, shapes: shapes, changed: changed))
             }
             let done = local
             results.withLock { $0[chunk] = done }
