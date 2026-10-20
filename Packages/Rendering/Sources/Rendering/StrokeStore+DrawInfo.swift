@@ -13,7 +13,7 @@ extension StrokeStore {
         var lastDrawnFrame: UInt64 = 0
         let radius: Float
         private let storedPointCount: Int32
-        private let storedFirstBlock: Int32
+        private var storedFirstBlock: Int32
         private var blockStart: Int32 = -1
         private var storedResidentIndex: Int32 = -1
         private let storedBlockCount: UInt16
@@ -54,8 +54,15 @@ extension StrokeStore {
 
         /// The control points of the stroke.
         var pointCount: Int { Int(storedPointCount) }
-        /// The index of the first block spacing of the stroke in `blockSpacings`.
-        var firstBlock: Int { Int(storedFirstBlock) }
+        /// The index of the first block spacing of the stroke in `blockSpacings`. A compaction
+        /// of the block lists moves it (M-04).
+        var firstBlock: Int {
+            get { Int(storedFirstBlock) }
+            set {
+                precondition(newValue >= 0 && newValue <= Int(Int32.max), "Bad first block")
+                storedFirstBlock = Int32(newValue)
+            }
+        }
         /// The number of blocks of the stroke (`DetailRuns`).
         var blockCount: Int { Int(storedBlockCount) }
 

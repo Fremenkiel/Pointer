@@ -27,6 +27,21 @@ final class StrokeStore {
     private var blockSpacings: [BlockSpacing] = []
     /// The bend of each block, measured at the first draw that needs it. NaN until then.
     private var blockBends: [Float] = []
+    /// `true` for a slot whose range in the block lists still belongs to it. A compaction takes
+    /// the ranges of removed slots away (M-04).
+    private var ownsBlocks: [Bool] = []
+    /// The blocks of the strokes that are not removed.
+    private var liveBlocks = 0
+    /// The lists that a compaction fills, kept with their capacity (PERF-01).
+    private var spareSpacings: [BlockSpacing] = []
+    private var spareBends: [Float] = []
+    /// The size of the block lists below which no compaction runs.
+    static let minimumCompactionEntries = 256
+    /// The points of a released slot: one shared value, so the slot keeps no removed points
+    /// alive (M-05).
+    static let releasedPoints = InkPoints([
+        InkPoint(x: 0, y: 0, force: 0, time: 0), InkPoint(x: 0, y: 0, force: 0, time: 0),
+    ])
     private(set) var grid = SpatialGrid<Int>(cellSize: gridCellSize)
     /// The slots of the strokes with an arena block, in no order. The clock sweep walks it.
     private var residentSlots: [Int] = []
@@ -48,6 +63,9 @@ final class StrokeStore {
     /// The number of strokes, without the removed ones.
     var count: Int { slotByID.count }
 
+    /// The entries of the block lists, the live and the dead ones.
+    var blockListCount: Int { blockSpacings.count }
+
     /// Adds a stroke and returns its slot. A stroke that the store holds keeps its slot.
     ///
     /// - Precondition: The store holds fewer than `Limits.maxStrokesAfterErase` strokes (D-73).
@@ -57,7 +75,9 @@ final class StrokeStore {
         precondition(count < Limits.maxStrokesAfterErase, "The renderer holds the stroke bound")
         let reused = freeSlots.popLast()
         let slot = reused ?? infos.count
-        let blocks = storeSpacings(of: stroke.points, reusing: reused.map { infos[$0] })
+        // A compaction may have taken the range of a free slot away.
+        let old = reused.flatMap { ownsBlocks[$0] ? infos[$0] : nil }
+        let blocks = storeSpacings(of: stroke.points, reusing: old)
         let info = DrawInfo(
             origin: stroke.origin,
             radius: stroke.width / 2,
@@ -68,12 +88,16 @@ final class StrokeStore {
         if reused == nil {
             infos.append(info)
             points.append(stroke.points)
+            ownsBlocks.append(true)
         } else {
             infos[slot] = info
             points[slot] = stroke.points
+            ownsBlocks[slot] = true
         }
+        liveBlocks += blocks.count
         slotByID[stroke.id] = slot
         grid.insert(slot, bounds: stroke.bounds)
+        compactIfNeeded()
         assert(slotByID.count == grid.count && points.count == infos.count, "Store arrays disagree")
         return slot
     }
@@ -101,6 +125,30 @@ final class StrokeStore {
         return range
     }
 
+    /// Copies the ranges of the strokes that are not removed together when the dead entries
+    /// outnumber the live ones, so the block lists stay under twice the live blocks (M-04).
+    private func compactIfNeeded() {
+        guard blockSpacings.count > Self.minimumCompactionEntries,
+            blockSpacings.count >= 2 * liveBlocks
+        else { return }
+        spareSpacings.removeAll(keepingCapacity: true)
+        spareBends.removeAll(keepingCapacity: true)
+        for slot in infos.indices {
+            guard !infos[slot].isRemoved else {
+                ownsBlocks[slot] = false
+                continue
+            }
+            let range = infos[slot].firstBlock..<(infos[slot].firstBlock + infos[slot].blockCount)
+            assert(range.upperBound <= blockSpacings.count, "Slot \(slot) has blocks past the list")
+            infos[slot].firstBlock = spareSpacings.count
+            spareSpacings.append(contentsOf: blockSpacings[range])
+            spareBends.append(contentsOf: blockBends[range])
+        }
+        swap(&blockSpacings, &spareSpacings)
+        swap(&blockBends, &spareBends)
+        assert(blockSpacings.count == liveBlocks, "The compaction kept \(blockSpacings.count)")
+    }
+
     /// Returns the bounds of a stroke, or `nil` if the store does not hold it.
     func bounds(of id: StrokeID) -> Rect? {
         guard let slot = slotByID[id] else { return nil }
@@ -120,6 +168,7 @@ final class StrokeStore {
         guard let slot = slotByID.removeValue(forKey: id) else { return false }
         grid.remove(slot)
         infos[slot].isRemoved = true
+        liveBlocks -= infos[slot].blockCount
         removals.append((slot, frame))
         assert(slotByID.count == grid.count, "The grid still holds a removed stroke")
         return true
@@ -132,9 +181,11 @@ final class StrokeStore {
         guard released > 0 else { return }
         for (slot, _) in removals.prefix(released) {
             if infos[slot].block != nil { evict(slot) }
+            points[slot] = Self.releasedPoints
             freeSlots.append(slot)
         }
         removals.removeFirst(released)
+        compactIfNeeded()
         assert(freeSlots.count + removals.count + count == infos.count, "A slot got lost")
     }
 
