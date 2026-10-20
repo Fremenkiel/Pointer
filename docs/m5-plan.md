@@ -71,6 +71,8 @@ Done when: section 5.1 holds 3 runs. Later tasks compare against these runs and 
 
 Rules: PERF-03, D-79.
 
+Status: done. Section 5.1 holds the 3 runs.
+
 ### Phase 1: model (Tier A)
 
 #### 1.1 Text style and text box changes
@@ -259,13 +261,15 @@ Rules: AGENT-05, DOC-06, TEST-02, TEST-07, PERF-03, D-79.
 
 ### 5.1 Baseline
 
-Not run yet.
+Measured on 2026-10-20 on the iPad Pro 11-inch (M4) in Release, at commit beb3608 in a separate worktree. Run 1 built the tests, and runs 2 and 3 used the same build. Each run passed 172 tests with 0 failures and 0 skips.
 
-| Run | Open of D-56, median | Memory of the open | Content pass 20,000 / 200,000 / 200,000 handwriting | Frame loop, 6 tests | Eraser frame CPU / GPU median | Erase / undo / redo, slowest |
-|---|---|---|---|---|---|---|
-| 1 | | | | | | |
-| 2 | | | | | | |
-| 3 | | | | | | |
+| Run | Open of D-56, median / slowest | Memory of the open, held / peak | Content pass 20,000 / 200,000 / 200,000 handwriting | Eraser frame CPU / GPU median | Erase / undo / redo, slowest |
+|---|---|---|---|---|---|
+| 1 | 237.9 / 243.6 ms | 253 / 284 MB | 36 / 115 / 170 ms | 0.11 / 0.30 ms | 25.50 / 28.05 / 29.65 ms |
+| 2 | 238.9 / 246.3 ms | 252 / 284 MB | 36 / 113 / 171 ms | 0.11 / 0.27 ms | 25.52 / 29.07 / 27.18 ms |
+| 3 | 241.5 / 250.2 ms | 254 / 254 MB | 36 / 112 / 171 ms | 0.11 / 0.29 ms | 27.41 / 28.95 / 27.72 ms |
+
+In each run, the 6 frame loop tests ran at 120 fps with 0 late frames and 0 uncovered frames. The frame allocations were 15 against 15 of a bare Metal frame. `FrameRenderer.apply` made 16, 2, and 1 allocations for the erase, the undo, and the redo of the D-69 content.
 
 ### 5.2 Model
 
