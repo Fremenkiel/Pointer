@@ -8,6 +8,12 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     struct Entry: Sendable {
         @usableFromInline let id: ID
         @usableFromInline let bounds: Rect
+
+        @inlinable
+        init(id: ID, bounds: Rect) {
+            self.id = id
+            self.bounds = bounds
+        }
     }
 
     /// The side length of a cell, in canvas points.
@@ -43,6 +49,7 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     /// Adds an item.
     ///
     /// - Precondition: The grid does not hold `id`, and `bounds` is finite.
+    @inlinable
     public mutating func insert(_ id: ID, bounds: Rect) {
         precondition(boundsByID[id] == nil, "Grid already holds \(id)")
         precondition(bounds.origin.isFinite, "Grid bounds of \(id) are not finite")
@@ -166,7 +173,7 @@ struct CellRange {
         self.rows = rows
     }
 
-    var cellCount: Int { columns.count * rows.count }
+    @usableFromInline var cellCount: Int { columns.count * rows.count }
 
     func contains(_ cell: GridCell) -> Bool {
         columns.contains(cell.column) && rows.contains(cell.row)
