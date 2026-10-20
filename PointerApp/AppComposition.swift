@@ -30,6 +30,10 @@ final class AppComposition {
     var idleTimer: Timer?
     var isSnapshotRunning = false
     var backgroundTask = UIBackgroundTaskIdentifier.invalid
+    /// The load of the canvas of the last switch, or `nil`.
+    var loadTask: Task<Void, Never>?
+    /// Runs with the canvas of each load that starts. Only the tests set it (F-13).
+    var onLoadStarted: ((CanvasID) -> Void)?
 
     /// Makes the composition. `start()` opens the files.
     init(window: InputTrackingWindow, container: AppViewController, defaults: UserDefaults) {
@@ -135,7 +139,7 @@ final class AppComposition {
     }
 
     /// Opens the canvas of a workspace and notes it as the last workspace (D-53).
-    private func open(_ workspace: Workspace) {
+    func open(_ workspace: Workspace) {
         let deviceStore = deviceStore
         let logger = logger
         Task {
@@ -145,7 +149,9 @@ final class AppComposition {
                 logger.error("The last workspace was not saved: \(error)")
             }
         }
-        Task { await openCanvas(of: workspace) }
+        // A newer switch makes the older load useless (F-13).
+        loadTask?.cancel()
+        loadTask = Task { await openCanvas(of: workspace) }
     }
 
     private func openCanvas(of workspace: Workspace) async {
@@ -154,10 +160,12 @@ final class AppComposition {
         // The canvas is on the screen already, with its history (F-02).
         guard container.canvas?.canvasID != canvasID else { return }
         do {
+            guard !Task.isCancelled else { return }
+            onLoadStarted?(canvasID)
             let content = try await repository.content(of: canvasID)
             let camera = try await storedCamera(for: canvasID)
             // A later switch may have started while the content loaded.
-            guard selector?.current?.id == workspace.id else { return }
+            guard !Task.isCancelled, selector?.current?.id == workspace.id else { return }
             var dependencies = CanvasDependencies(
                 renderer: try CanvasRenderer(
                     configuration: CanvasComposition.rendererConfiguration(defaults)
