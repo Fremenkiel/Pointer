@@ -359,7 +359,7 @@ Undo uses the `History` type from `Model`. It does not use `UndoManager` for can
 - The history has a limit of `Limits.maxHistoryDepth = 500` steps per canvas. The oldest step is dropped first.
 - A new command clears the redo list.
 - A hardware keyboard gets Command-Z and Shift-Command-Z through `UIKeyCommand`.
-- `PointerApp` holds `CanvasSessions`: for each canvas, the `History` and the erase records of the session. A new load of a canvas reads no erase record, so the canvas takes the records of its session back at the open (`CanvasContent.adoptSessionRecords(_:)`). The canvas keeps its session when it leaves the screen.
+- `PointerApp` holds `CanvasSessions`: for each canvas, the `History` and the erase records of the session. A new load of a canvas reads no erase record, so the canvas takes the records of its session back at the open (`CanvasContent.adoptSessionRecords(_:)`). The shown canvas keeps its session with `endSession()` before the app makes the next canvas screen, so that a screen of the same canvas finds the steps of the visit (F-02 of [m4-fix-plan.md](m4-fix-plan.md)). A tap on the workspace of the shown canvas makes no new screen.
 - An undo or a redo sends its change to the renderer and its rows to the library, and asks for a save. The renderer change of an `EraseStrokes` step redraws only the area of its eraser path.
 
 While a text view is in edit mode, the undo and redo buttons go to the text view.

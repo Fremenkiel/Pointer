@@ -104,6 +104,71 @@ struct CanvasHistoryTests {
         #expect(sessions.count == 1)
     }
 
+    @Test("A switch in the app order keeps the history of the visit (F-02)")
+    func switchInAppOrderKeepsHistory() throws {
+        let sessions = CanvasSessions()
+        let clock = Fixtures.clock()
+        let line = Self.line()
+        var loaded = CanvasContent(canvasID: Fixtures.canvas)
+        try loaded.add(line)
+        let first = try makeController(content: loaded, sessions: sessions, clock: clock)
+        erase(first)
+        // The app ends the session, then builds the next screen before the old one leaves.
+        first.endSession()
+        let other = try makeController(
+            content: CanvasContent(canvasID: Self.otherCanvas),
+            sessions: sessions,
+            clock: clock
+        )
+        first.willMove(toParent: nil)
+        other.endSession()
+        let back = try makeController(
+            content: try Self.reload(first),
+            sessions: sessions,
+            clock: clock
+        )
+        other.willMove(toParent: nil)
+        #expect(back.historyControls.canUndo)
+        back.undo()
+        #expect(Set(back.content.strokes.keys) == [line.id])
+    }
+
+    @Test("A reopen of the shown canvas in the app order keeps the history of the visit (F-02)")
+    func reopenKeepsHistory() throws {
+        let sessions = CanvasSessions()
+        let clock = Fixtures.clock()
+        let line = Self.line()
+        var loaded = CanvasContent(canvasID: Fixtures.canvas)
+        try loaded.add(line)
+        let first = try makeController(content: loaded, sessions: sessions, clock: clock)
+        erase(first)
+        first.endSession()
+        let second = try makeController(
+            content: try Self.reload(first),
+            sessions: sessions,
+            clock: clock
+        )
+        first.willMove(toParent: nil)
+        #expect(second.historyControls.canUndo)
+        second.undo()
+        #expect(Set(second.content.strokes.keys) == [line.id])
+        #expect(second.content.erased[line.id]?.isDeleted == true)
+    }
+
+    /// A canvas that is not `Fixtures.canvas`.
+    private static let otherCanvas = CanvasID(
+        rawValue: UUID(uuid: (3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+    )
+
+    /// The content that the library loads for the canvas of `controller`: its live strokes.
+    private static func reload(_ controller: CanvasViewController) throws -> CanvasContent {
+        var content = CanvasContent(canvasID: controller.canvasID)
+        for stroke in controller.content.strokes.values {
+            try content.add(stroke)
+        }
+        return content
+    }
+
     @Test("Command-Z and Shift-Command-Z are the key commands of the canvas")
     func keyCommands() throws {
         let controller = try makeController(

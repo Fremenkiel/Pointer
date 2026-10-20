@@ -88,6 +88,15 @@ extension CanvasViewController {
         return (removed, added)
     }
 
+    /// Keeps the session of this visit in the sessions of the app (D-12). The app calls it
+    /// before it makes the next canvas screen, so that a screen of the same canvas finds the
+    /// steps of this visit (F-02). A second call does nothing.
+    public func endSession() {
+        guard !hasEndedSession else { return }
+        hasEndedSession = true
+        saveSession()
+    }
+
     /// Keeps the session of the canvas for the time the app runs (D-12). The canvas calls it when
     /// it leaves the screen, not at each step: a copy at each step made the next step copy the
     /// erase records of the session (M4 task 3.8).

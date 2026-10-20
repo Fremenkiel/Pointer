@@ -151,6 +151,8 @@ final class AppComposition {
     private func openCanvas(of workspace: Workspace) async {
         guard let repository, let clock else { return }
         let canvasID = workspace.canvasID
+        // The canvas is on the screen already, with its history (F-02).
+        guard container.canvas?.canvasID != canvasID else { return }
         do {
             let content = try await repository.content(of: canvasID)
             let camera = try await storedCamera(for: canvasID)
@@ -171,6 +173,8 @@ final class AppComposition {
                 saved: content.strokes.count
             )
             dependencies.onCameraRest = { [weak self] camera in self?.save(camera, for: canvasID) }
+            // The new screen reads the sessions, so the old one keeps its steps first (F-02).
+            container.canvas?.endSession()
             let canvas = CanvasViewController(dependencies: dependencies)
             canvas.isEditingEnabled = !isReadOnly && !areSavesFailing
             container.show(canvas)

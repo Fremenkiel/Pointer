@@ -50,6 +50,8 @@ public final class CanvasViewController: UIViewController {
     private let onCameraRest: @MainActor (Camera) -> Void
     /// True after a camera change, until the camera comes to rest.
     private var isCameraMoving = false
+    /// True after `endSession()` kept the session.
+    var hasEndedSession = false
 
     /// Makes the canvas screen.
     ///
@@ -157,7 +159,7 @@ public final class CanvasViewController: UIViewController {
     /// Keeps the session when the canvas leaves its parent, for example at a workspace switch.
     override public func willMove(toParent parent: UIViewController?) {
         super.willMove(toParent: parent)
-        if parent == nil { saveSession() }
+        if parent == nil { endSession() }
     }
 
     /// Takes the key commands of the hardware keyboard.
