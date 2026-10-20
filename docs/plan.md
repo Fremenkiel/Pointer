@@ -107,7 +107,11 @@ Acceptance:
 
 ## M5: Text boxes
 
-- Text tool, `UITextView` overlay, Core Text texture cache, move with long press and drag.
+- Text tool, `UITextView` overlay, glyph atlas (D-29, D-81), move with long press and drag, and delete through a long-press menu (D-89).
+
+The tasks are in [m5-plan.md](m5-plan.md). The product owner decided D-81 to D-91 on 2026-10-20.
+
+Status: in work on branch `m5`.
 
 Acceptance:
 

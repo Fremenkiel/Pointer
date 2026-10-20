@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20. They are open.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day.
 
 Status values: Open, Decided, Replaced.
 
@@ -88,17 +88,17 @@ Status values: Open, Decided, Replaced.
 | D-78 | When the eraser mask texture exists | Only while the eraser is the tool | Decided (2026-10-20) |
 | D-79 | The pass rule of M4 acceptance 2 on the device | 5 full device runs in a row, each step under 33 ms | Decided (2026-10-20) |
 | D-80 | Where the allocation test of the spatial grid runs | The test in `RenderingTests` on the iPad | Decided (2026-10-20) |
-| D-81 | Text renderer: "Core Text texture cache" in plan.md or the glyph atlas of D-29 | Open | Open |
-| D-82 | Text and the eraser mask | Open | Open |
-| D-83 | Size of a text box | Open | Open |
-| D-84 | Who lays out the text, and characters that SF Mono lacks | Open | Open |
-| D-85 | Scale of the edit view | Open | Open |
-| D-86 | Undo and redo during a text edit | Open | Open |
-| D-87 | The text tool in the palette, and the tool change of D-70 | Open | Open |
-| D-88 | Memory bound of text in the undo history | Open | Open |
-| D-89 | Delete of a text box through a long-press menu | Open | Open |
-| D-90 | The test of M5 acceptance 1 (Scribble) | Open | Open |
-| D-91 | The pass rule of M5 acceptance 2 | Open | Open |
+| D-81 | Text renderer: "Core Text texture cache" in plan.md or the glyph atlas of D-29 | Glyph atlas. plan.md and architecture.md section 3 change their words. | Decided (2026-10-20) |
+| D-82 | Text and the eraser mask | A second channel: `.rg8Unorm` committed textures, ink in red, text in green | Decided (2026-10-20) |
+| D-83 | Size of a text box | Width from the longest line up to 640 canvas points, then wrap. Nothing stored. | Decided (2026-10-20) |
+| D-84 | Who lays out the text, and characters that SF Mono lacks | Core Text layout in `Rendering` with the attributes of the edit view | Decided (2026-10-20) |
+| D-85 | Scale of the edit view | Font size 17 times the zoom, a scale transform only during a pinch | Decided (2026-10-20) |
+| D-86 | Undo and redo during a text edit | One step per edit. During an edit, undo and redo act on the text view. | Decided (2026-10-20) |
+| D-87 | The text tool in the palette, and the tool change of D-70 | A third tool. A tool change ends an edit at once. The tool stays text. | Decided (2026-10-20) |
+| D-88 | Memory bound of text in the undo history | Each held code point counts as one point of the budgets of D-76 | Decided (2026-10-20) |
+| D-89 | Delete of a text box through a long-press menu | A long-press menu with "Delete", and a requirement in product-spec.md | Decided (2026-10-20) |
+| D-90 | The test of M5 acceptance 1 (Scribble) | A device test of the conditions of Scribble, and a manual test as the pass | Decided (2026-10-20) |
+| D-91 | The pass rule of M5 acceptance 2 | Lit-pixel bounds and profiles of each line match within 1 pixel | Decided (2026-10-20) |
 
 ## Details
 
@@ -786,7 +786,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-81 Text renderer: "Core Text texture cache" or glyph atlas
 
-- Open. Raised by the M5 plan on 2026-10-20 ([m5-plan.md](m5-plan.md) section 1, item 11).
+- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20 ([m5-plan.md](m5-plan.md) section 1, item 11).
 - plan.md M5 lists a "Core Text texture cache", and architecture.md section 3 lists a "text texture cache" in `Rendering`. D-29 decided a glyph atlas on 2026-10-18, and architecture.md section 5.4 describes the atlas. The documents conflict.
 - Options:
   - (a) The glyph atlas of D-29. Core Text draws each glyph once into an atlas per scale. plan.md M5 and architecture.md section 3 change their words to "glyph atlas".
@@ -796,7 +796,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-82 Text and the eraser mask
 
-- Open. Raised by the M5 plan on 2026-10-20, from effect 3 of D-66.
+- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20, from effect 3 of D-66.
 - The composite pass multiplies the coverage of the committed texture by `1 - mask` (`compositeMaskedFragment`). The eraser removes ink only (TOOL-04). Text in the same channel thus vanishes under the eraser during the gesture and comes back at the lift.
 - The committed textures use `.r8Unorm`. Two textures take 32 MB on the 11-inch iPad and 45 MB on the 13-inch iPad (architecture.md section 5.2).
 - Options:
@@ -809,7 +809,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-83 Size of a text box
 
-- Open. Raised by the M5 plan on 2026-10-20.
+- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20.
 - architecture.md section 7 says: the width grows with the longest line up to 640 canvas points, longer lines wrap, and the height grows with the text. data-model.md section 7.3 stores no width and no height. UNDO-03 lists "resize" as an undoable action, and architecture.md section 8 lists a `ResizeTextBox` command. The documents do not agree on a size that the user sets.
 - Options:
   - (a) The rule of architecture.md section 7. Nothing is stored. `ResizeTextBox` leaves architecture.md section 8. "Resize" in UNDO-03 stays for cards in M6.
@@ -821,7 +821,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-84 Who lays out the text, and characters that SF Mono lacks
 
-- Open. Raised by the M5 plan on 2026-10-20.
+- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20.
 - D-29 says that each character is one quad from the atlas, because SF Mono is monospaced. SF Mono has no glyphs for emoji, for Chinese, Japanese, and Korean characters, and for many symbols. For these, Core Text and TextKit use fallback fonts with other advances. A Chinese character is about twice as wide as a SF Mono character.
 - The edit view (`UITextView`, TextKit 2) lays out the text with its own engine. M5 acceptance 2 needs the canvas and the edit view to match within one pixel. ARCH-03 keeps Core Text out of the Tier A packages.
 - Options:
@@ -834,7 +834,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-85 Scale of the edit view
 
-- Open. Raised by the M5 plan on 2026-10-20.
+- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20.
 - architecture.md section 5.4 says that the `UITextView` has "a transform that matches the camera". A scale transform scales the layer that the text view drew. At zoom 4, the text view then shows text drawn for zoom 1, four times larger and soft. The atlas draws at the power of two above the zoom, so the canvas stays sharp.
 - Options:
   - (a) A scale transform, as architecture.md section 5.4 says.
@@ -846,7 +846,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-86 Undo and redo during a text edit
 
-- Open. Raised by the M5 plan on 2026-10-20.
+- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20.
 - architecture.md section 7 says that the text view has its own undo during an edit. The end of an edit records one `EditText` command. Section 8 says that the undo and redo buttons go to the text view during an edit. An empty new text box records no command.
 - No document says what a new box with text records, or what an edit records that leaves an existing box empty. `TextBox` needs at least one code point.
 - Options:
@@ -858,7 +858,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-87 The text tool in the palette, and the tool change of D-70
 
-- Open. Raised by the M5 plan on 2026-10-20, from D-63, D-64, and D-70.
+- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20, from D-63, D-64, and D-70.
 - D-63 says that the text entry of the palette comes with the text tool in M5. D-70 says that a tool change takes effect at the next pencil down. architecture.md section 7 says that a tool change ends an edit. An edit is not a pencil touch. Thus D-70 does not say when an edit ends.
 - The questions, each with its recommendation:
   1. The palette and the current-tool button get a third tool, text, with the SF Symbol `character.cursor.ibeam`. Recommendation: yes.
@@ -870,7 +870,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-88 Memory bound of text in the undo history
 
-- Open. Raised by the M5 plan on 2026-10-20, from D-76.
+- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20, from D-76.
 - D-76 bounds the history by control points: 4,000,000 per canvas and 16,000,000 for all sessions. A text step holds no points. An `EditText` step holds two texts of up to 10,000 code points each, so up to about 80 KB. 500 steps take about 40 MB on one canvas. The sessions keep up to 1,000 canvases, so the history of text has no bound.
 - Options:
   - (a) Count each code point of a held text as one point of the budgets of D-76. A point takes about 16.8 bytes and a code point at most 4, so the count is safe.
@@ -881,7 +881,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-89 Delete of a text box through a long-press menu
 
-- Open. Raised by the M5 plan on 2026-10-20 ([m5-plan.md](m5-plan.md) section 1, item 11).
+- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20 ([m5-plan.md](m5-plan.md) section 1, item 11).
 - architecture.md section 4.7 gives a long press on a text box a context menu with "Delete". product-spec.md has no requirement for this menu: CARD-08 covers cards only, and UNDO-03 lists "delete card". In architecture.md section 7, an edit that leaves a text box empty deletes it. AGENT-02 bans features that the specification does not list.
 - Options:
   - (a) In M5, only an edit that leaves a text box empty deletes it. A long press without a drag does nothing on a text box. architecture.md section 4.7 drops "Delete" for text boxes.
@@ -892,7 +892,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-90 The test of M5 acceptance 1 (Scribble)
 
-- Open. Raised by the M5 plan on 2026-10-20.
+- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20.
 - M5 acceptance 1 says: "Scribble writes into a text box." No public API lets a test write with a pencil or give handwriting to Scribble. A UI test cannot draw pencil strokes either. Learned rule 1 of `AGENTS.md` bans the simulator.
 - Options:
   - (a) A device test in `PointerDeviceTests` of the conditions that Scribble needs. With the text tool, the edit view is an editable `UITextView` and the first responder. The drawing gesture of PencilKit is off. `PencilTouchObserver` refuses touches on the edit view. No delegate of the edit view refuses Scribble. The test then inserts text through `UITextInput`, the protocol that Scribble uses for its result. At the end of the edit, the text is in the content, the rows, and the canvas. The product owner writes with the pencil into a text box on the iPad, and this manual test is the pass.
@@ -902,7 +902,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-91 The pass rule of M5 acceptance 2
 
-- Open. Raised by the M5 plan on 2026-10-20.
+- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20.
 - M5 acceptance 2 compares text on the canvas with text in edit mode at zoom 0.5, 1, and 4. They must "line up to within one pixel". The acceptance does not say what the test measures.
 - The canvas draws atlas glyphs at a power-of-two scale and samples them down. The edit view draws with TextKit at the exact size. Thus the anti-aliased edges differ by design. They differ also for glyphs at the same place.
 - Options:

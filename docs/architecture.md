@@ -47,7 +47,7 @@ Layer 0  Foundations      InkEngine ---- Model ---- Geometry
 | `Model` | 0 | `Geometry` | Value types: `Workspace`, `Card`, `TextBox`, `Stroke`, IDs, `HybridClock`, `FractionalIndex`. Commands and `History`. Protocol `LibraryRepository`. |
 | `InkEngine` | 0 | `Model`, `Geometry` | Eraser hit test and stroke split. |
 | `Persistence` | 1 | `Model`, `Geometry`, SQLite3 | `SQLiteLibraryRepository` (an actor), a small SQLite wrapper, row codecs, migrations, snapshots, restore. |
-| `Rendering` | 1 | `Model`, `Geometry`, `InkEngine`, Metal | `CanvasRenderer`, the point arena, shaders, the committed texture cache, text texture cache. |
+| `Rendering` | 1 | `Model`, `Geometry`, `InkEngine`, Metal | `CanvasRenderer`, the point arena, shaders, the committed texture cache, text layout, the glyph atlas (D-81). |
 | `Export` | 1 | `Model`, `Geometry`, `InkEngine`, Core Graphics, Core Text | `PDFExporter`. |
 | `DesignSystem` | 1 | SwiftUI, UIKit | Color, spacing, size, and icon tokens. |
 | `CanvasFeature` | 2 | Layer 0 and 1, PencilKit | `CanvasViewController`, `CanvasView`, the live `PKCanvasView`, `PencilKitStrokeConverter`, input routing, camera control, card navigation, text editing, top bars. |
@@ -160,7 +160,7 @@ Squeeze (`pencilInteraction(_:didReceiveSqueeze:)`): act on phase `.ended` only.
 | `.runSystemShortcut` | The app never receives it. |
 | All other values | Show the tool palette at `squeeze.hoverPose?.location`. If the pose is `nil`, show it at the last pencil location. |
 
-The palette is the tool bar of TOOL-07 (D-63). It holds pen, eraser, text, undo, and redo. The text entry comes with the text tool in M5. A button in the top left corner shows the current tool. A finger tap on it opens the same palette under the button (D-64). Thus every pencil and every squeeze setting can reach each tool. The palette is a popover. A tap on a tool picks it and closes the palette. Undo and redo keep it open. The canvas gives the button to `PointerApp`, which places it to the right of the workspace selector.
+The palette is the tool bar of TOOL-07 (D-63). It holds pen, eraser, text, undo, and redo. The text tool has the SF Symbol `character.cursor.ibeam` (D-87). A button in the top left corner shows the current tool. A finger tap on it opens the same palette under the button (D-64). Thus every pencil and every squeeze setting can reach each tool. The palette is a popover. A tap on a tool picks it and closes the palette. Undo and redo keep it open. The canvas gives the button to `PointerApp`, which places it to the right of the workspace selector.
 
 The mapping of user preferences to actions is decision D-07.
 
@@ -277,9 +277,11 @@ Each stroke stores its origin in `Double` and its points as `Float` offsets from
 
 ### 5.4 Text
 
-The renderer draws text from a glyph atlas (D-29). SF Mono is monospaced, so each character is one quad from the atlas. Core Text draws the glyphs into one atlas per scale, and the scale is the zoom rounded up to the next power of two. The atlas cache has a byte budget, not a count. The size of a text box does not change the size of the cache (review A-10).
+The renderer draws text from a glyph atlas (D-29, D-81). `TextLayout` in `Rendering` lays out each text box with Core Text (`CTTypesetter`), with the attributes of the edit view: SF Mono, a fixed line height, and word wrap at the width of section 7 (D-84). Each glyph is one quad from the atlas. The atlas keys a glyph by its font, its glyph ID, and its scale, so the glyphs of fallback fonts work too. An emoji draws as a white shape, because the canvas has no color. Core Text draws the glyphs into one atlas per scale. The scale is the zoom times the display scale, rounded up to the next power of two. The atlas cache has a byte budget, not a count. The size of a text box does not change the size of the cache (review A-10).
 
-While a text box is in edit mode, the renderer hides it. A `UITextView` sits at the same place, with the same font and a transform that matches the camera.
+While a text box is in edit mode, the renderer hides it. A `UITextView` sits at the same place, with the same font at 17 points times the zoom, and without a scale transform (D-85). A camera change moves it, and a zoom change lays out its text again. During a pinch, it uses a scale transform from its last layout. At the end of the pinch, it lays out the text at the new size.
+
+Text does not join the eraser mask (D-66, D-82). The committed textures hold the ink in their red channel and the text in their green channel. The eraser mask hides the red channel only.
 
 The text font is SF Mono, 17 points at zoom 1.0 (decision D-15).
 
@@ -340,10 +342,11 @@ The threshold `0.7` is a start value. Tune it on a device.
 
 ## 7. Text boxes
 
-- Create: with the text tool active, a pencil tap makes a new text box at the tap point and starts editing.
-- Edit: a `UITextView` (TextKit 2) appears at the place of the box. Scribble works without extra code. The text view has its own undo while you edit.
-- End: a tap outside the box, or a change of tool, ends editing. The canvas records one `EditText` command with the old and the new text. An empty text box is deleted, and the canvas records no command.
-- Size: the width grows with the longest line, up to 640 canvas points. Longer lines wrap. The height grows with the text.
+- Create: with the text tool active, a pencil tap on empty canvas makes a new text box at the tap point and starts editing. The tool stays the text tool (D-87).
+- Edit: a `UITextView` (TextKit 2) appears at the place of the box. Scribble works without extra code. The text view has its own undo while you edit. With the text tool, a pencil tap on a box starts its edit. With any tool, a finger tap on a box starts its edit (TOOL-06). A pencil movement that is not a tap does nothing with the text tool (D-87).
+- End: a tap outside the box, a change of tool, a workspace switch, or the move to the background ends editing. A change of tool ends it at once, also while D-70 waits for the next pencil down (D-87). The canvas records one step for the edit (D-86): `AddTextBox` for a new box with text, `EditText` for a changed box, and `DeleteNode` for an existing box that ends empty. A new box that ends empty and a box without a change record no step.
+- Delete: a long press on a box without a drag opens a menu with "Delete" (TOOL-08, D-89). It records one `DeleteNode` step.
+- Size: the width grows with the longest line, up to 640 canvas points (`TextStyle.maxWidth`). Longer lines wrap. The height grows with the text. The size is not stored (D-83).
 - Content: plain text only. No rich text, no links.
 
 ## 8. Undo and redo
@@ -354,16 +357,16 @@ Undo uses the `History` type from `Model`. It does not use `UndoManager` for can
 - Each user action becomes one `CanvasCommand`. Each command has an `apply` function and a `revert` function on the canvas content. Both functions are pure.
 - Commands hold the `Stroke` values that they add or remove (D-68). A copy of a stroke copies one reference to its points, so the history holds no second copy of the points.
 - `AddStroke` adds a stroke. Its revert removes the stroke from the content and writes an erase record for it. A redo sets `isDeleted` on that record.
-- Commands: `AddStroke`, `EraseStrokes` (removed strokes plus added parts), `AddTextBox`, `EditText`, `MoveNode`, `ResizeTextBox`, `AddCard`, `DeleteNode`, `RenameCard`.
+- Commands: `AddStroke`, `EraseStrokes` (removed strokes plus added parts), `AddTextBox`, `EditText`, `MoveNode`, `AddCard`, `DeleteNode`, `RenameCard`. A text box has no resize, because its size comes from its text (D-83).
 - A delete is a tombstone, not a removal (see [data-model.md](data-model.md)). Thus an undo of a delete only clears the tombstone.
 - The history has a limit of `Limits.maxHistoryDepth = 500` steps per canvas. The oldest step is dropped first.
-- The history of one canvas holds at most `Limits.maxHistoryPointsPerCanvas` (4,000,000) control points, and the histories of all sessions hold at most `Limits.maxHistoryPointsInSessions` (16,000,000) (D-76). A step counts the points of the strokes that it holds. Past the canvas budget, the oldest steps go, also a new step that alone passes the budget. Past the session budget, the oldest steps of the least recently used session go first. The session erase records of the strokes in dropped steps go with them, unless a kept step holds the stroke too.
+- The history of one canvas holds at most `Limits.maxHistoryPointsPerCanvas` (4,000,000) control points, and the histories of all sessions hold at most `Limits.maxHistoryPointsInSessions` (16,000,000) (D-76). A step counts the points of the strokes that it holds, and one point for each code point of the texts that it holds (D-88). Past the canvas budget, the oldest steps go, also a new step that alone passes the budget. Past the session budget, the oldest steps of the least recently used session go first. The session erase records of the strokes in dropped steps go with them, unless a kept step holds the stroke too.
 - A new command clears the redo list.
 - A hardware keyboard gets Command-Z and Shift-Command-Z through `UIKeyCommand`.
 - `PointerApp` holds `CanvasSessions`: for each canvas, the `History` and the erase records of the session. A new load of a canvas reads no erase record, so the canvas takes the records of its session back at the open (`CanvasContent.adoptSessionRecords(_:)`). The shown canvas keeps its session with `endSession()` before the app makes the next canvas screen, so that a screen of the same canvas finds the steps of the visit (F-02 of [m4-fix-plan.md](m4-fix-plan.md)). The open of a canvas takes its session out of `CanvasSessions`, so the shown canvas is the only owner of its history, and its first step copies nothing (M-03). A deleted workspace loses its session, also when its canvas is on the screen. A tap on the workspace of the shown canvas makes no new screen. A newer switch cancels the load of an older one, so quick switches load only the last canvas (F-13).
 - An undo or a redo sends its change to the renderer and its rows to the library, and asks for a save. The renderer change of an `EraseStrokes` step redraws only the area of its eraser path.
 
-While a text view is in edit mode, the undo and redo buttons go to the text view.
+In edit mode, the undo and redo of the buttons, the palette, and Command-Z go to the text view. If it has no step, they are off (D-86).
 
 ## 9. PDF export
 

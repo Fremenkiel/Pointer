@@ -164,7 +164,7 @@ struct TextBox: Identifiable, Hashable, Sendable {
 }
 ```
 
-The width and the height come from the text layout. They are not stored.
+The width and the height come from the text layout of `Rendering`: SF Mono at 17 points, word wrap at 640 canvas points (`TextStyle`, D-83, D-84). They are not stored.
 
 The text is one value (decision D-19). One value is simple. A list of paragraphs makes merge conflicts smaller, as Muse found, and can come with a future sync.
 

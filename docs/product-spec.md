@@ -43,6 +43,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 - TOOL-05: The text tool creates a text box where the pencil taps. The keyboard opens. Scribble (handwriting into text fields) works in the text box.
 - TOOL-06: A finger tap on an existing text box starts editing it.
 - TOOL-07: A small tool bar shows the current tool and lets you change it with a tap. A squeeze of the pencil opens it as the palette of PEN-03 (D-63). A button in the top left corner shows the current tool, and a finger tap on it opens the same palette (D-64).
+- TOOL-08: A long press on a text box without a drag opens a menu with "Delete" (D-89).
 
 ### 3.3 Apple Pencil
 
@@ -83,7 +84,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 
 - UNDO-01: Undo and redo buttons are in the top right corner.
 - UNDO-02: Undo and redo work on the current canvas. Each canvas keeps its own history while the app runs (D-12).
-- UNDO-03: Undoable actions: add stroke, erase, add text box, edit text, move, resize, create card, delete card, rename card.
+- UNDO-03: Undoable actions: add stroke, erase, add text box, edit text, delete text box, move, resize, create card, delete card, rename card. A text box has no resize (D-83).
 - UNDO-04: Navigation and camera changes are not undoable.
 - EXP-01: An export button is in the top right corner, next to undo and redo.
 - EXP-02: Export makes a vector PDF of the current canvas. Ink is vector paths. Text is real text that you can select and search.

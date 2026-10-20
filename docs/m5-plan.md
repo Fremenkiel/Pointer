@@ -2,7 +2,7 @@
 
 This document breaks milestone M5 of [plan.md](plan.md) into tasks. The acceptance criteria stay in [plan.md](plan.md). The tasks build on D-15, D-16, D-19, D-29, D-34, D-50, D-57, D-59, D-63, D-64, D-66, D-70, D-76, and D-77.
 
-The M5 plan raised D-81 to D-91 on 2026-10-20. They are open. No code starts before the product owner decides them and approves this plan. The tasks follow the recommendation of each open decision. If the product owner picks another option, the tasks that section 2 names change.
+The M5 plan raised D-81 to D-91 on 2026-10-20. The product owner decided each of them with the recommendation and approved this plan on the same day.
 
 Do the phases in order. Inside a phase, do the tasks in order. Each task is one commit or a small set of commits (GIT-02). Each bug fix comes with a test that fails before the fix (TEST-03).
 
@@ -22,11 +22,11 @@ Checked on 2026-10-20 at commit d2378c2, the newest commit of branch `m4-fix`. B
 10. `make snapshots` names each snapshot test class. A new snapshot class must join the list.
 11. Three document conflicts exist. plan.md M5 says "Core Text texture cache", and architecture.md section 3 lists a "text texture cache". D-29 and architecture.md section 5.4 say glyph atlas (D-81). Architecture.md section 8 lists `ResizeTextBox`, and UNDO-03 lists "resize", but data-model.md section 7.3 stores no size (D-83). Architecture.md section 4.7 has a delete in the long-press menu of a text box, but product-spec.md has no requirement for it (D-89).
 
-## 2. Open decisions
+## 2. Decisions
 
-[decisions.md](decisions.md) gives the options and the reasons of each question.
+[decisions.md](decisions.md) gives the options and the reasons of each question. The product owner chose the recommendation of each on 2026-10-20.
 
-| ID | Question | Recommendation | Tasks that change with another option |
+| ID | Question | Decision | Tasks |
 |---|---|---|---|
 | D-81 | Text renderer: plan.md says "Core Text texture cache", D-29 says glyph atlas | Glyph atlas. plan.md and architecture.md section 3 change their words. | 2.2 |
 | D-82 | Text and the eraser mask | A second channel: the committed textures become `.rg8Unorm`, ink in red, text in green | 2.3, 2.4 |
