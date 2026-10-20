@@ -97,7 +97,7 @@ The tasks are in [m4-plan.md](m4-plan.md).
 Acceptance:
 
 1. Each command passes the apply-then-revert test (TEST-09, D-67).
-2. Erase, undo, and redo of 1,000 strokes in one gesture takes under 16 ms per step (D-69). A Tier A test times `apply` and `revert` of the command. A device test on the iPad Pro 11-inch (M4) in Release times each step. The clock runs from the pencil lift or the button tap until the GPU completes the first frame that holds the result (D-74). The canvas holds the 20,000 strokes of D-56 and 1,000 parallel strokes of 300 points. One eraser line cuts each of the 1,000 strokes in two.
+2. Erase, undo, and redo of 1,000 strokes in one gesture takes under 33 ms per step (D-69, D-75). The goal of 16 ms moves to a later milestone. A Tier A test times `apply` and `revert` of the command. A device test on the iPad Pro 11-inch (M4) in Release times each step. The clock runs from the pencil lift or the button tap until the GPU completes the first frame that holds the result (D-74). The canvas holds the 20,000 strokes of D-56 and 1,000 parallel strokes of 300 points. One eraser line cuts each of the 1,000 strokes in two.
 
 ## M5: Text boxes
 

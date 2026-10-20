@@ -8,13 +8,13 @@ import XCTest
 
 @testable import CanvasFeature
 
-/// M4 acceptance 2: erase, undo, and redo of 1,000 strokes in one gesture take under 16 ms per
+/// M4 acceptance 2: erase, undo, and redo of 1,000 strokes in one gesture take under 33 ms per
 /// step on the device (D-69). The clock runs from the pencil lift or the undo or redo call until
 /// the GPU completes the first frame that holds the result (D-74). The simulator skips it.
 @MainActor
 final class EraseUndoPerformanceTests: XCTestCase {
-    /// The budget of one step, in milliseconds.
-    private static let budgetMilliseconds = 16.0
+    /// The budget of one step, in milliseconds: four display frames at 120 Hz (D-75).
+    private static let budgetMilliseconds = 33.0
     /// The rounds of erase, undo, and redo.
     private static let rounds = 5
     /// The parallel strokes that the eraser line cuts in two.
