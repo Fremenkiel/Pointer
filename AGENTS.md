@@ -33,28 +33,32 @@ pointer/
   .swiftlint.yml           lint rules, one custom rule per invariant
   Pointer.xcodeproj/       Xcode project with the app target and the PointerApp scheme
   PointerApp/              app target: scene setup and composition only
+    Assets.xcassets/       app icon and launch background
   PointerAppTests/         tests of the app target, part of PointerDeviceTests only
-  Packages/                one local Swift package per folder, each with Sources/ and Tests/
+  Packages/                one local Swift package per folder, each with Sources/, most with Tests/
     Geometry/              Layer 0: Double geometry, camera math, spatial grid
     Model/                 Layer 0: value types, IDs, clock, commands, history, limits
     InkEngine/             Layer 0: eraser hit test and stroke split
-    Persistence/           Layer 1: SQLite repository, migrations, snapshots, restore
+    Persistence/           Layer 1: SQLite repository, migrations, snapshots (restore comes in M9)
+      Sources/PersistenceCrashHelper/   helper process that the crash test stops (D-54)
       Tests/PersistenceTests/Fixtures/  fixture database and its SQL per schema version (TEST-08)
       Tests/PersistenceDeviceTests/     device performance tests, part of PointerDeviceTests only
     Rendering/             Layer 1: Metal renderer and shaders
       Tests/RenderingTests/             part of PointerDeviceTests only (D-77)
         References/        reference PNGs of the snapshot tests, made on the iPad (TEST-07)
-    Export/                Layer 1: PDF export
-    DesignSystem/          Layer 1: tokens and shared small views
+    Export/                Layer 1: PDF export, no Tests/ yet
+    DesignSystem/          Layer 1: tokens, no Tests/ yet
     CanvasFeature/         Layer 2: canvas screen
+      Sources/CanvasFeature/Resources/      String Catalog of the canvas
       Tests/CanvasFeatureTests/             part of PointerDeviceTests only (D-77)
       Tests/CanvasFeatureSnapshotTests/     view snapshots, part of PointerDeviceTests only (D-77)
         References/        reference PNGs of the snapshot tests, made on the iPad (TEST-07)
     WorkspaceFeature/      Layer 2: workspace selector
+      Sources/WorkspaceFeature/Resources/   String Catalog of the selector
       Tests/WorkspaceFeatureTests/          part of PointerDeviceTests only (D-77)
       Tests/WorkspaceFeatureSnapshotTests/  view snapshots, part of PointerDeviceTests only (D-77)
         References/        reference PNGs of the snapshot tests, made on the iPad (TEST-07)
-    BackupFeature/         Layer 2: backup command and restore
+    BackupFeature/         Layer 2: backup command and restore, no Tests/ yet
   Scripts/                 check-layers.swift, assertion-density.swift, self-test.sh
     Fixtures/              small trees that the self-test runs the check scripts on
 ```

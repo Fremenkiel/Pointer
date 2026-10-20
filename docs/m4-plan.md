@@ -179,7 +179,7 @@ Status: done on 2026-10-20, except one unstable step. The product owner decided 
 
 - The canvas holds the content in memory without a library, because the save runs off the main actor with its own budget of 50 ms.
 - The camera has zoom 0.5, so the 1,000 strokes, 1.5 points apart, fit on the screen. The eraser line has 261 samples.
-- The end of a step is the presented callback of its first frame on the main actor. The test runs 5 rounds and fails if the slowest step of a kind takes 16 ms or more.
+- The end of a step is the GPU end of its first frame (D-74). The test runs 5 rounds and fails if the slowest step of a kind takes 33 ms or more (D-75).
 
 ### 3.9 Close of M4
 

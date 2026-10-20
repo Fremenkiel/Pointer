@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 on 2026-10-19.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-79 on 2026-10-20. D-80 is open.
 
 Status values: Open, Decided, Replaced.
 

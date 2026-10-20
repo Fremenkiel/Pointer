@@ -231,9 +231,9 @@ struct CanvasContent: Sendable {
 
 `strokes` holds the live strokes only. An erase, or an undo of an added stroke, removes the stroke from `strokes`. The command keeps the `Stroke` value for a later undo or redo (D-68). `erased` holds only the erase records of the current session. A new load of a canvas reads no erase record, so the canvas takes the records of its session back with `adoptSessionRecords(_:)` (D-12). The repository loads live strokes only, so the erased strokes of earlier sessions never reach memory or the point arena (review A-07). An undo can only reach an erase of the current session, because the history lives in memory (D-12).
 
-`CanvasContent` is the input and the output of commands. Only the canvas controller holds it, together with the `History` (review A-03). Swift copies a dictionary at the first change after a copy exists. With a second holder, the main actor then copies up to 200,000 entries at a pencil lift.
+`CanvasContent` is the input and the output of commands. Only the canvas controller holds it (review A-03). The canvas also holds the `History` of the canvas while it shows. When it leaves, it gives the history and the erase records of its session to `CanvasSessions` in `PointerApp`, and the next open of the canvas takes them out again, so one holder at a time owns them (D-12, M-03). Swift copies a dictionary at the first change after a copy exists. With a second holder, the main actor then copies up to 200,000 entries at a pencil lift.
 
-- The renderer receives deltas: the IDs of added and erased strokes. It keeps its own GPU state.
+- The renderer receives deltas: the IDs of the removed strokes, the added `Stroke` values, and the area to redraw. It keeps its own GPU state.
 - The repository receives the changed rows as `LibraryChange` values through the protocol `LibraryRepository` (see [storage.md](storage.md) section 4).
 - The exporter takes a copy. Export is rare and the user starts it, so the cost of the copy is accepted.
 

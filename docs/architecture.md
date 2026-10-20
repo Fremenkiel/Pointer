@@ -49,7 +49,7 @@ Layer 0  Foundations      InkEngine ---- Model ---- Geometry
 | `Persistence` | 1 | `Model`, `Geometry`, SQLite3 | `SQLiteLibraryRepository` (an actor), a small SQLite wrapper, row codecs, migrations, snapshots, restore. |
 | `Rendering` | 1 | `Model`, `Geometry`, `InkEngine`, Metal | `CanvasRenderer`, the point arena, shaders, the committed texture cache, text texture cache. |
 | `Export` | 1 | `Model`, `Geometry`, `InkEngine`, Core Graphics, Core Text | `PDFExporter`. |
-| `DesignSystem` | 1 | SwiftUI, UIKit | Color, spacing, size, and icon tokens. Shared small views. |
+| `DesignSystem` | 1 | SwiftUI, UIKit | Color, spacing, size, and icon tokens. |
 | `CanvasFeature` | 2 | Layer 0 and 1, PencilKit | `CanvasViewController`, `CanvasView`, the live `PKCanvasView`, `PencilKitStrokeConverter`, input routing, camera control, card navigation, text editing, top bars. |
 | `WorkspaceFeature` | 2 | Layer 0 and 1 | Workspace selector, create, rename, delete. |
 | `BackupFeature` | 2 | Layer 0 and 1 | "Back up now" command and restore. |
@@ -66,7 +66,7 @@ Dependencies flow down. Features get repositories and services through their ini
 The canvas view holds the Metal view and one `PKCanvasView` on top of it. The `PKCanvasView` has a clear background and `drawingPolicy = .pencilOnly`. It never zooms or scrolls.
 
 - With the pen tool, `.pencil` touches go to the drawing gesture recognizer of the `PKCanvasView`. PencilKit draws the live stroke.
-- With the eraser tool or the text tool, the drawing gesture recognizer is off. `.pencil` touches go to the active tool directly, in `touchesBegan`, `touchesMoved`, `touchesEnded`, and `touchesCancelled`. See decision D-34.
+- With the eraser tool or the text tool, the drawing gesture recognizer is off. `.pencil` touches go to the active tool through `PencilTouchObserver`, a gesture recognizer on the canvas view that never recognizes and works next to every other recognizer. It takes only the touches on the canvas surfaces, not on the buttons above them (F-06). During an erase, it reports the coalesced samples of each move. See decision D-34.
 - `.direct` (finger) touches go to gesture recognizers with `allowedTouchTypes = [.direct]`: one-finger pan, two-finger pinch, tap, and long press.
 
 The view sets `isMultipleTouchEnabled = true`. A finger that touches during a pencil stroke does not cancel the stroke. While the pencil draws, the pan and pinch gesture recognizers ignore the finger, so the camera does not move (decision D-36).
@@ -75,7 +75,7 @@ A palm guard keeps the palm away from the finger gestures (review A-14). iPadOS 
 
 1. The touch begins while a pencil touch is active.
 2. The touch begins less than 150 ms after the last pencil touch ended. The value is a start value. Tune it on a device.
-3. The `majorRadius` of the touch is larger than a palm threshold. Find the start value on a device in M2.
+3. The `majorRadius` of the touch is larger than a palm threshold of 30 points (`PalmGuard.palmRadius`).
 
 The guard affects the finger gestures only. A finger never draws in any case (TOOL-03), because the `PKCanvasView` uses `drawingPolicy = .pencilOnly`.
 
@@ -297,7 +297,7 @@ Layer order on a canvas, from bottom to top: cards, ink, text boxes (decision D-
 
 ### 5.6 Spatial index
 
-Each loaded canvas has one `SpatialGrid`. The grid has square cells of 512 canvas points in a dictionary keyed by cell coordinates. Each cell holds the IDs of the strokes, text boxes, and cards whose bounds touch it. A query for a rectangle reads only the cells in that rectangle. A query has a limit: at zoom 0.25 on a 13-inch iPad, the viewport covers 5,504 by 4,128 canvas points. That is 11 by 9 cells, and at most 120 cells when the viewport does not align with the grid (review A-04).
+The stroke store of the renderer holds the one `SpatialGrid` of a loaded canvas. It holds the strokes only. Text boxes and cards get a grid when they get a renderer in M5 and M6. The canvas finds the strokes of an eraser path with one pass over the bounds of its live strokes (section 4.4). The grid has square cells of 512 canvas points in a dictionary keyed by cell coordinates. Each cell holds the slots of the strokes whose bounds touch it. A query for a rectangle reads only the cells in that rectangle. A query has a limit: at zoom 0.25 on a 13-inch iPad, the viewport covers 5,504 by 4,128 canvas points. That is 11 by 9 cells, and at most 120 cells when the viewport does not align with the grid (review A-04).
 
 ## 6. Camera and navigation
 
@@ -398,7 +398,10 @@ All limits live in one type, `Limits`, in `Model`. Code uses the names, never th
 | `maxHistoryDepth` | 500 | Undo steps per canvas. |
 | `maxHistoryPointsPerCanvas` | 4,000,000 | Control points in the undo history of one canvas, about 67 MB (D-76). |
 | `maxHistoryPointsInSessions` | 16,000,000 | Control points in the histories of all sessions, about 270 MB (D-76). |
+| `strokeOverlapPoints` | 3 | Control points that two neighbor strokes of one long path share, so that the curve continues without a gap (section 4.2). |
 | `minZoom`, `maxZoom`, `standardZoom` | 0.25, 8.0, 1.0 | Camera (CAN-04). |
+
+The split of an erase has two bounds of its own in `Eraser`, because only the split uses them: `minimumChunk` (64), the fewest candidates of one thread, and `maxChunks` (8), the most threads. The iPad Pro (M4) has 4 performance cores.
 
 If the user reaches a limit, the app shows a short message. It never crashes and never drops data in silence.
 
@@ -407,7 +410,7 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 - Swift 6 language mode with complete strict concurrency in every target.
 - UI types and the canvas run on the main actor. The renderer encodes its frames on a render thread (D-42, section 5.1). The main actor sends values to it and never waits for a frame.
 - `SQLiteLibraryRepository` is an actor. It owns the only database connection that writes. All SQL goes through it. The actor has a custom serial executor on a `DispatchSerialQueue` (SE-0392), so the blocking SQLite calls run on their own thread and never hold a thread of the shared pool (review A-13).
-- The canvas sends the changed rows to the repository and the IDs of changed strokes to the renderer. It never shares mutable state (see [data-model.md](data-model.md) section 8).
+- The canvas sends the changed rows to the repository, in order through one channel (F-11), and the change of a step to the renderer: the IDs of the removed strokes, the added `Stroke` values, and the area to redraw (`CanvasRenderer.change(removing:adding:area:)`). It never shares mutable state (see [data-model.md](data-model.md) section 8).
 - PDF export runs in a `Task` off the main actor. Snapshots run in `SnapshotWriter`, an actor with its own read-only connection and its own serial executor, so saves continue while a snapshot runs (D-32). Both report progress to the main actor.
 - `DeviceStateStore` owns `device.sqlite` with its own connection and its own serial executor (D-53). Thus three actors touch SQLite, each on its own queue, and none of them on the shared pool.
 - At launch, `PointerApp` opens the device state, the snapshot writer, and the library in this order, and then makes the one clock of the app (data-model.md section 4). At the move to the background, it writes the pending rows and the device state with extra time from `UIApplication.beginBackgroundTask`. A custom `UIWindow` notes the time of the last touch. After 5 seconds without a touch and with no pending rows, the app sends the idle signal to the snapshot writer (storage.md section 7.2).
@@ -418,7 +421,7 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 | Measure | Budget | How to measure |
 |---|---|---|
 | Pencil to ink | 13 ms goal, 20 ms limit | High-speed camera and the presented-time log (see [research.md](research.md) 3.4) |
-| Frame time while drawing | Under 3 ms CPU from the pencil event to the end of encoding, under 4 ms GPU | `OSSignposter` intervals in an `XCTOSSignpostMetric` test |
+| Frame time while drawing | Under 3 ms CPU from the pencil event to the end of encoding, under 4 ms GPU | `OSSignposter` intervals, and the medians of `EraserFramePerformanceTests` and `FrameLoopTests` on the device |
 | Dropped frames while drawing or panning | 0 per 10 s | Animation Hitches template |
 | Open a workspace with 20,000 strokes | Under 300 ms to first frame | `CanvasOpenPerformanceTests`: the open on the screen, timed with `ContinuousClock` |
 | Save after a stroke | Off the main actor, under 50 ms | Signpost |
