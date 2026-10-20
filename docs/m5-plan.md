@@ -99,6 +99,8 @@ Done when: each command passes the apply-then-revert test of TEST-09 with the li
 
 Rules: UNDO-03, TEST-02, TEST-09, CONTRACT-02, D-19, D-67, D-86.
 
+Status: done. 9 new tests pass, 92 `Model` tests in total. The density of `Model` is 2.16. Each command counts the code points of its texts as its held cost (D-88), so task 1.3 adds only the budget tests.
+
 #### 1.3 Text in the memory bound of the history
 
 1. Give each text command a held cost: the code points of the `TextBox` values that it holds (D-88).

@@ -296,4 +296,50 @@ extension CanvasContent {
         assert(textBoxes[id] == nil, "The text box \(id) left the content")
         return removed
     }
+
+    /// Puts `textBox` with the change time `time` in the place of its live box, for a command.
+    ///
+    /// - Throws: `CommandError.textBoxNotLive` if the box is not live.
+    /// - Returns: The row of the changed box.
+    mutating func change(
+        to textBox: TextBox,
+        at time: HybridTimestamp
+    ) throws(CommandError) -> LibraryChange {
+        guard textBoxes[textBox.id] != nil else { throw .textBoxNotLive(textBox.id) }
+        let changed = textBox.marking(deleted: false, at: time)
+        _ = replace(changed)
+        return .textBox(changed)
+    }
+
+    /// Puts `textBox` back as a live box with the change time `time`, for a command.
+    ///
+    /// - Throws: `CommandError.textBoxAlreadyLive` if the box is live, or
+    ///   `CommandError.nodeLimitReached` at the node limit.
+    /// - Returns: The row of the live box.
+    mutating func revive(
+        _ textBox: TextBox,
+        at time: HybridTimestamp
+    ) throws(CommandError) -> LibraryChange {
+        guard textBoxes[textBox.id] == nil else { throw .textBoxAlreadyLive(textBox.id) }
+        let live = textBox.marking(deleted: false, at: time)
+        do {
+            try add(live)
+        } catch {
+            throw .nodeLimitReached
+        }
+        return .textBox(live)
+    }
+
+    /// Removes the live box `id` and returns its tombstone with the change time `time`, for a
+    /// command.
+    ///
+    /// - Throws: `CommandError.textBoxNotLive` if the box is not live.
+    /// - Returns: The row of the tombstone.
+    mutating func bury(
+        _ id: TextBoxID,
+        at time: HybridTimestamp
+    ) throws(CommandError) -> LibraryChange {
+        guard textBoxes[id] != nil else { throw .textBoxNotLive(id) }
+        return .textBox(removeTextBox(id).marking(deleted: true, at: time))
+    }
 }

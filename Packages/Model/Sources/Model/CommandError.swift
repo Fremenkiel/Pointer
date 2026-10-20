@@ -8,4 +8,10 @@ public enum CommandError: Error, Equatable, Sendable {
     case strokeAlreadyLive(StrokeID)
     /// The command needs the erase record of a stroke that the content does not hold.
     case eraseRecordMissing(StrokeID)
+    /// The command needs a live text box that the content does not hold.
+    case textBoxNotLive(TextBoxID)
+    /// The command adds a text box that the content already holds as a live box.
+    case textBoxAlreadyLive(TextBoxID)
+    /// The command adds a text box to a canvas that holds `Limits.maxNodesPerCanvas` nodes.
+    case nodeLimitReached
 }
