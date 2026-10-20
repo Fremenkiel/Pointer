@@ -41,12 +41,6 @@ public struct EraseStrokes: CanvasCommand {
         to content: inout CanvasContent,
         clock: inout HybridClock
     ) throws(CommandError) -> [LibraryChange] {
-        for stroke in removed where content.strokes[stroke.id] == nil {
-            throw .strokeNotLive(stroke.id)
-        }
-        for part in parts where content.strokes[part.id] != nil {
-            throw .strokeAlreadyLive(part.id)
-        }
         let count = content.strokes.count - removed.count + parts.count
         guard count <= Limits.maxStrokesAfterErase || parts.count <= removed.count else {
             throw .strokeLimitReached
@@ -54,17 +48,15 @@ public struct EraseStrokes: CanvasCommand {
         let time = clock.now()
         var changes: [LibraryChange] = []
         changes.reserveCapacity(removed.count + parts.count)
-        for stroke in removed {
-            changes.append(.erase(content.remove(stroke.id, at: time)))
-        }
-        for part in parts {
-            let tombstone: EraseRecord?
-            do {
-                tombstone = try content.restore(part, at: time, ignoringLimit: true)
-            } catch {
-                preconditionFailure("A part \(part.id) cannot hit the limit: \(error)")
-            }
-            changes.append(tombstone.map(LibraryChange.erase) ?? .stroke(part))
+        // Each stroke is checked and changed with one lookup. A failed check takes the step back,
+        // so the content stays as it was (P-07).
+        var log = CanvasContent.ChangeLog(capacity: removed.count + parts.count)
+        do {
+            try content.remove(removed, at: time, log: &log, changes: &changes)
+            try content.restore(parts, at: time, needsRecords: false, log: &log, changes: &changes)
+        } catch {
+            content.rollBack(log)
+            throw error
         }
         assert(changes.count == removed.count + parts.count, "Each stroke gives one row")
         return changes
@@ -84,16 +76,6 @@ public struct EraseStrokes: CanvasCommand {
         on content: inout CanvasContent,
         clock: inout HybridClock
     ) throws(CommandError) -> [LibraryChange] {
-        for part in parts where content.strokes[part.id] == nil {
-            throw .strokeNotLive(part.id)
-        }
-        for stroke in removed where content.strokes[stroke.id] != nil {
-            throw .strokeAlreadyLive(stroke.id)
-        }
-        // A load without the session records would turn the erase records into live ones (F-14).
-        for stroke in removed where content.erased[stroke.id] == nil {
-            throw .eraseRecordMissing(stroke.id)
-        }
         let count = content.strokes.count - parts.count + removed.count
         guard count <= Limits.maxStrokesPerCanvas || removed.count <= parts.count else {
             throw .strokeLimitReached
@@ -101,18 +83,15 @@ public struct EraseStrokes: CanvasCommand {
         let time = clock.now()
         var changes: [LibraryChange] = []
         changes.reserveCapacity(removed.count + parts.count)
-        for part in parts {
-            changes.append(.erase(content.remove(part.id, at: time)))
-        }
-        for stroke in removed {
-            let tombstone: EraseRecord?
-            do {
-                tombstone = try content.restore(stroke, at: time, ignoringLimit: true)
-            } catch {
-                preconditionFailure("The limit check above failed for stroke \(stroke.id)")
-            }
-            assert(tombstone != nil, "A removed stroke \(stroke.id) has an erase record")
-            changes.append(tombstone.map(LibraryChange.erase) ?? .stroke(stroke))
+        // A load without the session records would turn the erase records into live ones, so a
+        // removed stroke needs its record (F-14). One lookup per stroke, as in `apply` (P-07).
+        var log = CanvasContent.ChangeLog(capacity: removed.count + parts.count)
+        do {
+            try content.remove(parts, at: time, log: &log, changes: &changes)
+            try content.restore(removed, at: time, needsRecords: true, log: &log, changes: &changes)
+        } catch {
+            content.rollBack(log)
+            throw error
         }
         assert(content.strokes.count == count, "The undo leaves \(count) strokes")
         return changes

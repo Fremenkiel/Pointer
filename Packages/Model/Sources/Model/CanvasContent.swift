@@ -147,3 +147,113 @@ public struct CanvasContent: Sendable {
         return skipped
     }
 }
+
+/// The changes of a command in batches: each stroke is checked and changed with one lookup, and
+/// a failed check takes the changes of the step back (P-07 of docs/m4-fix-plan.md).
+extension CanvasContent {
+    /// The strokes that a step changed, so that a failed step can take them back.
+    struct ChangeLog {
+        /// The removed strokes with the erase record that each one had before.
+        fileprivate var removed: [(stroke: Stroke, earlier: EraseRecord?)] = []
+        /// The restored or added strokes with the erase record that each one had before.
+        fileprivate var restored: [(id: StrokeID, earlier: EraseRecord?)] = []
+
+        /// Makes a log with room for `count` strokes.
+        init(capacity count: Int) {
+            precondition(count >= 0, "A log holds no negative count, got \(count)")
+            removed.reserveCapacity(count)
+            restored.reserveCapacity(count)
+        }
+    }
+
+    /// Removes live strokes as `remove(_:at:)` does and adds their erase records to `changes`.
+    ///
+    /// - Throws: `CommandError.strokeNotLive` if a stroke is not live. The strokes before it are
+    ///   in `log`, so `rollBack(_:)` takes them back.
+    mutating func remove(
+        _ list: [Stroke],
+        at time: HybridTimestamp,
+        log: inout ChangeLog,
+        changes: inout [LibraryChange]
+    ) throws(CommandError) {
+        for stroke in list {
+            guard strokes.removeValue(forKey: stroke.id) != nil else {
+                throw .strokeNotLive(stroke.id)
+            }
+            // A stroke that the session erased before has a tombstone, which changes in place.
+            // It keeps the time of its first erase, as `remove(_:at:)` does.
+            let index = erased.index(forKey: stroke.id)
+            let earlier = index.map { erased.values[$0] }
+            assert(earlier?.isDeleted ?? true, "Stroke \(stroke.id) was live with a live record")
+            let record = EraseRecord(
+                strokeID: stroke.id,
+                erased: earlier?.erased ?? time,
+                modified: time,
+                isDeleted: false
+            )
+            if let index {
+                erased.values[index] = record
+            } else {
+                erased[stroke.id] = record
+            }
+            log.removed.append((stroke, earlier))
+            changes.append(.erase(record))
+        }
+        assert(log.removed.count >= list.count, "The log holds each removed stroke")
+    }
+
+    /// Puts strokes back or adds them as `restore(_:at:ignoringLimit:)` does, without a limit
+    /// check, and adds their rows to `changes`: a tombstone, or the stroke without a record.
+    ///
+    /// - Throws: `CommandError.strokeAlreadyLive` if a stroke is live, or
+    ///   `CommandError.eraseRecordMissing` if `needsRecords` and a stroke has no erase record.
+    ///   The strokes before it are in `log`, so `rollBack(_:)` takes them back.
+    mutating func restore(
+        _ list: [Stroke],
+        at time: HybridTimestamp,
+        needsRecords: Bool,
+        log: inout ChangeLog,
+        changes: inout [LibraryChange]
+    ) throws(CommandError) {
+        for stroke in list {
+            precondition(stroke.canvasID == canvasID, "Stroke \(stroke.id) is of another canvas")
+            if let live = strokes.updateValue(stroke, forKey: stroke.id) {
+                strokes[stroke.id] = live
+                throw .strokeAlreadyLive(stroke.id)
+            }
+            guard let index = erased.index(forKey: stroke.id) else {
+                guard !needsRecords else {
+                    strokes.removeValue(forKey: stroke.id)
+                    throw .eraseRecordMissing(stroke.id)
+                }
+                log.restored.append((stroke.id, nil))
+                changes.append(.stroke(stroke))
+                continue
+            }
+            let earlier = erased.values[index]
+            let tombstone = EraseRecord(
+                strokeID: stroke.id,
+                erased: earlier.erased,
+                modified: time,
+                isDeleted: true
+            )
+            erased.values[index] = tombstone
+            log.restored.append((stroke.id, earlier))
+            changes.append(.erase(tombstone))
+        }
+        assert(log.restored.count >= list.count, "The log holds each restored stroke")
+    }
+
+    /// Takes back the changes of a failed step, in the reverse order.
+    mutating func rollBack(_ log: ChangeLog) {
+        for (id, earlier) in log.restored.reversed() {
+            strokes.removeValue(forKey: id)
+            erased[id] = earlier
+        }
+        for (stroke, earlier) in log.removed.reversed() {
+            strokes[stroke.id] = stroke
+            erased[stroke.id] = earlier
+        }
+        assert(log.removed.allSatisfy { strokes[$0.stroke.id] != nil }, "A removal stayed")
+    }
+}

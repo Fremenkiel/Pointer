@@ -470,6 +470,12 @@ Each row is one run of `testEraseUndoRedoOfOneThousandStrokes` alone on the iPad
 | A/B: 3.4 build | 2 | 22.77 / 32.27 | 26.72 / 28.65 | 25.46 / 27.44 |
 | A/B: 3.3 build | 6 | 24.37 / 25.17 | 23.96 / 26.14 | 24.94 / 27.29 |
 | A/B: 3.4 build | 3 | 25.88 / 37.08 | 25.19 / 26.60 | 25.49 / 29.70 |
+| A/B: 3.4 build | 4 | 24.99 / 32.32 | 24.21 / 26.91 | 21.92 / 31.88 |
+| A/B: 3.5 build | 1 | 24.09 / 25.43 | 26.79 / 27.49 | 22.40 / 27.22 |
+| A/B: 3.4 build | 5 | 24.06 / 30.10 | 25.24 / 29.22 | 26.21 / 31.07 |
+| A/B: 3.5 build | 2 | 24.55 / 25.05 | 20.36 / 25.16 | 24.93 / 25.72 |
+| A/B: 3.4 build | 6 | 26.16 / 29.00 | 24.54 / 26.52 | 23.94 / 30.07 |
+| A/B: 3.5 build | 3 | 22.04 / 25.72 | 23.00 / 27.62 | 20.80 / 31.62 |
 
 Notes:
 
@@ -477,6 +483,7 @@ Notes:
 - Task 3.2, on the Mac in Release, median of 20 rounds, called from the test module: 1,000 removals from the grid of the D-69 content took 0.51 ms before and 0.147 ms after (3.5 times faster). The query of the D-69 erase area took 0.054 ms before and 0.0076 ms after (7 times faster). On the iPad, `FrameRenderer.apply` made 20, 2, and 7 allocations for the erase, the undo, and the redo, against 14,897, 14,750, and 14,884 in section 5.1. `GridAllocationTests` counts 0 allocations for 1,000 removals. It runs on the iPad, not as a Tier A test (D-80).
 - Task 3.3: after it, the undo medians were about 26 ms against about 20 ms after task 3.2. The alternating runs of the two builds (A/B rows) gave the same times for both, so the 20 ms of the 3.2 runs did not repeat, and task 3.3 is kept. From task 3.3 on, each task is compared in alternating runs with the build before it. On the Mac in Release (median of 15 rounds), the split of the D-69 content took 3.26 to 3.64 ms before and 2.23 to 2.36 ms after (about 33 % faster). 1,000 `Stroke.init` of 300 points took 0.90 ms before and 0.21 ms after.
 - Task 3.4, on the Mac in Release: the hit test of the 1,000 parallel strokes made 32 allocations per stroke before (46 in the review, before task 3.2) and 3 after. 1,000 strokes in a row took 4.37 ms before and 2.80 ms after (median of 15). The covered ranges of 300 random strokes and paths were bit for bit equal before and after. On the iPad, the undo and the redo of the 3.4 build vary by about 1 ms in both directions against the 3.3 build. Task 3.4 changes only the hit test, which runs at an erase and not at an undo or a redo, so the change is kept.
+- Task 3.5, on the Mac in Release with the D-69 content: `apply` 0.80 to 0.84 ms before and 0.79 to 0.87 ms after, the undo 0.88 ms before and 0.66 to 0.71 ms after, the redo 0.70 ms before and 0.59 to 0.66 ms after (median of 15). On the iPad, all three steps are a little faster against the 3.4 build, and the slowest erase fell from 29 to 32 ms to about 25 ms.
 - Phases 1 and 2 had two regressions that the device runs showed. They are fixed before phase 3: the erase area of task 1.5 took the whole stroke for a part end at an old stroke end (about 10 ms per step, commit 0b9ec40), and the observer filter of task 1.4 leaked each closed canvas (open of D-56 305.6 ms, commit 54facdc).
 
 ### 5.3 Close

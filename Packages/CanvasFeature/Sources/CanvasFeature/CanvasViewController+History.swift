@@ -8,16 +8,16 @@ import UIKit
 extension CanvasViewController {
     /// Undoes the newest step of this canvas. It does nothing if the undo list is empty.
     public func undo() {
-        let area = Self.area(of: history.undoSteps.last)
-        runStep(area: area) { history, content, clock throws(CommandError) in
+        let command = history.undoSteps.last
+        runStep(command, isUndo: true) { history, content, clock throws(CommandError) in
             try history.undo(on: &content, clock: &clock)
         }
     }
 
     /// Redoes the newest undone step of this canvas. It does nothing if the redo list is empty.
     public func redo() {
-        let area = Self.area(of: history.redoSteps.last)
-        runStep(area: area) { history, content, clock throws(CommandError) in
+        let command = history.redoSteps.last
+        runStep(command, isUndo: false) { history, content, clock throws(CommandError) in
             try history.redo(on: &content, clock: &clock)
         }
     }
@@ -32,15 +32,11 @@ extension CanvasViewController {
         return rows
     }
 
-    /// Runs an undo or a redo, then sends the change to the renderer and the rows to the library,
-    /// and asks for a save.
-    /// Returns the changed area of a step, or `nil` to redraw the area of its removed strokes.
-    private static func area(of command: (any CanvasCommand)?) -> Rect? {
-        (command as? EraseStrokes)?.area
-    }
-
+    /// Runs an undo or a redo of `command`, then sends the change to the renderer and the rows to
+    /// the library, and asks for a save.
     private func runStep(
-        area: Rect?,
+        _ command: (any CanvasCommand)?,
+        isUndo: Bool,
         _ step: (inout History, inout CanvasContent, inout HybridClock) throws(CommandError) ->
             [LibraryChange]
     ) {
@@ -52,17 +48,36 @@ extension CanvasViewController {
             return
         }
         guard !rows.isEmpty else { return }
-        let (removed, added) = renderDelta(of: rows)
+        let (removed, added) =
+            Self.renderDelta(of: command, isUndo: isUndo) ?? renderDelta(of: rows)
         renderer.change(
             removing: removed,
             adding: added,
-            area: area,
+            area: (command as? EraseStrokes)?.area,
             onCompleted: { [weak self] time in self?.onStepDrawn?(time) },
             onPresented: {}
         )
         send(rows)
         requestSave()
         historyDidChange()
+    }
+
+    /// Returns the strokes that a step of an erase or an add removes from the screen and adds to
+    /// it, from the command itself, or `nil` for another command (P-06). An undo of an erase
+    /// removes the parts and adds the cut strokes, and its redo does the reverse.
+    private static func renderDelta(
+        of command: (any CanvasCommand)?,
+        isUndo: Bool
+    ) -> (removed: [StrokeID], added: [Stroke])? {
+        if let erase = command as? EraseStrokes {
+            let undoDelta = (erase.parts.map(\.id), erase.removed)
+            let redoDelta = (erase.removed.map(\.id), erase.parts)
+            return isUndo ? undoDelta : redoDelta
+        }
+        if let add = command as? AddStroke {
+            return isUndo ? (add.strokes.map(\.id), []) : ([], add.strokes)
+        }
+        return nil
     }
 
     /// Returns the strokes that the rows of a step remove from the screen and add to it.
