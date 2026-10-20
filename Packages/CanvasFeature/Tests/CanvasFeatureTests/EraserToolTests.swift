@@ -53,7 +53,7 @@ struct EraserToolTests {
         controller.pencilEnded(at: 0, isCancelled: isCancelled)
     }
 
-    @Test("An erase across a stroke cuts it in two and sends the rows with a save request")
+    @Test("An erase across a stroke cuts it in two and sends the rows, which schedule the save")
     func cut() async throws {
         let library = RecordingLibrary()
         let line = Self.line(clock: Fixtures.clock())
@@ -64,13 +64,14 @@ struct EraserToolTests {
         #expect(controller.content.strokes.count == 2)
         #expect(controller.content.erased[line.id]?.isDeleted == false)
         #expect(controller.history.canUndo)
-        for _ in 0..<100 where await library.saveRequests == 0 {
+        for _ in 0..<100 where await library.rows.count < 3 {
             try await Task.sleep(for: .milliseconds(10))
         }
         let rows = await library.rows
         #expect(rows.filter { if case .stroke = $0 { true } else { false } }.count == 2)
         #expect(rows.filter { if case .erase = $0 { true } else { false } }.count == 1)
-        #expect(await library.saveRequests == 1)
+        // The send schedules the save in the library, so the canvas asks for no other (P-09).
+        #expect(await library.saveRequests == 0)
     }
 
     @Test("After 100 alternating undo and redo steps, the stored erase records match (F-11)")

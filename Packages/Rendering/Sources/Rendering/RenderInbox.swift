@@ -16,6 +16,8 @@ struct RenderInbox {
     var edits: [RenderEdit] = []
     /// The number of the newest handoff in `edits`, or 0.
     var editHandoff: UInt64 = 0
+    /// `true` if an edit in `edits` asks for the GPU end of its frame (P-08).
+    var editsWantCompletion = false
     /// The radius in view points of an eraser gesture that starts, or `nil`.
     var eraserStart: Double?
     /// The eraser samples in view space that no frame took yet.
@@ -55,6 +57,7 @@ struct RenderInbox {
             loaded: loaded,
             edits: edits,
             editHandoff: editHandoff,
+            editsWantCompletion: editsWantCompletion,
             eraserStart: eraserStart,
             eraserSamples: eraserSamples,
             endsEraser: endsEraser,
@@ -70,6 +73,7 @@ struct RenderInbox {
         loaded = []
         edits = []
         editHandoff = 0
+        editsWantCompletion = false
         assert(!hasContentChange, "The inbox is empty after a take")
         return input
     }

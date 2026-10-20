@@ -54,11 +54,11 @@ extension CanvasViewController {
             removing: removed,
             adding: added,
             area: (command as? EraseStrokes)?.area,
-            onCompleted: { [weak self] time in self?.onStepDrawn?(time) },
+            onCompleted: stepDrawnCallback(),
             onPresented: {}
         )
+        // The send schedules the save of the rows (P-09).
         send(rows)
-        requestSave()
         historyDidChange()
     }
 
@@ -101,6 +101,13 @@ extension CanvasViewController {
             }
         }
         return (removed, added)
+    }
+
+    /// Returns the callback of the GPU end of a step for `onStepDrawn`, or `nil` without it, so
+    /// that the renderer adds no handler to the frame (P-08).
+    func stepDrawnCallback() -> (@MainActor (Double) -> Void)? {
+        guard onStepDrawn != nil else { return nil }
+        return { [weak self] time in self?.onStepDrawn?(time) }
     }
 
     /// Keeps the session of this visit in the sessions of the app (D-12). The app calls it

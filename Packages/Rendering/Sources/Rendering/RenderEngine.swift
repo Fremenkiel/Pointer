@@ -205,7 +205,7 @@ final class RenderEngine: Sendable {
             renderer.apply(edit)
         }
         if !input.edits.isEmpty {
-            renderer.markHandoff(input.editHandoff)
+            renderer.markHandoff(input.editHandoff, wantsCompletion: input.editsWantCompletion)
         }
         if let observer = input.observer {
             renderer.onCommit = { observer.willCommit($0, drawable: $1) }

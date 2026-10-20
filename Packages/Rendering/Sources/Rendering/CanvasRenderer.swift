@@ -147,9 +147,11 @@ public final class CanvasRenderer {
         callbacks.append((handoff, onPresented))
         if let onCompleted { completions.append((handoff, onCompleted)) }
         let edit = RenderEdit(removed: removed, added: added, area: area)
+        let wantsCompletion = onCompleted != nil
         engine.post { box in
             box.edits.append(edit)
             box.editHandoff = handoff
+            box.editsWantCompletion = box.editsWantCompletion || wantsCompletion
         }
         assert(!callbacks.isEmpty, "The change waits for its frame")
     }

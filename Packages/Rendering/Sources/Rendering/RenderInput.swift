@@ -13,6 +13,8 @@ struct RenderInput: Sendable {
     let edits: [RenderEdit]
     /// The newest handoff of `edits`, or 0.
     let editHandoff: UInt64
+    /// `true` if an edit asks for the GPU end of its frame.
+    let editsWantCompletion: Bool
     /// The radius in view points of an eraser gesture that starts, or `nil`.
     let eraserStart: Double?
     /// The new eraser samples in view space. The engine gives the list back for reuse.

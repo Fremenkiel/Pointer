@@ -49,12 +49,14 @@ extension FrameRenderer {
         assert(!ends || !eraserMask.isActive, "An ended gesture is not active")
     }
 
-    /// Notes that the edits of handoff number `handoff` wait for the screen.
+    /// Notes that the edits of handoff number `handoff` wait for the screen, and whether one of
+    /// them asks for the GPU end of its frame.
     ///
     /// - Precondition: `handoff` is positive.
-    func markHandoff(_ handoff: UInt64) {
+    func markHandoff(_ handoff: UInt64, wantsCompletion: Bool = false) {
         precondition(handoff > 0, "Handoff numbers start at 1")
         waitingHandoff = max(waitingHandoff, handoff)
+        waitingCompletion = waitingCompletion || wantsCompletion
     }
 
     private static func union(_ first: Rect, _ second: Rect) -> Rect {

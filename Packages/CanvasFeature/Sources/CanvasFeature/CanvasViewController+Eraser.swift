@@ -42,11 +42,11 @@ extension CanvasViewController {
                 removing: command.removed.map(\.id),
                 adding: command.parts,
                 area: command.area,
-                onCompleted: { [weak self] time in self?.onStepDrawn?(time) },
+                onCompleted: stepDrawnCallback(),
                 onPresented: {}
             )
+            // The send schedules the save of the rows (P-09).
             send(rows)
-            requestSave()
         } catch {
             logger.error("An erase did not apply: \(String(describing: error))")
         }
@@ -65,6 +65,8 @@ extension CanvasViewController {
         )
         // A pass over the bounds of all strokes. It takes about 0.3 ms for 21,000 strokes, so
         // the canvas keeps no grid of its own (M4 task 3.5).
+        // The one filter by the path bounds (P-10). `Eraser.command` takes the candidates as they
+        // are.
         let bounds = path.bounds
         let candidates = content.strokes.values.filter { $0.bounds.intersects(bounds) }
         guard
@@ -74,11 +76,5 @@ extension CanvasViewController {
         guard count > Limits.maxStrokesAfterErase else { return command }
         // The parts would pass the bound after an erase, so the strokes go whole (D-73).
         return EraseStrokes(removed: command.removed, parts: [], area: nil)
-    }
-
-    /// Asks the library for a save, as at the pencil lift of the pen (D-27).
-    func requestSave() {
-        guard let repository else { return }
-        Task { await repository.requestSave() }
     }
 }

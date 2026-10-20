@@ -48,8 +48,9 @@ public enum Eraser {
             "A candidate stroke appears twice"
         )
         let pathBounds = path.bounds
-        let touched = candidates.filter { $0.bounds.intersects(pathBounds) }
-        let cuts = split(touched, along: path)
+        // The hit test skips a stroke whose bounds miss the path, so no second filter runs
+        // here (P-10).
+        let cuts = split(candidates, along: path)
         guard !cuts.isEmpty else { return nil }
         var parts: [Stroke] = []
         for cut in cuts {

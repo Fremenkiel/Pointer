@@ -22,6 +22,8 @@ final class FrameRenderer {
     var pendingSlots: [Int] = []
     /// The newest handoff whose strokes wait for the screen, or 0 if none waits.
     var waitingHandoff: UInt64 = 0
+    /// `true` if a waiting handoff asks for the GPU end of its frame. Only the tests ask (P-08).
+    var waitingCompletion = false
     /// The number of the last frame.
     private(set) var frame: UInt64 = 0
     /// The eraser circles of the running gesture (D-66).
@@ -276,8 +278,12 @@ final class FrameRenderer {
         waitingHandoff = 0
         assert(handoff > 0, "A handoff number starts at 1")
         let onPresented = onPresented
-        let onCompleted = onCompleted
-        commandBuffer.addCompletedHandler { buffer in onCompleted(handoff, buffer.gpuEndTime) }
+        // The handler and its hop to the main queue run only for a change that asks (P-08).
+        if waitingCompletion {
+            let onCompleted = onCompleted
+            commandBuffer.addCompletedHandler { buffer in onCompleted(handoff, buffer.gpuEndTime) }
+            waitingCompletion = false
+        }
         #if targetEnvironment(simulator)
             // The simulator has no presented handler. The GPU completion is the closest event.
             commandBuffer.addCompletedHandler { _ in onPresented(handoff) }
