@@ -124,15 +124,15 @@ Apple does not document how PencilKit treats the first and the last control poin
 
 The eraser has a radius of 8 view points. The radius stays the same on the screen at every zoom. The eraser is partial (decision D-06).
 
-While the pencil moves, the eraser tool sends each sample in view space to the renderer. The render thread stamps a circle of the eraser radius into a mask texture. The screen hides the ink under the stamps (section 5.2, D-66). The gesture changes no content and no stored row.
+While the pencil moves, the eraser tool sends each sample in view space to the renderer, the coalesced samples included. The render thread stamps a capsule of the eraser radius from the sample before into a mask texture, so a fast pencil leaves no gap. The screen hides the ink under the stamps (section 5.2, D-66). The gesture changes no content and no stored row. A cancelled touch ends the mask and changes nothing.
 
 At pencil lift, the eraser tool does these steps once (D-30, review A-08):
 
 1. Convert the samples of the gesture to canvas space. Convert the radius to canvas units with the camera zoom.
-2. Ask the `SpatialGrid` for the strokes whose bounds touch the path of the eraser.
-3. For each of these strokes, `StrokeSplitter` finds the curve parameters where the curve enters and leaves each circle.
-4. `StrokeSplitter` makes one new stroke for each part of the curve outside the circles.
-5. The tool emits one `EraseStrokes` command with the removed strokes and the new parts. The renderer then redraws the area of the change and clears the mask.
+2. Find the strokes whose bounds touch the bounds of the path, with one pass over the bounds of the live strokes. The only `SpatialGrid` of the canvas lives on the render thread.
+3. For each of these strokes, `StrokeHitTest` finds the curve parameters where the distance to the path equals the eraser radius plus half the stroke width. The path covers a circle at each sample and the band between neighbor samples.
+4. `StrokeSplitter` makes one new stroke for each part of the curve outside the path. Steps 3 and 4 run in up to 8 chunks on several threads. The parts get their IDs and clock values afterward, in order.
+5. The tool emits one `EraseStrokes` command with the removed strokes, the new parts, and the area of the path. The renderer then redraws that area and clears the mask in the same frame.
 
 The changes of one eraser gesture (pencil down to pencil up) form one undo step.
 
@@ -160,7 +160,7 @@ Squeeze (`pencilInteraction(_:didReceiveSqueeze:)`): act on phase `.ended` only.
 | `.runSystemShortcut` | The app never receives it. |
 | All other values | Show the tool palette at `squeeze.hoverPose?.location`. If the pose is `nil`, show it at the last pencil location. |
 
-The palette is the tool bar of TOOL-07 (D-63). It holds pen, eraser, text, undo, and redo. The text entry comes with the text tool in M5. A button in the top left corner shows the current tool. A finger tap on it opens the same palette under the button (D-64). Thus every pencil and every squeeze setting can reach each tool.
+The palette is the tool bar of TOOL-07 (D-63). It holds pen, eraser, text, undo, and redo. The text entry comes with the text tool in M5. A button in the top left corner shows the current tool. A finger tap on it opens the same palette under the button (D-64). Thus every pencil and every squeeze setting can reach each tool. The palette is a popover. A tap on a tool picks it and closes the palette. Undo and redo keep it open. The canvas gives the button to `PointerApp`, which places it to the right of the workspace selector.
 
 The mapping of user preferences to actions is decision D-07.
 
@@ -223,7 +223,7 @@ The live pen stroke does not use this frame loop (section 4.2). The eraser of M4
 Each frame draws these passes:
 
 1. The committed layer: all finished strokes, text, and cards that are visible. This layer is a texture with the size of the drawable. The renderer reuses it while the camera and the content do not change.
-2. The eraser mask, while an eraser gesture runs. A `.r8Unorm` texture of the size of the committed texture holds the eraser circles of the gesture. The composite pass hides the ink under them. At the pencil lift, the renderer redraws the area of the change in the committed texture and clears the mask (D-66).
+2. The eraser mask, while an eraser gesture runs. A `.r8Unorm` texture of the size of the committed texture holds the eraser circles of the gesture. The composite pass hides the ink under them. At the pencil lift, the renderer redraws the area of the change in the committed texture and clears the mask (D-66). The mask uses the mapping of the front texture. If the front texture changes during a gesture, the next frame stamps all samples again.
 3. Overlays: the hover dot and the selection outline.
 
 The live pen stroke is not a pass of the renderer. The `PKCanvasView` on top draws it (section 4.2). While you draw, the renderer draws a frame only at the handoff of a stroke.
@@ -238,7 +238,7 @@ While the camera moves, the renderer shows the committed texture, translated and
 4. The visible rectangle leaves the front texture minus a quarter of its margin.
 5. The camera stays still for 6 frames and differs from the camera of the front texture. This build gives the exact zoom.
 
-An erase, and an undo or a redo that removes ink, cannot subtract ink from the texture, because the ink pipeline blends with `max`. The renderer then clears the changed rectangle of the front texture and draws again the strokes that the `SpatialGrid` finds in it (D-66).
+An erase, and an undo or a redo that removes ink, cannot subtract ink from the texture, because the ink pipeline blends with `max`. The renderer then clears the changed rectangle of the front texture, and of a running build, with a scissor rectangle. It draws again the strokes that the `SpatialGrid` finds in it (D-66). Each stroke draws only the segments that can touch the rectangle. For an erase and its undo and redo, the rectangle is the area of the eraser path, and the added strokes are not drawn in full, because their ink outside the area is on the screen already. For other changes, it is the bounds of the removed strokes.
 
 A build runs in chunks. Each frame draws at most 125,000 instances of the build (`RendererConfiguration.instanceBudgetPerFrame`), so no frame drops. A chunk of 250,000 instances took up to 9.4 ms of GPU time and made late frames. The screen keeps the old texture until the new texture is complete. The `SpatialGrid` limits all passes to the strokes that touch the texture area.
 
@@ -359,6 +359,8 @@ Undo uses the `History` type from `Model`. It does not use `UndoManager` for can
 - The history has a limit of `Limits.maxHistoryDepth = 500` steps per canvas. The oldest step is dropped first.
 - A new command clears the redo list.
 - A hardware keyboard gets Command-Z and Shift-Command-Z through `UIKeyCommand`.
+- `PointerApp` holds `CanvasSessions`: for each canvas, the `History` and the erase records of the session. A new load of a canvas reads no erase record, so the canvas takes the records of its session back at the open (`CanvasContent.adoptSessionRecords(_:)`). The canvas keeps its session when it leaves the screen.
+- An undo or a redo sends its change to the renderer and its rows to the library, and asks for a save. The renderer change of an `EraseStrokes` step redraws only the area of its eraser path.
 
 While a text view is in edit mode, the undo and redo buttons go to the text view.
 
@@ -418,5 +420,7 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 | Open a workspace with 20,000 strokes | Under 300 ms to first frame | `CanvasOpenPerformanceTests`: the open on the screen, timed with `ContinuousClock` |
 | Save after a stroke | Off the main actor, under 50 ms | Signpost |
 | Memory for a canvas with 20,000 strokes | Under 300 MB | `CanvasMemoryPerformanceTests`: the peak growth of `os_proc_available_memory` during the open |
+| Frame with 4 new eraser samples | Under 3 ms CPU, under 4 ms GPU | `EraserFramePerformanceTests` |
+| Erase, undo, or redo of 1,000 strokes in one gesture | Under 33 ms, 16 ms as a goal (D-75) | `EraseUndoPerformanceTests`: from the lift or the call until the GPU completes the first frame that holds the result (D-74) |
 
 Performance tests run on a real iPad. If a measure is more than 10% worse than its baseline, the test fails.

@@ -87,4 +87,4 @@ make check       # all of the above, the full check
 
 Corrections from the product owner go here as numbered rules (AGENT-06).
 
-None yet.
+1. Run the tests on the connected iPad, never on a simulator, and do not make a simulator (product owner, 2026-10-20). Package tests cannot run on a device, so run the Mac parts of `make check` and all of `PointerDeviceTests` on the iPad. Keep the iPad unlocked during a device run.
