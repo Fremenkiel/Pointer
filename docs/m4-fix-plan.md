@@ -489,6 +489,18 @@ Each row is one run of `testEraseUndoRedoOfOneThousandStrokes` alone on the iPad
 | A/B: 3.5 build | 9 | 23.54 / 34.95 | 21.33 / 25.95 | 23.37 / 30.80 |
 | A/B: 3.6 build | 6 | 25.38 / 37.23 | 25.72 / 26.98 | 22.91 / 30.89 |
 
+Task 3.7, 5 full runs of `PointerDeviceTests` in a row on the iPad (D-79), commit 205dcf9. Run 1 built the tests, and runs 2 to 5 used the same build. Each run passed all 30 XCTest cases and all 132 Swift Testing tests.
+
+| Run | Erase | Undo | Redo |
+|---|---|---|---|
+| 1 | 24.81 / 25.99 | 25.33 / 27.72 | 19.51 / 24.10 |
+| 2 | 24.89 / 26.41 | 25.48 / 25.63 | 21.27 / 24.03 |
+| 3 | 25.44 / 27.45 | 27.20 / 28.56 | 22.15 / 29.06 |
+| 4 | 25.19 / 29.53 | 25.08 / 26.65 | 21.41 / 26.01 |
+| 5 | 25.37 / 29.76 | 26.05 / 26.71 | 20.75 / 24.56 |
+
+The slowest step of all 5 runs is 29.76 ms, so acceptance 2 passes under D-79. In the baseline of section 5.1, the slowest steps were 30.22, 30.73, and 34.22 ms.
+
 Notes:
 
 - Task 3.1: the redraw of the whole canvas at zoom 2 with 200,000 handwriting strokes lists 36 strokes, the strokes that touch the texture plus its margin. Before, it listed the strokes of the whole area.
