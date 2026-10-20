@@ -28,11 +28,20 @@ final class RenderEngine: Sendable {
     /// - Throws: `RenderingError` if the device has no GPU or a Metal object fails.
     init(
         configuration: RendererConfiguration,
+        onCompleted: @escaping @Sendable (UInt64, Double) -> Void = { _, _ in },
         onPresented: @escaping @Sendable (UInt64) -> Void
     ) throws(RenderingError) {
-        let renderer = try FrameRenderer(configuration: configuration, onPresented: onPresented)
+        let renderer = try FrameRenderer(
+            configuration: configuration,
+            onCompleted: onCompleted,
+            onPresented: onPresented
+        )
         device = renderer.resources.device
         core = Mutex(renderer)
+        assert(
+            core.withLock { $0.resources.device === device },
+            "The engine uses the GPU of its frames"
+        )
     }
 
     /// `true` if a change waits or the renderer had work after its last frame. A camera change

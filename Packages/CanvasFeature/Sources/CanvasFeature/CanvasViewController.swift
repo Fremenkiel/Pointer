@@ -30,9 +30,10 @@ public final class CanvasViewController: UIViewController {
     )
     /// The current-tool button. The app places it next to the workspace selector (D-64).
     public var toolButton: UIViewController { toolButtonHost }
-    /// Runs after the first frame that shows an erase, an undo, or a redo. The acceptance test of
-    /// M4 times the steps with it (D-69).
-    var onStepPresented: (@MainActor () -> Void)?
+    /// Runs when the GPU completes the first frame that holds an erase, an undo, or a redo, with
+    /// the `gpuEndTime` of that frame. The acceptance test of M4 times the steps with it (D-69,
+    /// D-74).
+    var onStepDrawn: (@MainActor (Double) -> Void)?
     /// The last pencil location in view space. A squeeze without a hover pose opens the palette
     /// there.
     var lastPencilLocation: CGPoint?

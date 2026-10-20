@@ -22,6 +22,7 @@ public final class CanvasRenderer {
     let configuration: RendererConfiguration
     private let relay: HandoffRelay
     private var callbacks: [(handoff: UInt64, callback: @MainActor () -> Void)] = []
+    private var completions: [(handoff: UInt64, callback: @MainActor (Double) -> Void)] = []
     private var lastHandoff: UInt64 = 0
 
     /// The camera of the canvas. A change wakes the frame loop.
@@ -44,11 +45,21 @@ public final class CanvasRenderer {
         configuration: RendererConfiguration = RendererConfiguration()
     ) throws(RenderingError) {
         let relay = HandoffRelay()
-        engine = try RenderEngine(configuration: configuration) { handoff in
-            DispatchQueue.main.async {
-                MainActor.assumeIsolated { relay.renderer?.deliver(upTo: handoff) }
+        engine = try RenderEngine(
+            configuration: configuration,
+            onCompleted: { handoff, time in
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated {
+                        relay.renderer?.deliverCompletions(upTo: handoff, time: time)
+                    }
+                }
+            },
+            onPresented: { handoff in
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated { relay.renderer?.deliver(upTo: handoff) }
+                }
             }
-        }
+        )
         self.configuration = configuration
         self.relay = relay
         relay.renderer = self
@@ -118,11 +129,15 @@ public final class CanvasRenderer {
     /// inside it. The caller must make sure that their ink outside the area is on the screen
     /// already, as for the parts of an erase.
     ///
+    /// `onCompleted` runs when the GPU completes the first frame that holds the result, with the
+    /// `gpuEndTime` of that frame in the clock of `CACurrentMediaTime()` (D-74).
+    ///
     /// - Precondition: The renderer holds room for the added strokes.
     public func change(
         removing removed: [StrokeID],
         adding added: [Stroke],
         area: Rect?,
+        onCompleted: (@MainActor (Double) -> Void)? = nil,
         onPresented: @escaping @MainActor () -> Void
     ) {
         precondition(added.count <= Limits.maxStrokesAfterErase, "Too many strokes")
@@ -130,6 +145,7 @@ public final class CanvasRenderer {
         lastHandoff += 1
         let handoff = lastHandoff
         callbacks.append((handoff, onPresented))
+        if let onCompleted { completions.append((handoff, onCompleted)) }
         let edit = RenderEdit(removed: removed, added: added, area: area)
         engine.post { box in
             box.edits.append(edit)
@@ -207,6 +223,16 @@ public final class CanvasRenderer {
     }
 
     /// Runs the callbacks of all handoffs up to `handoff`, in order.
+    /// Runs the completion callbacks of all handoffs up to `handoff`, in order.
+    private func deliverCompletions(upTo handoff: UInt64, time: Double) {
+        precondition(handoff <= lastHandoff, "Handoff \(handoff) was never sent")
+        let count = completions.prefix { $0.handoff <= handoff }.count
+        let due = completions.prefix(count)
+        completions.removeFirst(count)
+        for entry in due { entry.callback(time) }
+        assert(completions.allSatisfy { $0.handoff > handoff }, "A due completion still waits")
+    }
+
     private func deliver(upTo handoff: UInt64) {
         precondition(handoff <= lastHandoff, "Handoff \(handoff) was never sent")
         let count = callbacks.prefix { $0.handoff <= handoff }.count

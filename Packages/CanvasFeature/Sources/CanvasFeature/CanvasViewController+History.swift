@@ -57,7 +57,8 @@ extension CanvasViewController {
             removing: removed,
             adding: added,
             area: area,
-            onPresented: { [weak self] in self?.onStepPresented?() }
+            onCompleted: { [weak self] time in self?.onStepDrawn?(time) },
+            onPresented: {}
         )
         send(rows)
         requestSave()

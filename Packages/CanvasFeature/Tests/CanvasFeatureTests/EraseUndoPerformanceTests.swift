@@ -1,6 +1,7 @@
 import Foundation
 import Geometry
 import Model
+import QuartzCore
 import Rendering
 import UIKit
 import XCTest
@@ -8,8 +9,8 @@ import XCTest
 @testable import CanvasFeature
 
 /// M4 acceptance 2: erase, undo, and redo of 1,000 strokes in one gesture take under 16 ms per
-/// step on the device (D-69). The clock runs from the pencil lift or the undo or redo call to the
-/// end of the first frame that shows the result. The simulator skips it.
+/// step on the device (D-69). The clock runs from the pencil lift or the undo or redo call until
+/// the GPU completes the first frame that holds the result (D-74). The simulator skips it.
 @MainActor
 final class EraseUndoPerformanceTests: XCTestCase {
     /// The budget of one step, in milliseconds.
@@ -38,14 +39,18 @@ final class EraseUndoPerformanceTests: XCTestCase {
         Self.show(canvas, in: host)
         defer { Self.close(canvas) }
         try await settle(renderer)
-        // The floor of the frame pipeline: an empty change, from the call to its presented frame.
+        // The floor of the frame loop: an empty change, from the call to the GPU end of its frame.
         var empty: [Double] = []
         for _ in 0..<Self.rounds {
             empty.append(
                 try await step(canvas, renderer) {
-                    renderer.change(removing: [], adding: [], area: nil) {
-                        canvas.onStepPresented?()
-                    }
+                    renderer.change(
+                        removing: [],
+                        adding: [],
+                        area: nil,
+                        onCompleted: { canvas.onStepDrawn?($0) },
+                        onPresented: {}
+                    )
                 }
             )
         }
@@ -187,25 +192,26 @@ final class EraseUndoPerformanceTests: XCTestCase {
         return time
     }
 
-    /// Runs `action` and returns the milliseconds to the end of the first frame that shows it.
+    /// Runs `action` and returns the milliseconds until the GPU completes the first frame that
+    /// holds it. `gpuEndTime` and `CACurrentMediaTime()` use the same host clock.
     private func step(
         _ canvas: CanvasViewController,
         _ renderer: CanvasRenderer,
         _ action: () -> Void
     ) async throws -> Double {
-        var end: ContinuousClock.Instant?
-        let clock = ContinuousClock()
-        canvas.onStepPresented = { end = clock.now }
-        let start = clock.now
+        var end: Double?
+        canvas.onStepDrawn = { end = $0 }
+        let start = CACurrentMediaTime()
         action()
-        callMilliseconds.append(start.duration(to: clock.now) / .milliseconds(1))
-        let deadline = start.advanced(by: Self.timeout)
+        callMilliseconds.append((CACurrentMediaTime() - start) * 1_000)
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: Self.timeout)
         while end == nil {
             guard clock.now < deadline else { throw OpenTimedOut() }
             try await Task.sleep(for: .milliseconds(1))
         }
-        canvas.onStepPresented = nil
-        let milliseconds = start.duration(to: end ?? start) / .milliseconds(1)
+        canvas.onStepDrawn = nil
+        let milliseconds = ((end ?? start) - start) * 1_000
         try await settle(renderer)
         return milliseconds
     }

@@ -35,6 +35,9 @@ final class FrameRenderer {
     /// Runs on any thread after the first frame that shows the strokes of a handoff, with the
     /// number of the newest handoff in that frame.
     private let onPresented: @Sendable (UInt64) -> Void
+    /// Runs on any thread when the GPU completes the first frame of a handoff, with the number of
+    /// the handoff and the `gpuEndTime` of the frame (D-74).
+    private let onCompleted: @Sendable (UInt64, Double) -> Void
 
     /// The camera of the canvas.
     var camera = Camera(center: .zero, zoom: Limits.standardZoom)
@@ -60,6 +63,7 @@ final class FrameRenderer {
     /// - Throws: `RenderingError` if the device has no GPU or a Metal object fails.
     init(
         configuration: RendererConfiguration,
+        onCompleted: @escaping @Sendable (UInt64, Double) -> Void = { _, _ in },
         onPresented: @escaping @Sendable (UInt64) -> Void
     ) throws(RenderingError) {
         precondition(configuration.instanceBudgetPerFrame > 0, "The frame budget must be positive")
@@ -69,6 +73,7 @@ final class FrameRenderer {
         resources = try InkResources(device: device)
         self.configuration = configuration
         self.onPresented = onPresented
+        self.onCompleted = onCompleted
         let arena = try PointArena(
             device: device,
             initialSlabs: configuration.initialArenaSlabs,
@@ -267,6 +272,8 @@ final class FrameRenderer {
         waitingHandoff = 0
         assert(handoff > 0, "A handoff number starts at 1")
         let onPresented = onPresented
+        let onCompleted = onCompleted
+        commandBuffer.addCompletedHandler { buffer in onCompleted(handoff, buffer.gpuEndTime) }
         #if targetEnvironment(simulator)
             // The simulator has no presented handler. The GPU completion is the closest event.
             commandBuffer.addCompletedHandler { _ in onPresented(handoff) }

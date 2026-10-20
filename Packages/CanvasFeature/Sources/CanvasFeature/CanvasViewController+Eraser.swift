@@ -42,7 +42,8 @@ extension CanvasViewController {
                 removing: command.removed.map(\.id),
                 adding: command.parts,
                 area: command.area,
-                onPresented: { [weak self] in self?.onStepPresented?() }
+                onCompleted: { [weak self] time in self?.onStepDrawn?(time) },
+                onPresented: {}
             )
             send(rows)
             requestSave()
