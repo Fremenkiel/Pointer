@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-79 on 2026-10-20. D-80 is open.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20.
 
 Status values: Open, Decided, Replaced.
 
@@ -87,7 +87,7 @@ Status values: Open, Decided, Replaced.
 | D-77 | Snapshot tests while the simulator is banned | Move them into `PointerDeviceTests` with reference images made on the iPad | Decided (2026-10-20) |
 | D-78 | When the eraser mask texture exists | Only while the eraser is the tool | Decided (2026-10-20) |
 | D-79 | The pass rule of M4 acceptance 2 on the device | 5 full device runs in a row, each step under 33 ms | Decided (2026-10-20) |
-| D-80 | Where the allocation test of the spatial grid runs | Open: recommendation (a), the test in `RenderingTests` on the iPad | Open |
+| D-80 | Where the allocation test of the spatial grid runs | The test in `RenderingTests` on the iPad | Decided (2026-10-20) |
 
 ## Details
 
@@ -763,14 +763,15 @@ Status values: Open, Decided, Replaced.
 
 ### D-80 Where the allocation test of the spatial grid runs
 
-- Open. Raised by task 3.2 of [m4-fix-plan.md](m4-fix-plan.md) on 2026-10-20.
+- Decided by the product owner on 2026-10-20: option (a).
+- Raised by task 3.2 of [m4-fix-plan.md](m4-fix-plan.md) on 2026-10-20.
 - The "Done when" target of task 3.2 asks for "1,000 removals make 0 allocations in a Tier A test". `SpatialGrid` is in `Geometry`, a Tier A package. An exact allocation count needs the `malloc_logger` hook of `AllocationCounter+Unsafe.swift`, which uses `UnsafeMutableRawPointer` and `dlsym`. SAFE-09 and the lint rule `safe_09_unsafe_types` allow unsafe pointers only in `*+Unsafe.swift` files of `Rendering` and `Export`, and in the SQLite wrapper of `Persistence`. The counters of `malloc_zone_statistics` need no unsafe type in the source, but they count the live blocks, not the allocations, so a removal that allocates and frees shows 0.
 - Options:
   - (a) Run the test of the grid in `RenderingTests`, where `AllocationCounter` lives. It runs on the iPad in `PointerDeviceTests`, with the `SpatialGrid<Int>` of the renderer. The Tier A tests keep the timing of the removal and the query.
   - (b) Allow one `AllocationCounter+Unsafe.swift` in `GeometryTests`, with a new exclusion in `safe_09_unsafe_types`. This changes a lint rule of SAFE-09 (AGENT-03).
   - (c) Count the live blocks with `malloc_zone_statistics` in a Tier A test. This misses an allocation that is freed in the same removal.
 - Recommendation: (a). It counts each allocation and changes no rule. The grid of the renderer is the grid that the target is about.
-- State: task 3.2 uses (a) until the product owner decides. The test is `GridAllocationTests`.
+- Effect: `GridAllocationTests` in `RenderingTests` is the allocation test of the grid. The Tier A tests keep no allocation counter, and SAFE-09 stays as it is.
 
 ## Points in the request that conflict or are not complete
 

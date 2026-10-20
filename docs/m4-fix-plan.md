@@ -546,4 +546,4 @@ M2 and M3 performance tests in the same 5 runs, against [m4-plan.md](m4-plan.md)
 
 No test is more than 10 % slower. The content pass of 200,000 strokes is the closest, at up to 9 %. It runs once per run, so this phase did not split that rise between its tasks.
 
-Open items: the manual tests of [m4-plan.md](m4-plan.md) section 4.8 wait for the product owner, and D-80 is open.
+The product owner ran the manual tests of [m4-plan.md](m4-plan.md) section 4.8 on 2026-10-20, and all of them pass. The product owner decided D-80 on the same day: option (a), the allocation test of the grid stays in `RenderingTests`.
