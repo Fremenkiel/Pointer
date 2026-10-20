@@ -110,6 +110,8 @@ Done when: parameterized tests at the budget and the budget plus one pass for te
 
 Rules: TEST-06, D-76, D-88.
 
+Status: done. `CanvasSessions` sums `History.pointCount`, so the sessions count text without a change. 2 new tests pass, 94 `Model` tests in total, and the line coverage of `Model` is 91.15 %.
+
 ### Phase 2: rendering (Tier B)
 
 #### 2.1 Text layout
@@ -269,11 +271,11 @@ Not run yet.
 
 | Item | Target | Result |
 |---|---|---|
-| Node limit tests of `CanvasContent` (TEST-06) | pass | not run |
-| Apply-then-revert of `AddTextBox`, `EditText`, `MoveNode`, `DeleteNode` (TEST-09) | live content equal | not run |
-| History budget with text steps (D-88) | at most the budget | not run |
-| Line coverage of `Model` (TEST-02) | at least 90 % | not run |
-| Assertion density of `Model` (CONTRACT-02) | at least 2.00 | not run |
+| Node limit tests of `CanvasContent` and `AddTextBox` (TEST-06) | pass | passes at 0, 1, the limit minus one, and the limit |
+| Apply-then-revert of `AddTextBox`, `EditText`, `MoveNode`, `DeleteNode` (TEST-09) | live content equal | passes |
+| History budget with text steps (D-88) | at most the budget | passes: at the budget and the budget plus one, and 500 edits of 10,000 code points keep 200 steps |
+| Line coverage of `Model` (TEST-02) | at least 90 % | 91.15 % after task 1.3 |
+| Assertion density of `Model` (CONTRACT-02) | at least 2.00 | 2.16 after task 1.2 |
 
 ### 5.3 Rendering
 
