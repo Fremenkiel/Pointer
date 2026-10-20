@@ -43,13 +43,13 @@ struct RowBinder {
 
     /// Binds the 28-byte form of a clock value.
     mutating func bind(_ value: HybridTimestamp) throws(PersistenceError) {
-        try statement.bind(ValueCodec.data(value), at: index)
+        try statement.bind(timestamp: value, at: index)
         index += 1
     }
 
     /// Binds the 16-byte form of an ID.
     mutating func bind(_ value: some EntityIdentifier) throws(PersistenceError) {
-        try statement.bind(ValueCodec.data(value), at: index)
+        try statement.bind(uuid: value.rawValue, at: index)
         index += 1
     }
 

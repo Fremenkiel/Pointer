@@ -7,8 +7,11 @@ enum ValueCodec {
     static let timestampByteCount = 28
     /// The bytes of an ID: the 16 bytes of its UUID.
     static let identifierByteCount = 16
-    private static let wallByteCount = 8
+    /// The bytes of the wall time at the start of a clock value.
+    static let wallByteCount = 8
     private static let counterByteCount = 4
+    /// The offset of the device UUID in a clock value.
+    static let deviceOffset = wallByteCount + counterByteCount
     private static let bitsPerByte = 8
     private static let hexRadix = 16
     private static let hexDigitsPerByte = 2

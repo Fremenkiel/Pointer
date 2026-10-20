@@ -192,6 +192,115 @@ final class SQLiteStatement {
     }
 }
 
+/// IDs and clock values read and bound in place, without a `Data` and an `Array` per value
+/// (P-11 of docs/m4-fix-plan.md). The forms are those of `ValueCodec` (storage.md section 3.2).
+extension SQLiteStatement {
+    /// Returns the UUID of a 16-byte ID column, or `nil` for NULL.
+    ///
+    /// - Precondition: `column` is a column of the statement.
+    /// - Throws: `PersistenceError.corruptValue` for a length other than 16 bytes.
+    func uuid(at column: Int32) throws(PersistenceError) -> UUID? {
+        checkColumn(column)
+        precondition(MemoryLayout<uuid_t>.size == ValueCodec.identifierByteCount, "UUID size")
+        guard sqlite3_column_type(handle, column) != SQLITE_NULL else { return nil }
+        let bytes = sqlite3_column_blob(handle, column)
+        let count = Int(sqlite3_column_bytes(handle, column))
+        guard let bytes, count == ValueCodec.identifierByteCount else {
+            throw .corruptValue(reason: "ID of \(count) bytes")
+        }
+        // Safe: SQLite keeps the blob until the next step, and the length is checked above.
+        return UUID(uuid: UnsafeRawPointer(bytes).loadUnaligned(as: uuid_t.self))
+    }
+
+    /// Returns the clock value of a 28-byte column, or `nil` for NULL.
+    ///
+    /// - Precondition: `column` is a column of the statement.
+    /// - Throws: `PersistenceError.corruptValue` for a length other than 28 bytes.
+    func timestamp(at column: Int32) throws(PersistenceError) -> HybridTimestamp? {
+        checkColumn(column)
+        precondition(
+            ValueCodec.deviceOffset + ValueCodec.identifierByteCount
+                == ValueCodec.timestampByteCount,
+            "A clock value ends with the device UUID"
+        )
+        guard sqlite3_column_type(handle, column) != SQLITE_NULL else { return nil }
+        let bytes = sqlite3_column_blob(handle, column)
+        let count = Int(sqlite3_column_bytes(handle, column))
+        guard let bytes, count == ValueCodec.timestampByteCount else {
+            throw .corruptValue(reason: "clock value of \(count) bytes")
+        }
+        // Safe: SQLite keeps the blob until the next step, and the length is checked above.
+        let raw = UnsafeRawPointer(bytes)
+        let wall = UInt64(bigEndian: raw.loadUnaligned(as: UInt64.self))
+        let counter = UInt32(
+            bigEndian: raw.loadUnaligned(fromByteOffset: ValueCodec.wallByteCount, as: UInt32.self)
+        )
+        let device = raw.loadUnaligned(fromByteOffset: ValueCodec.deviceOffset, as: uuid_t.self)
+        return HybridTimestamp(
+            wallMillis: wall,
+            counter: counter,
+            device: DeviceID(rawValue: UUID(uuid: device))
+        )
+    }
+
+    /// Binds the 16 bytes of a UUID to the parameter at `index`.
+    ///
+    /// - Precondition: `index` is a parameter of the statement.
+    /// - Throws: `PersistenceError.sqlite` if SQLite refuses the value.
+    func bind(uuid: UUID, at index: Int32) throws(PersistenceError) {
+        checkParameter(index)
+        precondition(MemoryLayout<uuid_t>.size == ValueCodec.identifierByteCount, "UUID size")
+        // Safe: SQLite copies the bytes (SQLITE_TRANSIENT) before the closure returns.
+        let code = withUnsafeBytes(of: uuid.uuid) { bytes in
+            sqlite3_bind_blob(
+                handle,
+                index,
+                bytes.baseAddress,
+                Int32(ValueCodec.identifierByteCount),
+                Self.transient
+            )
+        }
+        try connection.check(code, expected: SQLITE_OK)
+    }
+
+    /// Binds the 28-byte big-endian form of a clock value to the parameter at `index`.
+    ///
+    /// - Precondition: `index` is a parameter of the statement.
+    /// - Throws: `PersistenceError.sqlite` if SQLite refuses the value.
+    func bind(timestamp: HybridTimestamp, at index: Int32) throws(PersistenceError) {
+        checkParameter(index)
+        let count = ValueCodec.timestampByteCount
+        precondition(
+            ValueCodec.deviceOffset + MemoryLayout<uuid_t>.size == count,
+            "A clock value ends with the device UUID"
+        )
+        // Safe: the buffer lives on the stack for the closure, and SQLite copies the bytes
+        // (SQLITE_TRANSIENT) before it returns.
+        let code = withUnsafeTemporaryAllocation(byteCount: count, alignment: 1) { buffer in
+            buffer.storeBytes(of: timestamp.wallMillis.bigEndian, toByteOffset: 0, as: UInt64.self)
+            buffer.storeBytes(
+                of: timestamp.counter.bigEndian,
+                toByteOffset: ValueCodec.wallByteCount,
+                as: UInt32.self
+            )
+            withUnsafeBytes(of: timestamp.device.rawValue.uuid) { device in
+                let target = UnsafeMutableRawBufferPointer(
+                    rebasing: buffer[ValueCodec.deviceOffset...]
+                )
+                target.copyMemory(from: device)
+            }
+            return sqlite3_bind_blob(
+                handle,
+                index,
+                buffer.baseAddress,
+                Int32(count),
+                Self.transient
+            )
+        }
+        try connection.check(code, expected: SQLITE_OK)
+    }
+}
+
 extension SQLiteStatement {
     /// The bytes of one point in the point BLOB (storage.md section 3.4).
     static let pointByteCount = 16

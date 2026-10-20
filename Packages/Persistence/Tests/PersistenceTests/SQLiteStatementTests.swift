@@ -1,4 +1,5 @@
 import Foundation
+import Model
 import SQLite3
 import Testing
 
@@ -148,6 +149,42 @@ struct SQLiteStatementTests {
         let read = try connection.prepare("SELECT CAST(x'C328' AS TEXT)")
         #expect(try read.step())
         #expect(read.string(at: 0) == nil)
+    }
+
+    @Test("An ID and a clock value bind and read in place in the forms of ValueCodec (P-11)")
+    func identifierAndClockInPlace() throws {
+        let table = try ValueTable("BLOB")
+        let (connection, insert) = (table.connection, table.insert)
+        let uuid = UUID(uuid: (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16))
+        let time = HybridTimestamp(
+            wallMillis: 1_700_000_000_123,
+            counter: 0xA1B2_C3D4,
+            device: DeviceID(rawValue: uuid)
+        )
+        try insert.bind(uuid: uuid, at: 1)
+        #expect(try insert.step() == false)
+        try insert.reset()
+        try insert.bind(timestamp: time, at: 1)
+        #expect(try insert.step() == false)
+        try insert.reset()
+        try insert.bindNull(at: 1)
+        #expect(try insert.step() == false)
+        let read = try connection.prepare("SELECT value FROM item ORDER BY rowid")
+        #expect(try read.step())
+        #expect(try read.uuid(at: 0) == uuid)
+        #expect(read.data(at: 0) == ValueCodec.data(StrokeID(rawValue: uuid)))
+        #expect(throws: PersistenceError.corruptValue(reason: "clock value of 16 bytes")) {
+            _ = try read.timestamp(at: 0)
+        }
+        #expect(try read.step())
+        #expect(try read.timestamp(at: 0) == time)
+        #expect(read.data(at: 0) == ValueCodec.data(time))
+        #expect(throws: PersistenceError.corruptValue(reason: "ID of 28 bytes")) {
+            _ = try read.uuid(at: 0)
+        }
+        #expect(try read.step())
+        #expect(try read.uuid(at: 0) == nil)
+        #expect(try read.timestamp(at: 0) == nil)
     }
 }
 

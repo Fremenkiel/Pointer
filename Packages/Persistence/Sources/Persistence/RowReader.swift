@@ -66,7 +66,9 @@ struct RowReader {
     ///
     /// - Throws: `PersistenceError.corruptRow` for NULL or a length other than 28 bytes.
     mutating func timestamp() throws(PersistenceError) -> HybridTimestamp {
-        try decode(ValueCodec.timestamp)
+        try decode { (statement, column) throws(PersistenceError) in
+            try statement.timestamp(at: column)
+        }
     }
 
     /// Reads an ID.
@@ -75,8 +77,11 @@ struct RowReader {
     mutating func identifier<ID: EntityIdentifier>(
         _ type: ID.Type = ID.self
     ) throws(PersistenceError) -> ID {
-        try decode { (data: Data) throws(PersistenceError) -> ID in try ValueCodec.identifier(data)
-        }
+        ID(
+            rawValue: try decode { (statement, column) throws(PersistenceError) in
+                try statement.uuid(at: column)
+            }
+        )
     }
 
     /// Reads the `created`, `modified`, and `is_deleted` columns of a record.
@@ -131,16 +136,19 @@ struct RowReader {
         .corruptRow(table: table, reason: reason)
     }
 
+    /// Reads a value in place: `read` returns `nil` for NULL and throws for a bad form.
     private mutating func decode<Value>(
-        _ transform: (Data) throws(PersistenceError) -> Value
+        _ read: (SQLiteStatement, Int32) throws(PersistenceError) -> Value?
     ) throws(PersistenceError) -> Value {
         precondition(column < statement.columnCount, "Column \(column) of \(table) is past the end")
         defer { column += 1 }
-        guard let data = statement.data(at: column) else { throw corrupt("NULL BLOB") }
+        let value: Value?
         do {
-            return try transform(data)
+            value = try read(statement, column)
         } catch {
             throw corrupt("\(error)")
         }
+        guard let value else { throw corrupt("NULL BLOB") }
+        return value
     }
 }
