@@ -75,18 +75,22 @@ public struct CanvasContent: Sendable {
     /// - Precondition: The canvas holds the stroke as a live stroke.
     /// - Returns: The new or changed erase record.
     public mutating func remove(_ id: StrokeID, at time: HybridTimestamp) -> EraseRecord {
-        precondition(strokes[id] != nil, "Canvas holds no live stroke \(id)")
-        let earlier = erased[id]
-        assert(earlier?.isDeleted ?? true, "Stroke \(id) is live and has a live erase record")
-        strokes[id] = nil
-        let record = EraseRecord(
+        // One lookup per dictionary: a lookup costs about 1 µs on the iPad at 20,000 strokes, and
+        // an erase of 1,000 strokes makes 3,000 of these calls (M4 task 3.8).
+        let removed = strokes.removeValue(forKey: id)
+        precondition(removed != nil, "Canvas holds no live stroke \(id)")
+        let record = EraseRecord(strokeID: id, erased: time, modified: time, isDeleted: false)
+        guard let earlier = erased.updateValue(record, forKey: id) else { return record }
+        assert(earlier.isDeleted, "Stroke \(id) was live and had a live erase record")
+        // A stroke that the session erased before keeps the time of its first erase.
+        let kept = EraseRecord(
             strokeID: id,
-            erased: earlier?.erased ?? time,
+            erased: earlier.erased,
             modified: time,
             isDeleted: false
         )
-        erased[id] = record
-        return record
+        erased[id] = kept
+        return kept
     }
 
     /// Puts a stroke back into the live strokes, or adds a new one, and turns its erase record of
@@ -104,19 +108,19 @@ public struct CanvasContent: Sendable {
         ignoringLimit: Bool
     ) throws(ModelError) -> EraseRecord? {
         precondition(stroke.canvasID == canvasID, "Stroke \(stroke.id) belongs to another canvas")
-        precondition(strokes[stroke.id] == nil, "Canvas already holds stroke \(stroke.id)")
         guard ignoringLimit || strokes.count < Limits.maxStrokesPerCanvas else {
             throw .strokeLimitReached
         }
-        strokes[stroke.id] = stroke
-        guard let earlier = erased[stroke.id] else { return nil }
+        let replaced = strokes.updateValue(stroke, forKey: stroke.id)
+        precondition(replaced == nil, "Canvas already held stroke \(stroke.id)")
+        guard let index = erased.index(forKey: stroke.id) else { return nil }
         let tombstone = EraseRecord(
             strokeID: stroke.id,
-            erased: earlier.erased,
+            erased: erased.values[index].erased,
             modified: time,
             isDeleted: true
         )
-        erased[stroke.id] = tombstone
+        erased.values[index] = tombstone
         return tombstone
     }
 
