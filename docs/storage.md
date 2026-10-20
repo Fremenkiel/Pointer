@@ -220,7 +220,7 @@ A snapshot is a complete, consistent copy of the library in one file. `SnapshotW
    ```
 
 2. If the command succeeds, rename the file into `Documents/Backups/Pointer-<yyyy-MM-dd-HHmmss>.sqlite`. A rename in one volume is atomic, so `Backups/` never holds a partial file.
-3. If the command fails or the app stops, the partial file stays in `tmp/`. At launch, the repository deletes each `*.sqlite.partial` file in `tmp/`.
+3. If the command fails or the app stops, the partial file stays in `tmp/`. At launch, before it opens the database and before the pre-migration snapshot, the repository deletes each `*.sqlite.partial` file in `tmp/` (F-08 of [m4-fix-plan.md](m4-fix-plan.md)).
 
 The name uses the local time of the iPad, because the user reads it in the Files app. The change date of the file is the time of the snapshot. The writer uses it for the age and the order of the snapshots. A pre-migration snapshot of a version that exists already stays as it is, because it holds the state before the first try of the migration.
 

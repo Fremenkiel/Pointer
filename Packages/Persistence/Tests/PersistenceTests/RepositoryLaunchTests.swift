@@ -59,6 +59,34 @@ struct RepositoryLaunchTests {
         #expect(try harness.reader().integer("PRAGMA user_version") == 2)
     }
 
+    @Test(
+        "A partial pre-migration snapshot of a stopped launch does not block the next open (F-08)"
+    )
+    func partialPreMigrationSnapshot() async throws {
+        let harness = try RepositoryHarness()
+        _ = try await harness.open()
+        let partial = harness.folder.url.appending(
+            path: SnapshotFiles.preMigrationName(oldVersion: 1) + SnapshotFiles.partialExtension
+        )
+        try Data([1, 2, 3]).write(to: partial)
+        let writer = SnapshotWriter(
+            configuration: SnapshotWriterTests.configuration(
+                harness,
+                clock: FixedWallClock(millis: RepositoryHarness.now)
+            )
+        )
+        let repository = harness.make(
+            migrations: Migration.library + [MigrationRunnerTests.addTable]
+        )
+        _ = try await repository.open { version throws(PersistenceError) in
+            try await writer.writePreMigrationSnapshot(oldVersion: version)
+        }
+        #expect(try harness.reader().integer("PRAGMA user_version") == 2)
+        let backups = SnapshotWriterTests.backups(harness).path(percentEncoded: false)
+        let names = try FileManager().contentsOfDirectory(atPath: backups)
+        #expect(names == [SnapshotFiles.preMigrationName(oldVersion: 1)])
+    }
+
     @Test("The launch removes tombstones older than 30 days with their subtrees and keeps the rest")
     func tombstones() async throws {
         let harness = try RepositoryHarness()

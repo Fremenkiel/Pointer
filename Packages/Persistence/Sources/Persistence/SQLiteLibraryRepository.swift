@@ -110,12 +110,14 @@ public actor SQLiteLibraryRepository: LibraryRepository {
     ///
     /// A newer schema opens read-only. A writable library gets its `library` rows (D-58), loses
     /// the tombstones older than 30 days (D-18), and gives free pages back. The partial snapshot
-    /// files of a stopped snapshot are deleted.
+    /// files of a stopped snapshot are deleted first.
     ///
     /// - Precondition: The repository is not open yet.
     /// - Throws: `ModelError.storageFailed` if the file does not open or migrate.
     public func open(snapshot: PreMigrationSnapshot) async throws(ModelError) -> LibraryLaunch {
         precondition(connection == nil, "The library is open already")
+        // A partial file of a stopped launch makes `VACUUM INTO` fail before the migration (F-08).
+        LibraryMaintenance.removePartialSnapshots(in: configuration.temporaryFolder)
         do {
             try await openConnection(snapshot: snapshot)
             guard let connection else { preconditionFailure("The connection did not open") }
@@ -130,7 +132,6 @@ public actor SQLiteLibraryRepository: LibraryRepository {
         } catch {
             throw .storageFailed(reason: "\(error)")
         }
-        LibraryMaintenance.removePartialSnapshots(in: configuration.temporaryFolder)
         return LibraryLaunch(isReadOnly: isReadOnly, lastTimestamp: lastTimestamp)
     }
 
