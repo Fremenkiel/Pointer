@@ -65,4 +65,20 @@ struct CanvasSessionsTests {
         }
         return CanvasSession(history: history, erased: content.erased)
     }
+
+    @Test("A reopened canvas owns its session, and a removed session is gone (M-03)")
+    func reopenAndRemove() throws {
+        let sessions = CanvasSessions()
+        let canvas = CanvasID(rawValue: UUID())
+        sessions.save(try Self.session(canvas: canvas, stepPoints: [3]), for: canvas)
+        let taken = sessions.take(for: canvas)
+        #expect(taken.history.undoSteps.count == 1)
+        // The first step after the reopen finds no other owner of the history.
+        #expect(!sessions.hasSession(for: canvas))
+        sessions.save(taken, for: canvas)
+        #expect(sessions.hasSession(for: canvas))
+        sessions.remove(for: canvas)
+        #expect(!sessions.hasSession(for: canvas))
+        #expect(sessions.count == 0)
+    }
 }

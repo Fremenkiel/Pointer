@@ -102,6 +102,9 @@ struct CanvasHistoryTests {
         #expect(second.content.erased[line.id]?.isDeleted == true)
         second.redo()
         #expect(Set(second.content.strokes.keys) == Set(parts.keys))
+        // The shown canvas owns its session, so the sessions hold no copy of it (M-03).
+        #expect(sessions.count == 0)
+        second.willMove(toParent: nil)
         #expect(sessions.count == 1)
     }
 

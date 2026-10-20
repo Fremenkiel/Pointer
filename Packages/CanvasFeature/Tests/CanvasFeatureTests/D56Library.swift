@@ -22,6 +22,8 @@ struct D56Library {
     let repository: SQLiteLibraryRepository
     /// The canvas with the content.
     let canvas: CanvasID
+    /// The device of the library. A write needs a clock of this device.
+    let device: DeviceID
     private let folder: URL
 
     /// Makes the folder, opens the library, and fills the canvas.
@@ -40,6 +42,7 @@ struct D56Library {
         let library = D56Library(
             repository: repository,
             canvas: CanvasID(rawValue: UUID()),
+            device: configuration.device,
             folder: folder
         )
         _ = try await repository.open { _ in }

@@ -130,12 +130,21 @@ final class AppComposition {
                 repository: repository,
                 makeTimestamp: { clock.now() },
                 makeWorkspaceID: { clock.makeIdentifier() },
-                onSwitch: { [weak self] workspace in self?.open(workspace) }
+                onSwitch: { [weak self] workspace in self?.open(workspace) },
+                onDelete: { [weak self] id in self?.forgetSession(of: id) }
             )
         )
         selector = model
         container.showSelector(model)
         await model.start(lastWorkspace: lastWorkspace)
+    }
+
+    /// Drops the undo history of a deleted workspace. The canvas on the screen keeps none when
+    /// it leaves (M-03).
+    func forgetSession(of workspace: WorkspaceID) {
+        let canvasID = CanvasID(workspace)
+        if container.canvas?.canvasID == canvasID { container.canvas?.discardSession() }
+        sessions.remove(for: canvasID)
     }
 
     /// Opens the canvas of a workspace and notes it as the last workspace (D-53).

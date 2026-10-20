@@ -123,6 +123,12 @@ extension CanvasViewController {
         saveSession()
     }
 
+    /// Drops the session of this visit, because the workspace of the canvas is deleted (M-03).
+    /// The canvas then keeps no session when it leaves.
+    public func discardSession() {
+        hasEndedSession = true
+    }
+
     /// Keeps the session of the canvas for the time the app runs (D-12). The canvas calls it when
     /// it leaves the screen, not at each step: a copy at each step made the next step copy the
     /// erase records of the session (M4 task 3.8).

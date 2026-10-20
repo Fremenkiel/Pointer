@@ -144,6 +144,8 @@ public struct CanvasContent: Sendable {
     /// - Returns: The number of skipped records.
     public mutating func adoptSessionRecords(_ records: [StrokeID: EraseRecord]) -> Int {
         precondition(erased.isEmpty, "The content already holds erase records")
+        // One allocation for all records, not one per growth (P-12).
+        erased.reserveCapacity(records.count)
         var skipped = 0
         for (id, record) in records {
             guard record.strokeID == id, record.isDeleted == (strokes[id] != nil) else {

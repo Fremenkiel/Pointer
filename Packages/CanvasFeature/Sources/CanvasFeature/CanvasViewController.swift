@@ -75,7 +75,7 @@ public final class CanvasViewController: UIViewController {
         repository = dependencies.repository
         rowChannel = dependencies.repository.map { RowChannel(repository: $0) }
         sessions = dependencies.sessions
-        if let session = dependencies.sessions?.session(for: dependencies.canvasID) {
+        if let session = dependencies.sessions?.take(for: dependencies.canvasID) {
             history = session.history
             // The content is new, so it holds no erase record yet.
             let skipped = content.adoptSessionRecords(session.erased)

@@ -34,7 +34,7 @@ enum Fixtures {
     )
 
     @MainActor
-    static func clock() -> AppClock {
+    static func clock(device: DeviceID = Fixtures.device) -> AppClock {
         AppClock(
             factory: StrokeFactory(
                 identifiers: IdentifierFactory(

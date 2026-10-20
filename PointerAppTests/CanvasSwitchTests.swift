@@ -1,10 +1,10 @@
-import CanvasFeature
 import Foundation
 import Model
 import Testing
 import UIKit
 import WorkspaceFeature
 
+@testable import CanvasFeature
 @testable import Pointer
 
 /// Quick workspace switches load only the last canvas (F-13 of docs/m4-fix-plan.md, WS-02).
@@ -50,6 +50,44 @@ struct CanvasSwitchTests {
         try await Self.waitForCanvas(workspaces[2].canvasID, in: composition)
         try await Task.sleep(for: .milliseconds(500))
         #expect(loads == [workspaces[2].canvasID], "Loads: \(loads)")
+    }
+
+    @Test("A deleted workspace keeps no session, also when its canvas is on the screen (M-03)")
+    func deletedWorkspace() async throws {
+        let host = try OnScreenCanvas.host()
+        let window = try #require(host.view.window as? InputTrackingWindow)
+        let library = try await D56Library.make()
+        defer { library.remove() }
+        let clock = Fixtures.clock(device: library.device)
+        let workspaces = try await Self.makeWorkspaces(in: library, clock: clock)
+        let composition = AppComposition(
+            window: window,
+            container: AppViewController(),
+            defaults: try #require(UserDefaults(suiteName: "CanvasSwitchTests"))
+        )
+        composition.repository = library.repository
+        composition.clock = clock
+        let selector = WorkspaceSelectorModel(
+            dependencies: WorkspaceSelectorModel.Dependencies(
+                repository: library.repository,
+                makeTimestamp: { clock.now() },
+                makeWorkspaceID: { clock.makeIdentifier() },
+                onSwitch: { composition.open($0) },
+                onDelete: { composition.forgetSession(of: $0) }
+            )
+        )
+        composition.selector = selector
+        await selector.start(lastWorkspace: workspaces[0].id)
+        try await Self.waitForCanvas(workspaces[0].canvasID, in: composition)
+        selector.select(workspaces[1].id)
+        try await Self.waitForCanvas(workspaces[1].canvasID, in: composition)
+        #expect(composition.sessions.hasSession(for: workspaces[0].canvasID))
+        await selector.delete(workspaces[0].id)
+        #expect(!composition.sessions.hasSession(for: workspaces[0].canvasID))
+        // The shown workspace: the switch to the next one must not save its session again.
+        await selector.delete(workspaces[1].id)
+        try await Self.waitForCanvas(workspaces[2].canvasID, in: composition)
+        #expect(!composition.sessions.hasSession(for: workspaces[1].canvasID))
     }
 
     /// Adds the workspaces A, B, and C to the library.

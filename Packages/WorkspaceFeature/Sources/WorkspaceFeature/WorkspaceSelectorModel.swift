@@ -18,18 +18,22 @@ public final class WorkspaceSelectorModel {
         public let makeWorkspaceID: @MainActor () -> WorkspaceID
         /// Receives the new current workspace.
         public let onSwitch: @MainActor (Workspace) -> Void
+        /// Tells the app that a workspace is deleted, so that it drops what it keeps of it.
+        public let onDelete: @MainActor (WorkspaceID) -> Void
 
         /// Makes the dependencies.
         public init(
             repository: any LibraryRepository,
             makeTimestamp: @escaping @MainActor () -> HybridTimestamp,
             makeWorkspaceID: @escaping @MainActor () -> WorkspaceID,
-            onSwitch: @escaping @MainActor (Workspace) -> Void
+            onSwitch: @escaping @MainActor (Workspace) -> Void,
+            onDelete: @escaping @MainActor (WorkspaceID) -> Void = { _ in }
         ) {
             self.repository = repository
             self.makeTimestamp = makeTimestamp
             self.makeWorkspaceID = makeWorkspaceID
             self.onSwitch = onSwitch
+            self.onDelete = onDelete
         }
     }
 
@@ -132,6 +136,7 @@ public final class WorkspaceSelectorModel {
             return
         }
         workspaces.removeAll { $0.id == id }
+        dependencies.onDelete(id)
         guard current?.id == id else { return }
         if let first = workspaces.first {
             open(first)

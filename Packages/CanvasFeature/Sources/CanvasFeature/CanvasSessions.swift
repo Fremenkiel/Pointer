@@ -43,9 +43,31 @@ public final class CanvasSessions {
     /// The control points of the histories of all sessions.
     var pointCount: Int { sessions.values.reduce(0) { $0 + $1.history.pointCount } }
 
+    /// Returns `true` if the sessions hold the session of a canvas.
+    func hasSession(for canvasID: CanvasID) -> Bool {
+        sessions[canvasID] != nil
+    }
+
     /// Returns the session of a canvas, or an empty session for a new canvas.
     func session(for canvasID: CanvasID) -> CanvasSession {
         sessions[canvasID] ?? CanvasSession()
+    }
+
+    /// Takes the session of a canvas out, or returns an empty session for a new canvas. The
+    /// canvas on the screen is then the only owner of its history, so its first step copies
+    /// nothing (M-03). The canvas saves the session again when it leaves.
+    func take(for canvasID: CanvasID) -> CanvasSession {
+        guard let session = sessions.removeValue(forKey: canvasID) else { return CanvasSession() }
+        order.removeAll { $0 == canvasID }
+        assert(order.count == sessions.count, "Each session has one place in the order")
+        return session
+    }
+
+    /// Removes the session of a canvas whose workspace is deleted (M-03).
+    public func remove(for canvasID: CanvasID) {
+        sessions.removeValue(forKey: canvasID)
+        order.removeAll { $0 == canvasID }
+        assert(order.count == sessions.count, "Each session has one place in the order")
     }
 
     /// Keeps the session of a canvas and marks the canvas as the most recent one.
