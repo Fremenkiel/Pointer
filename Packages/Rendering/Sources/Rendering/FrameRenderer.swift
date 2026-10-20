@@ -91,8 +91,8 @@ final class FrameRenderer {
     /// early frame without a drawable size ends the frame loop, and the screen stays black.
     var needsMoreFrames: Bool {
         guard let layer, !needsNewLayer else { return viewSize.width > 0 && viewSize.height > 0 }
-        return layer.isBuilding || layer.isSettling || !pendingSlots.isEmpty || waitingHandoff > 0
-            || dirtyArea != nil || eraserMask.hasNewSamples
+        return layer.isBuilding || layer.isSettling || layer.isRedrawing || !pendingSlots.isEmpty
+            || waitingHandoff > 0 || dirtyArea != nil || eraserMask.hasNewSamples
     }
 
     /// Sets the size of the view and the display scale. A change rebuilds the committed layer.
@@ -199,10 +199,13 @@ final class FrameRenderer {
         if let area = dirtyArea {
             layer.redraw(area, store: store, encoder: encoder, context: context)
             dirtyArea = nil
+        } else {
+            layer.continueRedraw(encoder: encoder, context: context)
         }
-        // One pass for all new strokes of the frame, from the reused list (PERF-01).
-        layer.addStrokes(pendingSlots, encoder: encoder, context: context)
-        pendingSlots.removeAll(keepingCapacity: true)
+        // One pass for the new strokes of the frame, from the reused list (PERF-01). The strokes
+        // that do not fit into the draw list wait for the next frame (F-05).
+        let drawn = layer.addStrokes(pendingSlots, encoder: encoder, context: context)
+        pendingSlots.removeFirst(drawn)
         _ = layer.startBuildIfNeeded(camera: camera, displayScale: displayScale, store: store)
         layer.continueBuild(
             encoder: encoder,
@@ -210,7 +213,6 @@ final class FrameRenderer {
             budget: configuration.instanceBudgetPerFrame,
             deadline: CACurrentMediaTime() + configuration.buildTimeBudget
         )
-        assert(pendingSlots.isEmpty, "Each new stroke reached the committed layer")
         assert(layer.front != nil || layer.isBuilding, "The layer has a front texture or a build")
     }
 
@@ -260,14 +262,16 @@ final class FrameRenderer {
         encoder.endEncoding()
     }
 
-    /// A new stroke is on the screen when a front texture exists, because the frame drew it into
-    /// that texture. Before the first build completes, the handoff waits.
+    /// A new stroke is on the screen when a front texture exists and the frame drew the last
+    /// new stroke and the last stroke of a redraw. Before that, the handoff waits, so the live
+    /// stroke stays until its ink is in the texture (F-05).
     private func attachHandoff(
         to drawable: any CAMetalDrawable,
         commandBuffer: any MTLCommandBuffer
     ) {
-        guard waitingHandoff > 0, layer?.front != nil else { return }
-        assert(pendingSlots.isEmpty, "The frame drew each new stroke before the handoff")
+        guard waitingHandoff > 0, let layer, layer.front != nil, pendingSlots.isEmpty,
+            !layer.isRedrawing
+        else { return }
         let handoff = waitingHandoff
         waitingHandoff = 0
         assert(handoff > 0, "A handoff number starts at 1")

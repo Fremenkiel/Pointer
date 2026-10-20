@@ -9,7 +9,8 @@ import os
 /// moves, the composite pass shows it translated and scaled. A second texture is drawn for the
 /// current camera in chunks, one chunk per frame, and replaces the first one when it is complete.
 final class CommittedLayer {
-    private struct Build {
+    /// A build of the back texture in chunks.
+    struct Build {
         let target: InkTarget
         var cursor = 0
         var hasCleared = false
@@ -41,15 +42,24 @@ final class CommittedLayer {
     /// The drawable height in pixels that the textures were made for.
     let drawableHeight: Int
     private var frontIndex = 1
-    private var build: Build?
+    /// The running build, or `nil`.
+    private(set) var build: Build?
     private var isStale = false
     /// The camera of the last frame, and the frames in a row with that camera.
     private var lastCamera: Camera?
     private var stillFrames = 0
     /// The strokes of the build, in drawing order. Reused, so a build allocates nothing.
     private var buildSlots: [Int] = []
-    /// The strokes of a redraw. Reused like `buildSlots`.
-    private var redrawSlots: [Int] = []
+    /// The strokes of the redraw of the front texture. Reused like `buildSlots`.
+    var redrawSlots: [Int] = []
+    /// The strokes of the redraw of the build texture. Reused like `buildSlots`.
+    var buildRedrawSlots: [Int] = []
+    /// The redraw of the front texture that is not done.
+    var frontRedraw: Redraw?
+    /// The redraw of the build texture that is not done.
+    var buildRedraw: Redraw?
+    /// The area of the running redraw. A new area joins it, and the redraw starts again.
+    var redrawArea: Rect?
     /// The pixels around a changed area that the redraw clears too: the anti-aliased edge of
     /// the ink (`InkEncoder.edgeHalfWidthPixels`) and one pixel for the rounding.
     static let redrawMarginPixels = 3.0
@@ -161,72 +171,32 @@ final class CommittedLayer {
     }
 
     /// Adds the new strokes of a frame: it draws them into the front texture in one pass and adds
-    /// them to a running build. A full draw list continues the strokes in another pass.
+    /// them to a running build. A full draw list leaves the other strokes for the next frame
+    /// (F-05).
     ///
     /// - Precondition: The slots are strokes of the store.
+    /// - Returns: The number of strokes from the start of `slots` that the frame took.
     func addStrokes(
         _ slots: [Int],
         encoder: InkEncoder,
         context: FrameContext
-    ) {
+    ) -> Int {
         precondition(slots.allSatisfy { $0 >= 0 }, "A stroke slot is invalid")
-        if build != nil {
-            buildSlots.append(contentsOf: slots)
+        guard let front, !slots.isEmpty else {
+            // Without a front texture, the build shows the strokes.
+            if build != nil { buildSlots.append(contentsOf: slots) }
+            return slots.count
         }
-        guard let front, !slots.isEmpty else { return }
-        let options = InkPassOptions(clear: false, instanceBudget: .max)
-        var cursor = 0
-        for _ in slots.indices where cursor < slots.count {
-            cursor = encoder.encodePass(
-                context,
-                target: front,
-                slots: slots,
-                cursor: cursor,
-                options: options
-            )
-        }
-        assert(cursor == slots.count, "The handoff passes draw each new stroke")
-    }
-
-    /// Clears a canvas area in the front texture and in a running build, and draws the strokes
-    /// of the store there again (architecture.md 5.2, D-66).
-    ///
-    /// The ink blends with `max`, so a removed stroke cannot be subtracted. A build that has not
-    /// drawn yet needs nothing, because it skips the removed strokes.
-    ///
-    /// - Precondition: `area` is finite.
-    func redraw(_ area: Rect, store: StrokeStore, encoder: InkEncoder, context: FrameContext) {
-        precondition(area.origin.isFinite, "Redraw area is not finite")
-        RenderSignpost.begin("Redraw")
-        defer { RenderSignpost.end("Redraw") }
-        var targets: [InkTarget] = []
-        if let front { targets.append(front) }
-        if let build, build.hasCleared { targets.append(build.target) }
-        for target in targets {
-            guard let scissor = Self.scissor(for: area, in: target) else { continue }
-            let margin = Self.redrawMarginPixels / target.pixelsPerCanvasPoint
-            redrawSlots.removeAll(keepingCapacity: true)
-            store.grid.forEachItem(touching: area.expanded(by: margin)) { redrawSlots.append($0) }
-            var options = InkPassOptions(clear: false, instanceBudget: .max)
-            options.scissor = scissor
-            options.clearsScissor = true
-            options.clip = area.expanded(by: margin)
-            var cursor = 0
-            // Each pass draws one stroke at least, so the loop ends. A full draw list ends a pass.
-            // The first pass runs also without strokes, because it clears the area.
-            let passLimit = redrawSlots.count + 1
-            for _ in 0..<passLimit where cursor < redrawSlots.count || options.clearsScissor {
-                cursor = encoder.encodePass(
-                    context,
-                    target: target,
-                    slots: redrawSlots,
-                    cursor: cursor,
-                    options: options
-                )
-                options.clearsScissor = false
-            }
-            assert(cursor == redrawSlots.count, "The redraw drew each stroke of the area")
-        }
+        let cursor = encoder.encodePass(
+            context,
+            target: front,
+            slots: slots,
+            cursor: 0,
+            options: InkPassOptions(clear: false, instanceBudget: .max)
+        )
+        if build != nil { buildSlots.append(contentsOf: slots[..<cursor]) }
+        assert(cursor <= slots.count, "The pass took more strokes than it got")
+        return cursor
     }
 
     /// Returns the pixel rectangle of a canvas area in a target, with the redraw margin, or `nil`

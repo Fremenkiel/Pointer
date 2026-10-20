@@ -37,6 +37,30 @@ struct EntryBuckets {
         instances[bucket]
     }
 
+    /// The size of one list at a point in time, so that its later entries can be removed.
+    struct Mark {
+        let bucket: Int
+        let entries: Int
+        let instances: Int
+    }
+
+    /// Returns the size of the list of a buffer now.
+    func mark(_ bucket: Int) -> Mark {
+        Mark(bucket: bucket, entries: lists[bucket].count, instances: instances[bucket])
+    }
+
+    /// Removes the entries that the list of `mark` got after the mark. It keeps the capacity.
+    ///
+    /// - Precondition: The list holds at least the entries of the mark.
+    mutating func rollBack(to mark: Mark) {
+        let removed = lists[mark.bucket].count - mark.entries
+        precondition(removed >= 0, "The list is shorter than its mark")
+        lists[mark.bucket].removeLast(removed)
+        instances[mark.bucket] = mark.instances
+        entryCount -= removed
+        assert(entryCount >= 0, "The entry count is negative")
+    }
+
     /// Adds an entry with `instanceCount` instances to the list of a buffer.
     ///
     /// - Precondition: The list exists, and the entry draws one instance at least.

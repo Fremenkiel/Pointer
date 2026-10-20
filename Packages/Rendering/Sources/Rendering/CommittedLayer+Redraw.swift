@@ -1,0 +1,110 @@
+import Geometry
+
+/// The redraw of a changed area, which can take more than one frame (D-66, F-05).
+extension CommittedLayer {
+    /// The redraw of one texture that goes on in the next frame when the draw list is full
+    /// (F-05). The first pass clears the area, the later passes only draw.
+    struct Redraw {
+        let target: InkTarget
+        var options: InkPassOptions
+        var cursor = 0
+    }
+
+    /// `true` while a redraw has strokes left for the next frames.
+    var isRedrawing: Bool { frontRedraw != nil || buildRedraw != nil }
+
+    /// Clears a canvas area in the front texture and in a running build, and draws the strokes
+    /// of the store there again (architecture.md 5.2, D-66). A full draw list leaves the other
+    /// strokes for `continueRedraw`. A redraw that runs already starts again with both areas.
+    ///
+    /// The ink blends with `max`, so a removed stroke cannot be subtracted. A build that has not
+    /// drawn yet needs nothing, because it skips the removed strokes.
+    ///
+    /// - Precondition: `area` is finite.
+    func redraw(_ area: Rect, store: StrokeStore, encoder: InkEncoder, context: FrameContext) {
+        precondition(area.origin.isFinite, "Redraw area is not finite")
+        let whole = redrawArea.map { Self.union($0, area) } ?? area
+        redrawArea = whole
+        frontRedraw = front.flatMap { start(whole, in: $0, store: store, slots: &redrawSlots) }
+        buildRedraw = build.flatMap { current in
+            current.hasCleared
+                ? start(whole, in: current.target, store: store, slots: &buildRedrawSlots) : nil
+        }
+        continueRedraw(encoder: encoder, context: context)
+    }
+
+    /// Draws the strokes of a running redraw until the draw list is full. A texture that the
+    /// screen no longer shows and no build draws into is dropped from the redraw.
+    func continueRedraw(encoder: InkEncoder, context: FrameContext) {
+        guard isRedrawing else { return }
+        RenderSignpost.begin("Redraw")
+        defer { RenderSignpost.end("Redraw") }
+        frontRedraw = frontRedraw.flatMap {
+            draw($0, slots: redrawSlots, encoder: encoder, context: context)
+        }
+        buildRedraw = buildRedraw.flatMap {
+            draw($0, slots: buildRedrawSlots, encoder: encoder, context: context)
+        }
+        if !isRedrawing { redrawArea = nil }
+    }
+
+    /// Lists the strokes of `area` in a target, or returns `nil` if the area misses it.
+    private func start(
+        _ area: Rect,
+        in target: InkTarget,
+        store: StrokeStore,
+        slots: inout [Int]
+    ) -> Redraw? {
+        guard let scissor = Self.scissor(for: area, in: target) else { return nil }
+        let clip = area.expanded(by: Self.redrawMarginPixels / target.pixelsPerCanvasPoint)
+        slots.removeAll(keepingCapacity: true)
+        store.grid.forEachItem(touching: clip) { slots.append($0) }
+        var options = InkPassOptions(clear: false, instanceBudget: .max)
+        options.scissor = scissor
+        options.clearsScissor = true
+        options.clip = clip
+        return Redraw(target: target, options: options)
+    }
+
+    /// Runs one pass of a redraw. The first pass clears the area, also without strokes.
+    ///
+    /// - Returns: The redraw with its new cursor, or `nil` if it is done or its texture is gone.
+    private func draw(
+        _ redraw: Redraw,
+        slots: [Int],
+        encoder: InkEncoder,
+        context: FrameContext
+    ) -> Redraw? {
+        guard isLive(redraw.target) else { return nil }
+        var next = redraw
+        next.cursor = encoder.encodePass(
+            context,
+            target: redraw.target,
+            slots: slots,
+            cursor: redraw.cursor,
+            options: redraw.options
+        )
+        next.options.clearsScissor = false
+        assert(next.cursor >= redraw.cursor, "A redraw never goes back")
+        return next.cursor < slots.count ? next : nil
+    }
+
+    /// `true` if the screen shows the target or a build draws into it.
+    private func isLive(_ target: InkTarget) -> Bool {
+        Self.isSame(front, target) || Self.isSame(build?.target, target)
+    }
+
+    private static func isSame(_ current: InkTarget?, _ target: InkTarget) -> Bool {
+        guard let current else { return false }
+        return current.texture === target.texture && current.camera == target.camera
+    }
+
+    private static func union(_ first: Rect, _ second: Rect) -> Rect {
+        Rect(
+            minX: min(first.minX, second.minX),
+            minY: min(first.minY, second.minY),
+            maxX: max(first.maxX, second.maxX),
+            maxY: max(first.maxY, second.maxY)
+        )
+    }
+}

@@ -55,6 +55,7 @@ final class InkEncoder {
     ) -> Int {
         precondition(cursor >= 0 && cursor <= slots.count, "Cursor \(cursor) out of \(slots.count)")
         precondition(options.instanceBudget > 0, "Instance budget must be positive")
+        precondition(options.clip == nil || options.scissor != nil, "A clip needs a scissor")
         var lists = EntryBuckets()
         swap(&lists, &buckets)
         lists.reset(bufferCount: store.arena.buffers.count)
@@ -111,8 +112,9 @@ final class InkEncoder {
         // The subtraction runs in Double before the conversion to Float (architecture.md 5.3).
         let delta = info.origin - target.camera.center
         let origin = SIMD2(Float(delta.dx), Float(delta.dy))
+        let mark = lists.mark(bucket)
         var instances = 0
-        forEachRun(slot, info: info, target: target, clip: clip) { run in
+        func append(_ run: DetailRun) {
             let entry = StrokeDrawEntry(
                 run,
                 origin: origin,
@@ -123,6 +125,15 @@ final class InkEncoder {
             lists.append(entry, instanceCount: run.instanceCount, to: bucket)
             instances += run.instanceCount
         }
+        forEachRun(slot, info: info, target: target, clip: clip, body: append)
+        if clip != nil, lists.entryCount > ring.remaining {
+            // A clipped stroke can have more entries than blocks (F-04). Its whole runs fit,
+            // because the pass checks the block count, and the scissor keeps the same pixels.
+            lists.rollBack(to: mark)
+            instances = 0
+            forEachRun(slot, info: info, target: target, clip: nil, body: append)
+        }
+        assert(lists.entryCount <= ring.remaining, "The entries of a stroke fit the draw list")
         assert(instances > 0 || clip != nil, "A resident stroke draws one instance at least")
         return instances
     }
