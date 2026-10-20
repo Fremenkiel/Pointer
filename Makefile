@@ -4,10 +4,15 @@
 PROJECT := Pointer.xcodeproj
 SCHEME := PointerApp
 DERIVED_DATA := .build/DerivedData
-SIMULATOR ?= platform=iOS Simulator,name=iPad Pro 13-inch (M5)
+# The connected iPad. Learned rule 1 of AGENTS.md bans the simulator (D-77).
+DEVICE ?= 00008132-000018993E8B801C
+DEVICE_DATA := .build/DeviceData
 TIER_A := Geometry Model InkEngine Persistence
-OTHER_PACKAGES := Rendering Export DesignSystem CanvasFeature WorkspaceFeature BackupFeature
 XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -derivedDataPath $(DERIVED_DATA)
+# Device runs use Release, as the performance tests need (PERF-03).
+DEVICE_TEST := xcodebuild test -project $(PROJECT) -scheme $(SCHEME) -configuration Release \
+	-destination 'id=$(DEVICE)' -derivedDataPath $(DEVICE_DATA) -allowProvisioningUpdates \
+	ENABLE_TESTABILITY=YES
 
 .PHONY: check build analyze test snapshots format lint layers density self-test plist
 
@@ -27,29 +32,27 @@ analyze:
 		echo "Analyzer findings above."; exit 1; fi
 	@echo "analyze: 0 findings"
 
-# Tier A tests run on the Mac. Other package tests run on an iPad simulator.
-# A package without a Tests folder has no tests yet.
+# Tier A tests run on the Mac. Package tests cannot run on a device, so the tests of the other
+# packages run in PointerDeviceTests on the iPad (D-77). Keep the iPad unlocked during the run.
 test:
 	@for package in $(TIER_A); do \
 		if [ -d Packages/$$package/Tests ]; then \
 			swift test --package-path Packages/$$package || exit 1; \
 		fi; \
 	done
-	@for package in $(OTHER_PACKAGES); do \
-		if [ -d Packages/$$package/Tests ]; then \
-			(cd Packages/$$package && xcodebuild test -scheme $$package \
-				-destination '$(SIMULATOR)' -quiet) || exit 1; \
-		fi; \
-	done
+	$(DEVICE_TEST) -quiet -only-testing:PointerDeviceTests
 	@echo "test: done"
 
-# TEST-07: the snapshot tests of SwiftUI views need the window scene of the app, so they run in
-# PointerDeviceTests on the simulator (D-59).
+# TEST-07: the snapshot tests run in PointerDeviceTests on the iPad and compare against the
+# reference images in the test bundle (D-77).
 snapshots:
-	$(XCODEBUILD) -destination '$(SIMULATOR)' -quiet \
+	$(DEVICE_TEST) -quiet \
+		-only-testing:PointerDeviceTests/InkImageTests \
+		-only-testing:PointerDeviceTests/RedrawTests \
+		-only-testing:PointerDeviceTests/EraserMaskTests \
 		-only-testing:PointerDeviceTests/WorkspaceSelectorSnapshotTests \
 		-only-testing:PointerDeviceTests/HistoryButtonsSnapshotTests \
-		-only-testing:PointerDeviceTests/ToolControlsSnapshotTests test
+		-only-testing:PointerDeviceTests/ToolControlsSnapshotTests
 	@echo "snapshots: done"
 
 # STYLE-04. The fixtures hold deliberate violations, so the formatter skips them.

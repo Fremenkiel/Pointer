@@ -41,15 +41,18 @@ pointer/
       Tests/PersistenceTests/Fixtures/  fixture database and its SQL per schema version (TEST-08)
       Tests/PersistenceDeviceTests/     device performance tests, part of PointerDeviceTests only
     Rendering/             Layer 1: Metal renderer and shaders
-      Tests/RenderingTests/References/  reference PNGs of the snapshot tests (TEST-07)
+      Tests/RenderingTests/             part of PointerDeviceTests only (D-77)
+        References/        reference PNGs of the snapshot tests, made on the iPad (TEST-07)
     Export/                Layer 1: PDF export
     DesignSystem/          Layer 1: tokens and shared small views
     CanvasFeature/         Layer 2: canvas screen
-      Tests/CanvasFeatureSnapshotTests/     view snapshots, part of PointerDeviceTests only (D-59)
-        References/        reference PNGs of the snapshot tests (TEST-07)
+      Tests/CanvasFeatureTests/             part of PointerDeviceTests only (D-77)
+      Tests/CanvasFeatureSnapshotTests/     view snapshots, part of PointerDeviceTests only (D-77)
+        References/        reference PNGs of the snapshot tests, made on the iPad (TEST-07)
     WorkspaceFeature/      Layer 2: workspace selector
-      Tests/WorkspaceFeatureSnapshotTests/  view snapshots, part of PointerDeviceTests only (D-59)
-        References/        reference PNGs of the snapshot tests (TEST-07)
+      Tests/WorkspaceFeatureTests/          part of PointerDeviceTests only (D-77)
+      Tests/WorkspaceFeatureSnapshotTests/  view snapshots, part of PointerDeviceTests only (D-77)
+        References/        reference PNGs of the snapshot tests, made on the iPad (TEST-07)
     BackupFeature/         Layer 2: backup command and restore
   Scripts/                 check-layers.swift, assertion-density.swift, self-test.sh
     Fixtures/              small trees that the self-test runs the check scripts on
@@ -62,8 +65,8 @@ Run the commands from the repository root. They need Xcode 27 and SwiftLint 0.65
 ```
 make build       # build the app for iOS, warnings are errors
 make analyze     # xcodebuild analyze, zero findings
-make test        # package tests: Tier A on the Mac, the others on an iPad simulator
-make snapshots   # snapshot tests of SwiftUI views in PointerDeviceTests on the simulator
+make test        # Tier A tests on the Mac, then PointerDeviceTests on the iPad
+make snapshots   # the snapshot tests in PointerDeviceTests on the iPad (D-77)
 make format      # swift format lint
 make lint        # swiftlint --strict
 make layers      # Scripts/check-layers.swift
@@ -73,7 +76,7 @@ make plist       # the Files app keys of PointerApp/Info.plist are true
 make check       # all of the above, the full check
 ```
 
-`make test` uses the simulator "iPad Pro 13-inch (M5)". To use another simulator, set `SIMULATOR`, for example `make test SIMULATOR='platform=iOS Simulator,name=iPad Air 11-inch (M4)'`.
+`make test` and `make snapshots` use the connected iPad Pro 11-inch (M4) in Release. To use another iPad, set `DEVICE` to its UDID, for example `make test DEVICE=00008132-000018993E8B801C`. Before a device run, make sure that the iPad is unlocked: `xcrun devicectl device info lockState --device <UDID>` must print `passcodeRequired: false`.
 
 ## Working rules
 
