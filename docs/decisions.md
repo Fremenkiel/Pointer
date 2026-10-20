@@ -87,6 +87,7 @@ Status values: Open, Decided, Replaced.
 | D-77 | Snapshot tests while the simulator is banned | Move them into `PointerDeviceTests` with reference images made on the iPad | Decided (2026-10-20) |
 | D-78 | When the eraser mask texture exists | Only while the eraser is the tool | Decided (2026-10-20) |
 | D-79 | The pass rule of M4 acceptance 2 on the device | 5 full device runs in a row, each step under 33 ms | Decided (2026-10-20) |
+| D-80 | Where the allocation test of the spatial grid runs | Open: recommendation (a), the test in `RenderingTests` on the iPad | Open |
 
 ## Details
 
@@ -759,6 +760,17 @@ Status values: Open, Decided, Replaced.
   - (c) One full run passes, as in M4 so far.
 - Recommendation: (a). It asks for a margin and shows a noisy result.
 - Effect: M4 acceptance 2 passes only when the slowest erase, undo, and redo are each under 33 ms in 5 full runs of `PointerDeviceTests` in a row. A failed run starts the count again.
+
+### D-80 Where the allocation test of the spatial grid runs
+
+- Open. Raised by task 3.2 of [m4-fix-plan.md](m4-fix-plan.md) on 2026-10-20.
+- The "Done when" target of task 3.2 asks for "1,000 removals make 0 allocations in a Tier A test". `SpatialGrid` is in `Geometry`, a Tier A package. An exact allocation count needs the `malloc_logger` hook of `AllocationCounter+Unsafe.swift`, which uses `UnsafeMutableRawPointer` and `dlsym`. SAFE-09 and the lint rule `safe_09_unsafe_types` allow unsafe pointers only in `*+Unsafe.swift` files of `Rendering` and `Export`, and in the SQLite wrapper of `Persistence`. The counters of `malloc_zone_statistics` need no unsafe type in the source, but they count the live blocks, not the allocations, so a removal that allocates and frees shows 0.
+- Options:
+  - (a) Run the test of the grid in `RenderingTests`, where `AllocationCounter` lives. It runs on the iPad in `PointerDeviceTests`, with the `SpatialGrid<Int>` of the renderer. The Tier A tests keep the timing of the removal and the query.
+  - (b) Allow one `AllocationCounter+Unsafe.swift` in `GeometryTests`, with a new exclusion in `safe_09_unsafe_types`. This changes a lint rule of SAFE-09 (AGENT-03).
+  - (c) Count the live blocks with `malloc_zone_statistics` in a Tier A test. This misses an allocation that is freed in the same removal.
+- Recommendation: (a). It counts each allocation and changes no rule. The grid of the renderer is the grid that the target is about.
+- State: task 3.2 uses (a) until the product owner decides. The test is `GridAllocationTests`.
 
 ## Points in the request that conflict or are not complete
 

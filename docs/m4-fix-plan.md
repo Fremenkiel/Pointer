@@ -452,10 +452,14 @@ Each row is one run of `testEraseUndoRedoOfOneThousandStrokes` alone on the iPad
 | After 3.1 | 1 | 24.63 / 31.77 | 27.09 / 28.48 | 26.92 / 32.02 |
 | After 3.1 | 2 | 29.87 / 31.52 | 26.48 / 28.75 | 20.12 / 27.71 |
 | After 3.1 | 3 | 21.61 / 32.75 | 26.87 / 30.03 | 24.63 / 27.57 |
+| After 3.2 | 1 | 24.69 / 31.56 | 19.93 / 25.83 | 22.19 / 25.90 |
+| After 3.2 | 2 | 24.10 / 28.77 | 19.84 / 26.96 | 22.44 / 26.78 |
+| After 3.2 | 3 | 24.97 / 28.60 | 19.63 / 25.87 | 27.94 / 31.48 |
 
 Notes:
 
 - Task 3.1: the redraw of the whole canvas at zoom 2 with 200,000 handwriting strokes lists 36 strokes, the strokes that touch the texture plus its margin. Before, it listed the strokes of the whole area.
+- Task 3.2, on the Mac in Release, median of 20 rounds, called from the test module: 1,000 removals from the grid of the D-69 content took 0.51 ms before and 0.147 ms after (3.5 times faster). The query of the D-69 erase area took 0.054 ms before and 0.0076 ms after (7 times faster). On the iPad, `FrameRenderer.apply` made 20, 2, and 7 allocations for the erase, the undo, and the redo, against 14,897, 14,750, and 14,884 in section 5.1. `GridAllocationTests` counts 0 allocations for 1,000 removals. It runs on the iPad, not as a Tier A test (D-80).
 - Phases 1 and 2 had two regressions that the device runs showed. They are fixed before phase 3: the erase area of task 1.5 took the whole stroke for a part end at an old stroke end (about 10 ms per step, commit 0b9ec40), and the observer filter of task 1.4 leaked each closed canvas (open of D-56 305.6 ms, commit 54facdc).
 
 ### 5.3 Close

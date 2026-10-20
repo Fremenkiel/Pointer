@@ -56,11 +56,16 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
         boundsByID[id] = bounds
         let range = cellRange(for: bounds)
         assert(range.cellCount >= 1, "Bounds of \(id) cover no cell")
+        let entry = Entry(id: id, bounds: bounds)
         for row in range.rows {
             for column in range.columns {
-                cells[GridCell(column: column, row: row), default: []].append(
-                    Entry(id: id, bounds: bounds)
-                )
+                // One lookup, and the cell changes in place (P-02).
+                let cell = GridCell(column: column, row: row)
+                if let index = cells.index(forKey: cell) {
+                    cells.values[index].append(entry)
+                } else {
+                    cells[cell] = [entry]
+                }
             }
         }
     }
@@ -88,6 +93,7 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     /// occupied cells.
     ///
     /// - Precondition: `rect` is finite.
+    @inlinable
     public func forEachItem(touching rect: Rect, _ body: (ID) -> Void) {
         precondition(rect.origin.isFinite, "Grid query \(rect) is not finite")
         precondition(
@@ -110,11 +116,13 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     }
 
     /// Returns the cell that holds a canvas point.
+    @inlinable
     public func cell(containing point: Point) -> GridCell {
         GridCell(column: coordinate(point.x), row: coordinate(point.y))
     }
 
-    private func report(_ cell: GridCell, entries: [Entry]?, query: Rect, _ body: (ID) -> Void) {
+    @inlinable
+    func report(_ cell: GridCell, entries: [Entry]?, query: Rect, _ body: (ID) -> Void) {
         guard let entries else { return }
         assert(!entries.isEmpty, "Grid keeps the empty cell \(cell)")
         for entry in entries where entry.bounds.intersects(query) {
@@ -130,17 +138,21 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
 
     @inlinable
     mutating func removeEntry(_ id: ID, from cell: GridCell) {
-        guard let index = cells[cell]?.firstIndex(where: { $0.id == id }) else {
+        // One lookup, and the cell changes in place through `values`. The optional chain of
+        // before made 5 to 6 lookups and about 6 allocations per cell (P-02).
+        // The search starts at the end: an undo or a redo removes the strokes that the step
+        // before added, and those are the last entries of their cells.
+        guard let slot = cells.index(forKey: cell),
+            let index = cells.values[slot].lastIndex(where: { $0.id == id })
+        else {
             assertionFailure("Grid cell \(cell) does not hold \(id)")
             return
         }
-        // The changes go through the optional chain, so the array changes in place. A copy into
-        // a local `var` made each removal copy the whole cell (M4 task 3.8).
-        let last = (cells[cell]?.count ?? 1) - 1
-        cells[cell]?.swapAt(index, last)
-        cells[cell]?.removeLast()
-        if cells[cell]?.isEmpty == true {
-            cells[cell] = nil
+        let last = cells.values[slot].count - 1
+        cells.values[slot].swapAt(index, last)
+        cells.values[slot].removeLast()
+        if cells.values[slot].isEmpty {
+            cells.remove(at: slot)
         }
         assert(cells[cell]?.contains { $0.id == id } != true, "Grid cell \(cell) still holds \(id)")
     }
@@ -175,6 +187,7 @@ struct CellRange {
 
     @usableFromInline var cellCount: Int { columns.count * rows.count }
 
+    @inlinable
     func contains(_ cell: GridCell) -> Bool {
         columns.contains(cell.column) && rows.contains(cell.row)
     }
