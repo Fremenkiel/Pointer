@@ -41,6 +41,8 @@ public final class CanvasViewController: UIViewController {
     private(set) var toolState = ToolState()
     /// The samples of the running eraser gesture in view space, or `nil` without a gesture.
     var eraserSamples: [Point]?
+    /// The sample list of the last gesture, kept for its capacity.
+    var spareEraserSamples: [Point] = []
     private(set) var cameraController: CameraController
     private var palmGuard = PalmGuard()
     private let panRecognizer = UIPanGestureRecognizer()

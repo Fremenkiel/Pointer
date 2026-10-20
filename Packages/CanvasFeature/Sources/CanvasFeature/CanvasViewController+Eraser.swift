@@ -8,8 +8,13 @@ extension CanvasViewController {
     /// Starts an eraser gesture.
     func beginErase() {
         assert(eraserSamples == nil, "An eraser gesture is already running")
-        var samples: [Point] = []
-        samples.reserveCapacity(EraserTool.sampleCapacity)
+        // The list of the last gesture keeps its capacity (M-07).
+        var samples = spareEraserSamples
+        spareEraserSamples = []
+        samples.removeAll(keepingCapacity: true)
+        if samples.capacity < EraserTool.sampleCapacity {
+            samples.reserveCapacity(EraserTool.sampleCapacity)
+        }
         eraserSamples = samples
         renderer.beginErase(radius: EraserTool.radius)
     }
@@ -29,6 +34,7 @@ extension CanvasViewController {
     func finishErase(isCancelled: Bool) {
         guard let samples = eraserSamples else { return }
         eraserSamples = nil
+        defer { spareEraserSamples = samples }
         let size = Size(width: canvasView.bounds.width, height: canvasView.bounds.height)
         guard !isCancelled, !samples.isEmpty, size.width > 0, size.height > 0,
             let command = eraseCommand(samples: samples, viewSize: size)

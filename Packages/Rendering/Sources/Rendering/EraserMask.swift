@@ -12,8 +12,6 @@ import Model
 struct EraserMask {
     /// The most samples of one gesture, the bound of `EraserPath.maxSamples`.
     static let maxSamples = Limits.maxPointsPerStroke
-    /// The first capacity of the sample list: 4 s at 240 Hz.
-    static let initialCapacity = 1_024
 
     /// `true` from the start to the end of a gesture.
     private(set) var isActive = false
@@ -44,8 +42,10 @@ struct EraserMask {
     /// - Precondition: `radius` is positive and finite.
     mutating func begin(radius: Double) {
         precondition(radius > 0 && radius.isFinite, "Eraser radius must be positive, got \(radius)")
-        if samples.capacity < Self.initialCapacity {
-            samples.reserveCapacity(Self.initialCapacity)
+        // Room for the longest gesture once, so a sample never grows the list on the render
+        // thread (M-07). The list keeps it for the next gestures.
+        if samples.capacity < Self.maxSamples {
+            samples.reserveCapacity(Self.maxSamples)
         }
         samples.removeAll(keepingCapacity: true)
         self.radius = radius

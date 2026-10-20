@@ -176,6 +176,10 @@ public final class CanvasRenderer {
             if box.eraserSamples.capacity < Self.eraserSampleCapacity {
                 box.eraserSamples.reserveCapacity(Self.eraserSampleCapacity)
             }
+            // A frame swaps the two lists, so the spare one needs the room too (M-07).
+            if box.spareEraserSamples.capacity < Self.eraserSampleCapacity {
+                box.spareEraserSamples.reserveCapacity(Self.eraserSampleCapacity)
+            }
         }
     }
 

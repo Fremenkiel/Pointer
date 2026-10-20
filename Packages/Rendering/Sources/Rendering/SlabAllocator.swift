@@ -130,16 +130,21 @@ struct SlabAllocator {
         precondition(slabs[slabIndex].classIndex == nil, "Slab \(slabIndex) already serves a class")
         let blockCount = Self.slabPoints / Self.classPoints(classIndex)
         assert(blockCount >= 1, "Class \(classIndex) is larger than a slab")
-        slabs[slabIndex] = Slab(
-            classIndex: classIndex,
-            freeBlocks: Array((0..<blockCount).reversed())
-        )
+        // The free list of an earlier assignment keeps its storage (M-08). It grows only for a
+        // class with more blocks than the slab served before.
+        var blocks = slabs[slabIndex].freeBlocks
+        slabs[slabIndex].freeBlocks = []
+        blocks.removeAll(keepingCapacity: true)
+        blocks.append(contentsOf: (0..<blockCount).reversed())
+        slabs[slabIndex] = Slab(classIndex: classIndex, freeBlocks: blocks)
         partialSlabs[classIndex].append(slabIndex)
     }
 
     private mutating func release(_ slabIndex: Int, classIndex: Int) {
         partialSlabs[classIndex].removeAll { $0 == slabIndex }
-        slabs[slabIndex] = Slab()
+        // The free list stays for the next assignment (M-08).
+        slabs[slabIndex].classIndex = nil
+        slabs[slabIndex].usedCount = 0
         freeSlabs.append(slabIndex)
     }
 }
