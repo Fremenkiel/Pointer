@@ -43,4 +43,54 @@ public struct TextBox: Identifiable, Hashable, Sendable {
         self.text = text
         self.sortKey = sortKey
     }
+
+    /// Makes a copy with new fields, without the checks of the public initializer. The callers
+    /// check the fields that they change.
+    private init(_ box: TextBox, meta: RecordMeta, origin: Point, text: String) {
+        id = box.id
+        self.meta = meta
+        canvasID = box.canvasID
+        self.origin = origin
+        self.text = text
+        sortKey = box.sortKey
+    }
+
+    /// Returns a copy with a new text and the change time `time`.
+    ///
+    /// - Throws: `ModelError.invalidText` or `ModelError.nullCharacter` for a text that the
+    ///   initializer refuses.
+    public func editing(
+        text newText: String,
+        at time: HybridTimestamp
+    ) throws(ModelError) -> TextBox {
+        guard !TextLength.hasNull(newText) else { throw .nullCharacter }
+        let length = TextLength.of(newText)
+        guard length >= 1, length <= Limits.maxTextLength else {
+            throw .invalidText(length: length)
+        }
+        return TextBox(self, meta: meta.changed(at: time), origin: origin, text: newText)
+    }
+
+    /// Returns a copy at a new origin with the change time `time`.
+    ///
+    /// - Throws: `ModelError.invalidGeometry` if `newOrigin` is not finite.
+    public func moving(
+        to newOrigin: Point,
+        at time: HybridTimestamp
+    ) throws(ModelError) -> TextBox {
+        guard newOrigin.isFinite else { throw .invalidGeometry(reason: "text box origin") }
+        return TextBox(self, meta: meta.changed(at: time), origin: newOrigin, text: text)
+    }
+
+    /// Returns a copy with the tombstone flag `isDeleted` and the change time `time`.
+    public func marking(deleted isDeleted: Bool, at time: HybridTimestamp) -> TextBox {
+        let copy = TextBox(
+            self,
+            meta: meta.changed(at: time, isDeleted: isDeleted),
+            origin: origin,
+            text: text
+        )
+        assert(copy.meta.isDeleted == isDeleted, "The copy has the asked tombstone flag")
+        return copy
+    }
 }

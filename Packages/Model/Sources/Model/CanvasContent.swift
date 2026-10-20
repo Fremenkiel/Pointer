@@ -268,3 +268,32 @@ extension CanvasContent {
         assert(log.removed.allSatisfy { strokes[$0.stroke.id] != nil }, "A removal stayed")
     }
 }
+
+/// The changes of the text boxes. `textBoxes` holds the live text boxes only, as `strokes` does
+/// (D-68). A command keeps the `TextBox` value of a deleted box for its undo, and `add(_:)` puts
+/// it back.
+extension CanvasContent {
+    /// Puts a changed text box in the place of the live box with the same ID.
+    ///
+    /// - Precondition: The canvas holds the box as a live box, and `textBox` is not a tombstone.
+    /// - Returns: The box before the change.
+    public mutating func replace(_ textBox: TextBox) -> TextBox {
+        precondition(!textBox.meta.isDeleted, "Text box \(textBox.id) is a tombstone")
+        guard let earlier = textBoxes.updateValue(textBox, forKey: textBox.id) else {
+            preconditionFailure("Canvas holds no live text box \(textBox.id)")
+        }
+        assert(earlier.canvasID == textBox.canvasID, "A text box keeps its canvas")
+        return earlier
+    }
+
+    /// Removes a live text box. The caller sends its tombstone to the library.
+    ///
+    /// - Precondition: The canvas holds the box as a live box.
+    /// - Returns: The removed box.
+    public mutating func removeTextBox(_ id: TextBoxID) -> TextBox {
+        let removed = textBoxes.removeValue(forKey: id)
+        guard let removed else { preconditionFailure("Canvas holds no live text box \(id)") }
+        assert(textBoxes[id] == nil, "The text box \(id) left the content")
+        return removed
+    }
+}

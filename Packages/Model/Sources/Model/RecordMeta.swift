@@ -18,4 +18,10 @@ public struct RecordMeta: Hashable, Sendable {
     public init(created: HybridTimestamp) {
         self.init(created: created, modified: created, isDeleted: false)
     }
+
+    /// Returns the fields after a change at `time`: the same creation, the new change time, and
+    /// the tombstone flag `isDeleted`, or the flag as it is.
+    public func changed(at time: HybridTimestamp, isDeleted: Bool? = nil) -> RecordMeta {
+        RecordMeta(created: created, modified: time, isDeleted: isDeleted ?? self.isDeleted)
+    }
 }

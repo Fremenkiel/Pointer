@@ -76,12 +76,15 @@ Rules: PERF-03, D-79.
 #### 1.1 Text style and text box changes
 
 1. Add `TextStyle` to `Model` with named constants: the font size of 17 points at zoom 1 (D-15), and the largest width of 640 canvas points (D-83). Rendering, the canvas, and the export of M8 use them.
-2. Add to `CanvasContent`: `replace(_:)` for a changed text box, `removeTextBox(_:)`, and `restoreTextBox(_:)`. `textBoxes` holds the live text boxes only, as `strokes` does (D-68).
-3. A restore checks `Limits.maxNodesPerCanvas`, as `add(_:)` does.
+2. Add to `CanvasContent`: `replace(_:)` for a changed text box, and `removeTextBox(_:)`. `textBoxes` holds the live text boxes only, as `strokes` does (D-68).
+3. A restore uses `add(_:)`, which checks `Limits.maxNodesPerCanvas`.
+4. Add to `TextBox` the copies `editing(text:at:)`, `moving(to:at:)`, and `marking(deleted:at:)`, with the checks of the initializer.
 
 Done when: parameterized tests cover 0, 1, `Limits.maxNodesPerCanvas`, and the limit plus one (TEST-06). Each new function that is not private has a test (TEST-02).
 
 Rules: TEST-02, TEST-06, ARCH-06, D-19, D-57, D-83.
+
+Status: done. 9 new tests pass, 83 `Model` tests in total.
 
 #### 1.2 Text box commands
 
