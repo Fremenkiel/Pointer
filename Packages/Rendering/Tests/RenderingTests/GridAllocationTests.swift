@@ -3,8 +3,8 @@ import XCTest
 
 /// The removal from the spatial grid allocates nothing (P-02 of docs/m4-fix-plan.md, phase 3,
 /// task 2). The grid is a Tier A type, but the allocation counter needs the `malloc_logger` hook
-/// of `AllocationCounter+Unsafe.swift`, so the test runs here (D-80). It is an XCTest, because
-/// the counter sees every thread, and Swift Testing runs other tests at the same time.
+/// of `AllocationCounter+Unsafe.swift`, so the test runs here (D-80). The removals run on the
+/// main thread, so the count takes the main thread only: other tests run at the same time.
 final class GridAllocationTests: XCTestCase {
     func testThousandRemovalsMakeNoAllocation() throws {
         var grid = SpatialGrid<Int>(cellSize: 512)
@@ -18,7 +18,7 @@ final class GridAllocationTests: XCTestCase {
             grid.insert(20_000 + row, bounds: Rect(minX: -301, minY: y - 1, maxX: 299, maxY: y + 1))
         }
         let count = try XCTUnwrap(
-            AllocationCounter.count {
+            AllocationCounter.countMainThread {
                 for index in 20_000..<21_000 { grid.remove(index) }
             }
         )

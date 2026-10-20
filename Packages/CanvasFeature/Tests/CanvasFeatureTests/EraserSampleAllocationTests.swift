@@ -8,9 +8,9 @@ import XCTest
 @testable import Rendering
 
 /// A gesture of `EraserPath.maxSamples` samples allocates nothing in Pointer code after its first
-/// sample (PERF-01, M-07 of docs/m4-fix-plan.md). The canvas path runs on the main thread, so its
-/// count takes the main thread only. The render side is the test of `EraserMask`. XCTest, so
-/// that no other test runs at the same time.
+/// sample (PERF-01, M-07 of docs/m4-fix-plan.md). Both paths run on the main thread here, so the
+/// counts take the main thread only: in a full run, other tests run on other threads at the same
+/// time.
 @MainActor
 final class EraserSampleAllocationTests: XCTestCase {
     /// The samples between two frames, fewer than the 64 that the inbox holds per frame.
@@ -57,7 +57,7 @@ final class EraserSampleAllocationTests: XCTestCase {
         mask.begin(radius: 8)
         mask.append(Self.point(0))
         let count = try XCTUnwrap(
-            AllocationCounter.count {
+            AllocationCounter.countMainThread {
                 for index in 1..<EraserMask.maxSamples {
                     mask.append(Self.point(index))
                 }
