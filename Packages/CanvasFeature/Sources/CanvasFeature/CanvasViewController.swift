@@ -56,6 +56,8 @@ public final class CanvasViewController: UIViewController {
     private var isCameraMoving = false
     /// True after `endSession()` kept the session.
     var hasEndedSession = false
+    /// The key commands of undo and redo, made once (C-05).
+    lazy var historyKeyCommands = makeHistoryKeyCommands()
 
     /// Makes the canvas screen.
     ///
@@ -377,10 +379,10 @@ extension CanvasViewController: UIGestureRecognizerDelegate {
         _ gestureRecognizer: UIGestureRecognizer,
         shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
     ) -> Bool {
-        let pair: Set<ObjectIdentifier> = [
-            ObjectIdentifier(panRecognizer), ObjectIdentifier(pinchRecognizer),
-        ]
-        return pair.contains(ObjectIdentifier(gestureRecognizer))
-            && pair.contains(ObjectIdentifier(otherGestureRecognizer))
+        // An identity check, without a set per call (C-05).
+        let first = gestureRecognizer === panRecognizer || gestureRecognizer === pinchRecognizer
+        let second =
+            otherGestureRecognizer === panRecognizer || otherGestureRecognizer === pinchRecognizer
+        return first && second
     }
 }

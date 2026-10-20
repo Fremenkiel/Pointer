@@ -172,6 +172,11 @@ extension CanvasViewController {
 
     /// Command-Z and Shift-Command-Z on a hardware keyboard (architecture.md section 8).
     override public var keyCommands: [UIKeyCommand]? {
+        historyKeyCommands
+    }
+
+    /// Makes the key commands of undo and redo.
+    func makeHistoryKeyCommands() -> [UIKeyCommand] {
         [
             UIKeyCommand(
                 title: CanvasStrings.undo,
