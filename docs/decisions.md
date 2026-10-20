@@ -82,6 +82,7 @@ Status values: Open, Decided, Replaced.
 | D-72 | The shape bound of D-65 after a cut | Keep the cut rule. The change is at most half the distance to the dropped point. | Decided (2026-10-19) |
 | D-73 | The stroke count after an erase passes the stroke limit | A hard bound of 210,000 strokes. An erase past it removes the strokes whole. | Decided (2026-10-20) |
 | D-74 | The end point of the clock in M4 acceptance 2 | The GPU completes the first frame that holds the change | Decided (2026-10-20) |
+| D-75 | M4 acceptance 2 still misses 16 ms | Open. Recommendation: a budget of 33 ms for M4, 16 ms as a goal | Open (2026-10-20) |
 
 ## Details
 
@@ -691,6 +692,19 @@ Status values: Open, Decided, Replaced.
   - (c) Keep D-69 as written. The acceptance then cannot pass on this iPad.
 - Recommendation: (a). It measures the work that the code controls. The erase then still needs a faster split, about 14 ms on the iPad today. Undo and redo are close.
 - Effect: the clock of acceptance 2 ends when the GPU completes the first frame that holds the change. The renderer reports this event to the canvas.
+
+### D-75 M4 acceptance 2 still misses 16 ms
+
+- Open. Raised by M4 task 3.8 on 2026-10-20.
+- With the clock of D-74, an empty change takes 7.9 ms (median) from the call to the GPU end of its frame. The frame loop sleeps when idle, so a change waits for the next display frame of 8.3 ms at 120 Hz.
+- After the optimizations of task 3.8, the steps take these times on the iPad Pro 11-inch (M4) in Release, medians of 5 rounds: erase 28.1 ms, undo 27.6 ms, redo 24.8 ms. The slowest steps take 32.0, 31.4, and 28.3 ms.
+- The work in them: the main thread takes 13 to 15 ms for an erase and 5 to 8 ms for an undo or a redo. The rest is the wait for the display frame and the CPU of the render thread for the change of the store, about 9 to 12 ms.
+- Options:
+  - (a) Continue the optimization. The next steps: the renderer hides and shows strokes instead of a removal and a new add at an undo and a redo, and the content changes with fewer dictionary operations. The estimate is 13 to 18 ms for undo and redo and about 22 ms for the erase. The erase cannot reach 16 ms while its split takes 13 ms on the main thread and the frame waits up to 8 ms.
+  - (b) Accept a budget of 33 ms per step for M4, four display frames at 120 Hz. All three steps pass it today. Keep 16 ms as a goal for a later milestone.
+  - (c) Keep 16 ms. M4 then stays open.
+- Recommendation: (b). An erase of 1,000 strokes in one gesture is rare, and the eraser mask shows the result at once while the pencil moves (D-66).
+- Effect: task 3.8 waits for this decision.
 
 ## Points in the request that conflict or are not complete
 

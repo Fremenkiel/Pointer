@@ -175,7 +175,7 @@ Status: the code is done in commit c0553fa, and `make check` passes. Four snapsh
 
 Done when: both acceptance criteria pass, and the results are in section 4.
 
-Status: blocked by D-74. Acceptance 2 fails on the iPad: an empty change already takes 13 to 16 ms from the call to its presented frame. Acceptance 1 passes with the tests of task 3.1. Item 3 is the test `EraserToolTests.firstSample`, which runs on the simulator and in `PointerDeviceTests`. Section 4.5 has the measured times and the changes since the first run. The test of acceptance 2 makes these choices inside D-69:
+Status: blocked by D-75. With the clock of D-74, acceptance 2 still fails on the iPad: erase 28.1 ms, undo 27.6 ms, redo 24.8 ms (medians). D-73 and D-74 are done in code. Acceptance 1 passes with the tests of task 3.1. Item 3 is the test `EraserToolTests.firstSample`, which runs on the simulator and in `PointerDeviceTests`. Section 4.5 has the measured times and the changes since the first run. The test of acceptance 2 makes these choices inside D-69:
 
 - The canvas holds the content in memory without a library, because the save runs off the main actor with its own budget of 50 ms.
 - The camera has zoom 0.5, so the 1,000 strokes, 1.5 points apart, fit on the screen. The eraser line has 261 samples.
@@ -288,4 +288,27 @@ The run after all changes, on the iPad Pro 11-inch (M4) in Release, with 5 round
 | The GPU, the frame with the change | 1 to 3 ms |
 
 The floor of the pipeline uses the whole budget, so D-74 asks where the clock ends. A last run to confirm the numbers without the temporary timers did not start, because the iPad locked itself again.
+
+### 4.6 Acceptance 2 with the clock of D-74
+
+The product owner decided D-73 and D-74 on 2026-10-20. The clock now ends at the `gpuEndTime` of the first frame that holds the change (commit cfbb35a). The changes since section 4.5:
+
+1. Commit 610e1eb: `CanvasContent.remove` and `restore` use one dictionary lookup each. The time profile of the iPad showed lookups of about 1 µs each.
+2. Commit f6f7fb5: the insert of `SpatialGrid` is inlinable, like the removal.
+3. Commit d149df7: the split of an erase runs in up to 8 chunks on several threads. The main-thread time of an erase went from about 26 ms to 13 to 15 ms.
+
+The run on 2026-10-20, iPad Pro 11-inch (M4), Release, 5 rounds:
+
+| Step | Target | Median | Slowest |
+|---|---|---|---|
+| Empty change, the floor of the frame loop | none | 7.9 ms | 144.7 ms, the first call, which wakes the loop |
+| Erase | under 16 ms | 28.1 ms | 32.0 ms |
+| Undo | under 16 ms | 27.6 ms | 31.4 ms |
+| Redo | under 16 ms | 24.8 ms | 28.3 ms |
+
+The main thread takes 12.5 to 14.6 ms for an erase and 5.1 to 8.1 ms for an undo or a redo. D-75 asks how to go on.
+
+The full set of `PointerDeviceTests` passes on the iPad after these changes, without the acceptance test. In the run before them, `testEvictionWithSixteenMegabyteArena` failed once with 0.696 ms against 0.5 ms. Alone, it passed 3 times in 3 runs.
+
+On 2026-10-20 the product owner asked for the connected iPad instead of a simulator. Package tests cannot run on a device ("Tool-hosted testing is unavailable on device destinations"), so the check runs the Mac parts of `make check` and all of `PointerDeviceTests` on the iPad. The snapshot comparisons skip on the device by design (D-59), so they did not run after this request.
 
