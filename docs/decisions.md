@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day. It is open.
 
 Status values: Open, Decided, Replaced.
 
@@ -99,6 +99,7 @@ Status values: Open, Decided, Replaced.
 | D-89 | Delete of a text box through a long-press menu | A long-press menu with "Delete", and a requirement in product-spec.md | Decided (2026-10-20) |
 | D-90 | The test of M5 acceptance 1 (Scribble) | A device test of the conditions of Scribble, and a manual test as the pass | Decided (2026-10-20) |
 | D-91 | The pass rule of M5 acceptance 2 | Lit-pixel bounds and profiles of each line match within 1 pixel | Decided (2026-10-20) |
+| D-92 | The open and the memory of the D-56 canvas with text pass their targets | Open | Open |
 
 ## Details
 
@@ -911,6 +912,28 @@ Status values: Open, Decided, Replaced.
   - (c) A pixel comparison with the tolerance of TEST-07, 0.5 % of the pixels. It measures the edges, not the place, so it can fail for text at the same place.
 - Recommendation: (a). It measures the place of each line in both directions, and it does not depend on the edge shape.
 - Effect: task 4.2 of [m5-plan.md](m5-plan.md).
+
+### D-92 The open and the memory of the D-56 canvas with text
+
+- Open. Raised by task 2.3 of [m5-plan.md](m5-plan.md) on 2026-10-20.
+- The D-56 canvas holds 5,000 text boxes of 200 characters. Before M5, nothing drew them. With the text of M5, two tests on the iPad Pro 11-inch (M4) in Release fail their targets:
+
+| Measure | Target | Baseline (section 5.1 of the plan) | M5 now |
+|---|---|---|---|
+| Memory of the open, peak | under 300 MB | held 253 MB, peak 284 MB | held 282 MB, peak 314 MB |
+| Open to the first frame, median | under 300 ms, at most 10 % over the baseline (263 ms) | 238.9 ms | 273.6 ms, slowest 279.4 ms |
+
+- The held memory grew by 29 MB. The second texture channel of D-82 adds 32 MB on the 11-inch iPad, so it is almost all of the growth. A glyph of the layout now takes 9 bytes. With 25 bytes, the open held 311 MB.
+- The peak is about 31 MB over the held memory, in the baseline and now. The test asserts the peak.
+- The open grew by about 35 ms. The layout of the 5,000 boxes takes 60 ms on one thread. It now runs in up to 8 chunks on several threads at the load.
+- Options for the memory:
+  - (a) Change to the fallback of D-82, option (c): text in the one channel of the committed texture, and a text pass over the masked composite during an eraser gesture. It saves the 32 MB, but the eraser frame draws text, and the redraw of an erase draws the text in its area.
+  - (b) Keep the second channel, and remove the peak of about 31 MB over the held memory at the open. The cause is not yet found. It is in the baseline too, so it is outside the text work.
+  - (c) Raise the memory target of the open to 320 MB.
+- Options for the open:
+  - (d) Lay out the text after the first frame with the strokes. The open then keeps its time, and the text shows a few frames later.
+  - (e) Accept 273.6 ms. It is under the budget of 300 ms, but 14.5 % over the baseline.
+- Recommendation: (b) and (d). They keep the design of D-82 and the time of the open. If (b) cannot find the cause of the peak inside one task, (a).
 
 ## Points in the request that conflict or are not complete
 
