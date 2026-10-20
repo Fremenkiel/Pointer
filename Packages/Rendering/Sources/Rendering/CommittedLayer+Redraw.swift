@@ -61,7 +61,14 @@ extension CommittedLayer {
         precondition(area.origin.isFinite, "Redraw area is not finite")
         guard let scissor = Self.scissor(for: area, in: target) else { return nil }
         assert(scissor.width > 0 && scissor.height > 0, "A redraw scissor holds pixels")
-        let clip = area.expanded(by: Self.redrawMarginPixels / target.pixelsPerCanvasPoint)
+        // Only the part inside the texture changes pixels, so the query skips the rest (P-01).
+        let margin = Self.redrawMarginPixels / target.pixelsPerCanvasPoint
+        guard
+            let clip = Self.intersection(
+                area.expanded(by: margin),
+                target.canvasRect.expanded(by: margin)
+            )
+        else { return nil }
         slots.removeAll(keepingCapacity: true)
         store.grid.forEachItem(touching: clip) { slots.append($0) }
         var options = InkPassOptions(clear: false, instanceBudget: .max)
@@ -106,6 +113,16 @@ extension CommittedLayer {
     private static func isSame(_ current: InkTarget?, _ target: InkTarget) -> Bool {
         guard let current else { return false }
         return current.texture === target.texture && current.camera == target.camera
+    }
+
+    /// Returns the common part of two rectangles, or `nil` if they do not overlap.
+    private static func intersection(_ first: Rect, _ second: Rect) -> Rect? {
+        let minX = max(first.minX, second.minX)
+        let minY = max(first.minY, second.minY)
+        let maxX = min(first.maxX, second.maxX)
+        let maxY = min(first.maxY, second.maxY)
+        guard minX <= maxX, minY <= maxY else { return nil }
+        return Rect(minX: minX, minY: minY, maxX: maxX, maxY: maxY)
     }
 
     private static func union(_ first: Rect, _ second: Rect) -> Rect {

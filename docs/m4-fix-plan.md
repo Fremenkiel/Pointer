@@ -442,7 +442,21 @@ The snapshot tests: all 20 ran on the iPad and passed, none skipped. The new ref
 
 ### 5.2 Phase 3
 
-To be filled in by phase 3.
+Each row is one run of `testEraseUndoRedoOfOneThousandStrokes` alone on the iPad in Release, 5 rounds per step, median / slowest in ms. The start values come from 3 runs after phases 1 and 2 (commit 0b9ec40, with the fix of the erase area).
+
+| Point | Run | Erase | Undo | Redo |
+|---|---|---|---|---|
+| Start of phase 3 | 1 | 29.38 / 33.68 | 28.26 / 28.84 | 23.24 / 32.76 |
+| Start of phase 3 | 2 | 24.57 / 29.97 | 26.95 / 29.37 | 25.09 / 31.66 |
+| Start of phase 3 | 3 | 27.98 / 30.03 | 25.80 / 32.12 | 24.53 / 30.05 |
+| After 3.1 | 1 | 24.63 / 31.77 | 27.09 / 28.48 | 26.92 / 32.02 |
+| After 3.1 | 2 | 29.87 / 31.52 | 26.48 / 28.75 | 20.12 / 27.71 |
+| After 3.1 | 3 | 21.61 / 32.75 | 26.87 / 30.03 | 24.63 / 27.57 |
+
+Notes:
+
+- Task 3.1: the redraw of the whole canvas at zoom 2 with 200,000 handwriting strokes lists 36 strokes, the strokes that touch the texture plus its margin. Before, it listed the strokes of the whole area.
+- Phases 1 and 2 had two regressions that the device runs showed. They are fixed before phase 3: the erase area of task 1.5 took the whole stroke for a part end at an old stroke end (about 10 ms per step, commit 0b9ec40), and the observer filter of task 1.4 leaked each closed canvas (open of D-56 305.6 ms, commit 54facdc).
 
 ### 5.3 Close
 
