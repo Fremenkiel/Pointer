@@ -15,6 +15,9 @@ final class PencilTouchObserver: UIGestureRecognizer, UIGestureRecognizerDelegat
     var onSample: ((CGPoint) -> Void)?
     /// Called with the touch time when a pencil touch ends, and `true` if UIKit cancelled it.
     var onEnded: ((TimeInterval, Bool) -> Void)?
+    /// `true` while an erase runs. Only then does a move report the coalesced samples. Otherwise
+    /// it reports the last location, the only one that the canvas uses then (C-06).
+    var reportsCoalescedSamples = false
     private var trackedTouches = 0
 
     /// Makes an observer.
@@ -94,9 +97,13 @@ final class PencilTouchObserver: UIGestureRecognizer, UIGestureRecognizerDelegat
         true
     }
 
-    /// Reports the coalesced samples of a touch, or the touch itself without them.
+    /// Reports the coalesced samples of a touch during an erase, or else the touch itself.
     private func report(_ touch: UITouch, event: UIEvent) {
         guard let onSample else { return }
+        guard reportsCoalescedSamples else {
+            onSample(touch.location(in: view))
+            return
+        }
         let samples = event.coalescedTouches(for: touch) ?? [touch]
         for sample in samples {
             onSample(sample.location(in: view))

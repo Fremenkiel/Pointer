@@ -16,6 +16,7 @@ extension CanvasViewController {
             samples.reserveCapacity(EraserTool.sampleCapacity)
         }
         eraserSamples = samples
+        pencilObserver.reportsCoalescedSamples = true
         renderer.beginErase(radius: EraserTool.radius)
     }
 
@@ -34,6 +35,7 @@ extension CanvasViewController {
     func finishErase(isCancelled: Bool) {
         guard let samples = eraserSamples else { return }
         eraserSamples = nil
+        pencilObserver.reportsCoalescedSamples = false
         defer { spareEraserSamples = samples }
         let size = Size(width: canvasView.bounds.width, height: canvasView.bounds.height)
         guard !isCancelled, !samples.isEmpty, size.width > 0, size.height > 0,
