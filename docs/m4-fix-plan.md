@@ -356,7 +356,7 @@ Rules: PERF-01, D-28.
 
 #### 4.4 The eraser mask follows D-78 (M-06)
 
-- Make the mask texture when the eraser becomes the tool, and drop it when another tool becomes the tool (D-78). A tool change takes effect at the next pencil down (D-70), so make the texture at the tool change, not at the touch.
+- When the eraser becomes the tool, make the mask texture. When another tool becomes the tool, drop it (D-78). A tool change takes effect at the next pencil down (D-70), so make the texture at the tool change, not at the touch.
 - Update architecture.md section 5.2 with the memory of the textures with and without the mask.
 
 Done when: `CanvasMemoryPerformanceTests` and `EraserFramePerformanceTests` pass, and the first eraser sample is not later than before. A test makes sure that no mask texture exists while the pen is the tool.
@@ -418,7 +418,27 @@ Rules: AGENT-05, DOC-06, TEST-07, PERF-03.
 
 ### 5.1 Baseline
 
-To be filled in by phase 0.
+Measured on 2026-10-20 on the iPad Pro 11-inch (M4) in Release, with the source code of a59d233 and the test changes of phase 0. Run 1 built the tests. Runs 2 and 3 used the same build. Each step has 5 rounds. The clock follows D-74.
+
+| Run | Erase median / slowest (ms) | Undo median / slowest (ms) | Redo median / slowest (ms) | Acceptance 2 | Other failures |
+|---|---|---|---|---|---|
+| 1 | 24.14 / 30.22 | 24.89 / 25.92 | 25.80 / 29.53 | pass | none |
+| 2 | 25.10 / 28.11 | 28.08 / 30.25 | 26.78 / 30.73 | pass | `testEvictionWithSixteenMegabyteArena`: slowest 0.551 ms, budget 0.5 ms |
+| 3 | 24.74 / 29.24 | 25.17 / 28.50 | 23.40 / 34.22 | fail (redo) | none |
+
+The empty change of each run had a median of 8.05 to 8.39 ms. Its first round took 155 to 167 ms, because it includes the first frames after the load. The main-thread call of an erase took 11.7 to 16.4 ms, and of an undo or a redo 4.1 to 9.0 ms.
+
+Each full run had 30 XCTest cases and 121 Swift Testing tests, against 29 and 98 in the review. Phase 0 added `EditAllocationTests`, the Rendering snapshot tests, and `WorkspaceFeatureTests` to `PointerDeviceTests`.
+
+Allocations of `FrameRenderer.apply` for the D-69 content (`EditAllocationTests`), the same in all 4 runs except the first erase:
+
+| Edit | Allocations |
+|---|---|
+| Erase | 14,897 (14,903 in the first run) |
+| Undo | 14,750 |
+| Redo | 14,884 |
+
+The snapshot tests: all 20 ran on the iPad and passed, none skipped. The new reference images came from the iPad. Four of them (`curve-zoom0.25`, `eraser-mask`, `redraw-remove-middle`, `zigzag-zoom2`) were byte-equal to the images of the simulator.
 
 ### 5.2 Phase 3
 
