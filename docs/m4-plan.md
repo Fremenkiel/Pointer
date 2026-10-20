@@ -175,7 +175,7 @@ Status: the code is done in commit c0553fa, and `make check` passes. Four snapsh
 
 Done when: both acceptance criteria pass, and the results are in section 4.
 
-Status: blocked by D-75. With the clock of D-74, acceptance 2 still fails on the iPad: erase 28.1 ms, undo 27.6 ms, redo 24.8 ms (medians). D-73 and D-74 are done in code. Acceptance 1 passes with the tests of task 3.1. Item 3 is the test `EraserToolTests.firstSample`, which runs on the simulator and in `PointerDeviceTests`. Section 4.5 has the measured times and the changes since the first run. The test of acceptance 2 makes these choices inside D-69:
+Status: done on 2026-10-20, except one unstable step. The product owner decided D-75: a budget of 33 ms. Acceptance 2 passed in 2 of 3 runs on the iPad. In the full device run, the slowest redo took 33.53 ms, 0.53 ms over the budget. Acceptance 1 passes. D-73 and D-74 are done in code. Section 4.7 has the runs. Acceptance 1 passes with the tests of task 3.1. Item 3 is the test `EraserToolTests.firstSample`, which runs on the simulator and in `PointerDeviceTests`. Section 4.5 has the measured times and the changes since the first run. The test of acceptance 2 makes these choices inside D-69:
 
 - The canvas holds the content in memory without a library, because the save runs off the main actor with its own budget of 50 ms.
 - The camera has zoom 0.5, so the 1,000 strokes, 1.5 points apart, fit on the screen. The eraser line has 261 samples.
@@ -188,6 +188,8 @@ Status: blocked by D-75. With the clock of D-74, acceptance 2 still fails on the
 3. Run the full checklist of [code-of-code.md](code-of-code.md) section 5.
 4. Run the M2 and M3 performance tests again on the iPad. No test is more than 10 % slower.
 5. The product owner tests the eraser, the undo, the redo, the squeeze, and the button with the pencil on the iPad.
+
+Status: steps 1 to 4 are done on 2026-10-20, with the gaps of section 4.8. Step 5 waits for the product owner. A Release build of commit 1fa5d05 is on the iPad.
 
 ## 4. Results
 
@@ -311,4 +313,54 @@ The main thread takes 12.5 to 14.6 ms for an erase and 5.1 to 8.1 ms for an undo
 The full set of `PointerDeviceTests` passes on the iPad after these changes, without the acceptance test. In the run before them, `testEvictionWithSixteenMegabyteArena` failed once with 0.696 ms against 0.5 ms. Alone, it passed 3 times in 3 runs.
 
 On 2026-10-20 the product owner asked for the connected iPad instead of a simulator. Package tests cannot run on a device ("Tool-hosted testing is unavailable on device destinations"), so the check runs the Mac parts of `make check` and all of `PointerDeviceTests` on the iPad. The snapshot comparisons skip on the device by design (D-59), so they did not run after this request.
+
+### 4.7 Acceptance 2 with the budget of D-75
+
+Three runs on 2026-10-20, iPad Pro 11-inch (M4), Release, 5 rounds each. The budget is 33 ms per step.
+
+| Run | Erase median, slowest | Undo median, slowest | Redo median, slowest | Result |
+|---|---|---|---|---|
+| 1, in the full device run | 27.9, 30.3 ms | 22.3, 25.7 ms | 28.6, 33.5 ms | fails by 0.53 ms |
+| 2, alone | 24.1, 30.3 ms | 25.8, 27.9 ms | 18.9, 30.9 ms | passes |
+| 3, alone | 24.3, 28.3 ms | 27.7, 29.6 ms | 25.5, 29.9 ms | passes |
+
+The floor of the frame loop is 8.3 ms (median of the empty change in run 1). New baselines (PERF-03), the medians of run 1: erase 27.9 ms, undo 22.3 ms, redo 28.6 ms.
+
+### 4.8 Close of M4
+
+| Item | Target | Result |
+|---|---|---|
+| Line coverage of `Geometry` (TEST-02) | at least 90 % | 90.97 % |
+| Line coverage of `Model` (TEST-02) | at least 90 % | 91.82 % |
+| Line coverage of `InkEngine` (TEST-02) | at least 90 % | 91.90 % |
+| Line coverage of `Persistence` without the crash helper (TEST-02) | at least 90 % | 91.59 % |
+| Line coverage of `Rendering` (TEST-02, Tier B) | at least 70 % | not measured: package tests do not run on a device, and the device run does not instrument the local packages |
+| Assertion density (CONTRACT-02) | at least 2.0 | Geometry 2.00, Model 2.30, InkEngine 2.00, Persistence 2.00, Rendering 2.00 |
+| Build, analyzer, format, lint, layers, density, self-test, plist | pass | pass |
+| Tier A tests on the Mac | pass | 29, 68, 13, and 84 tests pass |
+| `PointerDeviceTests` on the iPad, Release | pass | all pass except the redo step of run 1 in section 4.7. 98 Swift Testing tests pass. |
+| Snapshot tests (TEST-07) | pass | passed on the simulator until 2026-10-19. Not run since the request of the product owner for the iPad only, because they skip on a device (D-59). |
+
+M2 and M3 performance tests on the iPad, against the last baselines:
+
+| Test | Baseline | M4 | Change |
+|---|---|---|---|
+| `testContentPassTwentyThousandStrokes` | 40 ms (M3) | 35.0 ms | 12 % faster |
+| `testContentPassTwoHundredThousandStrokes`, 1 run | 155 ms (M3) | 106.2 ms | 31 % faster |
+| `testContentPassTwoHundredThousandHandwritingStrokes`, 1 run | 221 ms (M3) | 162.8 ms | 26 % faster |
+| Open of the D-56 canvas on the screen (D-62) | median 274.8 ms | 251 to 273 ms over 6 opens | faster |
+| Memory of the open of the D-56 canvas | 253 MB | 236 MB | 7 % less |
+| Frame loop, pan and zoom of 20,000 and 200,000 strokes | 120 fps, 0 late frames | 120 fps, 0 late frames in each of 6 tests | same |
+| Frame allocations against a bare Metal frame | at most equal | 15 and 15 | same |
+
+No test is more than 10 % slower. `testEvictionWithSixteenMegabyteArena` failed once in a full run with 0.696 ms against 0.5 ms. Alone, and in the next full run, it passed with 0.351 ms or less.
+
+Manual tests for the product owner with the pencil on the iPad:
+
+1. Erase across handwriting. The strokes are cut where the pencil passed, and the parts stay after a force quit and a new launch.
+2. Erase, then undo with the top-right button and with Command-Z on a keyboard. The erased ink comes back. Redo removes it again.
+3. Undo and redo after a switch to another workspace and back.
+4. Squeeze the pencil (Apple Pencil Pro). The palette opens at the tip. Pick the eraser, erase, squeeze again, and pick the pen.
+5. Tap the current-tool button next to the workspace selector with a finger. The palette opens under it, and the button shows the tool that you pick.
+6. Pick the eraser while the pencil draws. The stroke ends as a pen stroke, and the next touch erases.
 
