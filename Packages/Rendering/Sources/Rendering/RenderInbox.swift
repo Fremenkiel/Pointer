@@ -26,6 +26,9 @@ struct RenderInbox {
     var spareEraserSamples: [Point] = []
     /// `true` after the end of an eraser gesture that no frame took yet.
     var endsEraser = false
+    /// The new state of the eraser tool, or `nil` without a change. The mask texture exists only
+    /// while the eraser is the tool (D-78).
+    var eraserReady: Bool?
     /// `true` if the last frame took a new camera, so the camera is likely in motion.
     var cameraMovedInLastFrame = false
     /// `true` while the render thread waits for the camera of the current display frame.
@@ -45,7 +48,7 @@ struct RenderInbox {
     /// `true` if a change waits that needs a frame, other than a camera change.
     var hasContentChange: Bool {
         viewport != nil || !loaded.isEmpty || !edits.isEmpty || eraserStart != nil
-            || !eraserSamples.isEmpty || endsEraser
+            || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
     }
 
     /// Moves the waiting changes out. The camera stays as the newest value.
@@ -61,12 +64,14 @@ struct RenderInbox {
             eraserStart: eraserStart,
             eraserSamples: eraserSamples,
             endsEraser: endsEraser,
+            eraserReady: eraserReady,
             observer: observer
         )
         eraserStart = nil
         eraserSamples = spareEraserSamples
         spareEraserSamples = []
         endsEraser = false
+        eraserReady = nil
         cameraMovedInLastFrame = hasNewCamera
         hasNewCamera = false
         viewport = nil

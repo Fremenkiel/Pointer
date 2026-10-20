@@ -156,6 +156,12 @@ public final class CanvasRenderer {
         assert(!callbacks.isEmpty, "The change waits for its frame")
     }
 
+    /// Tells the renderer whether the eraser is the tool. The mask texture of the eraser exists
+    /// only while it is, so a gesture never waits for its allocation (D-78).
+    public func setEraserReady(_ isReady: Bool) {
+        engine.post { box in box.eraserReady = isReady }
+    }
+
     /// Starts an eraser gesture. Each sample of the gesture then hides the ink under a circle of
     /// `radius` view points until `endErase()` (D-66).
     ///

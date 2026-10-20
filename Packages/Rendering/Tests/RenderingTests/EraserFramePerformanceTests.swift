@@ -40,6 +40,8 @@ final class EraserFramePerformanceTests: XCTestCase {
         layer.drawableSize = CGSize(width: 2420, height: 1668)
         renderer.setViewport(viewSize: Size(width: 1210, height: 834), displayScale: 2)
         renderer.load(PerformanceContent.dense(count: 20_000, points: 300))
+        // The eraser is the tool before the gesture, as after a pick in the palette (D-78).
+        renderer.setEraserReady(true)
         for _ in 0..<200 where renderer.renderFrame(into: layer, deadline: nil) {}
         return (renderer, layer)
     }

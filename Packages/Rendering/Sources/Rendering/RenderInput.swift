@@ -21,12 +21,14 @@ struct RenderInput: Sendable {
     var eraserSamples: [Point]
     /// `true` if the eraser gesture ends.
     let endsEraser: Bool
+    /// The new state of the eraser tool, or `nil` without a change (D-78).
+    let eraserReady: Bool?
     /// The test observer.
     let observer: (any FrameObserving)?
 
     /// `true` if the frame has a change to draw.
     var hasChange: Bool {
         camera != nil || viewport != nil || !loaded.isEmpty || !edits.isEmpty
-            || eraserStart != nil || !eraserSamples.isEmpty || endsEraser
+            || eraserStart != nil || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
     }
 }

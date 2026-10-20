@@ -35,8 +35,9 @@ final class CommittedLayer {
     /// (docs/m2-fix-plan.md, phase 5, task 6).
     private(set) var fallback: InkTarget?
     private let textures: [any MTLTexture]
-    /// The eraser mask: the size of a committed texture, one coverage channel (D-66).
-    let mask: any MTLTexture
+    /// The eraser mask: the size of a committed texture, one coverage channel (D-66). It exists
+    /// only while the eraser is the tool (D-78).
+    private(set) var mask: (any MTLTexture)?
     /// The drawable width in pixels that the textures were made for.
     let drawableWidth: Int
     /// The drawable height in pixels that the textures were made for.
@@ -82,13 +83,36 @@ final class CommittedLayer {
             try resources.makeTarget(width: width, height: height, format: format),
             try resources.makeTarget(width: width, height: height, format: format),
         ]
-        mask = try resources.makeTarget(width: width, height: height, format: format)
         self.drawableWidth = drawableWidth
         self.drawableHeight = drawableHeight
         self.fallback = fallback
         buildSlots.reserveCapacity(Self.initialSlotCapacity)
         assert(textures.count == 2, "The layer alternates two textures")
     }
+
+    /// Makes the mask texture if it is needed and missing, and drops it if it is not needed
+    /// (D-78). A failed allocation is logged, and the eraser then shows its result at the lift.
+    func updateMask(isNeeded: Bool, resources: InkResources) {
+        guard isNeeded != (mask != nil) else { return }
+        guard isNeeded else {
+            mask = nil
+            assert(mask == nil, "A mask that is not needed is dropped")
+            return
+        }
+        let texture = textures[0]
+        do {
+            mask = try resources.makeTarget(
+                width: texture.width,
+                height: texture.height,
+                format: InkResources.committedFormat
+            )
+        } catch {
+            Self.logger.error("The eraser mask failed: \(String(describing: error))")
+        }
+        assert(mask == nil || mask?.width == texture.width, "The mask has the texture size")
+    }
+
+    private static let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
 
     /// `true` while a build has strokes left to draw.
     var isBuilding: Bool { build != nil }

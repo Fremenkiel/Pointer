@@ -196,6 +196,9 @@ final class RenderEngine: Sendable {
         if !input.loaded.isEmpty {
             renderer.load(input.loaded)
         }
+        if let ready = input.eraserReady {
+            renderer.isEraserReady = ready
+        }
         renderer.applyEraser(
             start: input.eraserStart,
             samples: input.eraserSamples,

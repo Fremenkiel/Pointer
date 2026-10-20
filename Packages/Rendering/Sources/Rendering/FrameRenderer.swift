@@ -28,6 +28,9 @@ final class FrameRenderer {
     private(set) var frame: UInt64 = 0
     /// The eraser circles of the running gesture (D-66).
     var eraserMask = EraserMask()
+    /// `true` while the eraser is the tool. The mask texture exists only then, or while a
+    /// gesture still runs or shows (D-78).
+    var isEraserReady = false
     /// The canvas area of the strokes removed since the last frame, or `nil` (D-66).
     var dirtyArea: Rect?
     /// `true` after a new viewport until the next frame makes a new committed layer.
@@ -143,12 +146,16 @@ final class FrameRenderer {
         else { return false }
         frame += 1
         store.releaseRemovals(at: frame)
+        layer.updateMask(
+            isNeeded: isEraserReady || eraserMask.isActive || eraserMask.hasStamps,
+            resources: resources
+        )
         let context = FrameContext(commandBuffer: commandBuffer, frame: frame)
         encoder.beginFrame(context)
         encodeContent(layer: layer, context: context)
-        if let front = layer.front {
+        if let front = layer.front, let mask = layer.mask {
             eraserMask.encode(
-                into: layer.mask,
+                into: mask,
                 front: front,
                 resources: resources,
                 commandBuffer: commandBuffer
@@ -243,13 +250,14 @@ final class FrameRenderer {
         if let front = layer.shown {
             let size = Size(width: Double(texture.width), height: Double(texture.height))
             // The mask uses the mapping of the front texture, so a fallback shows no mask.
-            let isMasked = eraserMask.hasStamps && front.texture === layer.front?.texture
+            let mask =
+                eraserMask.hasStamps && front.texture === layer.front?.texture ? layer.mask : nil
             encoder.setRenderPipelineState(
-                isMasked ? resources.compositeMaskedPipeline : resources.compositePipeline
+                mask == nil ? resources.compositePipeline : resources.compositeMaskedPipeline
             )
             encoder.setFragmentTexture(front.texture, index: 0)
-            if isMasked {
-                encoder.setFragmentTexture(layer.mask, index: 1)
+            if let mask {
+                encoder.setFragmentTexture(mask, index: 1)
             }
             encoder.setFragmentValue(
                 layer.compositeUniforms(

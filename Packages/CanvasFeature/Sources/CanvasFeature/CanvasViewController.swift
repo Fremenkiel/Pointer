@@ -126,6 +126,8 @@ public final class CanvasViewController: UIViewController {
     public func select(_ tool: Tool) {
         toolState.select(tool)
         toolControls.selected = tool
+        // The mask texture is made now, not at the first sample (D-78).
+        renderer.setEraserReady(tool == .eraser)
         applyToolState()
     }
 
