@@ -3,8 +3,8 @@ import Metal
 import Model
 
 extension FrameRenderer {
-    /// Renders strokes into an image with the same pipelines as the screen. Tests and the
-    /// handoff comparison use it.
+    /// Renders strokes into an image with the same pipelines as the screen. Only the tests use
+    /// it.
     ///
     /// - Precondition: The view size times the scale gives at least one pixel.
     /// - Throws: `RenderingError` if a Metal object fails.

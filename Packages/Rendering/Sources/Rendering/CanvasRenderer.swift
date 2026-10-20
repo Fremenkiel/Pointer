@@ -211,8 +211,8 @@ public final class CanvasRenderer {
         ).needsMore
     }
 
-    /// Renders strokes into an image with the same pipelines as the screen. Tests and the
-    /// handoff comparison use it.
+    /// Renders strokes into an image with the same pipelines as the screen. Only the tests use
+    /// it.
     ///
     /// - Precondition: The view size times the scale gives at least one pixel.
     /// - Throws: `RenderingError` if a Metal object fails.
@@ -234,7 +234,6 @@ public final class CanvasRenderer {
         }
     }
 
-    /// Runs the callbacks of all handoffs up to `handoff`, in order.
     /// Runs the completion callbacks of all handoffs up to `handoff`, in order.
     private func deliverCompletions(upTo handoff: UInt64, time: Double) {
         precondition(handoff <= lastHandoff, "Handoff \(handoff) was never sent")
@@ -245,6 +244,7 @@ public final class CanvasRenderer {
         assert(completions.allSatisfy { $0.handoff > handoff }, "A due completion still waits")
     }
 
+    /// Runs the callbacks of all handoffs up to `handoff`, in order.
     private func deliver(upTo handoff: UInt64) {
         precondition(handoff <= lastHandoff, "Handoff \(handoff) was never sent")
         let count = callbacks.prefix { $0.handoff <= handoff }.count
