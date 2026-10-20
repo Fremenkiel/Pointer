@@ -6,13 +6,7 @@ import Testing
 /// The undo and redo buttons (UNDO-01, TEST-07). `ViewSnapshot` comes from the selector
 /// snapshots, which `PointerDeviceTests` compiles in the same target.
 @MainActor
-@Suite(
-    "History button snapshots",
-    .enabled(
-        if: ViewSnapshot.canReadReferences,
-        "The references are on the Mac, so only the simulator reads them"
-    )
-)
+@Suite("History button snapshots")
 struct HistoryButtonsSnapshotTests {
     private func controls(canUndo: Bool, canRedo: Bool) -> HistoryControls {
         let controls = HistoryControls()

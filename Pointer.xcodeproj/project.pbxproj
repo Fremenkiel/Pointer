@@ -46,16 +46,6 @@
 			);
 			target = B0000000000000000000A001 /* PointerApp */;
 		};
-		B0000000000000000000E002 /* Exceptions for "Packages/Rendering/Tests/RenderingTests" folder in "PointerDeviceTests" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				EraserMaskTests.swift,
-				InkImageTests.swift,
-				RedrawTests.swift,
-				Snapshot.swift,
-			);
-			target = B0000000000000000000A002 /* PointerDeviceTests */;
-		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -74,9 +64,6 @@
 		};
 		B0000000000000000000G005 /* Packages/Rendering/Tests/RenderingTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				B0000000000000000000E002 /* Exceptions for "Packages/Rendering/Tests/RenderingTests" folder in "PointerDeviceTests" target */,
-			);
 			path = Packages/Rendering/Tests/RenderingTests;
 			sourceTree = "<group>";
 		};
@@ -93,6 +80,11 @@
 		B0000000000000000000G008 /* Packages/CanvasFeature/Tests/CanvasFeatureSnapshotTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Packages/CanvasFeature/Tests/CanvasFeatureSnapshotTests;
+			sourceTree = "<group>";
+		};
+		B0000000000000000000G009 /* Packages/WorkspaceFeature/Tests/WorkspaceFeatureTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Packages/WorkspaceFeature/Tests/WorkspaceFeatureTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -138,6 +130,7 @@
 				B0000000000000000000G006 /* Packages/Persistence/Tests/PersistenceDeviceTests */,
 				B0000000000000000000G007 /* Packages/WorkspaceFeature/Tests/WorkspaceFeatureSnapshotTests */,
 				B0000000000000000000G008 /* Packages/CanvasFeature/Tests/CanvasFeatureSnapshotTests */,
+				B0000000000000000000G009 /* Packages/WorkspaceFeature/Tests/WorkspaceFeatureTests */,
 				B0000000000000000000G003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -190,6 +183,7 @@
 			buildPhases = (
 				B0000000000000000000P004 /* Sources */,
 				B0000000000000000000P005 /* Frameworks */,
+				B0000000000000000000P006 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -202,6 +196,7 @@
 				B0000000000000000000G006 /* Packages/Persistence/Tests/PersistenceDeviceTests */,
 				B0000000000000000000G007 /* Packages/WorkspaceFeature/Tests/WorkspaceFeatureSnapshotTests */,
 				B0000000000000000000G008 /* Packages/CanvasFeature/Tests/CanvasFeatureSnapshotTests */,
+				B0000000000000000000G009 /* Packages/WorkspaceFeature/Tests/WorkspaceFeatureTests */,
 			);
 			name = PointerDeviceTests;
 			packageProductDependencies = (
@@ -267,6 +262,13 @@
 
 /* Begin PBXResourcesBuildPhase section */
 		B0000000000000000000P003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B0000000000000000000P006 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (

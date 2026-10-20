@@ -5,13 +5,7 @@ import Testing
 
 /// The tool palette and the current-tool button for each tool (TOOL-07, TEST-07).
 @MainActor
-@Suite(
-    "Tool control snapshots",
-    .enabled(
-        if: ViewSnapshot.canReadReferences,
-        "The references are on the Mac, so only the simulator reads them"
-    )
-)
+@Suite("Tool control snapshots")
 struct ToolControlsSnapshotTests {
     private func tools(_ tool: Tool) -> ToolControls {
         let controls = ToolControls()

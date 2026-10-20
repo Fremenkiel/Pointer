@@ -3,23 +3,15 @@ import Testing
 import UIKit
 
 /// Renders a SwiftUI view with `UIGraphicsImageRenderer` and compares it with a reference PNG in
-/// `References` (TEST-07). A missing reference is written and the test fails, so that a person
-/// reviews the new image.
+/// `References` (TEST-07). The references are resources of the `PointerDeviceTests` bundle and
+/// come from the iPad (D-77). A missing reference fails the test and attaches the new image, so
+/// that a person reviews it and copies it into `References`.
 @MainActor
 enum ViewSnapshot {
     /// The part of the pixels that can differ (TEST-07).
     static let tolerance = 0.005
     /// A channel difference up to this value counts as equal. It absorbs text antialiasing.
     static let channelTolerance = 8
-    /// True on the simulator. Only the simulator reads the reference PNGs on the Mac, and the
-    /// references come from the simulator of `make snapshots`.
-    nonisolated static var canReadReferences: Bool {
-        #if targetEnvironment(simulator)
-            true
-        #else
-            false
-        #endif
-    }
 
     /// The scale of the rendered image, so that the reference does not depend on the screen.
     static let scale: CGFloat = 2
@@ -27,16 +19,15 @@ enum ViewSnapshot {
     static func assertMatches(
         _ view: some View,
         named name: String,
-        filePath: String = #filePath,
         sourceLocation: SourceLocation = #_sourceLocation
     ) throws {
         let image = try render(view)
-        let url = URL(filePath: filePath).deletingLastPathComponent()
-            .appending(path: "References").appending(path: "\(name).png")
-        guard let data = try? Data(contentsOf: url), let reference = UIImage(data: data) else {
-            let written = (try? image.pngData()?.write(to: url)) != nil
+        let url = Bundle(for: BundleToken.self).url(forResource: name, withExtension: "png")
+        guard let url, let data = try? Data(contentsOf: url), let reference = UIImage(data: data)
+        else {
+            attach(image, named: name, sourceLocation: sourceLocation)
             Issue.record(
-                "No reference \(name).png. Wrote a new one: \(written)",
+                "No reference \(name).png. The new image is attached.",
                 sourceLocation: sourceLocation
             )
             return
@@ -68,6 +59,17 @@ enum ViewSnapshot {
             "\(differing) pixels differ from \(name).png",
             sourceLocation: sourceLocation
         )
+        if differing > limit { attach(image, named: name, sourceLocation: sourceLocation) }
+    }
+
+    /// Attaches the image to the test result as `name.png`.
+    private static func attach(
+        _ image: UIImage,
+        named name: String,
+        sourceLocation: SourceLocation
+    ) {
+        guard let data = image.pngData() else { return }
+        Attachment.record(data, named: "\(name).png", sourceLocation: sourceLocation)
     }
 
     /// Lays out the view at its ideal size on black and draws it.
@@ -129,3 +131,6 @@ enum ViewSnapshot {
         return Pixels(width: width, height: height, bytes: bytes)
     }
 }
+
+/// A class of the test bundle, so that `Bundle(for:)` finds the bundle of the references.
+private final class BundleToken {}

@@ -5,7 +5,9 @@ import UIKit
 
 /// Compares a rendered image with a reference PNG in `References` (TEST-07).
 ///
-/// A missing reference is written and the test fails, so that a person reviews the new image.
+/// The references are resources of the `PointerDeviceTests` bundle and come from the iPad (D-77).
+/// A missing reference fails the test and attaches the new image, so that a person reviews it and
+/// copies it into `References`.
 enum Snapshot {
     /// The part of the pixels that can differ (TEST-07).
     static let tolerance = 0.005
@@ -15,15 +17,14 @@ enum Snapshot {
     static func assertMatches(
         _ image: RenderedImage,
         named name: String,
-        filePath: String = #filePath,
         sourceLocation: SourceLocation = #_sourceLocation
     ) {
-        let url = URL(filePath: filePath).deletingLastPathComponent()
-            .appending(path: "References").appending(path: "\(name).png")
-        guard let reference = try? Data(contentsOf: url), let expected = decode(reference) else {
-            let written = (try? encode(image).write(to: url)) != nil
+        let url = Bundle(for: BundleToken.self).url(forResource: name, withExtension: "png")
+        guard let url, let reference = try? Data(contentsOf: url), let expected = decode(reference)
+        else {
+            attach(image, named: name, sourceLocation: sourceLocation)
             Issue.record(
-                "No reference \(name).png. Wrote a new one: \(written)",
+                "No reference \(name).png. The new image is attached.",
                 sourceLocation: sourceLocation
             )
             return
@@ -42,6 +43,17 @@ enum Snapshot {
             "\(differing) pixels differ from \(name).png",
             sourceLocation: sourceLocation
         )
+        if differing > limit { attach(image, named: name, sourceLocation: sourceLocation) }
+    }
+
+    /// Attaches the image to the test result as `name.png`.
+    private static func attach(
+        _ image: RenderedImage,
+        named name: String,
+        sourceLocation: SourceLocation
+    ) {
+        guard let data = try? encode(image) else { return }
+        Attachment.record(data, named: "\(name).png", sourceLocation: sourceLocation)
     }
 
     static func differingPixels(_ first: RenderedImage, _ second: RenderedImage) -> Int {
@@ -101,3 +113,6 @@ enum Snapshot {
         )
     }
 }
+
+/// A class of the test bundle, so that `Bundle(for:)` finds the bundle of the references.
+private final class BundleToken {}
