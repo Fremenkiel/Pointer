@@ -273,6 +273,7 @@ This version contains no integration. The design keeps these paths open:
 - Migration tests with one fixture database per schema version.
 - Constraint tests: each `CHECK` refuses a value one past its limit.
 - Corruption tests: a point BLOB with a wrong length, a damaged database file. The repository must report the fault, keep the rest of the library readable, and never overwrite the file.
+- Message test: a fault message shows also while a popover, for example the palette, is open (F-12 of [m4-fix-plan.md](m4-fix-plan.md)).
 - Crash tests: stop the process between `BEGIN` and `COMMIT` with an injected failure. Then open the database, and make sure that it holds the state before the transaction.
 - Throttle test (M3 acceptance 1): add strokes without a pause for 10 seconds, stop the process, open the database again, and make sure that at most 2 seconds of strokes are missing (review A-02).
 - Partial snapshot test: stop a snapshot before the rename. Make sure that `Backups/` holds no new file and that the next launch deletes the partial file.

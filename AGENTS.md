@@ -33,6 +33,7 @@ pointer/
   .swiftlint.yml           lint rules, one custom rule per invariant
   Pointer.xcodeproj/       Xcode project with the app target and the PointerApp scheme
   PointerApp/              app target: scene setup and composition only
+  PointerAppTests/         tests of the app target, part of PointerDeviceTests only
   Packages/                one local Swift package per folder, each with Sources/ and Tests/
     Geometry/              Layer 0: Double geometry, camera math, spatial grid
     Model/                 Layer 0: value types, IDs, clock, commands, history, limits

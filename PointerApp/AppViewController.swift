@@ -94,12 +94,35 @@ final class AppViewController: UIViewController {
         }
     }
 
-    /// Shows a message with one button. A message that comes while another one shows waits for
-    /// nothing and is dropped, because each message stays true until the user acts.
+    /// Shows a message with one button, on top of a popover that shows, for example the palette
+    /// (F-12). If that popover is in a transition, the message shows after the transition. A
+    /// message that comes while another one shows is dropped, because each message stays true
+    /// until the user acts.
     func showMessage(_ text: String) {
-        guard presentedViewController == nil else { return }
+        let top = topPresentedController()
+        guard !(top is UIAlertController) else { return }
+        let isInTransition = top.isBeingDismissed || top.isBeingPresented
+        if isInTransition, let coordinator = top.transitionCoordinator {
+            coordinator.animate(alongsideTransition: nil) { [weak self] _ in
+                self?.showMessage(text)
+            }
+            return
+        }
         let alert = UIAlertController(title: nil, message: text, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: AppStrings.ok, style: .default))
-        present(alert, animated: true)
+        top.present(alert, animated: true)
+    }
+
+    /// The most presentations on top of each other that the app makes: a popover and an alert.
+    private static let maxPresentationDepth = 4
+
+    /// Returns the controller at the top of the presentations of this controller.
+    private func topPresentedController() -> UIViewController {
+        var top: UIViewController = self
+        for _ in 0..<Self.maxPresentationDepth {
+            if let next = top.presentedViewController { top = next }
+        }
+        assert(top.presentedViewController == nil, "More presentations than the app makes")
+        return top
     }
 }

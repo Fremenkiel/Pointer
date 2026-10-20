@@ -57,7 +57,7 @@ snapshots:
 
 # STYLE-04. The fixtures hold deliberate violations, so the formatter skips them.
 format:
-	swift format lint --strict --recursive PointerApp Packages Scripts/*.swift
+	swift format lint --strict --recursive PointerApp PointerAppTests Packages Scripts/*.swift
 
 lint:
 	swiftlint --strict --quiet
