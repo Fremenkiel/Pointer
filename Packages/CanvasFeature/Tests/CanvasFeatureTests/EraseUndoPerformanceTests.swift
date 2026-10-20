@@ -21,7 +21,7 @@ final class EraseUndoPerformanceTests: XCTestCase {
     private static let parallelCount = 1_000
     private static let pointsPerStroke = 300
     /// The camera: 1,500 canvas points of parallel strokes fit on the screen at zoom 0.5.
-    private static let camera = Camera(center: .zero, zoom: 0.5)
+    static let camera = Camera(center: .zero, zoom: 0.5)
     private static let timeout = Duration.seconds(5)
     /// The main-thread time of each step call, without the wait for the frame.
     private var callMilliseconds: [Double] = []
@@ -61,12 +61,20 @@ final class EraseUndoPerformanceTests: XCTestCase {
             times["redo", default: []].append(try await step(canvas, renderer) { canvas.redo() })
             _ = try await step(canvas, renderer) { canvas.undo() }
         }
+        assertSteps(times)
+    }
+
+    /// Writes all times as activities and checks the slowest erase, undo, and redo.
+    private func assertSteps(_ times: [String: [Double]]) {
         let calls = callMilliseconds.map { String(format: "%.1f", $0) }
         XCTContext.runActivity(named: "calls: " + calls.joined(separator: " ")) { _ in }
         _ = report(times["empty change"] ?? [], name: "empty change")
-        for name in ["erase", "undo", "redo"] {
-            let (slowest, line) = report(times[name] ?? [], name: name)
-            XCTAssertLessThan(slowest, Self.budgetMilliseconds, line)
+        let steps = ["erase", "undo", "redo"].map { report(times[$0] ?? [], name: $0) }
+        // A failure names all three steps, so one run gives the whole result (m4-fix-plan.md 0.1).
+        let summary = steps.map(\.line).joined(separator: "; ")
+        XCTContext.runActivity(named: "steps: " + summary) { _ in }
+        for (slowest, _) in steps {
+            XCTAssertLessThan(slowest, Self.budgetMilliseconds, summary)
         }
     }
 
@@ -86,7 +94,7 @@ final class EraseUndoPerformanceTests: XCTestCase {
         return (sorted.last ?? .infinity, line)
     }
 
-    private static func show(_ canvas: CanvasViewController, in host: UIViewController) {
+    static func show(_ canvas: CanvasViewController, in host: UIViewController) {
         host.addChild(canvas)
         canvas.view.frame = host.view.bounds
         host.view.addSubview(canvas.view)
@@ -94,14 +102,14 @@ final class EraseUndoPerformanceTests: XCTestCase {
         canvas.view.layoutIfNeeded()
     }
 
-    private static func close(_ canvas: CanvasViewController) {
+    static func close(_ canvas: CanvasViewController) {
         canvas.willMove(toParent: nil)
         canvas.view.removeFromSuperview()
         canvas.removeFromParent()
     }
 
     /// The 20,000 strokes of D-56 and 1,000 parallel strokes of 300 points, 1.5 points apart.
-    private static func content() throws -> CanvasContent {
+    static func content() throws -> CanvasContent {
         var content = CanvasContent(canvasID: Fixtures.canvas)
         let device = Fixtures.device
         let small = InkPoints(
