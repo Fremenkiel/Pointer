@@ -12,6 +12,10 @@ public enum Eraser {
 
     /// The control points on each side of a cut whose segments change with it (D-65, D-72).
     static let changedPointsPerSide = 3
+    /// The distance up to which the end of a part is the end of its old stroke, in canvas
+    /// points. A part stores `Float` offsets from its new origin, so its kept end moves by the
+    /// rounding of a `Float`.
+    static let endTolerance = 0.001
 
     /// One stroke that the path touches, with the shapes of its parts and the canvas area where
     /// its ink changes.
@@ -62,8 +66,8 @@ public enum Eraser {
     }
 
     /// Returns the area where the ink of a cut stroke changes: the old control points next to
-    /// each cut, the first and the last control points of each part, and half the width. A
-    /// stroke without a part changes whole (D-71).
+    /// each cut, the control points of each part next to a cut, and half the width. A stroke
+    /// without a part changes whole (D-71).
     ///
     /// - Precondition: `covered` is not empty.
     private static func changedArea(
@@ -82,9 +86,15 @@ public enum Eraser {
             let high = min(Int(range.upperBound.rounded(.up)) + side - 1, last)
             for index in low...high { area = union(area, stroke.canvasPoint(at: index)) }
         }
+        // Only an end at a cut changes. An end of the old stroke keeps its point, so it is no cut.
+        let first = stroke.canvasPoint(at: 0)
+        let end = stroke.canvasPoint(at: last)
         for shape in shapes {
             let count = shape.points.count
-            for index in 0..<count where index < side || index >= count - side {
+            let startsAtCut = shape.canvasPoint(at: 0).distance(to: first) > endTolerance
+            let endsAtCut = shape.canvasPoint(at: count - 1).distance(to: end) > endTolerance
+            for index in 0..<count
+            where (startsAtCut && index < side) || (endsAtCut && index >= count - side) {
                 area = union(area, shape.canvasPoint(at: index))
             }
         }
