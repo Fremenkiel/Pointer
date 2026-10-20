@@ -170,7 +170,7 @@ Status: the code is done in commit c0553fa, and `make check` passes. Four snapsh
 ### 3.8 Acceptance tests
 
 1. Acceptance 1: the tests of task 3.1 for `AddStroke` and `EraseStrokes`.
-2. Acceptance 2: a performance test in `PointerDeviceTests` on the iPad Pro 11-inch (M4) in Release (D-69). The canvas holds the 20,000 strokes of D-56 and 1,000 parallel strokes of 300 points. One eraser line cuts each of the 1,000 strokes in two. The clock runs from the lift, or from the undo or redo call, to the end of the first frame that shows the result. Each step must take under 16 ms. Record the baseline in section 4 (PERF-03).
+2. Acceptance 2: a performance test in `PointerDeviceTests` on the iPad Pro 11-inch (M4) in Release (D-69). The canvas holds the 20,000 strokes of D-56 and 1,000 parallel strokes of 300 points. One eraser line cuts each of the 1,000 strokes in two. The clock runs from the lift, or from the undo or redo call, until the GPU completes the first frame that holds the result (D-74). Each step must take under 16 ms. Record the baseline in section 4 (PERF-03).
 3. A device test changes the tool to the eraser and erases at once. The first sample cuts the stroke under it (D-34, D-70).
 
 Done when: both acceptance criteria pass, and the results are in section 4.

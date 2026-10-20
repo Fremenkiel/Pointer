@@ -136,7 +136,7 @@ At pencil lift, the eraser tool does these steps once (D-30, review A-08):
 
 The changes of one eraser gesture (pencil down to pencil up) form one undo step.
 
-The stored points are control points, not points on the curve (decision D-26). A part keeps the control points of the old stroke that lie between its two cuts. At each cut, the point of the curve at the cut parameter becomes the new end point of the part (D-65). The end rule of section 4.3 then makes the part end exactly at the cut. The shape changes only in the two segments next to a cut. The change is at most half the distance between the new end point and the dropped control point (D-72). A part whose curve is shorter than the pen width is dropped. An erase can make the canvas go past `Limits.maxStrokesPerCanvas`, because an erase never fails. The pen then refuses new strokes with the limit message (D-71).
+The stored points are control points, not points on the curve (decision D-26). A part keeps the control points of the old stroke that lie between its two cuts. At each cut, the point of the curve at the cut parameter becomes the new end point of the part (D-65). The end rule of section 4.3 then makes the part end exactly at the cut. The shape changes only in the two segments next to a cut. The change is at most half the distance between the new end point and the dropped control point (D-72). A part whose curve is shorter than the pen width is dropped. An erase can make the canvas go past `Limits.maxStrokesPerCanvas`, because an erase never fails. The pen then refuses new strokes with the limit message (D-71). The parts never take the canvas past `Limits.maxStrokesAfterErase`: an erase whose parts would pass it removes the strokes that it touches whole (D-73).
 
 A tool change takes effect at the next pencil down. A stroke or an erase that runs ends with the old tool (D-70). The drawing gesture recognizer of the `PKCanvasView` is on only while the tool is the pen and the library can save.
 
@@ -384,7 +384,8 @@ All limits live in one type, `Limits`, in `Model`. Code uses the names, never th
 |---|---|---|
 | `maxDepth` | 32 | Card tree depth (CARD-09). Bounds the recursion. |
 | `maxPointsPerStroke` | 16,384 | Control points per stroke, about 68 s at 240 Hz. The converter splits a longer PencilKit stroke into several strokes (section 4.2). |
-| `maxStrokesPerCanvas` | 200,000 | Upper bound for loops and memory. |
+| `maxStrokesPerCanvas` | 200,000 | The pen refuses a new stroke at this count. |
+| `maxStrokesAfterErase` | 210,000 | Upper bound for loops and memory. Only the parts of an erase go past `maxStrokesPerCanvas` (D-71, D-73). |
 | `maxNodesPerCanvas` | 10,000 | Cards plus text boxes. |
 | `maxTextLength` | 10,000 | Unicode code points per text box (D-29, D-57). |
 | `maxWorkspaces` | 1,000 | Workspace list. |
