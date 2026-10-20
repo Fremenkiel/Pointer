@@ -513,4 +513,37 @@ Notes:
 
 ### 5.3 Close
 
-To be filled in by phase 7.
+Measured on 2026-10-20 on the iPad Pro 11-inch (M4) in Release, commit 2f393a6.
+
+`make check` with the iPad passed: build, analyze (0 findings), the Tier A tests on the Mac (29, 75, 14, and 89 tests), `PointerDeviceTests` (172 tests, 0 failures, 0 skips), `make snapshots` (20 tests, 0 failures, 0 skips), format, lint, layers (0 findings), density (Geometry 2.00, Model 2.22, InkEngine 2.00, Persistence 2.01, Rendering 2.00), self-test, and plist. The snapshot tests needed no new reference image.
+
+Line coverage of the Tier A packages on the Mac (TEST-02): Geometry 91.31 %, Model 92.20 %, InkEngine 92.73 %, Persistence 91.90 % without the crash helper. The coverage of `Rendering` stays not measured, as in M4: package tests do not run on a device.
+
+Acceptance 2, 5 full runs of `PointerDeviceTests` in a row (D-79). Run 1 built the tests. Each run passed all 33 XCTest cases and all 139 Swift Testing tests.
+
+| Run | Erase | Undo | Redo |
+|---|---|---|---|
+| 1 | 27.98 / 29.44 | 22.84 / 28.60 | 23.99 / 25.24 |
+| 2 | 24.26 / 25.01 | 27.03 / 29.54 | 23.13 / 28.01 |
+| 3 | 23.07 / 30.54 | 20.23 / 29.75 | 20.18 / 27.55 |
+| 4 | 25.96 / 26.62 | 26.17 / 26.41 | 21.84 / 24.52 |
+| 5 | 23.81 / 28.32 | 25.70 / 29.00 | 19.89 / 22.93 |
+
+The slowest step of all 5 runs took 30.54 ms, so acceptance 2 passes. In the baseline of section 5.1, the slowest steps took up to 34.22 ms, and one of 3 runs failed.
+
+M2 and M3 performance tests in the same 5 runs, against [m4-plan.md](m4-plan.md) section 4.8:
+
+| Test | Section 4.8 | 5 runs | Change |
+|---|---|---|---|
+| `testContentPassTwentyThousandStrokes` | 35.0 ms | 35 to 36 ms | up to 3 % slower |
+| `testContentPassTwoHundredThousandStrokes` | 106.2 ms | 114 to 116 ms | 7 to 9 % slower |
+| `testContentPassTwoHundredThousandHandwritingStrokes` | 162.8 ms | 170 to 171 ms | 4 to 5 % slower |
+| Open of the D-56 canvas (D-62), median | 251 to 273 ms | 236.3 to 242.7 ms | faster |
+| Memory of the open of the D-56 canvas | 236 MB | 235 to 253 MB | up to 7 % more |
+| Frame loop, pan and zoom, 6 tests | 120 fps, 0 late frames | 120 fps, 0 late frames in all 30 tests | same |
+| Frame allocations against a bare Metal frame | 15 and 15 | 15 and 15 | same |
+| `testEvictionWithSixteenMegabyteArena`, slowest | under 0.5 ms | 0.341 to 0.362 ms | pass |
+
+No test is more than 10 % slower. The content pass of 200,000 strokes is the closest, at up to 9 %. It runs once per run, so this phase did not split that rise between its tasks.
+
+Open items: the manual tests of [m4-plan.md](m4-plan.md) section 4.8 wait for the product owner, and D-80 is open.

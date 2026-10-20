@@ -96,7 +96,9 @@ The tasks are in [m4-plan.md](m4-plan.md).
 
 Status: the code is done on 2026-10-20, and the checks pass except one redo step that took 33.53 ms in one of three device runs. The manual tests with the pencil wait for the product owner. See [m4-plan.md](m4-plan.md) sections 4.7 and 4.8.
 
-The review of 2026-10-20 found acceptance 2 not met (it failed in 2 of 4 device runs) and four defects that M5 builds on. [m4-fix-plan.md](m4-fix-plan.md) lists the fixes. M5 starts after that plan is done.
+The review of 2026-10-20 found acceptance 2 not met (it failed in 2 of 4 device runs) and four defects that M5 builds on. [m4-fix-plan.md](m4-fix-plan.md) lists the fixes.
+
+Status after the fix plan, 2026-10-20: phases 0 to 7 of [m4-fix-plan.md](m4-fix-plan.md) are done on branch `m4-fix`. Acceptance 1 passes. Acceptance 2 passes under D-79: 5 full runs of `PointerDeviceTests` in a row passed, and the slowest erase, undo, and redo of all runs took 30.54 ms (section 5.3 of the fix plan). `make check` passes with the iPad, and all 20 snapshot tests run there without a skip. Two items stay open: the manual tests with the pencil of [m4-plan.md](m4-plan.md) section 4.8 wait for the product owner, and decision D-80 (where the allocation test of the grid runs) is open. M5 starts after these.
 
 Acceptance:
 
