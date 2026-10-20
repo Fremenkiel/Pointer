@@ -83,6 +83,10 @@ Status values: Open, Decided, Replaced.
 | D-73 | The stroke count after an erase passes the stroke limit | A hard bound of 210,000 strokes. An erase past it removes the strokes whole. | Decided (2026-10-20) |
 | D-74 | The end point of the clock in M4 acceptance 2 | The GPU completes the first frame that holds the change | Decided (2026-10-20) |
 | D-75 | M4 acceptance 2 still misses 16 ms | A budget of 33 ms for M4, 16 ms as a goal | Decided (2026-10-20) |
+| D-76 | A memory bound for the undo history | 4,000,000 points per canvas and 16,000,000 points for all sessions, the oldest steps dropped first | Decided (2026-10-20) |
+| D-77 | Snapshot tests while the simulator is banned | Move them into `PointerDeviceTests` with reference images made on the iPad | Decided (2026-10-20) |
+| D-78 | When the eraser mask texture exists | Only while the eraser is the tool | Decided (2026-10-20) |
+| D-79 | The pass rule of M4 acceptance 2 on the device | 5 full device runs in a row, each step under 33 ms | Decided (2026-10-20) |
 
 ## Details
 
@@ -706,6 +710,55 @@ Status values: Open, Decided, Replaced.
   - (c) Keep 16 ms. M4 then stays open.
 - Recommendation: (b). An erase of 1,000 strokes in one gesture is rare, and the eraser mask shows the result at once while the pencil moves (D-66).
 - Effect: M4 acceptance 2 has a budget of 33 ms per step. The goal of 16 ms moves to a later milestone.
+
+### D-76 A memory bound for the undo history
+
+- Decided by the product owner on 2026-10-20: option (a), with the example values.
+- Raised by the M4 review on 2026-10-20 ([m4-fix-plan.md](m4-fix-plan.md) M-01 and M-02).
+- `History` keeps at most 500 steps, but it has no memory bound. A step holds the `Stroke` values of the strokes it removes, and their points live only in the history. `CanvasSessions` keeps the history of up to 1,000 canvases.
+- Measured on a Mac: 500 steps, each an erase of 1,000 whole strokes of 300 points, take 2,519 MB. That is about 16.8 bytes per point. The session erase records take about 192 bytes each, and the records of dropped steps stay.
+- Options:
+  - (a) Add a point budget per canvas and a point budget for all sessions. Past a budget, the oldest steps go first. For example, 4,000,000 points per canvas (about 67 MB) and 16,000,000 points for all sessions (about 270 MB).
+  - (b) Keep the step bound of 500, and keep fewer sessions, for example 8, with the least recently used one dropped first.
+  - (c) No change. Normal use stays small, but a worst case can make iPadOS stop the app.
+- Recommendation: (a). It bounds the memory and keeps many short steps.
+- Effect: `Limits` gets a budget of 4,000,000 points for the history of one canvas and 16,000,000 points for the histories of all sessions. Past a budget, `History` drops the oldest steps, and the session erase records of their strokes go with them.
+
+### D-77 Snapshot tests while the simulator is banned
+
+- Decided by the product owner on 2026-10-20: option (b).
+- Raised by the M4 review on 2026-10-20 ([m4-fix-plan.md](m4-fix-plan.md) section 2.1).
+- Learned rule 1 of `AGENTS.md` bans the simulator. The Rendering snapshot tests run only as package tests on a simulator, and the SwiftUI snapshot tests skip on the device (D-59). None of them ran since 2026-10-19, and the redraw changed after the last reference images. TEST-07 needs them, and M5 acceptance 2 is a snapshot test.
+- Options:
+  - (a) Allow the simulator for the snapshot tests only, as an exception of learned rule 1. `make snapshots` and the Rendering package tests use it.
+  - (b) Move the snapshot tests into `PointerDeviceTests`, put the reference images into its bundle, and make the reference images again on the iPad.
+  - (c) No snapshot tests until M10.
+- Recommendation: (b). It tests the real GPU of the target device and keeps learned rule 1. The cost is one new set of reference images.
+- Effect: the Rendering and SwiftUI snapshot tests run in `PointerDeviceTests` on the iPad and compare against reference images in the test bundle. This replaces the skip on the device of D-59. `make snapshots` and `make test` use the iPad. Learned rule 1 stays.
+
+### D-78 When the eraser mask texture exists
+
+- Decided by the product owner on 2026-10-20: option (c).
+- Raised by the M4 review on 2026-10-20 ([m4-fix-plan.md](m4-fix-plan.md) M-06).
+- The mask texture of D-66 always exists, also when nobody erases. It takes 16.1 MB on the 11-inch iPad and 22.7 MB on the 13-inch iPad, computed from the size of the committed texture. architecture.md section 5.2 does not count it.
+- Options:
+  - (a) Keep the texture always, and count it in architecture.md.
+  - (b) Make the texture at the first eraser sample, and drop it at the end of the gesture. The first sample then waits for the allocation.
+  - (c) Make the texture when the eraser becomes the tool, and drop it when another tool becomes the tool.
+- Recommendation: (c). No gesture waits for the allocation, and the memory is used only while the eraser is the tool.
+- Effect: the renderer makes the mask texture when the eraser becomes the tool and drops it when another tool becomes the tool. architecture.md section 5.2 gives the memory of the textures with and without the mask.
+
+### D-79 The pass rule of M4 acceptance 2 on the device
+
+- Decided by the product owner on 2026-10-20: option (a).
+- Raised by the M4 review on 2026-10-20 ([m4-fix-plan.md](m4-fix-plan.md) section 2.1).
+- Acceptance 2 failed in 2 of 4 runs on 2026-10-20, by 0.37 ms and 1.54 ms. One pass of the test does not show that the code meets the budget.
+- Options:
+  - (a) The slowest step of each kind is under 33 ms in 5 full runs of `PointerDeviceTests` in a row.
+  - (b) The median of each kind is under 33 ms in 3 full runs, and no step takes 40 ms or more.
+  - (c) One full run passes, as in M4 so far.
+- Recommendation: (a). It asks for a margin and shows a noisy result.
+- Effect: M4 acceptance 2 passes only when the slowest erase, undo, and redo are each under 33 ms in 5 full runs of `PointerDeviceTests` in a row. A failed run starts the count again.
 
 ## Points in the request that conflict or are not complete
 

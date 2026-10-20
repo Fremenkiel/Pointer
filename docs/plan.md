@@ -96,6 +96,8 @@ The tasks are in [m4-plan.md](m4-plan.md).
 
 Status: the code is done on 2026-10-20, and the checks pass except one redo step that took 33.53 ms in one of three device runs. The manual tests with the pencil wait for the product owner. See [m4-plan.md](m4-plan.md) sections 4.7 and 4.8.
 
+The review of 2026-10-20 found acceptance 2 not met (it failed in 2 of 4 device runs) and four defects that M5 builds on. [m4-fix-plan.md](m4-fix-plan.md) lists the fixes. M5 starts after that plan is done.
+
 Acceptance:
 
 1. Each command passes the apply-then-revert test (TEST-09, D-67).
