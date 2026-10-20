@@ -52,12 +52,13 @@ public final class CanvasViewController: UIViewController {
 
     /// Makes the canvas screen.
     ///
-    /// - Precondition: The loaded and the transient strokes fit the stroke limit together.
+    /// - Precondition: The loaded and the transient strokes fit the bound after an erase
+    ///   together (D-73).
     public init(dependencies: CanvasDependencies) {
         precondition(
             dependencies.content.strokes.count + dependencies.transientStrokes.count
-                <= Limits.maxStrokesPerCanvas,
-            "The canvas holds at most \(Limits.maxStrokesPerCanvas) strokes"
+                <= Limits.maxStrokesAfterErase,
+            "The canvas holds at most \(Limits.maxStrokesAfterErase) strokes"
         )
         renderer = dependencies.renderer
         if let camera = dependencies.camera { renderer.camera = camera }

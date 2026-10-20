@@ -25,12 +25,20 @@ public struct CanvasContent: Sendable {
 
     /// Adds a stroke.
     ///
-    /// - Precondition: The stroke belongs to this canvas, and its ID is new.
-    /// - Throws: `ModelError.strokeLimitReached` if the canvas holds `Limits.maxStrokesPerCanvas`.
-    public mutating func add(_ stroke: Stroke) throws(ModelError) {
+    /// The load of a canvas passes `Limits.maxStrokesAfterErase`, because an erase can pass the
+    /// stroke limit (D-73).
+    ///
+    /// - Precondition: The stroke belongs to this canvas, its ID is new, and the limit is at most
+    ///   `Limits.maxStrokesAfterErase`.
+    /// - Throws: `ModelError.strokeLimitReached` if the canvas holds `limit` strokes.
+    public mutating func add(
+        _ stroke: Stroke,
+        limit: Int = Limits.maxStrokesPerCanvas
+    ) throws(ModelError) {
         precondition(stroke.canvasID == canvasID, "Stroke \(stroke.id) belongs to another canvas")
         precondition(strokes[stroke.id] == nil, "Canvas already holds stroke \(stroke.id)")
-        guard strokes.count < Limits.maxStrokesPerCanvas else { throw .strokeLimitReached }
+        precondition(limit <= Limits.maxStrokesAfterErase, "Stroke limit \(limit) is too large")
+        guard strokes.count < limit else { throw .strokeLimitReached }
         strokes[stroke.id] = stroke
     }
 

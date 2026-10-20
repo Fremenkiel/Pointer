@@ -93,10 +93,10 @@ public final class CanvasRenderer {
     ///
     /// - Precondition: The renderer holds room for the strokes.
     public func load(_ strokes: [Stroke]) {
-        precondition(strokes.count <= Limits.maxStrokesPerCanvas, "Too many strokes")
+        precondition(strokes.count <= Limits.maxStrokesAfterErase, "Too many strokes")
         engine.post { box in
             box.loaded += strokes
-            assert(box.loaded.count <= Limits.maxStrokesPerCanvas, "Too many strokes wait")
+            assert(box.loaded.count <= Limits.maxStrokesAfterErase, "Too many strokes wait")
         }
     }
 
@@ -125,8 +125,8 @@ public final class CanvasRenderer {
         area: Rect?,
         onPresented: @escaping @MainActor () -> Void
     ) {
-        precondition(added.count <= Limits.maxStrokesPerCanvas, "Too many strokes")
-        precondition(removed.count <= Limits.maxStrokesPerCanvas, "Too many removed strokes")
+        precondition(added.count <= Limits.maxStrokesAfterErase, "Too many strokes")
+        precondition(removed.count <= Limits.maxStrokesAfterErase, "Too many removed strokes")
         lastHandoff += 1
         let handoff = lastHandoff
         callbacks.append((handoff, onPresented))

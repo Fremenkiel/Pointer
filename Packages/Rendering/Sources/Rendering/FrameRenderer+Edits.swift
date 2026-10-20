@@ -9,7 +9,7 @@ extension FrameRenderer {
     /// - Precondition: The renderer holds room for the added strokes.
     func apply(_ edit: RenderEdit) {
         precondition(
-            store.count + edit.added.count <= Limits.maxStrokesPerCanvas + edit.removed.count,
+            store.count + edit.added.count <= Limits.maxStrokesAfterErase + edit.removed.count,
             "Too many strokes"
         )
         for id in edit.removed {

@@ -53,13 +53,16 @@ extension SQLiteLibraryRepository {
             statement: statements.selectStrokes,
             canvas: canvasID,
             table: "stroke",
-            limit: Limits.maxStrokesPerCanvas,
+            // An erase can pass the stroke limit by its parts (D-73).
+            limit: Limits.maxStrokesAfterErase,
             read: StrokeRow.read
         )
         try storage { () throws(PersistenceError) in
             try readRows(cards) { (card: Card) throws(ModelError) in try content.add(card) }
             try readRows(textBoxes) { (box: TextBox) throws(ModelError) in try content.add(box) }
-            try readRows(strokes) { (stroke: Stroke) throws(ModelError) in try content.add(stroke) }
+            try readRows(strokes) { (stroke: Stroke) throws(ModelError) in
+                try content.add(stroke, limit: Limits.maxStrokesAfterErase)
+            }
         }
         assert(content.canvasID == canvasID, "Loaded content of another canvas")
         assert(content.nodeCount <= Limits.maxNodesPerCanvas, "Loaded too many nodes")

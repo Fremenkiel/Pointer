@@ -66,7 +66,13 @@ extension CanvasViewController {
         // the canvas keeps no grid of its own (M4 task 3.5).
         let bounds = path.bounds
         let candidates = content.strokes.values.filter { $0.bounds.intersects(bounds) }
-        return Eraser.command(erasing: candidates, along: path, factory: &clock.factory)
+        guard
+            let command = Eraser.command(erasing: candidates, along: path, factory: &clock.factory)
+        else { return nil }
+        let count = content.strokes.count - command.removed.count + command.parts.count
+        guard count > Limits.maxStrokesAfterErase else { return command }
+        // The parts would pass the bound after an erase, so the strokes go whole (D-73).
+        return EraseStrokes(removed: command.removed, parts: [], area: nil)
     }
 
     /// Asks the library for a save, as at the pencil lift of the pen (D-27).

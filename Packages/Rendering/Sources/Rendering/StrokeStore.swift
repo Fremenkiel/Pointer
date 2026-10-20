@@ -50,11 +50,11 @@ final class StrokeStore {
 
     /// Adds a stroke and returns its slot. A stroke that the store holds keeps its slot.
     ///
-    /// - Precondition: The store holds fewer than `Limits.maxStrokesPerCanvas` strokes.
+    /// - Precondition: The store holds fewer than `Limits.maxStrokesAfterErase` strokes (D-73).
     @discardableResult  // The handoff needs the slot. The load path does not.
     func add(_ stroke: Stroke) -> Int {
         if let slot = slotByID[stroke.id] { return slot }
-        precondition(count < Limits.maxStrokesPerCanvas, "The renderer holds the stroke limit")
+        precondition(count < Limits.maxStrokesAfterErase, "The renderer holds the stroke bound")
         let reused = freeSlots.popLast()
         let slot = reused ?? infos.count
         let blocks = storeSpacings(of: stroke.points, reusing: reused.map { infos[$0] })

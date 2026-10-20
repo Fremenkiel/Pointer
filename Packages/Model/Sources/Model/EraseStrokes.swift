@@ -3,8 +3,9 @@ import Geometry
 /// One eraser gesture: the strokes that it removed and the parts that it left (D-06, D-30).
 ///
 /// The parts can take the canvas past `Limits.maxStrokesPerCanvas`, because an erase never
-/// fails (D-71). The undo removes the parts with erase records and turns the erase records of the
-/// removed strokes into tombstones (data-model.md 7.5).
+/// fails (D-71). They never take it past `Limits.maxStrokesAfterErase`: the eraser then makes
+/// a command without parts (D-73). The undo removes the parts with erase records and turns the
+/// erase records of the removed strokes into tombstones (data-model.md 7.5).
 public struct EraseStrokes: CanvasCommand {
     /// The strokes that the gesture cut or removed whole.
     public let removed: [Stroke]
@@ -32,8 +33,9 @@ public struct EraseStrokes: CanvasCommand {
     /// Removes the cut strokes and adds the parts. A first apply returns the rows of the new
     /// parts, and a redo returns the tombstones of their erase records.
     ///
-    /// - Throws: `CommandError.strokeNotLive` if a removed stroke is not live, or
-    ///   `CommandError.strokeAlreadyLive` if a part is live.
+    /// - Throws: `CommandError.strokeNotLive` if a removed stroke is not live,
+    ///   `CommandError.strokeAlreadyLive` if a part is live, or
+    ///   `CommandError.strokeLimitReached` if the parts pass `Limits.maxStrokesAfterErase`.
     /// - Returns: The erase records of the removed strokes and the rows of the parts.
     public func apply(
         to content: inout CanvasContent,
@@ -44,6 +46,10 @@ public struct EraseStrokes: CanvasCommand {
         }
         for part in parts where content.strokes[part.id] != nil {
             throw .strokeAlreadyLive(part.id)
+        }
+        let count = content.strokes.count - removed.count + parts.count
+        guard count <= Limits.maxStrokesAfterErase || parts.count <= removed.count else {
+            throw .strokeLimitReached
         }
         let time = clock.now()
         var changes: [LibraryChange] = []

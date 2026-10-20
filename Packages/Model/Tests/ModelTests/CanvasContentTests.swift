@@ -84,6 +84,7 @@ struct CanvasContentTests {
     func limits() {
         #expect(Limits.maxPointsPerStroke == 16_384)
         #expect(Limits.maxStrokesPerCanvas == 200_000)
+        #expect(Limits.maxStrokesAfterErase == 210_000)
         #expect(Limits.zoomRange == 0.25...8.0)
         #expect(Limits.standardZoom == 1.0)
         #expect(Limits.maxDepth == 32)

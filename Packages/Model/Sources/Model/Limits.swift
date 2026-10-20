@@ -4,8 +4,11 @@ public enum Limits {
     public static let maxDepth = 32
     /// Control points per stroke, about 68 s at 240 Hz. A longer path becomes several strokes.
     public static let maxPointsPerStroke = 16_384
-    /// Strokes per canvas. The upper bound for loops and memory.
+    /// Strokes per canvas. The pen refuses a new stroke at this count.
     public static let maxStrokesPerCanvas = 200_000
+    /// Strokes per canvas after an erase. Only the parts of an erase pass `maxStrokesPerCanvas`
+    /// (D-71). The upper bound for loops and memory (D-73).
+    public static let maxStrokesAfterErase = 210_000
     /// Cards plus text boxes per canvas.
     public static let maxNodesPerCanvas = 10_000
     /// Unicode code points per text box (D-29, D-57).

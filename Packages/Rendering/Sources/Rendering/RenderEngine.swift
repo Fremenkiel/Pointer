@@ -160,7 +160,7 @@ final class RenderEngine: Sendable {
                 drawable: drawable
             )
         }
-        assert(renderer.store.count <= Limits.maxStrokesPerCanvas, "The renderer passed its limit")
+        assert(renderer.store.count <= Limits.maxStrokesAfterErase, "The renderer passed its bound")
         return FrameResult(
             didDraw: true,
             needsMore: needsMore,

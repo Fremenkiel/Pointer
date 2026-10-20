@@ -106,7 +106,10 @@ final class FrameRenderer {
     ///
     /// - Precondition: The renderer holds room for the strokes.
     func load(_ strokes: [Stroke]) {
-        precondition(store.count + strokes.count <= Limits.maxStrokesPerCanvas, "Too many strokes")
+        precondition(
+            store.count + strokes.count <= Limits.maxStrokesAfterErase,
+            "Too many strokes"
+        )
         for stroke in strokes {
             store.add(stroke)
         }
