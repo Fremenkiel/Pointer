@@ -2,6 +2,7 @@ import Foundation
 import Geometry
 import Model
 import Rendering
+import SwiftUI
 import Testing
 import UIKit
 
@@ -153,6 +154,66 @@ struct CanvasHistoryTests {
         second.undo()
         #expect(Set(second.content.strokes.keys) == [line.id])
         #expect(second.content.erased[line.id]?.isDeleted == true)
+    }
+
+    @Test("With the eraser, a pencil touch on the redo button keeps the redo list (F-06)")
+    func pencilOnRedoButton() throws {
+        let probe = try makeController(
+            content: CanvasContent(canvasID: Fixtures.canvas),
+            sessions: CanvasSessions(),
+            clock: Fixtures.clock()
+        )
+        let button = try Self.redoButtonCenter(of: probe)
+        // A stroke under the redo button, so that an erase there would make a new step.
+        let center = Camera(center: .zero, zoom: Limits.standardZoom).canvasPoint(
+            fromView: Point(x: button.x, y: button.y),
+            viewSize: Size(width: 400, height: 300)
+        )
+        var loaded = CanvasContent(canvasID: Fixtures.canvas)
+        try loaded.add(Self.line(through: center))
+        let controller = try makeController(
+            content: loaded,
+            sessions: CanvasSessions(),
+            clock: Fixtures.clock()
+        )
+        controller.addPenStrokes([Self.line()])
+        controller.undo()
+        controller.select(.eraser)
+        let observer = controller.pencilObserver
+        let onButton = controller.view.hitTest(button, with: nil)
+        if observer.receivesTouch(in: onButton) {
+            controller.pencilBegan()
+            controller.pencilMoved(to: Point(x: button.x, y: button.y))
+            controller.pencilEnded(at: 0, isCancelled: false)
+        }
+        #expect(controller.history.redoSteps.count == 1)
+        #expect(controller.content.strokes.count == 1)
+        let onCanvas = controller.view.hitTest(CGPoint(x: 100, y: 200), with: nil)
+        #expect(observer.receivesTouch(in: onCanvas))
+    }
+
+    /// Returns the center of the redo button in the coordinates of the canvas view.
+    private static func redoButtonCenter(of controller: CanvasViewController) throws -> CGPoint {
+        let host = try #require(
+            controller.children.first { $0 is UIHostingController<HistoryButtons> }
+        )
+        controller.view.layoutIfNeeded()
+        let bounds = host.view.bounds
+        // The redo button is the right one of the two.
+        let center = CGPoint(x: bounds.maxX - bounds.height / 2, y: bounds.midY)
+        return host.view.convert(center, to: controller.view)
+    }
+
+    /// A horizontal stroke of 40 points with its middle at `center`.
+    private static func line(through center: Point) -> Stroke {
+        Stroke(
+            id: StrokeID(rawValue: UUID()),
+            canvasID: Fixtures.canvas,
+            created: HybridTimestamp(wallMillis: 1, counter: 1, device: Fixtures.device),
+            origin: Point(x: center.x - 20, y: center.y),
+            width: 2,
+            points: InkPoints((0...20).map { InkPoint(x: Float($0) * 2, y: 0, force: 1, time: 0) })
+        )
     }
 
     /// A canvas that is not `Fixtures.canvas`.

@@ -45,7 +45,7 @@ public final class CanvasViewController: UIViewController {
     private var palmGuard = PalmGuard()
     private let panRecognizer = UIPanGestureRecognizer()
     private let pinchRecognizer = UIPinchGestureRecognizer()
-    private let pencilObserver = PencilTouchObserver()
+    let pencilObserver = PencilTouchObserver()
     let repository: (any LibraryRepository)?
     private let onCameraRest: @MainActor (Camera) -> Void
     /// True after a camera change, until the camera comes to rest.
@@ -247,6 +247,8 @@ public final class CanvasViewController: UIViewController {
         pencilObserver.onEnded = { [weak self] time, isCancelled in
             self?.pencilEnded(at: time, isCancelled: isCancelled)
         }
+        // The history buttons lie inside the canvas view, so their touches reach it too (F-06).
+        pencilObserver.isSurface = { [canvasView] in canvasView.isSurface($0) }
         canvasView.addGestureRecognizer(pencilObserver)
     }
 

@@ -23,6 +23,12 @@ final class CanvasView: UIView {
         assert(liveCanvas.superview === self, "The live canvas lies on top of the ink")
     }
 
+    /// Returns `true` for the views of the canvas surface: this view, the ink view, and the
+    /// live canvas with its subviews. A view on top, as a button, is not part of it (F-06).
+    func isSurface(_ view: UIView) -> Bool {
+        view === self || view === inkView || view.isDescendant(of: liveCanvas)
+    }
+
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         // swiftlint:disable:next safe_07_fatal_error

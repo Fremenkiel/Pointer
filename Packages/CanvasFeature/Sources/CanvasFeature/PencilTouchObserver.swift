@@ -68,6 +68,24 @@ final class PencilTouchObserver: UIGestureRecognizer, UIGestureRecognizerDelegat
         trackedTouches = 0
     }
 
+    /// Returns `true` for a view whose pencil touches the observer takes, or `nil` to take all.
+    /// The canvas sets it, so that a touch on a button reaches no tool (F-06).
+    var isSurface: ((UIView) -> Bool)?
+
+    /// Returns `true` if the observer takes a pencil touch on `view`.
+    func receivesTouch(in view: UIView?) -> Bool {
+        guard let view else { return false }
+        return isSurface?(view) ?? true
+    }
+
+    /// Takes only the touches on the canvas surfaces, not on the buttons above them (F-06).
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldReceive touch: UITouch
+    ) -> Bool {
+        receivesTouch(in: touch.view)
+    }
+
     /// The observer works next to every other recognizer.
     func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
