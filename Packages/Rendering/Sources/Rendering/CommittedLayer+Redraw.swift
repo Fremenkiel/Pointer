@@ -31,12 +31,14 @@ extension CommittedLayer {
                 ? start(whole, in: current.target, store: store, slots: &buildRedrawSlots) : nil
         }
         continueRedraw(encoder: encoder, context: context)
+        assert(!isRedrawing || redrawArea != nil, "A running redraw keeps its area")
     }
 
     /// Draws the strokes of a running redraw until the draw list is full. A texture that the
     /// screen no longer shows and no build draws into is dropped from the redraw.
     func continueRedraw(encoder: InkEncoder, context: FrameContext) {
         guard isRedrawing else { return }
+        assert(redrawArea != nil, "A running redraw has an area")
         RenderSignpost.begin("Redraw")
         defer { RenderSignpost.end("Redraw") }
         frontRedraw = frontRedraw.flatMap {
@@ -46,6 +48,7 @@ extension CommittedLayer {
             draw($0, slots: buildRedrawSlots, encoder: encoder, context: context)
         }
         if !isRedrawing { redrawArea = nil }
+        assert(isRedrawing || redrawArea == nil, "A done redraw keeps no area")
     }
 
     /// Lists the strokes of `area` in a target, or returns `nil` if the area misses it.
@@ -55,7 +58,9 @@ extension CommittedLayer {
         store: StrokeStore,
         slots: inout [Int]
     ) -> Redraw? {
+        precondition(area.origin.isFinite, "Redraw area is not finite")
         guard let scissor = Self.scissor(for: area, in: target) else { return nil }
+        assert(scissor.width > 0 && scissor.height > 0, "A redraw scissor holds pixels")
         let clip = area.expanded(by: Self.redrawMarginPixels / target.pixelsPerCanvasPoint)
         slots.removeAll(keepingCapacity: true)
         store.grid.forEachItem(touching: clip) { slots.append($0) }
@@ -75,6 +80,10 @@ extension CommittedLayer {
         encoder: InkEncoder,
         context: FrameContext
     ) -> Redraw? {
+        precondition(
+            redraw.cursor <= slots.count,
+            "Redraw cursor \(redraw.cursor) is past the list"
+        )
         guard isLive(redraw.target) else { return nil }
         var next = redraw
         next.cursor = encoder.encodePass(
@@ -100,7 +109,8 @@ extension CommittedLayer {
     }
 
     private static func union(_ first: Rect, _ second: Rect) -> Rect {
-        Rect(
+        assert(first.origin.isFinite && second.origin.isFinite, "A redraw area is not finite")
+        return Rect(
             minX: min(first.minX, second.minX),
             minY: min(first.minY, second.minY),
             maxX: max(first.maxX, second.maxX),

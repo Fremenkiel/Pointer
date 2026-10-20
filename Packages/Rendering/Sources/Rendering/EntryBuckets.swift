@@ -45,8 +45,11 @@ struct EntryBuckets {
     }
 
     /// Returns the size of the list of a buffer now.
+    ///
+    /// - Precondition: The list exists.
     func mark(_ bucket: Int) -> Mark {
-        Mark(bucket: bucket, entries: lists[bucket].count, instances: instances[bucket])
+        precondition(lists.indices.contains(bucket), "Bucket \(bucket) does not exist")
+        return Mark(bucket: bucket, entries: lists[bucket].count, instances: instances[bucket])
     }
 
     /// Removes the entries that the list of `mark` got after the mark. It keeps the capacity.
