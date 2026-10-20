@@ -83,13 +83,4 @@ final class DrawListRing {
         used += entries.count
         assert(used <= capacity, "The draw list passed its capacity")
     }
-
-    /// Writes one entry at the end of the current frame.
-    ///
-    /// - Precondition: The frame has room for one more entry.
-    func append(_ entry: StrokeDrawEntry) {
-        precondition(used < capacity, "Draw list is full at \(capacity) entries")
-        write(entry, at: used)
-        used += 1
-    }
 }
