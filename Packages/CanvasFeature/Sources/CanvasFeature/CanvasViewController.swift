@@ -198,23 +198,17 @@ public final class CanvasViewController: UIViewController {
         }
     }
 
-    /// Adds strokes to the content and returns the ones that it took. At the stroke limit, a
-    /// stroke is refused and logged. The result is unused at the start, because the loaded
-    /// strokes are in the library already.
-    @discardableResult
-    private func add(_ strokes: [Stroke]) -> [Stroke] {
-        var accepted: [Stroke] = []
-        accepted.reserveCapacity(strokes.count)
+    /// Adds strokes to the content. At the stroke limit, a stroke is refused and logged.
+    private func add(_ strokes: [Stroke]) {
+        let start = content.strokes.count
         for stroke in strokes {
             do {
                 try content.add(stroke)
-                accepted.append(stroke)
             } catch {
                 logger.error("The canvas is at its stroke limit. A stroke is not stored.")
             }
         }
-        assert(accepted.count <= strokes.count, "More strokes accepted than given")
-        return accepted
+        assert(content.strokes.count - start <= strokes.count, "More strokes added than given")
     }
 
     /// Sends changed rows to the pending set of the library, in the order of the steps
