@@ -44,20 +44,46 @@ public struct Stroke: Identifiable, Sendable {
         self.points = points
         // One loop over the offsets, without a temporary array of points (docs/m2-fix-plan.md,
         // phase 5). The conversion to Double is exact and the addition keeps the order, so the
-        // bounds equal the bounds of the canvas points.
-        var low = SIMD2<Float>(repeating: .infinity)
-        var high = SIMD2<Float>(repeating: -.infinity)
+        // bounds equal the bounds of the canvas points. Scalar `min` and `max` vectorize, and
+        // `pointwiseMin` on `SIMD2<Float>` did not (P-04).
+        var lowX = Float.infinity
+        var lowY = Float.infinity
+        var highX = -Float.infinity
+        var highY = -Float.infinity
         for point in points.values {
-            low = pointwiseMin(low, SIMD2(point.x, point.y))
-            high = pointwiseMax(high, SIMD2(point.x, point.y))
+            lowX = min(lowX, point.x)
+            lowY = min(lowY, point.y)
+            highX = max(highX, point.x)
+            highY = max(highY, point.y)
         }
-        assert(low.x <= high.x && low.y <= high.y, "Stroke \(id) has no finite bounds")
+        assert(lowX <= highX && lowY <= highY, "Stroke \(id) has no finite bounds")
         bounds = Rect(
-            minX: origin.x + Double(low.x),
-            minY: origin.y + Double(low.y),
-            maxX: origin.x + Double(high.x),
-            maxY: origin.y + Double(high.y)
+            minX: origin.x + Double(lowX),
+            minY: origin.y + Double(lowY),
+            maxX: origin.x + Double(highX),
+            maxY: origin.y + Double(highY)
         ).expanded(by: Double(width) / 2)
+    }
+
+    /// The memberwise form, for a copy whose bounds are known.
+    private init(copying stroke: Stroke, id: StrokeID, created: HybridTimestamp) {
+        self.id = id
+        canvasID = stroke.canvasID
+        self.created = created
+        origin = stroke.origin
+        width = stroke.width
+        points = stroke.points
+        bounds = stroke.bounds
+    }
+
+    /// Returns the same stroke with another ID and creation time. It keeps the points and the
+    /// bounds, so it does not walk the points again (P-04).
+    ///
+    /// - Returns: A stroke equal to this one except for `id` and `created`.
+    public func renamed(id: StrokeID, created: HybridTimestamp) -> Stroke {
+        let copy = Stroke(copying: self, id: id, created: created)
+        assert(copy.bounds == bounds && copy.points === points, "A renamed stroke keeps its shape")
+        return copy
     }
 
     /// Returns the canvas position of the control point at `index`.

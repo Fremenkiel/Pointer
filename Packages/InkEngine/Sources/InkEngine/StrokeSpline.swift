@@ -104,19 +104,24 @@ struct StrokeSpline {
     /// - Precondition: `segment` is in `0..<segmentCount`.
     func hullBounds(ofSegment segment: Int) -> Rect {
         precondition(segment >= 0 && segment < segmentCount, "Segment \(segment) out of range")
-        var low = SIMD2<Float>(repeating: .infinity)
-        var high = SIMD2<Float>(repeating: -.infinity)
+        // Scalar `min` and `max`, as in `Stroke.init` (P-04).
+        var lowX = Float.infinity
+        var lowY = Float.infinity
+        var highX = -Float.infinity
+        var highY = -Float.infinity
         for index in (segment - 1)...(segment + 2) {
             let value = point(at: index)
-            low = pointwiseMin(low, SIMD2(value.x, value.y))
-            high = pointwiseMax(high, SIMD2(value.x, value.y))
+            lowX = min(lowX, value.x)
+            lowY = min(lowY, value.y)
+            highX = max(highX, value.x)
+            highY = max(highY, value.y)
         }
-        assert(low.x <= high.x && low.y <= high.y, "Segment \(segment) has no finite hull")
+        assert(lowX <= highX && lowY <= highY, "Segment \(segment) has no finite hull")
         return Rect(
-            minX: stroke.origin.x + Double(low.x),
-            minY: stroke.origin.y + Double(low.y),
-            maxX: stroke.origin.x + Double(high.x),
-            maxY: stroke.origin.y + Double(high.y)
+            minX: stroke.origin.x + Double(lowX),
+            minY: stroke.origin.y + Double(lowY),
+            maxX: stroke.origin.x + Double(highX),
+            maxY: stroke.origin.y + Double(highY)
         )
     }
 

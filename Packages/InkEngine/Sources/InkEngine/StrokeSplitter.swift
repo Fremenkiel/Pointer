@@ -61,13 +61,10 @@ public enum StrokeSplitter {
     /// Gives a shape of `shapes(of:outside:)` a new ID and a new creation time.
     static func finish(_ shape: Stroke, factory: inout StrokeFactory) -> Stroke {
         precondition(shape.points.count >= 2, "A shape needs 2 points")
-        return Stroke(
+        // The shape has its bounds already, so the part keeps them (P-04).
+        return shape.renamed(
             id: factory.identifiers.make(StrokeID.self),
-            canvasID: shape.canvasID,
-            created: factory.clock.now(),
-            origin: shape.origin,
-            width: shape.width,
-            points: shape.points
+            created: factory.clock.now()
         )
     }
 

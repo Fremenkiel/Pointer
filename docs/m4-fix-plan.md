@@ -455,11 +455,21 @@ Each row is one run of `testEraseUndoRedoOfOneThousandStrokes` alone on the iPad
 | After 3.2 | 1 | 24.69 / 31.56 | 19.93 / 25.83 | 22.19 / 25.90 |
 | After 3.2 | 2 | 24.10 / 28.77 | 19.84 / 26.96 | 22.44 / 26.78 |
 | After 3.2 | 3 | 24.97 / 28.60 | 19.63 / 25.87 | 27.94 / 31.48 |
+| After 3.3 | 1 | 25.51 / 29.55 | 25.73 / 28.40 | 24.77 / 29.38 |
+| After 3.3 | 2 | 25.89 / 27.27 | 26.00 / 26.50 | 26.66 / 32.30 |
+| After 3.3 | 3 | 23.74 / 26.97 | 25.63 / 29.66 | 25.48 / 28.92 |
+| A/B: 3.2 build | 1 | 25.99 / 30.00 | 26.17 / 28.41 | 28.36 / 31.96 |
+| A/B: 3.3 build | 1 | 25.07 / 29.14 | 26.53 / 27.18 | 24.94 / 31.32 |
+| A/B: 3.2 build | 2 | 23.79 / 32.47 | 25.82 / 27.94 | 24.59 / 30.53 |
+| A/B: 3.3 build | 2 | 25.09 / 26.93 | 25.14 / 26.59 | 20.74 / 31.13 |
+| A/B: 3.2 build | 3 | 24.78 / 29.10 | 26.08 / 27.42 | 16.97 / 31.63 |
+| A/B: 3.3 build | 3 | 24.73 / 30.93 | 26.05 / 26.57 | 24.94 / 31.15 |
 
 Notes:
 
 - Task 3.1: the redraw of the whole canvas at zoom 2 with 200,000 handwriting strokes lists 36 strokes, the strokes that touch the texture plus its margin. Before, it listed the strokes of the whole area.
 - Task 3.2, on the Mac in Release, median of 20 rounds, called from the test module: 1,000 removals from the grid of the D-69 content took 0.51 ms before and 0.147 ms after (3.5 times faster). The query of the D-69 erase area took 0.054 ms before and 0.0076 ms after (7 times faster). On the iPad, `FrameRenderer.apply` made 20, 2, and 7 allocations for the erase, the undo, and the redo, against 14,897, 14,750, and 14,884 in section 5.1. `GridAllocationTests` counts 0 allocations for 1,000 removals. It runs on the iPad, not as a Tier A test (D-80).
+- Task 3.3: after it, the undo medians were about 26 ms against about 20 ms after task 3.2. The alternating runs of the two builds (A/B rows) gave the same times for both, so the 20 ms of the 3.2 runs did not repeat, and task 3.3 is kept. From task 3.3 on, each task is compared in alternating runs with the build before it. On the Mac in Release (median of 15 rounds), the split of the D-69 content took 3.26 to 3.64 ms before and 2.23 to 2.36 ms after (about 33 % faster). 1,000 `Stroke.init` of 300 points took 0.90 ms before and 0.21 ms after.
 - Phases 1 and 2 had two regressions that the device runs showed. They are fixed before phase 3: the erase area of task 1.5 took the whole stroke for a part end at an old stroke end (about 10 ms per step, commit 0b9ec40), and the observer filter of task 1.4 leaked each closed canvas (open of D-56 305.6 ms, commit 54facdc).
 
 ### 5.3 Close
