@@ -75,8 +75,10 @@ public struct EraseStrokes: CanvasCommand {
     /// The undo fails at the limit only if it adds more strokes than it removes.
     ///
     /// - Throws: `CommandError.strokeNotLive` if a part is not live,
-    ///   `CommandError.strokeAlreadyLive` if a removed stroke is live, or
-    ///   `CommandError.strokeLimitReached` if the undo grows the canvas past the limit.
+    ///   `CommandError.strokeAlreadyLive` if a removed stroke is live,
+    ///   `CommandError.eraseRecordMissing` if the content has no erase record of a removed
+    ///   stroke, or `CommandError.strokeLimitReached` if the undo grows the canvas past the
+    ///   limit. The content then stays as it was.
     /// - Returns: The erase records of the parts and the tombstones of the removed strokes.
     public func revert(
         on content: inout CanvasContent,
@@ -87,6 +89,10 @@ public struct EraseStrokes: CanvasCommand {
         }
         for stroke in removed where content.strokes[stroke.id] != nil {
             throw .strokeAlreadyLive(stroke.id)
+        }
+        // A load without the session records would turn the erase records into live ones (F-14).
+        for stroke in removed where content.erased[stroke.id] == nil {
+            throw .eraseRecordMissing(stroke.id)
         }
         let count = content.strokes.count - parts.count + removed.count
         guard count <= Limits.maxStrokesPerCanvas || removed.count <= parts.count else {

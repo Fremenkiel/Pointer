@@ -6,4 +6,6 @@ public enum CommandError: Error, Equatable, Sendable {
     case strokeNotLive(StrokeID)
     /// The command adds a stroke that the content already holds as a live stroke.
     case strokeAlreadyLive(StrokeID)
+    /// The command needs the erase record of a stroke that the content does not hold.
+    case eraseRecordMissing(StrokeID)
 }

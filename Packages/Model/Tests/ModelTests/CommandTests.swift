@@ -117,6 +117,27 @@ struct CommandTests {
         #expect(rig.content.erased.isEmpty)
     }
 
+    @Test("An undo of an erase without the erase record throws and changes nothing (F-14)")
+    func revertWithoutRecord() throws {
+        var (rig, loaded) = try Self.rig()
+        var history = History()
+        let command = EraseStrokes(removed: [loaded[0], loaded[1]], parts: [rig.stroke(x: 70)])
+        _ = try history.perform(command, on: &rig.content, clock: &rig.factory.clock)
+        // A load without the session: the content has the parts, but no erase record.
+        var reloaded = CanvasContent(canvasID: Fixtures.canvas)
+        for stroke in rig.content.strokes.values {
+            try reloaded.add(stroke)
+        }
+        let start = LiveContent(reloaded)
+        #expect(throws: CommandError.eraseRecordMissing(loaded[0].id)) {
+            _ = try history.undo(on: &reloaded, clock: &rig.factory.clock)
+        }
+        #expect(LiveContent(reloaded) == start)
+        #expect(reloaded.erased.isEmpty)
+        #expect(history.undoSteps.count == 1)
+        #expect(history.redoSteps.isEmpty)
+    }
+
     @Test("A second erase of a stroke keeps the time of its first erase")
     func secondErase() throws {
         var rig = CommandRig()
