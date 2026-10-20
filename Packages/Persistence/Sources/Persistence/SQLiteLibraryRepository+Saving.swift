@@ -20,11 +20,20 @@ extension SQLiteLibraryRepository {
 
     /// Writes all pending rows at once, for the move to the background.
     ///
-    /// - Throws: `ModelError.storageFailed` if the save fails. The rows stay pending.
+    /// - Throws: `ModelError.storageFailed` if the save fails. The rows stay pending, and the
+    ///   throttle tries again at the end of the interval.
     public func saveNow() throws(ModelError) {
         scheduledSave?.cancel()
         scheduledSave = nil
-        try storage { () throws(PersistenceError) in try save() }
+        do {
+            try storage { () throws(PersistenceError) in try save() }
+        } catch {
+            // The cancel above dropped the next try, so the rows need a new one (F-09).
+            scheduleSave()
+            assert(pending.isEmpty || scheduledSave != nil, "A failed save needs a retry")
+            throw error
+        }
+        assert(pending.isEmpty, "A good save leaves no pending row")
     }
 
     /// The number of rows that wait for a save.
@@ -57,6 +66,8 @@ extension SQLiteLibraryRepository {
             } catch {
                 return
             }
+            // A cancelled task must not clear the scheduled save of a newer task (F-10).
+            guard !Task.isCancelled else { return }
             self.scheduledSaveFired()
         }
     }

@@ -48,6 +48,25 @@ struct RepositorySavingTests {
         #expect(await repository.pendingCount == 0)
     }
 
+    @Test("A failed saveNow schedules a new try, and the row is saved after the interval (F-09)")
+    func failedSaveNowRetries() async throws {
+        let harness = try RepositoryHarness()
+        let failSwitch = FailSwitch()
+        let repository = try await harness.open(failSwitch: failSwitch)
+        // The first send saves at once, so the second one waits for the throttle.
+        try await repository.send([.stroke(Values.stroke(1, millis: 10))])
+        failSwitch.set(true)
+        try await repository.send([.stroke(Values.stroke(2, millis: 20))])
+        await #expect(throws: ModelError.self) { try await repository.saveNow() }
+        failSwitch.set(false)
+        for _ in 0..<5 {
+            harness.timer.advance(by: .seconds(1))
+            await repository.settle()
+        }
+        #expect(await repository.pendingCount == 0)
+        #expect(try harness.reader().integer("SELECT count(*) FROM stroke") == 2)
+    }
+
     @Test("Three failed saves in a row report a fault, and the next good save reports recovery")
     func failureFault() async throws {
         let harness = try RepositoryHarness()

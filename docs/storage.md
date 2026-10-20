@@ -182,7 +182,7 @@ A stroke of 300 points takes 4.8 KB. The layout matches `InkPoint` in memory. Th
 
 A write never waits for a pause in the input. Thus the data loss after a crash is at most 1 second plus the time of one write, also while you draw without a pause (STO-06, review A-02).
 
-If a transaction fails, the repository rolls it back and keeps the rows in the pending set. It logs the error and tries again at the next save. After three failures in a row, the app shows a message and stops new edits until the next save works. It never drops changes in silence.
+If a transaction fails, the repository rolls it back and keeps the rows in the pending set. It logs the error and tries again at the end of the throttle interval of 1 second. This holds also for the write at the move to the background (F-09 of [m4-fix-plan.md](m4-fix-plan.md)). After three failures in a row, the app shows a message and stops new edits until the next save works. It never drops changes in silence.
 
 ## 5. Read path
 
