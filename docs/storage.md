@@ -190,7 +190,7 @@ If a transaction fails, the repository rolls it back and keeps the rows in the p
 2. Read `PRAGMA user_version`. If it is newer than the app knows, open the library read-only and show a message.
 3. If it is older, run the migrations (section 6).
 4. Read all workspaces for the selector.
-5. To open a canvas, read the live rows with its `canvas_id`: cards and text boxes with `is_deleted = 0`, and strokes without a live erase record (`LEFT JOIN stroke_erase ... ON ... AND stroke_erase.is_deleted = 0 WHERE stroke_erase.stroke_id IS NULL`). Do not load erase records or erased strokes (review A-07). Build the `SpatialGrid` in memory.
+5. To open a canvas, first write the pending rows, so that the load holds them. If that write fails, the open fails with `storageFailed` and loads nothing (F-01 of [m4-fix-plan.md](m4-fix-plan.md)). Then read the live rows with its `canvas_id`: cards and text boxes with `is_deleted = 0`, and strokes without a live erase record (`LEFT JOIN stroke_erase ... ON ... AND stroke_erase.is_deleted = 0 WHERE stroke_erase.stroke_id IS NULL`). Do not load erase records or erased strokes (review A-07). Build the `SpatialGrid` in memory.
 6. For the previews of visible cards, read their canvases one level deep.
 
 The repository loads one canvas at a time. It never loads the whole library into memory.

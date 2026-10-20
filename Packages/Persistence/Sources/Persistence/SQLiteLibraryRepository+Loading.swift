@@ -27,11 +27,17 @@ extension SQLiteLibraryRepository {
 
     /// Returns the live content of one canvas: cards, text boxes, and strokes without a live
     /// erase record (storage.md section 5). A damaged row is skipped and reported, and the other
-    /// rows load (storage.md section 9).
+    /// rows load (storage.md section 9). The rows that wait for a save are saved first, so the
+    /// load holds them.
     ///
-    /// - Throws: `ModelError.storageFailed` if a read fails.
+    /// - Throws: `ModelError.storageFailed` if the save of the waiting rows or a read fails.
     public func content(of canvasID: CanvasID) throws(ModelError) -> CanvasContent {
         let statements = try openStatements()
+        // Rows inside the save throttle are newer than the file, so they go first (F-01).
+        if !pending.isEmpty {
+            try storage { () throws(PersistenceError) in try save() }
+        }
+        assert(pending.isEmpty, "A load reads the file after all pending rows")
         let interval = signposter.beginInterval("Load canvas")
         defer { signposter.endInterval("Load canvas", interval) }
         var content = CanvasContent(canvasID: canvasID)

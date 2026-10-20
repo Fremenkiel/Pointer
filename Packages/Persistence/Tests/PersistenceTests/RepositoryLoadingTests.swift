@@ -25,6 +25,50 @@ struct RepositoryLoadingTests {
         #expect(await faults.next() == .rowsSkipped(table: "stroke", count: 1))
     }
 
+    @Test("A load inside the save throttle holds the rows that wait for a save (F-01)")
+    func loadHoldsPendingRows() async throws {
+        let harness = try RepositoryHarness()
+        let repository = try await harness.open()
+        let first = Values.stroke(1, millis: 10)
+        try await repository.send([.stroke(first)])
+        try await repository.saveNow()
+        let erase = EraseRecord(
+            strokeID: first.id,
+            erased: Values.late,
+            modified: Values.late,
+            isDeleted: false
+        )
+        let textBox = try Values.textBox(5)
+        let second = Values.stroke(2, millis: 20)
+        try await repository.send([.stroke(second), .erase(erase), .textBox(textBox)])
+        #expect(await repository.pendingCount == 3)
+
+        let content = try await repository.content(of: Values.canvas)
+        #expect(Array(content.strokes.keys) == [second.id])
+        #expect(content.textBoxes[textBox.id] == textBox)
+        #expect(await repository.pendingCount == 0)
+    }
+
+    @Test("A load whose save of the pending rows fails throws and loads nothing stale (F-01)")
+    func loadFailsWithFailedSave() async throws {
+        let harness = try RepositoryHarness()
+        let failSwitch = FailSwitch()
+        let repository = try await harness.open(failSwitch: failSwitch)
+        try await repository.send([.stroke(Values.stroke(1, millis: 10))])
+        try await repository.saveNow()
+        failSwitch.set(true)
+        try await repository.send([.stroke(Values.stroke(2, millis: 20))])
+
+        let error = await #expect(throws: ModelError.self) {
+            _ = try await repository.content(of: Values.canvas)
+        }
+        guard case .storageFailed = error else {
+            Issue.record("Expected storageFailed, got \(String(describing: error))")
+            return
+        }
+        #expect(await repository.pendingCount == 1)
+    }
+
     @Test("Workspaces are created, renamed with a trim, deleted, and listed in sort order")
     func workspaces() async throws {
         let harness = try RepositoryHarness()
