@@ -26,6 +26,19 @@ public enum StrokeSplitter {
         outside covered: [ClosedRange<Double>],
         factory: inout StrokeFactory
     ) -> [Stroke] {
+        let shapes = shapes(of: stroke, outside: covered)
+        let parts = shapes.map { finish($0, factory: &factory) }
+        assert(parts.count == shapes.count, "Each shape gives one part")
+        return parts
+    }
+
+    /// Returns the parts of a stroke outside the covered ranges, with the ID and the creation
+    /// time of the old stroke. `finish(_:factory:)` gives them their own. Without a factory, the
+    /// split can run on several threads.
+    ///
+    /// - Precondition: The ranges lie in the parameter range of the stroke, in order, without
+    ///   overlap.
+    static func shapes(of stroke: Stroke, outside covered: [ClosedRange<Double>]) -> [Stroke] {
         let spline = StrokeSpline(stroke: stroke)
         precondition(
             covered.allSatisfy { $0.lowerBound >= 0 && $0.upperBound <= spline.maxParameter },
@@ -38,11 +51,24 @@ public enum StrokeSplitter {
         var parts: [Stroke] = []
         for range in freeRanges(outside: covered, upTo: spline.maxParameter) {
             let points = partPoints(of: spline, from: range.lowerBound, to: range.upperBound)
-            guard let part = makePart(points, of: stroke, factory: &factory) else { continue }
+            guard let part = makePart(points, of: stroke) else { continue }
             parts.append(part)
         }
         assert(parts.count <= covered.count + 1, "More parts than free ranges")
         return parts
+    }
+
+    /// Gives a shape of `shapes(of:outside:)` a new ID and a new creation time.
+    static func finish(_ shape: Stroke, factory: inout StrokeFactory) -> Stroke {
+        precondition(shape.points.count >= 2, "A shape needs 2 points")
+        return Stroke(
+            id: factory.identifiers.make(StrokeID.self),
+            canvasID: shape.canvasID,
+            created: factory.clock.now(),
+            origin: shape.origin,
+            width: shape.width,
+            points: shape.points
+        )
     }
 
     /// Returns the ranges of `0...upper` outside the covered ranges, without empty ranges.
@@ -123,17 +149,17 @@ public enum StrokeSplitter {
         return CutPoint(position: spline.position(at: parameter), force: force, time: time)
     }
 
-    /// Makes a part, or returns `nil` if its curve is shorter than the width (D-71).
+    /// Makes a part with the ID of its stroke, or returns `nil` if its curve is shorter than the
+    /// width (D-71).
     private static func makePart(
         _ part: (origin: Point, points: [InkPoint]),
-        of stroke: Stroke,
-        factory: inout StrokeFactory
+        of stroke: Stroke
     ) -> Stroke? {
         precondition(part.points.count >= 2, "A part needs 2 points, got \(part.points.count)")
         let made = Stroke(
-            id: factory.identifiers.make(StrokeID.self),
+            id: stroke.id,
             canvasID: stroke.canvasID,
-            created: factory.clock.now(),
+            created: stroke.created,
             origin: part.origin,
             width: stroke.width,
             points: InkPoints(part.points)
