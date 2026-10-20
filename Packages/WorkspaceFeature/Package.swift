@@ -12,7 +12,6 @@ let package = Package(
     dependencies: [
         .package(path: "../DesignSystem"),
         .package(path: "../Model"),
-        .package(path: "../Persistence"),
     ],
     targets: [
         .target(
@@ -20,7 +19,6 @@ let package = Package(
             dependencies: [
                 .product(name: "DesignSystem", package: "DesignSystem"),
                 .product(name: "Model", package: "Model"),
-                .product(name: "Persistence", package: "Persistence"),
             ],
             resources: [.process("Resources")],
             swiftSettings: [.treatAllWarnings(as: .error)]
