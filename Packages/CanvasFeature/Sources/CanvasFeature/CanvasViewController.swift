@@ -247,7 +247,8 @@ public final class CanvasViewController: UIViewController {
             self?.pencilEnded(at: time, isCancelled: isCancelled)
         }
         // The history buttons lie inside the canvas view, so their touches reach it too (F-06).
-        pencilObserver.isSurface = { [canvasView] in canvasView.isSurface($0) }
+        // Weak, because the canvas view holds the observer (a strong capture leaked the canvas).
+        pencilObserver.isSurface = { [weak canvasView] in canvasView?.isSurface($0) ?? false }
         canvasView.addGestureRecognizer(pencilObserver)
     }
 
