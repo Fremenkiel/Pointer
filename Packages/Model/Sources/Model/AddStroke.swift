@@ -6,6 +6,8 @@
 public struct AddStroke: CanvasCommand {
     /// The strokes of the path, in drawing order.
     public let strokes: [Stroke]
+    /// The control points of the strokes (D-76).
+    public let heldPointCount: Int
 
     /// Makes the command.
     ///
@@ -17,6 +19,12 @@ public struct AddStroke: CanvasCommand {
             "AddStroke holds a stroke twice"
         )
         self.strokes = strokes
+        heldPointCount = strokes.reduce(0) { $0 + $1.points.count }
+    }
+
+    /// Calls `body` with the ID of each stroke.
+    public func forEachHeldStroke(_ body: (StrokeID) -> Void) {
+        for stroke in strokes { body(stroke.id) }
     }
 
     /// Adds the strokes. A first apply returns the stroke rows, and a redo returns the

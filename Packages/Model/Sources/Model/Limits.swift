@@ -25,6 +25,10 @@ public enum Limits {
     public static let minCardHeight = 48.0
     /// Undo steps per canvas.
     public static let maxHistoryDepth = 500
+    /// The control points that the undo history of one canvas holds, about 67 MB (D-76).
+    public static let maxHistoryPointsPerCanvas = 4_000_000
+    /// The control points that the histories of all sessions hold, about 270 MB (D-76).
+    public static let maxHistoryPointsInSessions = 16_000_000
     /// The smallest camera zoom (CAN-04).
     public static let minZoom = 0.25
     /// The largest camera zoom (CAN-04).

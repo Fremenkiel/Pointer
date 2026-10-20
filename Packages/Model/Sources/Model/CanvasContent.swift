@@ -124,6 +124,15 @@ public struct CanvasContent: Sendable {
         return tombstone
     }
 
+    /// Removes the erase records of the session of strokes that no step of the history holds
+    /// any more (D-76). The repository keeps its rows.
+    public mutating func forgetRecords(of ids: [StrokeID]) {
+        for id in ids {
+            erased.removeValue(forKey: id)
+        }
+        assert(ids.allSatisfy { erased[$0] == nil }, "A forgotten record stayed")
+    }
+
     /// Takes the erase records of the session back after a new load of the canvas, so that an
     /// undo after a workspace switch finds them (D-12).
     ///

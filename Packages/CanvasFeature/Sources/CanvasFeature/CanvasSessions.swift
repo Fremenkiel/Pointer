@@ -26,11 +26,22 @@ public final class CanvasSessions {
     /// The canvases by last use, the most recent last.
     private var order: [CanvasID] = []
 
+    /// The most control points that the histories of all sessions hold (D-76).
+    let pointBudget: Int
+
     /// Makes an empty store.
-    public init() {}
+    ///
+    /// - Precondition: `pointBudget` is not negative.
+    public init(pointBudget: Int = Limits.maxHistoryPointsInSessions) {
+        precondition(pointBudget >= 0, "A point budget is not negative, got \(pointBudget)")
+        self.pointBudget = pointBudget
+    }
 
     /// The number of sessions.
     var count: Int { sessions.count }
+
+    /// The control points of the histories of all sessions.
+    var pointCount: Int { sessions.values.reduce(0) { $0 + $1.history.pointCount } }
 
     /// Returns the session of a canvas, or an empty session for a new canvas.
     func session(for canvasID: CanvasID) -> CanvasSession {
@@ -47,6 +58,28 @@ public final class CanvasSessions {
         sessions[canvasID] = session
         order.removeAll { $0 == canvasID }
         order.append(canvasID)
+        fitPointBudget()
         assert(order.count == sessions.count, "Each session has one place in the order")
+    }
+
+    /// Drops the oldest steps of the least recently used sessions first until all histories
+    /// hold at most `pointBudget` control points. The erase records of the strokes that no kept
+    /// step holds go with them (D-76).
+    private func fitPointBudget() {
+        let start = pointCount
+        var total = start
+        for canvasID in order where total > pointBudget {
+            guard let index = sessions.index(forKey: canvasID) else { continue }
+            let before = sessions.values[index].history.pointCount
+            let target = max(0, before - (total - pointBudget))
+            let dropped = sessions.values[index].history.dropOldest(toFit: target)
+            let unheld = sessions.values[index].history.unheldStrokeIDs(of: dropped)
+            for id in unheld {
+                sessions.values[index].erased.removeValue(forKey: id)
+            }
+            total -= before - sessions.values[index].history.pointCount
+        }
+        if total < start { logger.notice("Old undo steps are dropped to save memory.") }
+        assert(total <= pointBudget, "The sessions still pass \(pointBudget) points")
     }
 }

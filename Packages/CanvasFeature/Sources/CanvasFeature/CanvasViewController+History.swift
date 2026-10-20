@@ -27,9 +27,13 @@ extension CanvasViewController {
     /// - Throws: The `CommandError` of the command. The content then stays as it was.
     /// - Returns: The changed rows for the library.
     func perform(_ command: any CanvasCommand) throws(CommandError) -> [LibraryChange] {
-        let rows = try history.perform(command, on: &content, clock: &clock.factory.clock)
+        let performed = try history.perform(command, on: &content, clock: &clock.factory.clock)
+        if !performed.dropped.isEmpty {
+            // The dropped steps can no longer be undone, so their records leave memory (D-76).
+            content.forgetRecords(of: history.unheldStrokeIDs(of: performed.dropped))
+        }
         historyDidChange()
-        return rows
+        return performed.changes
     }
 
     /// Runs an undo or a redo of `command`, then sends the change to the renderer and the rows to

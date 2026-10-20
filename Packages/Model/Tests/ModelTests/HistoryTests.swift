@@ -91,4 +91,116 @@ struct HistoryTests {
         #expect(history.canRedo)
         #expect(history.undoSteps.isEmpty)
     }
+
+    /// A stroke of `count` control points that share `points`.
+    private static func stroke(
+        _ rig: inout CommandRig,
+        points: InkPoints
+    ) -> Stroke {
+        Stroke(
+            id: rig.factory.identifiers.make(StrokeID.self),
+            canvasID: Fixtures.canvas,
+            created: rig.factory.clock.now(),
+            origin: .zero,
+            width: 2,
+            points: points
+        )
+    }
+
+    private static func points(_ count: Int) -> InkPoints {
+        InkPoints((0..<count).map { InkPoint(x: Float($0), y: 0, force: 1, time: 0) })
+    }
+
+    @Test(
+        "The history keeps its point budget and drops the oldest step past it (D-76)",
+        arguments: [0, 1]
+    )
+    func pointBudget(over: Int) throws {
+        var rig = CommandRig()
+        var history = History(pointBudget: 100)
+        var first: StrokeID?
+        for _ in 0..<9 {
+            let stroke = Self.stroke(&rig, points: Self.points(10))
+            first = first ?? stroke.id
+            _ = try history.perform(
+                AddStroke(strokes: [stroke]),
+                on: &rig.content,
+                clock: &rig.factory.clock
+            )
+        }
+        // The last step takes the history to the bound, or to the bound plus one.
+        let performed = try history.perform(
+            AddStroke(strokes: [Self.stroke(&rig, points: Self.points(10 + over))]),
+            on: &rig.content,
+            clock: &rig.factory.clock
+        )
+        #expect(history.pointCount == (over == 0 ? 100 : 91))
+        #expect(history.undoSteps.count == (over == 0 ? 10 : 9))
+        var dropped: [StrokeID] = []
+        for step in performed.dropped {
+            step.forEachHeldStroke { dropped.append($0) }
+        }
+        #expect(dropped == (over == 0 ? [] : [first].compactMap { $0 }))
+    }
+
+    @Test("The default point budget is the limit of one canvas")
+    func defaultBudget() {
+        #expect(History().pointBudget == Limits.maxHistoryPointsPerCanvas)
+    }
+
+    @Test("500 steps of 300,000 points each keep at most 4,000,000 points (M-01)")
+    func manyLargeSteps() throws {
+        var rig = CommandRig()
+        var history = History()
+        // The strokes share their points, so the test holds them once (data-model.md 7.4).
+        let shared = Self.points(15_000)
+        for _ in 0..<500 {
+            let strokes = (0..<20).map { _ in Self.stroke(&rig, points: shared) }
+            _ = try history.perform(
+                AddStroke(strokes: strokes),
+                on: &rig.content,
+                clock: &rig.factory.clock
+            )
+        }
+        #expect(history.pointCount <= Limits.maxHistoryPointsPerCanvas)
+        #expect(history.undoSteps.count == Limits.maxHistoryPointsPerCanvas / 300_000)
+    }
+
+    @Test("Dropped steps lose the records of their strokes, and held strokes keep them (M-02)")
+    func droppedRecords() throws {
+        var rig = CommandRig()
+        var history = History(pointBudget: 4)
+        let first = Self.stroke(&rig, points: Self.points(2))
+        _ = try history.perform(
+            AddStroke(strokes: [first]),
+            on: &rig.content,
+            clock: &rig.factory.clock
+        )
+        // The erase holds the stroke too, so the drop of the add keeps its record.
+        let erase = try history.perform(
+            EraseStrokes(removed: [first], parts: []),
+            on: &rig.content,
+            clock: &rig.factory.clock
+        )
+        #expect(erase.dropped.isEmpty)
+        let second = Self.stroke(&rig, points: Self.points(2))
+        let add = try history.perform(
+            AddStroke(strokes: [second]),
+            on: &rig.content,
+            clock: &rig.factory.clock
+        )
+        #expect(add.dropped.count == 1)
+        #expect(history.unheldStrokeIDs(of: add.dropped).isEmpty)
+        // The undo of the second add gives it a record, and a new step clears the redo list.
+        _ = try history.undo(on: &rig.content, clock: &rig.factory.clock)
+        #expect(rig.content.erased[second.id] != nil)
+        let third = try history.perform(
+            AddStroke(strokes: [Self.stroke(&rig, points: Self.points(2))]),
+            on: &rig.content,
+            clock: &rig.factory.clock
+        )
+        rig.content.forgetRecords(of: history.unheldStrokeIDs(of: third.dropped))
+        #expect(rig.content.erased[second.id] == nil)
+        #expect(rig.content.erased[first.id] != nil)
+    }
 }

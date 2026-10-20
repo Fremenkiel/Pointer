@@ -357,6 +357,7 @@ Undo uses the `History` type from `Model`. It does not use `UndoManager` for can
 - Commands: `AddStroke`, `EraseStrokes` (removed strokes plus added parts), `AddTextBox`, `EditText`, `MoveNode`, `ResizeTextBox`, `AddCard`, `DeleteNode`, `RenameCard`.
 - A delete is a tombstone, not a removal (see [data-model.md](data-model.md)). Thus an undo of a delete only clears the tombstone.
 - The history has a limit of `Limits.maxHistoryDepth = 500` steps per canvas. The oldest step is dropped first.
+- The history of one canvas holds at most `Limits.maxHistoryPointsPerCanvas` (4,000,000) control points, and the histories of all sessions hold at most `Limits.maxHistoryPointsInSessions` (16,000,000) (D-76). A step counts the points of the strokes that it holds. Past the canvas budget, the oldest steps go, also a new step that alone passes the budget. Past the session budget, the oldest steps of the least recently used session go first. The session erase records of the strokes in dropped steps go with them, unless a kept step holds the stroke too.
 - A new command clears the redo list.
 - A hardware keyboard gets Command-Z and Shift-Command-Z through `UIKeyCommand`.
 - `PointerApp` holds `CanvasSessions`: for each canvas, the `History` and the erase records of the session. A new load of a canvas reads no erase record, so the canvas takes the records of its session back at the open (`CanvasContent.adoptSessionRecords(_:)`). The shown canvas keeps its session with `endSession()` before the app makes the next canvas screen, so that a screen of the same canvas finds the steps of the visit (F-02 of [m4-fix-plan.md](m4-fix-plan.md)). A tap on the workspace of the shown canvas makes no new screen. A newer switch cancels the load of an older one, so quick switches load only the last canvas (F-13).
@@ -395,6 +396,8 @@ All limits live in one type, `Limits`, in `Model`. Code uses the names, never th
 | `maxSortKeyLength` | 64 | Digits of a sort key. A longer key needs a rebalance. |
 | `minCardWidth`, `minCardHeight` | 64, 48 | The smallest card, in canvas points. |
 | `maxHistoryDepth` | 500 | Undo steps per canvas. |
+| `maxHistoryPointsPerCanvas` | 4,000,000 | Control points in the undo history of one canvas, about 67 MB (D-76). |
+| `maxHistoryPointsInSessions` | 16,000,000 | Control points in the histories of all sessions, about 270 MB (D-76). |
 | `minZoom`, `maxZoom`, `standardZoom` | 0.25, 8.0, 1.0 | Camera (CAN-04). |
 
 If the user reaches a limit, the app shows a short message. It never crashes and never drops data in silence.
