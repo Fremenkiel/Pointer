@@ -78,12 +78,19 @@ private struct Probe {
         self.path = path
         self.bands = bands
         reach = path.radius + Double(stroke.width) / 2
-        nearBounds = Rect(
-            minX: bands.map { path.bandBounds[$0].minX }.min() ?? 0,
-            minY: bands.map { path.bandBounds[$0].minY }.min() ?? 0,
-            maxX: bands.map { path.bandBounds[$0].maxX }.max() ?? 0,
-            maxY: bands.map { path.bandBounds[$0].maxY }.max() ?? 0
-        )
+        // One loop, without the 4 arrays of a `map` per side (P-05).
+        var near = path.bandBounds[bands[0]]
+        for band in bands.dropFirst() {
+            let bounds = path.bandBounds[band]
+            near = Rect(
+                minX: min(near.minX, bounds.minX),
+                minY: min(near.minY, bounds.minY),
+                maxX: max(near.maxX, bounds.maxX),
+                maxY: max(near.maxY, bounds.maxY)
+            )
+        }
+        nearBounds = near
+        assert(near.minX <= near.maxX && near.minY <= near.maxY, "The near bounds are inverted")
         assert(reach > path.radius, "The reach includes half the stroke width")
     }
 
@@ -97,23 +104,27 @@ private struct Probe {
             if start == nil { start = low }
             return
         }
-        let isNear = hull.intersects(nearBounds)
-        let segmentBands = isNear ? bands.filter { path.bandBounds[$0].intersects(hull) } : []
-        // An open range ends at a covered point, which lies in this hull, so it has bands.
-        guard !segmentBands.isEmpty else {
+        // An open range ends at a covered point, which lies in this hull, so it has bands. The
+        // bands of the segment are the ones whose bounds touch the hull, without an array (P-05).
+        guard hull.intersects(nearBounds), hasBand(touching: hull) else {
             assert(start == nil, "Range open at segment \(segment) without bands")
             return
         }
         let steps = sampleCount(segment: segment)
         var previous = low
-        var wasCovered = isCovered(low, bands: segmentBands)
+        var wasCovered = isCovered(low, hull: hull)
         assert(start == nil || wasCovered, "Range open at a free start of segment \(segment)")
         if wasCovered, start == nil { start = low }
         for step in 1...steps {
             let parameter = low + Double(step) / Double(steps)
-            let covered = isCovered(parameter, bands: segmentBands)
+            let covered = isCovered(parameter, hull: hull)
             if covered != wasCovered {
-                let cut = refine(from: previous, to: parameter, startCovered: wasCovered)
+                let cut = refine(
+                    from: previous,
+                    to: parameter,
+                    hull: hull,
+                    startCovered: wasCovered
+                )
                 if covered {
                     start = cut
                 } else if let open = start {
@@ -152,19 +163,33 @@ private struct Probe {
         return min(max(Int(count), 1), StrokeHitTest.maxSamplesPerSegment)
     }
 
-    private func isCovered(_ parameter: Double, bands: [Int]) -> Bool {
-        let point = spline.position(at: parameter)
-        return bands.contains { path.distance(from: point, toBand: $0) < reach }
+    /// Returns `true` if the bounds of a band touch the hull of a segment.
+    private func hasBand(touching hull: Rect) -> Bool {
+        bands.contains { path.bandBounds[$0].intersects(hull) }
     }
 
-    /// Returns the parameter of the change between covered and free inside `low...high`.
-    private func refine(from low: Double, to high: Double, startCovered: Bool) -> Double {
+    /// Returns `true` if a band whose bounds touch the hull of the segment covers the point.
+    private func isCovered(_ parameter: Double, hull: Rect) -> Bool {
+        let point = spline.position(at: parameter)
+        return bands.contains {
+            path.bandBounds[$0].intersects(hull) && path.distance(from: point, toBand: $0) < reach
+        }
+    }
+
+    /// Returns the parameter of the change between covered and free inside `low...high`, with
+    /// the bands of the segment hull.
+    private func refine(
+        from low: Double,
+        to high: Double,
+        hull: Rect,
+        startCovered: Bool
+    ) -> Double {
         precondition(low < high, "Refinement range \(low)...\(high) is empty")
         var lower = low
         var upper = high
         for _ in 0..<StrokeHitTest.refinementSteps {
             let middle = (lower + upper) / 2
-            if isCovered(middle, bands: bands) == startCovered {
+            if isCovered(middle, hull: hull) == startCovered {
                 lower = middle
             } else {
                 upper = middle

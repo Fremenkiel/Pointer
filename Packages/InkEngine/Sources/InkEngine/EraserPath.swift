@@ -22,6 +22,8 @@ public struct EraserPath: Sendable {
     /// The bounds of the whole path, including the radius.
     public let bounds: Rect
     private let grid: SpatialGrid<Int>
+    /// The bands that a query reserves room for.
+    static let reservedBands = 64
 
     /// Makes the path.
     ///
@@ -52,6 +54,9 @@ public struct EraserPath: Sendable {
     /// Returns the indices of the bands whose bounds touch a rectangle, in ascending order.
     func bands(touching rect: Rect) -> [Int] {
         var result: [Int] = []
+        // One allocation for the list, not one per growth (P-05). A long path has up to 16,384
+        // bands, so the reserve stops at the bands that one stroke touches in normal use.
+        result.reserveCapacity(min(bandBounds.count, Self.reservedBands))
         grid.forEachItem(touching: rect) { index in result.append(index) }
         result.sort()
         assert(result.count <= bandBounds.count, "A query found more bands than exist")

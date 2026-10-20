@@ -90,6 +90,7 @@ struct StrokeSpline {
         let end = code(point(at: values.count))
         var window = (code(point(at: -1)), code(values[0]), code(values[1]))
         var result: [Int] = []
+        result.reserveCapacity(segmentCount)
         for segment in 0..<segmentCount {
             let next = segment + 2 < values.count ? code(values[segment + 2]) : end
             if window.0 & window.1 & window.2 & next == 0 { result.append(segment) }
