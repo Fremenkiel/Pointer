@@ -73,6 +73,38 @@ struct EraserToolTests {
         #expect(await library.saveRequests == 1)
     }
 
+    @Test("After 100 alternating undo and redo steps, the stored erase records match (F-11)")
+    func rowsInOrder() async throws {
+        let library = RecordingLibrary()
+        let line = Self.line(clock: Fixtures.clock())
+        let controller = try makeController(strokes: [line], library: library)
+        controller.select(.eraser)
+        erase(controller)
+        // Steps from tasks of alternating priority, as from a button and from a key command.
+        for index in 0..<100 {
+            let priority: TaskPriority = index.isMultiple(of: 2) ? .background : .userInitiated
+            await Task(priority: priority) { @MainActor in
+                if index.isMultiple(of: 2) { controller.undo() } else { controller.redo() }
+            }.value
+        }
+        // Each step gives 3 rows: the cut stroke and its two parts.
+        let expected = 101 * 3
+        for _ in 0..<500 where await library.rows.count < expected {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        let rows = await library.rows
+        #expect(rows.count == expected)
+        var last: [StrokeID: EraseRecord] = [:]
+        for case .erase(let record) in rows {
+            last[record.strokeID] = record
+        }
+        #expect(last.count == 3)
+        for (id, record) in last {
+            let isLive = controller.content.strokes[id] != nil
+            #expect(record.isDeleted == isLive, "The stored erase record of \(id) is stale")
+        }
+    }
+
     @Test("The first sample after a tool change cuts the stroke under it (D-34, D-70)")
     func firstSample() throws {
         let line = Self.line(clock: Fixtures.clock())

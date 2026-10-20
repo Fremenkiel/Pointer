@@ -47,6 +47,8 @@ public final class CanvasViewController: UIViewController {
     private let pinchRecognizer = UIPinchGestureRecognizer()
     let pencilObserver = PencilTouchObserver()
     let repository: (any LibraryRepository)?
+    /// Sends the rows of the steps in order, or `nil` without a library (F-11).
+    private let rowChannel: RowChannel?
     private let onCameraRest: @MainActor (Camera) -> Void
     /// True after a camera change, until the camera comes to rest.
     private var isCameraMoving = false
@@ -71,6 +73,7 @@ public final class CanvasViewController: UIViewController {
         content = dependencies.content
         clock = dependencies.clock
         repository = dependencies.repository
+        rowChannel = dependencies.repository.map { RowChannel(repository: $0) }
         sessions = dependencies.sessions
         if let session = dependencies.sessions?.session(for: dependencies.canvasID) {
             history = session.history
@@ -159,7 +162,9 @@ public final class CanvasViewController: UIViewController {
     /// Keeps the session when the canvas leaves its parent, for example at a workspace switch.
     override public func willMove(toParent parent: UIViewController?) {
         super.willMove(toParent: parent)
-        if parent == nil { endSession() }
+        guard parent == nil else { return }
+        endSession()
+        rowChannel?.finish()
     }
 
     /// Takes the key commands of the hardware keyboard.
@@ -208,17 +213,11 @@ public final class CanvasViewController: UIViewController {
         return accepted
     }
 
-    /// Sends changed rows to the pending set of the library (storage.md section 4).
+    /// Sends changed rows to the pending set of the library, in the order of the steps
+    /// (storage.md section 4).
     func send(_ rows: [LibraryChange]) {
-        guard let repository, !rows.isEmpty else { return }
-        let logger = logger
-        Task {
-            do {
-                try await repository.send(rows)
-            } catch {
-                logger.error("The library did not take \(rows.count) rows: \(error)")
-            }
-        }
+        guard !rows.isEmpty else { return }
+        rowChannel?.send(rows)
     }
 
     /// Tells the app once that the camera is at rest: no gesture and no animation (D-53).
