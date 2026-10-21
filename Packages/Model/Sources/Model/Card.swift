@@ -56,8 +56,35 @@ public struct Card: Identifiable, Hashable, Sendable {
         sortKey = card.sortKey
     }
 
+    /// The share of the screen width that a new card takes (D-101).
+    public static let defaultWidthShare = 0.25
+
     /// The ID of the child canvas.
     public var childCanvasID: CanvasID { CanvasID(id) }
+
+    /// Returns the frame of a new card (D-101): `defaultWidthShare` of the view width at the zoom
+    /// of `camera`, with the aspect of the view, centered on `point`. Each side is at least the
+    /// card minimum, so the aspect holds only while both sides are above it.
+    ///
+    /// - Precondition: `point` is finite, and both sides of `viewSize` are finite and positive.
+    /// - Returns: A frame in canvas points that the initializer of `Card` takes.
+    public static func defaultFrame(at point: Point, camera: Camera, viewSize: Size) -> Rect {
+        precondition(point.isFinite, "The press point must be finite, got \(point)")
+        precondition(
+            viewSize.width > 0 && viewSize.height > 0
+                && viewSize.width.isFinite && viewSize.height.isFinite,
+            "The view size must be positive, got \(viewSize)"
+        )
+        let width = viewSize.width * defaultWidthShare / camera.zoom
+        let height = width * viewSize.height / viewSize.width
+        let size = Size(
+            width: max(width, Limits.minCardWidth),
+            height: max(height, Limits.minCardHeight)
+        )
+        let frame = Rect(origin: point - size.halfDiagonal, size: size)
+        assert(frame.size.width >= Limits.minCardWidth, "The frame meets the card minimum")
+        return frame
+    }
 
     /// Returns a copy with its frame at a new origin and the change time `time`. The size stays.
     ///

@@ -188,6 +188,8 @@ Done when: tests cover zoom 0.25, 1, and 8, a tall and a wide view, and a press 
 
 Rules: CARD-01, TEST-02, D-101.
 
+Status: done on 2026-10-21. `Card.defaultFrame(at:camera:viewSize:)` raises each side to its minimum on its own. Thus at zoom 8 on the 11-inch iPad, the frame is 64 by 48 in landscape and in portrait, as D-101 says. In landscape at zoom 1, the frame is 298.5 by 208.5 points. 122 Model tests pass. Density of `Model` 2.10.
+
 ### Phase 2: persistence (Tier A)
 
 #### 2.1 Preview store
