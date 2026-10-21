@@ -65,4 +65,27 @@ final class ScribbleConditionTests: XCTestCase {
             .filter { $0.delegate != nil }
         XCTAssertTrue(refusing.isEmpty, "No delegate can refuse Scribble")
     }
+
+    /// A finger tap on a box with the pen tool lands on the live canvas of PencilKit. The live
+    /// canvas must not take the first responder from the edit view, or the keyboard closes
+    /// (manual test 4 of docs/m5-plan.md section 5.6).
+    func testLiveCanvasLeavesTheEditViewFirstResponder() throws {
+        let host = try OnScreenCanvas.host()
+        let box = try TextEditTests.box("node", at: Point(x: 0, y: 0))
+        var content = CanvasContent(canvasID: Fixtures.canvas)
+        try content.add(box)
+        let canvas = CanvasViewController(
+            dependencies: CanvasDependencies(
+                renderer: try CanvasRenderer(),
+                clock: Fixtures.clock(),
+                content: content
+            )
+        )
+        OnScreenCanvas.show(canvas, in: host)
+        defer { OnScreenCanvas.close(canvas) }
+        canvas.startTextEdit(of: box)
+        XCTAssertTrue(canvas.textEditing.view.isFirstResponder)
+        _ = canvas.canvasView.liveCanvas.becomeFirstResponder()
+        XCTAssertTrue(canvas.textEditing.view.isFirstResponder, "The edit view keeps the keyboard")
+    }
 }

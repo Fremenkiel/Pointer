@@ -8,8 +8,8 @@ import UIKit
 final class CanvasView: UIView {
     /// The Metal view with all finished ink.
     let inkView: InkView
-    /// The live `PKCanvasView`. It never zooms or scrolls.
-    let liveCanvas = PKCanvasView()
+    /// The live `PKCanvasView`. It never zooms or scrolls, and never becomes the first responder.
+    let liveCanvas = LiveCanvasView()
 
     /// Makes the view.
     init(renderer: CanvasRenderer) {

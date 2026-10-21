@@ -63,7 +63,7 @@ Dependencies flow down. Features get repositories and services through their ini
 
 ### 4.1 Touch routing
 
-The canvas view holds the Metal view and one `PKCanvasView` on top of it. The `PKCanvasView` has a clear background and `drawingPolicy = .pencilOnly`. It never zooms or scrolls.
+The canvas view holds the Metal view and one `PKCanvasView` on top of it. The `PKCanvasView` has a clear background and `drawingPolicy = .pencilOnly`. It never zooms or scrolls. It never becomes the first responder, so a finger tap on it does not take the keyboard from the edit view of a text box (`LiveCanvasView`).
 
 - With the pen tool, `.pencil` touches go to the drawing gesture recognizer of the `PKCanvasView`. PencilKit draws the live stroke.
 - With the eraser tool or the text tool, the drawing gesture recognizer is off. `.pencil` touches go to the active tool through `PencilTouchObserver`, a gesture recognizer on the canvas view that never recognizes and works next to every other recognizer. It takes only the touches on the canvas surfaces, not on the buttons above them (F-06). During an erase, it reports the coalesced samples of each move. See decision D-34.
