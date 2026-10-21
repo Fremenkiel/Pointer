@@ -253,7 +253,8 @@ public final class CanvasRenderer {
     ///
     /// - Precondition: The view size times the scale gives at least one pixel.
     /// - Throws: `RenderingError` if a Metal object fails.
-    /// - Returns: The image of the view, black with white ink.
+    /// - Returns: The image of the view: white ink and text on the background of the
+    ///   configuration.
     public func renderImage(
         of strokes: [Stroke],
         textBoxes: [TextBox] = [],

@@ -3,12 +3,31 @@ import Metal
 import Model
 
 extension FrameRenderer {
+    /// The clear color of a pass into a drawable: the canvas color (D-106).
+    ///
+    /// - Precondition: Each channel of `background` is from 0 to 1.
+    static func clearColor(_ background: SIMD3<Float>) -> MTLClearColor {
+        precondition(
+            background.min() >= 0 && background.max() <= 1,
+            "The background is in sRGB from 0 to 1, got \(background)"
+        )
+        let color = MTLClearColor(
+            red: Double(background.x),
+            green: Double(background.y),
+            blue: Double(background.z),
+            alpha: 1
+        )
+        assert(color.alpha == 1, "A drawable is opaque")
+        return color
+    }
+
     /// Renders strokes and text boxes into an image with the same pipelines as the screen. Only
     /// the tests use it.
     ///
     /// - Precondition: The view size times the scale gives at least one pixel.
     /// - Throws: `RenderingError` if a Metal object fails.
-    /// - Returns: The image of the view, black with white ink and text.
+    /// - Returns: The image of the view: white ink and text on the background of the
+    ///   configuration.
     func renderImage(
         of strokes: [Stroke],
         textBoxes: [TextBox] = [],
@@ -130,10 +149,15 @@ extension FrameRenderer {
         pass.colorAttachments[0].texture = output
         pass.colorAttachments[0].loadAction = .clear
         pass.colorAttachments[0].storeAction = .store
-        pass.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
+        pass.colorAttachments[0].clearColor = Self.clearColor(configuration.background)
         guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass) else { return }
         let size = SIMD2(Float(coverage.width), Float(coverage.height))
-        let uniforms = CompositeUniforms(scale: SIMD2(1, 1), offset: .zero, textureSize: size)
+        let uniforms = CompositeUniforms(
+            scale: SIMD2(1, 1),
+            offset: .zero,
+            textureSize: size,
+            background: SIMD4(configuration.background, 1)
+        )
         encoder.setRenderPipelineState(resources.compositePipeline)
         encoder.setFragmentTexture(coverage, index: 0)
         encoder.setFragmentValue(uniforms, index: 0)

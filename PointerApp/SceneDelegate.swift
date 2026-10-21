@@ -7,7 +7,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
     private var composition: AppComposition?
 
-    /// Makes the window for a new scene, shows the black root view, and opens the library.
+    /// Makes the window for a new scene, shows the root view in the canvas color, and opens the
+    /// library.
     ///
     /// - Precondition: `scene` is a `UIWindowScene`.
     func scene(

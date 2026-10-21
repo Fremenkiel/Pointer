@@ -37,7 +37,14 @@ public final class InkView: UIView {
         self.renderer = renderer
         super.init(frame: .zero)
         isOpaque = true
-        backgroundColor = .black
+        // The canvas color shows until the first frame (D-106).
+        let background = renderer.configuration.background
+        backgroundColor = UIColor(
+            red: CGFloat(background.x),
+            green: CGFloat(background.y),
+            blue: CGFloat(background.z),
+            alpha: 1
+        )
         isUserInteractionEnabled = false
         renderer.configure(metalLayer)
         assert(metalLayer.pixelFormat == .bgra8Unorm, "The renderer did not set up the layer")

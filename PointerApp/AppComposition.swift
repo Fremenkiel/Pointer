@@ -43,7 +43,7 @@ final class AppComposition {
     }
 
     /// Opens the files, makes the clock, and opens the last workspace at its last camera
-    /// (WS-04). A failure shows a message and leaves the black screen.
+    /// (WS-04). A failure shows a message and leaves the empty screen.
     func start() async {
         do {
             let files = try AppFiles.make(FileManager.default)

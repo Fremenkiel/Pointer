@@ -317,7 +317,8 @@ final class CommittedLayer {
     func compositeUniforms(
         camera: Camera,
         displayScale: Double,
-        drawableSize: Size
+        drawableSize: Size,
+        background: SIMD3<Float>
     ) -> CompositeUniforms {
         precondition(displayScale > 0, "Display scale must be positive, got \(displayScale)")
         guard let front = shown else { preconditionFailure("No texture to composite") }
@@ -338,7 +339,8 @@ final class CommittedLayer {
         return CompositeUniforms(
             scale: SIMD2(Float(ratio), Float(ratio)),
             offset: SIMD2(Float(offsetX), Float(offsetY)),
-            textureSize: SIMD2(Float(size.width), Float(size.height))
+            textureSize: SIMD2(Float(size.width), Float(size.height)),
+            background: SIMD4(background, 1)
         )
     }
 }

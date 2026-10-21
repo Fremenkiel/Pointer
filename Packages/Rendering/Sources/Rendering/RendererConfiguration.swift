@@ -17,6 +17,19 @@ public struct RendererConfiguration: Sendable {
     /// The byte budget of the glyph atlas: a start value (task 2.2 of docs/m5-plan.md). Tune it
     /// on a device.
     public var glyphAtlasByteBudget: Int
+    /// The canvas color in sRGB, each channel from 0 to 1. The composite mixes it with white by
+    /// the coverage (CAN-01, D-106). The app passes `DesignSystem.Color.canvasBackgroundSRGB`.
+    /// The default is black, so that the coverage tests keep their reference images.
+    ///
+    /// - Precondition: Each channel is from 0 to 1.
+    public var background: SIMD3<Float> = .zero {
+        didSet {
+            precondition(
+                background.min() >= 0 && background.max() <= 1,
+                "The background is in sRGB from 0 to 1, got \(background)"
+            )
+        }
+    }
     /// The glyph quads per frame. A text box holds at most `Limits.maxTextLength` glyphs, so a
     /// frame holds several boxes.
     public var glyphCapacity: Int

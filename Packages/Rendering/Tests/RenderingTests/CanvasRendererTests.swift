@@ -119,23 +119,30 @@ struct CanvasRendererTests {
         let uniforms = layer.compositeUniforms(
             camera: camera,
             displayScale: 2,
-            drawableSize: Size(width: 400, height: 240)
+            drawableSize: Size(width: 400, height: 240),
+            background: Self.background
         )
         #expect(uniforms.scale == SIMD2(1, 1))
         #expect(uniforms.offset == SIMD2(200, 120))
         let moved = layer.compositeUniforms(
             camera: camera.panned(byView: Vector(dx: 10, dy: 0)),
             displayScale: 2,
-            drawableSize: Size(width: 400, height: 240)
+            drawableSize: Size(width: 400, height: 240),
+            background: Self.background
         )
         #expect(moved.offset == SIMD2(180, 120))
         let fraction = layer.compositeUniforms(
             camera: camera.panned(byView: Vector(dx: 0.3, dy: -0.2)),
             displayScale: 2,
-            drawableSize: Size(width: 400, height: 240)
+            drawableSize: Size(width: 400, height: 240),
+            background: Self.background
         )
         #expect(fraction.offset == SIMD2(199, 120))
+        #expect(uniforms.background == SIMD4(Self.background, 1))
     }
+
+    /// The canvas color of CAN-01 in sRGB (D-106).
+    private static let background = SIMD3<Float>(41, 44, 51) / 255
 
     /// Returns a layer of 400 x 240 pixels with a complete, empty build for `camera`.
     private func makeBuiltLayer(camera: Camera) throws -> CommittedLayer {

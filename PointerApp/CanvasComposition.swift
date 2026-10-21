@@ -1,4 +1,5 @@
 import CanvasFeature
+import DesignSystem
 import Model
 import Rendering
 import UIKit
@@ -20,6 +21,7 @@ enum CanvasComposition {
     /// Returns the renderer configuration with the instance budget of the launch argument.
     static func rendererConfiguration(_ defaults: UserDefaults) -> RendererConfiguration {
         var configuration = RendererConfiguration()
+        configuration.background = DesignSystem.Color.canvasBackgroundSRGB
         let budget = defaults.integer(forKey: instanceBudgetKey)
         if budget > 0 {
             configuration.instanceBudgetPerFrame = budget

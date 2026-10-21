@@ -98,6 +98,7 @@ final class FrameRenderer {
         store = StrokeStore(arena: arena)
         let ring = try DrawListRing(device: device, capacity: configuration.drawListCapacity)
         encoder = InkEncoder(resources: resources, store: store, ring: ring)
+        compositePass.colorAttachments[0].clearColor = Self.clearColor(configuration.background)
         textEncoder = TextEncoder(
             resources: resources,
             store: texts,
@@ -290,7 +291,8 @@ final class FrameRenderer {
                 layer.compositeUniforms(
                     camera: camera,
                     displayScale: displayScale,
-                    drawableSize: size
+                    drawableSize: size,
+                    background: configuration.background
                 ),
                 index: 0
             )

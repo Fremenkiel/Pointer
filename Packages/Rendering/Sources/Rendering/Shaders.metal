@@ -44,6 +44,7 @@ struct CompositeUniforms {
     float2 scale;         // drawable pixel to committed texture pixel
     float2 offset;
     float2 textureSize;   // committed texture, pixels
+    float4 background;    // canvas color in sRGB, alpha 1 (D-106)
 };
 
 // One eraser stamp: a capsule from one sample to the next, in mask pixels (D-66). 32 bytes.
@@ -193,7 +194,9 @@ vertex CompositeVertexOut compositeVertex(uint vertexID [[vertex_id]]) {
     return out;
 }
 
-// White ink and text on black: the larger coverage of the two channels becomes the gray value.
+// White ink and text on the canvas color: the larger coverage of the two channels is the weight
+// of white (D-106). The mix runs on the stored sRGB values, as Core Animation blends the live
+// PencilKit canvas on top, so full coverage stays 255 (D-38).
 fragment float4 compositeFragment(CompositeVertexOut in [[stage_in]],
                                   texture2d<float> committed [[texture(0)]],
                                   constant CompositeUniforms &uniforms [[buffer(0)]]) {
@@ -201,7 +204,7 @@ fragment float4 compositeFragment(CompositeVertexOut in [[stage_in]],
     float2 texel = in.position.xy * uniforms.scale + uniforms.offset;
     float2 coverage = committed.sample(linearSampler, texel / uniforms.textureSize).rg;
     float value = max(coverage.r, coverage.g);
-    return float4(value, value, value, 1.0);
+    return float4(mix(uniforms.background.rgb, float3(1.0), value), 1.0);
 }
 
 // Zero coverage. With a scissor rectangle, it clears one area of a committed texture (D-66).
@@ -252,7 +255,7 @@ fragment float4 compositeMaskedFragment(CompositeVertexOut in [[stage_in]],
     float2 coverage = committed.sample(linearSampler, texel).rg;
     float ink = coverage.r * (1.0 - mask.sample(linearSampler, texel).r);
     float value = max(ink, coverage.g);
-    return float4(value, value, value, 1.0);
+    return float4(mix(uniforms.background.rgb, float3(1.0), value), 1.0);
 }
 
 // One glyph of the text pass: a quad that shows its bitmap from the atlas page.

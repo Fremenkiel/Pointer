@@ -12,7 +12,7 @@ final class AppViewController: UIViewController {
     /// The current-tool button of the shown canvas, next to the selector (D-64).
     private var toolButton: UIViewController?
 
-    /// Sets the black background of the root view.
+    /// Sets the canvas color as the background of the root view (D-106).
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = DesignSystem.Color.canvasBackground

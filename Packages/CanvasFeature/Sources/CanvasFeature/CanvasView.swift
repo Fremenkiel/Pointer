@@ -1,3 +1,4 @@
+import DesignSystem
 import PencilKit
 import Rendering
 import UIKit
@@ -15,7 +16,7 @@ final class CanvasView: UIView {
     init(renderer: CanvasRenderer) {
         inkView = InkView(renderer: renderer)
         super.init(frame: .zero)
-        backgroundColor = .black
+        backgroundColor = DesignSystem.Color.canvasBackground
         isMultipleTouchEnabled = true
         configureLiveCanvas()
         addSubview(inkView)

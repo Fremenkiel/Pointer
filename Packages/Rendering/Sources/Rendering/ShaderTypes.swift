@@ -79,6 +79,8 @@ struct CompositeUniforms {
     var offset: SIMD2<Float>
     /// The size of the committed texture, in pixels.
     var textureSize: SIMD2<Float>
+    /// The canvas color in sRGB, with alpha 1 (D-106).
+    var background: SIMD4<Float>
 }
 
 /// One eraser stamp in mask pixels. The layout matches `EraserStamp` in Shaders.metal.
