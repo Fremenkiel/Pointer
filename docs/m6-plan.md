@@ -233,6 +233,8 @@ Done when: tests cover a load, a change, a title of 120 code points, and a card 
 
 Rules: PERF-01, TEST-02, D-92, D-96.
 
+Status: done on 2026-10-21 in commit 1c85e4b. A title uses the text layout of D-84: SF Mono at 17 points with the wrap at 640 points, so a title of 120 code points takes 2 lines. The last line of the title sits on the top edge of the card. No document gives the form of a long title, so the product owner can still change it. The canvas loads the cards, and the open helper of the device tests waits for the text and card loads before it closes a canvas (section 4, rule 8). `SpatialGrid` got `reserveCapacity(_:)`. A full run of `PointerDeviceTests` on the iPad passed 226 tests: the open of D-56 took 248.9 ms (median) and held 346 MB, inside the range of section 6.1. The zoom over the D-56 text had 1 late frame of 478, which D-94 accepts in a full run.
+
 #### 3.2 Cards in the committed layer
 
 1. Add `DesignSystem.Color.cardBorder` as a coverage value below 1. Pass it through `RendererConfiguration.cardBorderCoverage`, as D-106 passes the background, so `Rendering` needs no `DesignSystem` import.
