@@ -297,6 +297,8 @@ Done when: snapshot tests cover the start, the middle, and the end of an open an
 
 Rules: PERF-01, TEST-07, CARD-03, CARD-04, CARD-05, D-98, D-108, D-109, D-110.
 
+Status: done on 2026-10-21 in commit ce9a827. The open freezes `max(r, g)` of the shown texture into one `.r8Unorm` texture of the drawable size, then frees the committed textures and the eraser mask. A leave reads the live committed texture of the loaded parent. The crossfade of 0.1 s is the opacity of the child view (`CanvasRenderer.crossfadeDuration`), which the canvas animates in tasks 4.5 to 4.7. The 6 snapshots match their references from the iPad. A frame of an open made 15 allocations against 15 of a bare frame. The full run passed 247 of 248 tests: the open of D-56 took 248.0 ms and 350 MB. The one failure, `AppMessageTests`, is in the status of task 3.6.
+
 #### 3.6 Cards in the frame and memory budgets
 
 1. The open test and the memory test of the D-56 canvas now draw the 5,000 cards.
@@ -306,6 +308,8 @@ Rules: PERF-01, TEST-07, CARD-03, CARD-04, CARD-05, D-98, D-108, D-109, D-110.
 Done when: the open of D-56 stays under 300 ms and at most 10 % over section 6.1. The memory of the open stays under 380 MB (D-93). The frame loop over cards gives 120 fps and 0 late frames in a run of `FrameLoopTests` alone. Section 6 holds the transition peak against the budget of D-110.
 
 Rules: CAN-05, PERF-03, D-56, D-93, D-94, D-110.
+
+Status: done on 2026-10-21. The canvas draws the 5,000 cards of D-56 since task 3.1, so the open and the memory test hold them. The new frame loop tests over the cards found a fault: each preview that arrived restarted the green part of a running build, and at zoom 0.25 no build completed (0 builds, 480 of 480 frames uncovered). A preview that arrives during a build now waits in `PreviewAtlas.dirtyArea` and redraws the front texture between builds. The card tests check that a build completes, and that check failed before the fix (TEST-03). In 3 runs of `FrameLoopTests` alone, the text pan or the text zoom of M5 had 1 late frame of 478 in some runs, next to the heavier card tests. Alone, both text tests had 0 late frames in 6 runs of the baseline and 6 runs of the current build, alternated. The transition peak and its budget are in section 6.3, and architecture.md section 12 holds the budgets. In the full run of task 3.5, `AppMessageTests` failed once ("A message shows while the palette is open", `alert?.message → nil`). It passed in the 4 full runs before and alone in its first repetition. It shares the host app with other tests that run in parallel.
 
 ### Phase 4: canvas and app (Tier C)
 
@@ -468,12 +472,12 @@ Not measured yet.
 
 | Item | Target | Result |
 |---|---|---|
-| Open of D-56 with cards, median | under 300 ms, at most 10 % over section 6.1 | not measured |
-| Memory of the open of D-56 with cards | under 380 MB (D-93) | not measured |
-| Frame loop over the D-56 cards, alone | 120 fps, 0 late frames | not measured |
-| Frame allocations with cards and cached previews | equal to a bare Metal frame | not measured |
-| Preview render of the D-56 content | recorded, no dropped frame | not measured |
-| Memory peak of an open from D-56 into a D-56 child | budget of D-110 | not measured |
+| Open of D-56 with cards, median | under 300 ms, at most 10 % over section 6.1 | pass: 252.9 ms alone, 248.0 to 253.0 ms in the full runs of tasks 3.2 to 3.5 (section 6.1: 247.5 to 257.7 ms) |
+| Memory of the open of D-56 with cards | under 380 MB (D-93) | pass: 350 to 357 MB (section 6.1: 344 to 350 MB) |
+| Frame loop over the D-56 cards, alone | 120 fps, 0 late frames | pass in 3 runs of `FrameLoopTests` alone: pan at zoom 0.25, zoom, and pan at zoom 1, each 120 fps and 0 late frames. The pan at zoom 0.25 showed uncovered screen in 0 to 2 of 480 frames. |
+| Frame allocations with cards and cached previews | equal to a bare Metal frame | pass: a card pass with 10 cached previews 2 against 2 of a bare pass. A frame of an open 15 against 15. |
+| Preview render of the D-56 content | recorded, no dropped frame | 29.9 to 40.0 ms, 0 late frames (task 3.4) |
+| Memory peak of an open from D-56 into a D-56 child | budget of D-110 | 610 to 619 MB in 3 runs alone; budget set to 670 MB. The leave back: 887 to 898 MB; budget set to 970 MB. The parent held 354 to 356 MB. |
 
 ### 6.4 Canvas
 

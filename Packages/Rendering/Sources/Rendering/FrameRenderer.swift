@@ -127,6 +127,7 @@ final class FrameRenderer {
         return layer.isBuilding || layer.isSettling || layer.isRedrawing || !pendingSlots.isEmpty
             || waitingHandoff > 0 || dirtyArea != nil || eraserMask.hasNewSamples
             || layer.isRedrawingText || dirtyTextArea != nil || !(previews?.pending.isEmpty ?? true)
+            || previews?.dirtyArea != nil
             || previewRenderer?.job != nil
     }
 

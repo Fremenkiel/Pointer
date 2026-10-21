@@ -73,6 +73,12 @@ extension FrameRenderer {
     /// running text redraw (D-82).
     func encodeTextChange(layer: CommittedLayer, context: FrameContext) {
         precondition(layer.front == nil || layer.drawableWidth > 0, "A layer has a drawable size")
+        // New previews redraw the front texture between builds. A build draws each card with
+        // the preview that the atlas holds at that moment.
+        if layer.build == nil, let previews, let area = previews.dirtyArea {
+            dirtyTextArea = dirtyTextArea.map { Self.union($0, area) } ?? area
+            previews.dirtyArea = nil
+        }
         if let area = dirtyTextArea {
             layer.textChanged(area, texts: texts, cards: cards)
             dirtyTextArea = nil

@@ -39,6 +39,10 @@ final class PreviewAtlas {
     var wanted: [PreviewRequest] = []
     /// The results that wait for an upload, oldest first.
     var pending: [DecodedPreview] = []
+    /// The canvas area of the cards whose new previews wait for a green redraw. It waits while a
+    /// build runs: a green change restarts the green part of a build, and previews arrive for
+    /// seconds at zoom 0.25, so no build would complete (m6-plan.md task 3.6).
+    var dirtyArea: Rect?
     /// The staging buffers of the uploads.
     let uploads: PreviewUploads
     /// The cards whose slots went in the last store. Reused.

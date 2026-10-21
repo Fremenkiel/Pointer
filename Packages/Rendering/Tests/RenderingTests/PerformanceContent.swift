@@ -94,4 +94,31 @@ enum PerformanceContent {
             )
         }
     }
+
+    /// The cards of D-56 around the origin: 100 by 70 points, in rows of 100, with the titles
+    /// "Card N", as `D56Library` stores them.
+    static func cards(count: Int) throws -> [Card] {
+        precondition(count > 0 && count <= Limits.maxNodesPerCanvas, "Card count \(count)")
+        let device = DeviceID(rawValue: UUID())
+        let canvas = CanvasID(rawValue: UUID())
+        let meta = RecordMeta(created: HybridTimestamp(wallMillis: 1, counter: 0, device: device))
+        let key = try FractionalIndex(rawValue: "V")
+        let rows = (count + 99) / 100
+        return try (0..<count).map { index in
+            try Card(
+                id: CardID(rawValue: UUID()),
+                meta: meta,
+                canvasID: canvas,
+                frame: Rect(
+                    origin: Point(
+                        x: Double(index % 100) * 120 - 6_000,
+                        y: Double(index / 100) * 90 - Double(rows) * 45
+                    ),
+                    size: Size(width: 100, height: 70)
+                ),
+                title: "Card \(index)",
+                sortKey: key
+            )
+        }
+    }
 }

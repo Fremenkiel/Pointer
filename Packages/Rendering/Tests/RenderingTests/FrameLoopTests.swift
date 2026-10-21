@@ -13,44 +13,72 @@ import XCTest
 final class FrameLoopTests: XCTestCase {
     func testPanDenseStrokes() throws {
         let content = PerformanceContent.dense(count: 20_000, points: 300)
-        try run(.pan, content: content, name: "dense 20k pan")
+        _ = try run(.pan, content: content, name: "dense 20k pan")
     }
 
     func testZoomDenseStrokes() throws {
         let content = PerformanceContent.dense(count: 20_000, points: 300)
-        try run(.zoom, content: content, name: "dense 20k zoom")
+        _ = try run(.zoom, content: content, name: "dense 20k zoom")
     }
 
     func testFastPanDenseStrokes() throws {
         let content = PerformanceContent.dense(count: 20_000, points: 300)
-        try run(.fastPan, content: content, name: "dense 20k fast pan")
+        _ = try run(.fastPan, content: content, name: "dense 20k fast pan")
     }
 
     func testPanFewStrokes() throws {
         let content = PerformanceContent.dense(count: 10, points: 300)
-        try run(.pan, content: content, name: "few pan")
+        _ = try run(.pan, content: content, name: "few pan")
     }
 
     func testPanHandwriting() throws {
         let content = PerformanceContent.handwriting(count: 200_000)
-        try run(.pan, content: content, name: "handwriting 200k pan")
+        _ = try run(.pan, content: content, name: "handwriting 200k pan")
     }
 
     func testZoomHandwriting() throws {
         let content = PerformanceContent.handwriting(count: 200_000)
-        try run(.zoom, content: content, name: "handwriting 200k zoom")
+        _ = try run(.zoom, content: content, name: "handwriting 200k zoom")
     }
 
     func testPanText() throws {
         let content = PerformanceContent.dense(count: 20_000, points: 300)
         let text = try PerformanceContent.textBoxes(count: 5_000)
-        try run(.pan, content: content, text: text, name: "D-56 text pan")
+        _ = try run(.pan, content: content, text: text, name: "D-56 text pan")
     }
 
     func testZoomText() throws {
         let content = PerformanceContent.dense(count: 20_000, points: 300)
         let text = try PerformanceContent.textBoxes(count: 5_000)
-        try run(.zoom, content: content, text: text, name: "D-56 text zoom")
+        _ = try run(.zoom, content: content, text: text, name: "D-56 text zoom")
+    }
+
+    func testPanCards() throws {
+        try runCards(.pan, zoom: Limits.minZoom, name: "D-56 cards pan")
+    }
+
+    func testZoomCards() throws {
+        try runCards(.zoom, zoom: Limits.minZoom, name: "D-56 cards zoom")
+    }
+
+    func testPanCardsAtZoomOne() throws {
+        try runCards(.pan, zoom: Limits.standardZoom, name: "D-56 cards pan at zoom 1")
+    }
+
+    /// The strokes and the 5,000 cards of D-56 with previews from a source, as the app has them
+    /// (m6-plan.md task 3.6). The previews load during the warm-up and the measure.
+    private func runCards(_ motion: FrameLoopMotion, zoom: Double, name: String) throws {
+        let previews = FakePreviews(data: try FakePreviews.png(width: 300, height: 210))
+        let report = try run(
+            motion,
+            content: PerformanceContent.dense(count: 20_000, points: 300),
+            cards: try PerformanceContent.cards(count: 5_000),
+            previews: previews,
+            zoom: zoom,
+            name: name
+        )
+        // The previews arrive during the whole run. They must not stop the builds.
+        XCTAssertGreaterThan(report.builds, 0, "\(name): no build completed")
     }
 
     /// The preview render of the D-56 content at a leave: the time from the request to the
@@ -93,26 +121,35 @@ final class FrameLoopTests: XCTestCase {
         _ motion: FrameLoopMotion,
         content: [Stroke],
         text: [TextBox] = [],
+        cards: [Card] = [],
+        previews: (any PreviewSource)? = nil,
+        zoom: Double = Limits.minZoom,
         name: String
-    ) throws {
+    ) throws -> FrameLoopReport {
         let window = try hostWindow()
         let view = FrameLoopView(frame: window.bounds)
         window.addSubview(view)
         defer { view.removeFromSuperview() }
-        let renderer = try CanvasRenderer()
+        let renderer = try CanvasRenderer(previews: previews)
         renderer.load(content)
         renderer.load(text)
+        renderer.load(cards)
         try setUp(renderer, view: view)
         // The text layout runs off the render thread (D-92). The measure starts after it.
         for _ in 0..<5_000 where renderer.isLoadingText || renderer.isLoadingCards {
             RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.001))
         }
-        let start = Camera(center: .zero, zoom: Limits.minZoom)
+        let start = Camera(center: .zero, zoom: zoom)
         renderer.camera = start
         let probe = FrameLoopProbe(renderer: renderer, view: view, motion: motion, start: start)
         let report = probe.run()
         XCTContext.runActivity(named: "\(name): \(report)") { _ in }
+        // The previews of the cards load during the run. They end before the next test.
+        for _ in 0..<5_000 where renderer.isLoadingPreviews {
+            RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.001))
+        }
         XCTAssertGreaterThan(report.frames, 0, "The frame loop drew no measured frame")
+        return report
     }
 
     private func setUp(_ renderer: CanvasRenderer, view: FrameLoopView) throws {

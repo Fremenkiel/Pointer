@@ -1,3 +1,4 @@
+import Geometry
 import Model
 import Rendering
 import UIKit
@@ -17,6 +18,47 @@ struct OpenMeasurement {
     let heldMegabytes: Double
     /// The largest memory growth during the open, in MB.
     let peakMegabytes: Double
+}
+
+/// The memory of an open and a leave between two D-56 canvases, in MB above the steady memory
+/// before the parent opened.
+struct TransitionMeasurement {
+    /// The parent after its first frame.
+    let parentHeldMegabytes: Double
+    /// The largest growth from the start of the open to the close of the parent.
+    let openPeakMegabytes: Double
+    /// The largest growth from the load of the parent to the close of the child.
+    let leavePeakMegabytes: Double
+}
+
+/// The lowest free memory of the process since a start.
+struct MemoryWatch {
+    let base: Int
+    private var lowest: Int
+
+    init(base: Int) {
+        self.base = base
+        lowest = base
+    }
+
+    /// Notes the free memory now.
+    mutating func look() {
+        lowest = min(lowest, os_proc_available_memory())
+    }
+
+    /// Starts a new peak from the free memory now.
+    mutating func resetLowest() {
+        lowest = os_proc_available_memory()
+    }
+
+    /// The growth of the memory now over the base, in bytes.
+    func held() -> Int { max(0, base - os_proc_available_memory()) }
+
+    /// The largest growth over the base since the last reset, in bytes.
+    mutating func peak() -> Int {
+        look()
+        return max(0, base - lowest)
+    }
 }
 
 /// The open did not reach a frame with all strokes in time.
@@ -101,6 +143,101 @@ enum OnScreenCanvas {
             heldMegabytes: megabytes(available - min(available, held)),
             peakMegabytes: megabytes(available - min(lowest, held))
         )
+    }
+
+    /// The memory of an open from the D-56 canvas into a D-56 child and of the leave back, from
+    /// steady memory before the parent opens (m6-plan.md task 3.6, D-110). The child loads the
+    /// same canvas a second time: a second content and a second renderer, as a real child has.
+    ///
+    /// - Throws: An error of the load or the renderer, or `OpenTimedOut`.
+    static func transition(
+        _ library: D56Library,
+        in host: UIViewController
+    ) async throws -> TransitionMeasurement {
+        let hostViews = host.view.subviews
+        hostViews.forEach { $0.removeFromSuperview() }
+        defer { hostViews.forEach { host.view.addSubview($0) } }
+        try await waitForSteadyMemory()
+        let base = os_proc_available_memory()
+        var watch = MemoryWatch(base: base)
+        let parent = try await showCanvas(library, in: host, watch: &watch)
+        let parentHeld = watch.held()
+        let content = parent.content
+        guard let card = content.cards.values.first?.id else { throw OpenTimedOut() }
+        parent.renderer.beginOpen(of: card)
+        try await waitForFrames(parent.renderer, watch: &watch)
+        watch.resetLowest()
+        let child = try await showCanvas(library, in: host, watch: &watch)
+        close(parent)
+        try await Task.sleep(for: settleTime)
+        let openPeak = watch.peak()
+        watch.resetLowest()
+        let back = try await showCanvas(library, in: host, below: child, watch: &watch)
+        back.renderer.camera = Camera(center: .zero, zoom: Limits.standardZoom)
+        back.renderer.beginLeave(into: card)
+        try await waitForFrames(back.renderer, watch: &watch)
+        close(child)
+        try await Task.sleep(for: settleTime)
+        let leavePeak = watch.peak()
+        close(back)
+        try await Task.sleep(for: settleTime)
+        return TransitionMeasurement(
+            parentHeldMegabytes: megabytes(parentHeld),
+            openPeakMegabytes: megabytes(openPeak),
+            leavePeakMegabytes: megabytes(leavePeak)
+        )
+    }
+
+    /// Loads the canvas of `library`, shows it on top or below `other`, and waits for its first
+    /// frame with all strokes and for its text and card loads.
+    private static func showCanvas(
+        _ library: D56Library,
+        in host: UIViewController,
+        below other: CanvasViewController? = nil,
+        watch: inout MemoryWatch
+    ) async throws -> CanvasViewController {
+        let content = try await library.repository.content(of: library.canvas)
+        let renderer = try CanvasRenderer()
+        var dependencies = CanvasDependencies(
+            renderer: renderer,
+            clock: Fixtures.clock(),
+            content: content
+        )
+        dependencies.repository = library.repository
+        let canvas = CanvasViewController(dependencies: dependencies)
+        show(canvas, in: host)
+        if let other { host.view.bringSubviewToFront(other.view) }
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while isWorking(renderer, strokes: content.strokes.count) {
+            guard clock.now < deadline else { throw OpenTimedOut() }
+            watch.look()
+            try await Task.sleep(for: pollInterval)
+        }
+        return canvas
+    }
+
+    /// `true` while the renderer has frames to draw, strokes to take, or layouts to make.
+    private static func isWorking(_ renderer: CanvasRenderer, strokes: Int) -> Bool {
+        renderer.needsMoreFrames || renderer.strokeCount < strokes || renderer.isLoadingText
+            || renderer.isLoadingCards
+    }
+
+    /// Waits until the renderer drew the frames of its last change.
+    private static func waitForFrames(
+        _ renderer: CanvasRenderer,
+        watch: inout MemoryWatch
+    ) async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        // The change wakes the frame loop on the next display frame.
+        try await Task.sleep(for: .milliseconds(50))
+        while renderer.needsMoreFrames {
+            guard clock.now < deadline else { throw OpenTimedOut() }
+            watch.look()
+            try await Task.sleep(for: pollInterval)
+        }
+        watch.look()
     }
 
     /// The time without a change of the free memory that counts as steady.
