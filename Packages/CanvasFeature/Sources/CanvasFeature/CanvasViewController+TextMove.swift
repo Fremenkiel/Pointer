@@ -16,21 +16,29 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
         let point = canvasPoint(of: recognizer)
         switch recognizer.state {
         case .began:
-            beginTextMove(at: point)
+            if textBox(at: point) != nil {
+                beginTextMove(at: point)
+            } else {
+                beginCardPress(at: point)
+            }
         case .changed:
             continueTextMove(to: point)
-        case .ended:
+        case .ended where textEditing.move != nil:
             endTextMove(at: recognizer.location(in: canvasView))
+        case .ended:
+            endCardPress(at: recognizer.location(in: canvasView))
         case .cancelled, .failed:
             cancelTextMove()
+            textEditing.menuPoint = nil
         default:
             return
         }
     }
 
-    /// `true` if a long press starts on a box. On empty canvas it does nothing in M5 (D-08).
+    /// `true` if a long press can start: on a box for a move or its menu, and on empty canvas
+    /// for "New card" (CARD-01, D-08). The pan wins a finger that moves before the press.
     func longPressCanBegin(_ recognizer: UIGestureRecognizer) -> Bool {
-        isEditingEnabled && textBox(at: canvasPoint(of: recognizer)) != nil
+        isEditingEnabled
     }
 
     /// Starts the move of the box under a canvas point.
@@ -86,6 +94,7 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
 
     private func showTextMenu(for box: TextBox, at location: CGPoint) {
         textEditing.menuBox = box
+        textEditing.menuPoint = nil
         textEditing.menu?.presentEditMenu(
             with: UIEditMenuConfiguration(identifier: nil, sourcePoint: location)
         )
@@ -104,12 +113,14 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
         assert(content.textBoxes[id] == nil, "The deleted box left the content")
     }
 
-    /// The menu of a long press without a drag holds "Delete" (TOOL-08).
+    /// The menu of a long press without a drag holds "Delete" on a box (TOOL-08) and "New card"
+    /// on empty canvas (CARD-01).
     public func editMenuInteraction(
         _ interaction: UIEditMenuInteraction,
         menuFor configuration: UIEditMenuConfiguration,
         suggestedActions: [UIMenuElement]
     ) -> UIMenu? {
+        if let point = textEditing.menuPoint { return newCardMenu(at: point) }
         guard let box = textEditing.menuBox else { return nil }
         let handler: UIActionHandler = { [weak self] _ in self?.deleteTextBox(box.id) }
         let delete = UIAction(

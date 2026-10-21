@@ -23,6 +23,14 @@ public struct CanvasDependencies {
     public var onCameraRest: @MainActor (Camera) -> Void = { _ in }
     /// Shows a short message, for example at a limit (architecture.md section 10).
     public var onMessage: @MainActor (String) -> Void = { _ in }
+    /// The level of the canvas in the card tree: 0 for the root canvas (D-95).
+    ///
+    /// - Precondition: From 0 to `Limits.maxDepth`.
+    public var level = 0 {
+        didSet {
+            precondition((0...Limits.maxDepth).contains(level), "Level \(level) of the canvas")
+        }
+    }
 
     /// Makes the dependencies of a canvas without a stored camera, fill content, or storage.
     public init(renderer: CanvasRenderer, clock: AppClock, content: CanvasContent) {

@@ -37,6 +37,9 @@ final class TextEditing {
     var move: Move?
     /// The box of the open long-press menu, or `nil`.
     var menuBox: TextBox?
+    /// The canvas point of a long press on empty canvas, whose menu holds "New card" (CARD-01,
+    /// D-113), or `nil`.
+    var menuPoint: Point?
     /// The menu of a long press without a drag (TOOL-08).
     var menu: UIEditMenuInteraction?
     /// The sizes of the boxes in canvas points, laid out at their first hit test.

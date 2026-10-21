@@ -1,3 +1,4 @@
+import Geometry
 import Model
 import UIKit
 
@@ -74,5 +75,28 @@ extension CanvasViewController: UIGestureRecognizerDelegate {
             view.isDescendant(of: canvasView.liveCanvas)
         else { return false }
         return Self.takesFingerTouches(otherGestureRecognizer)
+    }
+
+    /// Adds the pan, the pinch, and the pencil observer to the canvas view.
+    func installGestures() {
+        panRecognizer.maximumNumberOfTouches = 1
+        for recognizer in [panRecognizer, pinchRecognizer] as [UIGestureRecognizer] {
+            recognizer.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
+            recognizer.delegate = self
+            canvasView.addGestureRecognizer(recognizer)
+        }
+        panRecognizer.addTarget(self, action: #selector(handlePan(_:)))
+        pinchRecognizer.addTarget(self, action: #selector(handlePinch(_:)))
+        pencilObserver.onBegan = { [weak self] in self?.pencilBegan() }
+        pencilObserver.onSample = { [weak self] location in
+            self?.pencilMoved(to: Point(x: location.x, y: location.y))
+        }
+        pencilObserver.onEnded = { [weak self] time, isCancelled in
+            self?.pencilEnded(at: time, isCancelled: isCancelled)
+        }
+        // The history buttons lie inside the canvas view, so their touches reach it too (F-06).
+        // Weak, because the canvas view holds the observer (a strong capture leaked the canvas).
+        pencilObserver.isSurface = { [weak canvasView] in canvasView?.isSurface($0) ?? false }
+        canvasView.addGestureRecognizer(pencilObserver)
     }
 }

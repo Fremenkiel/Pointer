@@ -324,6 +324,8 @@ Done when: tests cover a new card, its undo and redo, the refusal at level 32, a
 
 Rules: CARD-01, CARD-09, UNDO-03, STYLE-05, D-08, D-95, D-101, D-113.
 
+Status: done on 2026-10-21. The long press can begin anywhere while editing is on: on a text box it moves the box as in M5, and on empty canvas its menu holds "New card". `CanvasDependencies.level` gives the level of the canvas (D-95). The node limit message now reads "This canvas holds no more cards or text boxes.", because cards and text boxes share the limit. `installGestures()` moved to `CanvasViewController+Gestures.swift`, so the class body of the canvas has room for the cards (SIZE-03). The 6 new tests and the 16 text tests of M5 pass on the iPad.
+
 #### 4.2 Card menu and move
 
 1. A long press on a card without a drag opens a menu with "Rename" and "Delete" (CARD-08).

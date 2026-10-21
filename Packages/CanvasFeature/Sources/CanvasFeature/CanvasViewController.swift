@@ -62,6 +62,8 @@ public final class CanvasViewController: UIViewController {
     let textEditing = TextEditing()
     /// Shows a short message, for example at a limit.
     let onMessage: @MainActor (String) -> Void
+    /// The level of the canvas in the card tree. "New card" is refused at `Limits.maxDepth`.
+    let level: Int
 
     /// Makes the canvas screen.
     ///
@@ -91,6 +93,7 @@ public final class CanvasViewController: UIViewController {
         }
         onCameraRest = dependencies.onCameraRest
         onMessage = dependencies.onMessage
+        level = dependencies.level
         cameraController = CameraController(camera: renderer.camera, viewSize: .zero)
         let converter = PencilKitStrokeConverter(
             clock: dependencies.clock,
@@ -239,28 +242,6 @@ public final class CanvasViewController: UIViewController {
         onCameraRest(cameraController.camera)
     }
 
-    private func installGestures() {
-        panRecognizer.maximumNumberOfTouches = 1
-        for recognizer in [panRecognizer, pinchRecognizer] as [UIGestureRecognizer] {
-            recognizer.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
-            recognizer.delegate = self
-            canvasView.addGestureRecognizer(recognizer)
-        }
-        panRecognizer.addTarget(self, action: #selector(handlePan(_:)))
-        pinchRecognizer.addTarget(self, action: #selector(handlePinch(_:)))
-        pencilObserver.onBegan = { [weak self] in self?.pencilBegan() }
-        pencilObserver.onSample = { [weak self] location in
-            self?.pencilMoved(to: Point(x: location.x, y: location.y))
-        }
-        pencilObserver.onEnded = { [weak self] time, isCancelled in
-            self?.pencilEnded(at: time, isCancelled: isCancelled)
-        }
-        // The history buttons lie inside the canvas view, so their touches reach it too (F-06).
-        // Weak, because the canvas view holds the observer (a strong capture leaked the canvas).
-        pencilObserver.isSurface = { [weak canvasView] in canvasView?.isSurface($0) ?? false }
-        canvasView.addGestureRecognizer(pencilObserver)
-    }
-
     /// The camera stops, and running finger gestures end (D-36). The selected tool becomes the
     /// tool of the touch (D-70).
     func pencilBegan() {
@@ -293,7 +274,7 @@ public final class CanvasViewController: UIViewController {
         applyToolState()
     }
 
-    @objc private func handlePan(_ recognizer: UIPanGestureRecognizer) {
+    @objc func handlePan(_ recognizer: UIPanGestureRecognizer) {
         let translation = recognizer.translation(in: canvasView)
         recognizer.setTranslation(.zero, in: canvasView)
         guard pinchRecognizer.state == .possible || pinchRecognizer.state == .failed else { return }
@@ -306,7 +287,7 @@ public final class CanvasViewController: UIViewController {
         cameraMayRest()
     }
 
-    @objc private func handlePinch(_ recognizer: UIPinchGestureRecognizer) {
+    @objc func handlePinch(_ recognizer: UIPinchGestureRecognizer) {
         let location = recognizer.location(in: canvasView)
         let centroid = Point(x: location.x, y: location.y)
         switch recognizer.state {

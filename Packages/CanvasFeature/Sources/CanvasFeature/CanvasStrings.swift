@@ -13,6 +13,13 @@ enum CanvasStrings {
         String(localized: "A text box holds at most 10,000 characters.", bundle: .module)
     }
     static var nodeLimit: String {
-        String(localized: "This canvas holds no more text boxes.", bundle: .module)
+        String(localized: "This canvas holds no more cards or text boxes.", bundle: .module)
+    }
+    static var newCard: String { String(localized: "New card", bundle: .module) }
+    static var depthLimit: String {
+        String(
+            localized: "This canvas is at the deepest level. It holds no cards.",
+            bundle: .module
+        )
     }
 }

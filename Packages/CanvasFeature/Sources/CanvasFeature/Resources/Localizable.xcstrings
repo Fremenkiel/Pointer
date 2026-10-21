@@ -31,6 +31,16 @@
         }
       }
     },
+    "New card": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New card"
+          }
+        }
+      }
+    },
     "Pen": {
       "localizations": {
         "en": {
@@ -61,12 +71,22 @@
         }
       }
     },
-    "This canvas holds no more text boxes.": {
+    "This canvas holds no more cards or text boxes.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This canvas holds no more text boxes."
+            "value": "This canvas holds no more cards or text boxes."
+          }
+        }
+      }
+    },
+    "This canvas is at the deepest level. It holds no cards.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This canvas is at the deepest level. It holds no cards."
           }
         }
       }
