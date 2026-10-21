@@ -121,6 +121,7 @@ Status values: Open, Decided, Replaced.
 | D-111 | The events that write a preview | Up button, pinch-out, workspace switch, and the move to the background | Decided (2026-10-21) |
 | D-112 | A path that names a deleted card | Cut the path before the first card that is not valid | Decided (2026-10-21) |
 | D-113 | What "an empty part of the canvas" is | No card and no text box under the finger. Ink does not count. | Decided (2026-10-21) |
+| D-114 | Snapshot tests of the card menu and the rename alert | Open | Open |
 
 ## Details
 
@@ -1201,6 +1202,17 @@ Status values: Open, Decided, Replaced.
 - CARD-01 makes a card with a long press "on an empty part of the canvas". Ink cannot be selected (CARD-07), and cards lie under the ink (D-16).
 - Options: (a) Empty means no card and no text box under the finger. Ink does not count. (b) Ink counts too, so a long press on ink does nothing.
 - Recommendation: (a). A hit test of ink costs a pass over the strokes, and ink has no menu.
+
+### D-114 Snapshot tests of the card menu and the rename alert
+
+- Open. Raised by task 4.2 of [m6-plan.md](m6-plan.md) on 2026-10-21.
+- Task 4.2 says: "Snapshot tests cover the menu and the alert." The card menu is a `UIEditMenuInteraction` menu with "Rename" and "Delete", and the rename is an alert with a text field, as the workspace rename does (D-101).
+- Both are system UI. The snapshot helpers of the repository render our own views with `UIGraphicsImageRenderer` or Metal (TEST-07). A system menu or alert shows only in a window during its presentation, with animations and blur, so a pixel snapshot of it is not stable. The edit menu of a text box (M5) and the rename alert of a workspace (M3) have no snapshot.
+- Options:
+  - (a) Test the content of the menu and the alert instead of their pixels: the titles, the order, the destructive attribute of "Delete", the text field with its text, and the actions. No snapshot.
+  - (b) Present the menu and the alert in the window of the test host and capture the window with `drawHierarchy(in:afterScreenUpdates:)` after their animations. The reference images change with each iPadOS release.
+  - (c) Replace the system menu and alert with views of our own, and snapshot those. This is new UI that no requirement asks for (AGENT-02).
+- Recommendation: (a). It tests what Pointer controls and matches M3 and M5.
 
 ## Points in the request that conflict or are not complete
 

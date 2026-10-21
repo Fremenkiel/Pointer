@@ -11,6 +11,26 @@
         }
       }
     },
+    "A title holds at most 120 characters.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A title holds at most 120 characters."
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
     "Delete": {
       "localizations": {
         "en": {
@@ -61,6 +81,16 @@
         }
       }
     },
+    "Rename": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        }
+      }
+    },
     "Text": {
       "localizations": {
         "en": {
@@ -87,6 +117,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "This canvas is at the deepest level. It holds no cards."
+          }
+        }
+      }
+    },
+    "Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title"
           }
         }
       }

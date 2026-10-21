@@ -16,6 +16,12 @@ enum CanvasStrings {
         String(localized: "This canvas holds no more cards or text boxes.", bundle: .module)
     }
     static var newCard: String { String(localized: "New card", bundle: .module) }
+    static var rename: String { String(localized: "Rename", bundle: .module) }
+    static var cancel: String { String(localized: "Cancel", bundle: .module) }
+    static var titlePlaceholder: String { String(localized: "Title", bundle: .module) }
+    static var titleLimit: String {
+        String(localized: "A title holds at most 120 characters.", bundle: .module)
+    }
     static var depthLimit: String {
         String(
             localized: "This canvas is at the deepest level. It holds no cards.",

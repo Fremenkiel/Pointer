@@ -29,6 +29,16 @@ final class TextEditing {
         var current: TextBox
     }
 
+    /// The move of a card with a finger (CARD-07, D-10).
+    struct CardMove {
+        /// The card before the move.
+        let card: Card
+        /// The finger point at the start, in canvas space.
+        let start: Point
+        /// The card at the last finger point.
+        var current: Card
+    }
+
     /// The edit view. It joins the canvas view at the first edit.
     let view = TextEditView()
     /// The running edit, or `nil`.
@@ -37,6 +47,10 @@ final class TextEditing {
     var move: Move?
     /// The box of the open long-press menu, or `nil`.
     var menuBox: TextBox?
+    /// The running move of a card, or `nil`.
+    var cardMove: CardMove?
+    /// The card of the open long-press menu, or `nil` (CARD-08).
+    var menuCard: Card?
     /// The canvas point of a long press on empty canvas, whose menu holds "New card" (CARD-01,
     /// D-113), or `nil`.
     var menuPoint: Point?

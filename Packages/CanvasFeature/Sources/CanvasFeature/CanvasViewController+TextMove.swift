@@ -16,22 +16,29 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
         let point = canvasPoint(of: recognizer)
         switch recognizer.state {
         case .began:
-            if textBox(at: point) != nil {
-                beginTextMove(at: point)
-            } else {
-                beginCardPress(at: point)
-            }
+            beginLongPress(at: point)
         case .changed:
             continueTextMove(to: point)
+            continueCardMove(to: point)
         case .ended where textEditing.move != nil:
             endTextMove(at: recognizer.location(in: canvasView))
         case .ended:
             endCardPress(at: recognizer.location(in: canvasView))
         case .cancelled, .failed:
             cancelTextMove()
-            textEditing.menuPoint = nil
+            cancelCardMove()
         default:
             return
+        }
+    }
+
+    /// Starts a long press at a canvas point. Text lies on top, so a box above a card wins the
+    /// press (D-16).
+    func beginLongPress(at point: Point) {
+        if textBox(at: point) != nil {
+            beginTextMove(at: point)
+        } else {
+            beginCardPress(at: point)
         }
     }
 
@@ -95,6 +102,7 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
     private func showTextMenu(for box: TextBox, at location: CGPoint) {
         textEditing.menuBox = box
         textEditing.menuPoint = nil
+        textEditing.menuCard = nil
         textEditing.menu?.presentEditMenu(
             with: UIEditMenuConfiguration(identifier: nil, sourcePoint: location)
         )
@@ -121,6 +129,7 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
         suggestedActions: [UIMenuElement]
     ) -> UIMenu? {
         if let point = textEditing.menuPoint { return newCardMenu(at: point) }
+        if let card = textEditing.menuCard { return cardMenu(for: card) }
         guard let box = textEditing.menuBox else { return nil }
         let handler: UIActionHandler = { [weak self] _ in self?.deleteTextBox(box.id) }
         let delete = UIAction(
