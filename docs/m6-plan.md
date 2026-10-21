@@ -204,6 +204,8 @@ Done when: tests use a temporary folder per test (TEST-04). They cover a write a
 
 Rules: ARCH-04, TEST-04, TEST-06, SAFE-04, D-97, D-107.
 
+Status: done on 2026-10-21. A write of 0 bytes or of more than `maxFileSize` throws `PersistenceError.fileFailed`, because a read removes a file above the limit as damaged. A file that does not read, for example a folder with the name of a preview, also counts as damaged. 95 Persistence tests pass. Line coverage of `Persistence` 91.51 %, density 2.01.
+
 #### 2.2 Validation of the stored path
 
 1. Add `LibraryRepository.validPath(_:in:)`. It reads the cards of the path in one query and returns the longest valid start of the path (D-112).
