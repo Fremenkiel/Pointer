@@ -111,7 +111,7 @@ Acceptance:
 
 The tasks are in [m5-plan.md](m5-plan.md). The product owner decided D-81 to D-91 on 2026-10-20.
 
-Status on 2026-10-21: the code is done on branch `m5`, and `make check` passes with the iPad. Acceptance 2 passes: each line lines up within 1 pixel at zoom 0.5, 1, and 4. Acceptance 1 passes its device test, and the manual test with the pencil waits for the product owner (D-90). The memory target of the open is 380 MB (D-93). D-94 is open: the zoom over the D-56 text had 1 or 2 late frames of 478 in 4 of 5 full device runs. See [m5-plan.md](m5-plan.md) section 5.6.
+Status on 2026-10-21: the code is done on branch `m5`, and `make check` passes with the iPad. Acceptance 2 passes: each line lines up within 1 pixel at zoom 0.5, 1, and 4. Acceptance 1 passes its device test and the manual test with the pencil (D-90). The product owner ran the 10 manual tests of [m5-plan.md](m5-plan.md) section 5.6, and all pass after two fixes. The memory target of the open is 380 MB (D-93). D-94 is open: the zoom over the D-56 text had 1 or 2 late frames of 478 in 4 of 5 full device runs. See [m5-plan.md](m5-plan.md) section 5.6.
 
 Acceptance:
 

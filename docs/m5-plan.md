@@ -246,7 +246,7 @@ Done when: the test passes on the iPad, and the product owner reports a pass of 
 
 Rules: TOOL-05, D-77, D-90.
 
-Status: the device test `ScribbleConditionTests` passes. The manual test with the pencil waits for the product owner (section 5.6).
+Status: done. The device test `ScribbleConditionTests` passes. The product owner ran the manual test with the pencil on 2026-10-21, and it passes.
 
 #### 4.2 Acceptance 2: text lines up with the edit view
 
@@ -331,7 +331,7 @@ In each run, the 6 frame loop tests ran at 120 fps with 0 late frames and 0 unco
 | Item | Target | Result |
 |---|---|---|
 | Acceptance 1, device test of the Scribble conditions (D-90) | pass | pass |
-| Acceptance 1, manual test with the pencil | a pass, reported by the product owner | waits for the product owner |
+| Acceptance 1, manual test with the pencil | a pass, reported by the product owner | pass on 2026-10-21 |
 | Acceptance 2 at zoom 0.5, 1, and 4 (D-91) | within 1 pixel | passes: each line at most 1 pixel in bounds, columns, and rows. The fallback case at zoom 1 passes too. |
 
 ### 5.6 Close
@@ -389,3 +389,5 @@ Manual tests for the product owner with the pencil on the iPad:
 8. Hold a finger on a box without a drag. A menu with Delete opens. Delete removes the box.
 9. Erase across ink and a text box. The eraser hides the ink under it and leaves the text.
 10. Squeeze the pencil during an edit, and pick the pen. The edit ends.
+
+The product owner ran the 10 manual tests on 2026-10-21. Tests 1 and 4 found two defects, and commits 7a68389 and 477f4bc fix them. After the fixes, all 10 manual tests pass.
