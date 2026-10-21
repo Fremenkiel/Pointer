@@ -10,6 +10,8 @@ final class TextStore {
     struct Entry {
         /// The top-left corner in canvas space.
         let origin: Point
+        /// The text of the layout. It shares the storage of the text of the box.
+        let text: String
         /// The layout of the text.
         let layout: TextLayout
         /// The bounds in canvas space, with a margin for the glyphs that leave the line box.
@@ -62,12 +64,17 @@ final class TextStore {
         return zip(boxes, layouts).map { LaidOut(box: $0, layout: $1) }
     }
 
-    /// Adds a text box, or replaces the box with the same ID, and lays out its text.
+    /// Adds a text box, or replaces the box with the same ID, and lays out its text. A box with
+    /// the text of the box that it replaces keeps that layout, so that each drag step of a move
+    /// skips Core Text (review of M5).
     ///
     /// - Returns: The bounds of the box before the change, or `nil` for a new box.
     @discardableResult  // A load needs no old bounds.
     func add(_ box: TextBox) -> Rect? {
         precondition(box.origin.isFinite, "Text box \(box.id) has an origin that is not finite")
+        if let earlier = entries[box.id], earlier.text == box.text {
+            return insert(box, layout: earlier.layout)
+        }
         return insert(box, layout: TextLayout(text: box.text))
     }
 
@@ -79,7 +86,7 @@ final class TextStore {
         let earlier = remove(box.id)
         let margin = TextLayout.lineHeight * Self.boundsMargin
         let bounds = Rect(origin: box.origin, size: layout.size).expanded(by: margin)
-        entries[box.id] = Entry(origin: box.origin, layout: layout, bounds: bounds)
+        entries[box.id] = Entry(origin: box.origin, text: box.text, layout: layout, bounds: bounds)
         grid.insert(box.id, bounds: bounds)
         assert(grid.count == entries.count, "The grid holds each text box")
         return earlier
