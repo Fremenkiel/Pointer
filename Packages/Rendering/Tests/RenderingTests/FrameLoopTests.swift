@@ -1,5 +1,7 @@
 import Geometry
 import Model
+import QuartzCore
+import Synchronization
 import UIKit
 import XCTest
 
@@ -49,6 +51,42 @@ final class FrameLoopTests: XCTestCase {
         let content = PerformanceContent.dense(count: 20_000, points: 300)
         let text = try PerformanceContent.textBoxes(count: 5_000)
         try run(.zoom, content: content, text: text, name: "D-56 text zoom")
+    }
+
+    /// The preview render of the D-56 content at a leave: the time from the request to the
+    /// image, and the frames of the canvas during it (m6-plan.md task 3.4).
+    func testPreviewRenderOfD56() throws {
+        let window = try hostWindow()
+        let view = FrameLoopView(frame: window.bounds)
+        window.addSubview(view)
+        defer { view.removeFromSuperview() }
+        let renderer = try CanvasRenderer()
+        renderer.load(PerformanceContent.dense(count: 20_000, points: 300))
+        renderer.load(try PerformanceContent.textBoxes(count: 5_000))
+        try setUp(renderer, view: view)
+        for _ in 0..<5_000 where renderer.isLoadingText || renderer.isLoadingCards {
+            RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.001))
+        }
+        let start = Camera(center: .zero, zoom: Limits.standardZoom)
+        renderer.camera = start
+        let times = Mutex<(start: Double, end: Double)>((0, 0))
+        let probe = FrameLoopProbe(renderer: renderer, view: view, motion: .still, start: start)
+        probe.onMeasureStart = {
+            times.withLock { $0.start = CACurrentMediaTime() }
+            renderer.renderPreview(camera: start, cardAspect: 1194.0 / 834.0) { image in
+                times.withLock { $0.end = image == nil ? -1 : CACurrentMediaTime() }
+            }
+        }
+        let report = probe.run()
+        let (begin, end) = times.withLock { ($0.start, $0.end) }
+        let line = String(
+            format: "D-56 preview render: %.1f ms; %@",
+            (end - begin) * 1000,
+            report.description
+        )
+        XCTContext.runActivity(named: line) { _ in }
+        XCTAssertGreaterThan(end, begin, "The preview arrived in the measured time")
+        XCTAssertEqual(report.lateIntervals, 0, line)
     }
 
     private func run(

@@ -16,6 +16,8 @@ enum FrameLoopMotion {
     case pan
     case fastPan
     case zoom
+    /// The camera stays at the start, as on a canvas that renders its preview at a leave.
+    case still
 
     /// The pan turns back after this many seconds, as in the benchmark.
     fileprivate static let panLeg = 0.75
@@ -31,6 +33,8 @@ enum FrameLoopMotion {
             return Self.pan(at: elapsed, speed: Self.panSpeed, start: start)
         case .fastPan:
             return Self.pan(at: elapsed, speed: Self.fastPanSpeed, start: start)
+        case .still:
+            return start
         case .zoom:
             // Zoom between 0.25 and 0.49, as in the benchmark.
             return Camera(center: start.center, zoom: 0.35 * pow(1.4, sin(elapsed * .pi)))
@@ -167,6 +171,8 @@ final class FrameLoopProbe {
     private let renderer: CanvasRenderer
     private let view: FrameLoopView
     private let motion: FrameLoopMotion
+    /// Runs once at the first frame of the measured time, for work that the measure holds.
+    var onMeasureStart: (() -> Void)?
     private let start: Camera
     private let collector: FrameLoopCollector
     private var startTime: Double?
@@ -233,6 +239,8 @@ final class FrameLoopProbe {
         renderer.camera = motion.camera(at: elapsed, start: start)
         if elapsed >= Self.warmUp {
             mainThread.append((CACurrentMediaTime() - begin) * 1000)
+            onMeasureStart?()
+            onMeasureStart = nil
         }
     }
 }

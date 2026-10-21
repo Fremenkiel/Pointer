@@ -28,6 +28,8 @@ struct RenderInbox {
     var cardEdits: [CardEdit] = []
     /// The previews that the loader decoded and no frame took yet (D-97).
     var decodedPreviews: [DecodedPreview] = []
+    /// The newest request of a preview of this canvas that no frame took yet (D-97).
+    var previewRender: PreviewRenderRequest?
     /// The edits of handoffs, erases, undo steps, and redo steps, in order.
     var edits: [RenderEdit] = []
     /// The number of the newest handoff in `edits`, or 0.
@@ -66,7 +68,7 @@ struct RenderInbox {
         viewport != nil || !loaded.isEmpty || !edits.isEmpty || eraserStart != nil
             || !laidOutText.isEmpty || !textEdits.isEmpty
             || !laidOutCards.isEmpty || !cardEdits.isEmpty || !decodedPreviews.isEmpty
-            || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
+            || previewRender != nil || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
     }
 
     /// Moves the waiting changes out. The camera stays as the newest value.
@@ -84,6 +86,7 @@ struct RenderInbox {
             cardLoadsInFlight: cardLoadsInFlight,
             cardEdits: cardEdits,
             decodedPreviews: decodedPreviews,
+            previewRender: previewRender,
             edits: edits,
             editHandoff: editHandoff,
             editsWantCompletion: editsWantCompletion,
@@ -115,6 +118,7 @@ struct RenderInbox {
         cardReserve = nil
         cardEdits = []
         decodedPreviews = []
+        previewRender = nil
         edits = []
         editHandoff = 0
         editsWantCompletion = false

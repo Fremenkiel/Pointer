@@ -16,6 +16,9 @@ final class TextEncoder {
         /// The pass stops after this `CACurrentMediaTime()` value, after its first box, as the
         /// ink of a build does (task 2.4 of docs/m5-plan.md).
         var deadline: TimeInterval = .infinity
+        /// `false` draws cards without their previews and asks for none, for the render of a
+        /// preview (architecture.md 5.5).
+        var drawsPreviews = true
     }
 
     /// The pass reads the clock once per this number of boxes.
@@ -110,6 +113,10 @@ final class TextEncoder {
         borderRun = nil
         previewQuads.removeAll(keepingCapacity: true)
         previewRun = nil
+        // A pass without previews hides the atlas for its length.
+        let atlas = previews
+        if !options.drawsPreviews { previews = nil }
+        defer { previews = atlas }
         var position = cursor
         let exponent = GlyphAtlas.exponent(pixelsPerCanvasPoint: target.pixelsPerCanvasPoint)
         for item in ids[cursor...] {

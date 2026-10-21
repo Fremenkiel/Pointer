@@ -320,3 +320,11 @@ fragment half4 cardBorderFragment(CardBorderVertexOut in [[stage_in]]) {
     float line = clamp(in.halfWidth + 0.5 - abs(distance), 0.0, 1.0);
     return half4(line * in.coverage);
 }
+
+// The preview of a child canvas: the larger coverage of the two channels in one channel, as the
+// composite shows it (D-97). One fragment per pixel, so the image keeps the pixels of the target.
+fragment half4 previewResolveFragment(CompositeVertexOut in [[stage_in]],
+                                      texture2d<float> committed [[texture(0)]]) {
+    float2 coverage = committed.read(uint2(in.position.xy)).rg;
+    return half4(max(coverage.r, coverage.g));
+}

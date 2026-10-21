@@ -219,7 +219,8 @@ final class RenderEngine: Sendable {
         }
     }
 
-    /// Applies the loaded cards and the card edits of a frame, as `applyText` does.
+    /// Applies the loaded cards, the card edits, and the previews of a frame, as `applyText`
+    /// does for the text.
     private static func applyCards(_ input: RenderInput, to renderer: FrameRenderer) {
         assert(input.cardLoadsInFlight >= 0, "Card loads in flight \(input.cardLoadsInFlight)")
         if let reserve = input.cardReserve {
@@ -234,6 +235,8 @@ final class RenderEngine: Sendable {
             renderer.apply(edit)
         }
         renderer.makePreviewAtlasIfNeeded()
+        renderer.takePreviews(input.decodedPreviews)
+        if let request = input.previewRender { renderer.startPreviewRender(request) }
         assert(renderer.cards.count <= Limits.maxNodesPerCanvas, "The cards keep the node limit")
     }
 
@@ -250,7 +253,6 @@ final class RenderEngine: Sendable {
         }
         applyText(input, to: renderer)
         applyCards(input, to: renderer)
-        renderer.takePreviews(input.decodedPreviews)
         if let ready = input.eraserReady {
             renderer.isEraserReady = ready
         }

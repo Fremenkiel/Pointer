@@ -25,6 +25,8 @@ struct RenderInput: Sendable {
     let cardEdits: [CardEdit]
     /// The previews that the loader decoded (D-97).
     let decodedPreviews: [DecodedPreview]
+    /// A request of a preview of this canvas, or `nil` (D-97).
+    let previewRender: PreviewRenderRequest?
     /// The edits, in order.
     let edits: [RenderEdit]
     /// The newest handoff of `edits`, or 0.
@@ -47,6 +49,7 @@ struct RenderInput: Sendable {
         camera != nil || viewport != nil || !loaded.isEmpty || !edits.isEmpty
             || !laidOutText.isEmpty || !textEdits.isEmpty
             || !laidOutCards.isEmpty || !cardEdits.isEmpty || !decodedPreviews.isEmpty
-            || eraserStart != nil || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
+            || previewRender != nil || eraserStart != nil || !eraserSamples.isEmpty || endsEraser
+            || eraserReady != nil
     }
 }

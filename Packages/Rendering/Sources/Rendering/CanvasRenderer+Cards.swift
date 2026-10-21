@@ -1,4 +1,5 @@
 import Dispatch
+import Geometry
 import Model
 
 /// The cards of the renderer (architecture.md 5.5, D-96).
@@ -9,6 +10,51 @@ extension CanvasRenderer {
 
     /// `true` while a card preview waits, decodes, or waits for its upload (D-97).
     public var isLoadingPreviews: Bool { engine.isLoadingPreviews }
+
+    /// Renders the preview of this canvas for the card of the canvas in its parent (m6-plan.md
+    /// task 3.4, D-97, D-98): the child region of the open camera `camera`, cut to the aspect of
+    /// the card. The longer side has `size` pixels. The render runs in chunks inside the
+    /// instance budget, so no frame drops. A newer request ends a waiting one with `nil`.
+    /// `completion` gets the image, or `nil` if the render failed. It runs off the main actor, so
+    /// it can encode the PNG and write the file there.
+    ///
+    /// - Precondition: `cardAspect` is positive and finite, and `size` is from 1 to 512.
+    public func renderPreview(
+        camera: Camera,
+        cardAspect: Double,
+        size: Int = PreviewImage.maxSide,
+        completion: @escaping @Sendable (PreviewImage?) -> Void
+    ) {
+        precondition(cardAspect > 0 && cardAspect.isFinite, "Card aspect \(cardAspect)")
+        precondition(size > 0 && size <= PreviewImage.maxSide, "Preview size \(size)")
+        let request = PreviewRenderRequest(
+            camera: camera,
+            cardAspect: cardAspect,
+            size: size,
+            completion: completion
+        )
+        engine.post { box in
+            box.previewRender?.completion(nil)
+            box.previewRender = request
+        }
+    }
+
+    /// Shows a new preview of the child canvas of `card` without a read of its file, for the
+    /// parent after a leave (m6-plan.md task 3.4).
+    ///
+    /// - Precondition: The longer side of `image` is at most 512 pixels.
+    public func showPreview(_ image: PreviewImage, of card: CardID) {
+        let side = max(image.width, image.height)
+        precondition(side <= PreviewImage.maxSide, "A preview has at most 512 pixels a side")
+        let preview = DecodedPreview(
+            card: card,
+            step: PreviewAtlas.step(forPixels: Double(side)),
+            width: image.width,
+            height: image.height,
+            outcome: .pixels(image.pixels)
+        )
+        engine.post { box in box.decodedPreviews.append(preview) }
+    }
 
     /// Adds the cards of a load without a callback. Their titles are laid out off the render
     /// thread in the chunks of the text load, so the first frame does not wait for them (D-92).

@@ -27,6 +27,8 @@ final class InkResources {
     let glyphPipeline: any MTLRenderPipelineState
     /// Draws the rounded border of a card into the text channel with `max` blending (D-96).
     let cardBorderPipeline: any MTLRenderPipelineState
+    /// Writes the larger coverage of the two channels into one channel, for a preview (D-97).
+    let previewResolvePipeline: any MTLRenderPipelineState
 
     /// Makes the resources on a device.
     ///
@@ -53,6 +55,7 @@ final class InkResources {
         )
         glyphPipeline = try Self.makeGreenPipeline(device, library, "glyph")
         cardBorderPipeline = try Self.makeGreenPipeline(device, library, "cardBorder")
+        previewResolvePipeline = try Self.makeResolvePipeline(device, library)
         compositeMaskedPipeline = try Self.makeCompositePipeline(
             device: device,
             library: library,
@@ -95,6 +98,23 @@ final class InkResources {
         attachment.sourceAlphaBlendFactor = .one
         attachment.destinationAlphaBlendFactor = .one
         assert(attachment.rgbBlendOperation == .max, "Ink blends with max (D-38)")
+        return try makePipeline(device: device, descriptor: descriptor)
+    }
+
+    /// Makes the pipeline that resolves a preview into one `.r8Unorm` channel, without blending.
+    private static func makeResolvePipeline(
+        _ device: any MTLDevice,
+        _ library: any MTLLibrary
+    ) throws(RenderingError) -> any MTLRenderPipelineState {
+        let descriptor = MTLRenderPipelineDescriptor()
+        descriptor.label = "Preview resolve"
+        descriptor.vertexFunction = library.makeFunction(name: "compositeVertex")
+        descriptor.fragmentFunction = library.makeFunction(name: "previewResolveFragment")
+        guard let attachment = descriptor.colorAttachments[0] else {
+            throw .pipelineFailed("preview resolve color attachment")
+        }
+        attachment.pixelFormat = maskFormat
+        assert(!attachment.isBlendingEnabled, "The resolve replaces the pixels")
         return try makePipeline(device: device, descriptor: descriptor)
     }
 

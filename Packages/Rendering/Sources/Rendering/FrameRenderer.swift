@@ -29,6 +29,8 @@ final class FrameRenderer {
     let cards = CardStore()
     /// The card previews on the GPU, made at the first card (D-97).
     var previews: PreviewAtlas?
+    /// The render of the preview of this canvas, made at the first leave (D-97).
+    var previewRenderer: PreviewRenderer?
     private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     /// The committed layer, or `nil` before the first frame with a drawable size.
@@ -123,6 +125,7 @@ final class FrameRenderer {
         return layer.isBuilding || layer.isSettling || layer.isRedrawing || !pendingSlots.isEmpty
             || waitingHandoff > 0 || dirtyArea != nil || eraserMask.hasNewSamples
             || layer.isRedrawingText || dirtyTextArea != nil || !(previews?.pending.isEmpty ?? true)
+            || previewRenderer?.job != nil
     }
 
     /// Sets the size of the view and the display scale. A change rebuilds the committed layer.
@@ -259,6 +262,7 @@ final class FrameRenderer {
             deadline: CACurrentMediaTime() + configuration.buildTimeBudget,
             text: textEncoder
         )
+        continuePreviewRender(context)
         assert(layer.front != nil || layer.isBuilding, "The layer has a front texture or a build")
     }
 
