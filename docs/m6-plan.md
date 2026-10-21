@@ -218,6 +218,8 @@ Done when: tests cover an empty path, a valid path of 32 cards, and a deleted ca
 
 Rules: WS-04, FLOW-01, FLOW-03, D-112.
 
+Status: done on 2026-10-21. `validPath(_:in:)` is part of the protocol `LibraryRepository`, so the fakes of the feature tests have it too. One prepared statement reads the live cards of the path with 32 parameters, and the unused ones take NULL. The rows that wait for a save are saved first, as a load does. A path of 33 cards keeps its first 32 valid cards. 101 Persistence tests pass. Line coverage of `Persistence` 91.25 %, density 2.00. The device tests build.
+
 ### Phase 3: rendering (Tier B)
 
 #### 3.1 Card store

@@ -75,6 +75,70 @@ extension SQLiteLibraryRepository {
         return content
     }
 
+    /// Returns the longest valid start of a stored navigation path, from one read of its cards
+    /// (D-112). A valid card is live, and its parent is the canvas above it. The rows that wait
+    /// for a save are saved first, so the read holds them.
+    ///
+    /// - Returns: The valid start, at most the first `Limits.maxDepth` cards of `cards`.
+    /// - Throws: `ModelError.storageFailed` if the save of the waiting rows or the read fails.
+    public func validPath(
+        _ cards: [CardID],
+        in workspace: WorkspaceID
+    ) throws(ModelError) -> NavigationPath {
+        let statements = try openStatements()
+        if !pending.isEmpty {
+            try storage { () throws(PersistenceError) in try save() }
+        }
+        // A damaged device file can hold a longer path. The check bounds it (FLOW-03).
+        let path = Array(cards.prefix(Limits.maxDepth))
+        var parents: [CardID: CanvasID] = [:]
+        try storage { () throws(PersistenceError) in
+            parents = try readParents(of: path, with: statements.selectPathCards)
+        }
+        var valid: [CardID] = []
+        var above = CanvasID(workspace)
+        for card in path {
+            guard parents[card] == above else { break }
+            valid.append(card)
+            above = CanvasID(card)
+        }
+        assert(valid.count <= Limits.maxDepth, "A valid path holds at most the depth limit")
+        do {
+            return try NavigationPath(workspace: workspace, cards: valid)
+        } catch {
+            preconditionFailure("A path of \(valid.count) cards is within the limit")
+        }
+    }
+
+    /// Reads the parent canvas of each live card of `path` in one query.
+    ///
+    /// - Precondition: `path` holds at most `Limits.maxDepth` cards.
+    /// - Throws: `PersistenceError` if a bind, a step, or a column read fails.
+    private func readParents(
+        of path: [CardID],
+        with statement: SQLiteStatement
+    ) throws(PersistenceError) -> [CardID: CanvasID] {
+        precondition(path.count <= Limits.maxDepth, "A path of \(path.count) cards is too long")
+        var binder = try RowBinder(statement)
+        for card in path {
+            try binder.bind(card)
+        }
+        for _ in path.count..<Limits.maxDepth {
+            try binder.bind(nil as String?)
+        }
+        var parents: [CardID: CanvasID] = [:]
+        var rows = 0
+        while rows < Limits.maxDepth, try statement.step() {
+            rows += 1
+            var reader = RowReader(statement, table: "card")
+            let id: CardID = try reader.identifier()
+            parents[id] = try reader.identifier()
+        }
+        try statement.reset()
+        assert(parents.count <= path.count, "The read gave \(parents.count) cards")
+        return parents
+    }
+
     /// Reads at most `query.limit + 1` rows and gives each valid row to `add`.
     ///
     /// A row that does not decode, or that `add` refuses at a limit, is skipped. The skipped

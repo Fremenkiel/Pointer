@@ -25,6 +25,14 @@ enum CardRow {
         FROM card WHERE canvas_id = ? AND is_deleted = 0
         """
 
+    /// Reads the IDs and the parents of up to `Limits.maxDepth` live cards, for the check of a
+    /// navigation path (D-112). An unused parameter takes NULL, which matches no row.
+    static let selectPath: StaticString = """
+        SELECT id, canvas_id FROM card WHERE is_deleted = 0 AND id IN (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+
     /// Binds `card` to the parameters of `upsert`.
     ///
     /// - Throws: `PersistenceError.sqlite` if a bind fails.

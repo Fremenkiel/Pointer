@@ -31,6 +31,15 @@ public protocol LibraryRepository: Actor {
     ///   content is above a limit of `Limits`.
     func content(of canvasID: CanvasID) throws(ModelError) -> CanvasContent
 
+    /// Returns the longest valid start of a stored navigation path (D-112). A valid card is live,
+    /// and its parent is the canvas above it: the root canvas of `workspace` for the first card.
+    /// The rows that wait for a save count.
+    ///
+    /// - Returns: The valid start, at most the first `Limits.maxDepth` cards of `cards`.
+    /// - Throws: `ModelError.storageFailed` if the read fails.
+    func validPath(_ cards: [CardID], in workspace: WorkspaceID) throws(ModelError)
+        -> NavigationPath
+
     /// Adds changed rows to the pending set. A later save writes them (D-27).
     ///
     /// - Throws: `ModelError.libraryIsReadOnly` if the library has a newer schema.

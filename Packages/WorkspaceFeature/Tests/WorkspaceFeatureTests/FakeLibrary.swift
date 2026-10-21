@@ -50,6 +50,13 @@ actor FakeLibrary: LibraryRepository {
         CanvasContent(canvasID: canvasID)
     }
 
+    func validPath(
+        _ cards: [CardID],
+        in workspace: WorkspaceID
+    ) throws(ModelError) -> NavigationPath {
+        try NavigationPath(workspace: workspace, cards: Array(cards.prefix(Limits.maxDepth)))
+    }
+
     func send(_ changes: [LibraryChange]) throws(ModelError) {}
 
     func requestSave() {}

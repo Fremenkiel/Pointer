@@ -1,3 +1,5 @@
+import Model
+
 /// The prepared statements of the repository, compiled once at open and reused (storage.md 4).
 final class LibraryStatements {
     let begin: SQLiteStatement
@@ -14,6 +16,7 @@ final class LibraryStatements {
     let selectWorkspaces: SQLiteStatement
     let selectStrokes: SQLiteStatement
     let selectCards: SQLiteStatement
+    let selectPathCards: SQLiteStatement
     let selectTextBoxes: SQLiteStatement
     let writeLastTimestamp: SQLiteStatement
 
@@ -41,6 +44,7 @@ final class LibraryStatements {
         selectWorkspaces = try connection.prepare(WorkspaceRow.selectLive)
         selectStrokes = try connection.prepare(StrokeRow.selectLive)
         selectCards = try connection.prepare(CardRow.selectLive)
+        selectPathCards = try connection.prepare(CardRow.selectPath)
         selectTextBoxes = try connection.prepare(TextBoxRow.selectLive)
         writeLastTimestamp = try connection.prepare(
             """
@@ -48,12 +52,17 @@ final class LibraryStatements {
             ON CONFLICT (key) DO UPDATE SET value = excluded.value
             """
         )
-        // The SQL and the codecs must agree on the shape of each row.
+        checkShapes()
+    }
+
+    /// Asserts that the SQL and the codecs agree on the shape of each row.
+    private func checkShapes() {
         assert(insertStroke.parameterCount == StrokeRow.parameterCount, "Stroke write shape")
         assert(selectStrokes.columnCount == StrokeRow.columnCount, "Stroke read shape")
         assert(upsertErase.parameterCount == EraseRow.parameterCount, "Erase write shape")
         assert(upsertCard.parameterCount == CardRow.parameterCount, "Card write shape")
         assert(selectCards.columnCount == CardRow.columnCount, "Card read shape")
+        assert(selectPathCards.parameterCount == Int32(Limits.maxDepth), "Path read shape")
         assert(upsertTextBox.parameterCount == TextBoxRow.parameterCount, "Text box write shape")
         assert(selectTextBoxes.columnCount == TextBoxRow.columnCount, "Text box read shape")
         assert(
