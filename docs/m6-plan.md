@@ -137,6 +137,8 @@ Done when: section 6.1 holds 3 runs. Later tasks compare against them.
 
 Rules: PERF-03, D-79.
 
+Status: done on 2026-10-21. Section 6.1 holds the 3 runs. The worktree of runs 2 and 3 stays in `.build/M6Baseline/tree` for the alternating runs of later tasks.
+
 ### Phase 1: model (Tier A)
 
 #### 1.1 Card copies and card changes in the content
@@ -436,7 +438,17 @@ Rules: AGENT-05, DOC-06, TEST-02, TEST-07, PERF-03, D-79.
 
 ### 6.1 Baseline
 
-Not measured yet (task 0.2).
+Measured on 2026-10-21 on the iPad Pro 11-inch (M4) in Release, with the code of commit 7284f4e. Run 1 ran in the main tree at commit 64ae7be, which changes documents only. Runs 2 and 3 ran in a separate worktree at commit 7284f4e, and run 3 used the build of run 2. Each run passed 221 tests with 0 failures and 0 skips. The memory test and the open test use the corrected method of D-93.
+
+| Run | Open of D-56, median / slowest | Memory of the open, held / peak | Content pass 20,000 / 200,000 / 200,000 handwriting | Eraser frame CPU / GPU median | Erase / undo / redo, slowest |
+|---|---|---|---|---|---|
+| 1 | 247.6 / 252.8 ms | 344 / 344 MB | 37.4 / 114.1 / 171.8 ms | 0.11 / 0.31 ms | 29.82 / 26.06 / 24.21 ms |
+| 2 | 247.5 / 262.3 ms | 346 / 346 MB | 36.0 / 114.2 / 170.0 ms | 0.11 / 0.41 ms | 31.81 / 28.09 / 26.53 ms |
+| 3 | 257.7 / 261.0 ms | 350 / 350 MB | 35.8 / 112.9 / 170.1 ms | 0.11 / 0.41 ms | 30.11 / 28.06 / 22.91 ms |
+
+In each run, the 8 frame loop tests ran at 120 fps with 0 late frames of 479. The pan over the D-56 text showed uncovered screen in 166, 116, and 125 of 480 frames (D-94). The other 7 frame loop tests had 0 uncovered frames. The frame allocations were 15 against 15 of a bare Metal frame. `FrameRenderer.apply` made 14, 2, and 1 allocations for the erase, the undo, and the redo of the D-69 content. A text pass with cached glyphs made 2 allocations against 2 of a bare pass.
+
+Other numbers of the same runs, for later tasks: the layout of the 5,000 text boxes of D-56 took 57.8, 55.5, and 56.4 ms (median). The text pass of 300 boxes at zoom 1 took 0.816, 0.824, and 0.824 ms, or 17.0 to 17.2 ns per glyph.
 
 ### 6.2 Model and persistence
 
