@@ -150,6 +150,16 @@
           }
         }
       }
+    },
+    "Up": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -17,6 +17,7 @@ enum CanvasStrings {
     }
     static var newCard: String { String(localized: "New card", bundle: .module) }
     static var rename: String { String(localized: "Rename", bundle: .module) }
+    static var up: String { String(localized: "Up", bundle: .module) }
     static var cancel: String { String(localized: "Cancel", bundle: .module) }
     static var titlePlaceholder: String { String(localized: "Title", bundle: .module) }
     static var titleLimit: String {

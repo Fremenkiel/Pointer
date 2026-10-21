@@ -38,7 +38,12 @@ struct DeviceStateStoreTests {
         let path: [CardID] = [Values.id(11), Values.id(12), Values.id(13)]
         let camera = Camera(center: Point(x: -1_000_000.5, y: 2_000_000.25), zoom: 0.25)
         try await first.save(lastWorkspace: Values.workspaceID, navigationPath: path)
-        try await first.save(camera, for: Values.canvas)
+        try await first.save(camera, for: CanvasID(Values.id(13) as CardID))
+        // The root canvas has a camera too, but the launch reads the deepest canvas (D-99).
+        try await first.save(
+            Camera(center: .zero, zoom: 1),
+            for: CanvasID(Values.workspaceID)
+        )
 
         let launch = try await Self.store(folder, device: Self.secondDevice).open()
         #expect(!launch.isNew)

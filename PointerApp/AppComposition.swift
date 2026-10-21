@@ -24,6 +24,13 @@ final class AppComposition {
     let sessions = CanvasSessions()
     /// The camera of the last workspace from the launch read. The first canvas uses it.
     var launchCamera: (canvas: CanvasID, camera: Camera)?
+    /// The stored path of the last workspace from the launch read (WS-04, D-112).
+    var launchPath: NavigationPath?
+    /// The path of the canvas on the screen, or `nil` before the first open (architecture.md
+    /// 6.4).
+    var path: NavigationPath?
+    /// The last path of each workspace in this run, so a switch back opens its deepest canvas.
+    var paths: [WorkspaceID: NavigationPath] = [:]
     var isReadOnly = false
     var areSavesFailing = false
     var hasFilled = false
@@ -55,8 +62,13 @@ final class AppComposition {
             makeClock(device: device.state.deviceID, last: library.lastTimestamp)
             isReadOnly = library.isReadOnly
             if isReadOnly { container.showMessage(AppStrings.readOnly) }
-            if let workspace = device.state.lastWorkspace, let camera = device.camera {
-                launchCamera = (CanvasID(workspace), camera)
+            if let workspace = device.state.lastWorkspace {
+                let stored = try NavigationPath(
+                    workspace: workspace,
+                    cards: device.state.navigationPath
+                )
+                launchPath = stored
+                if let camera = device.camera { launchCamera = (stored.currentCanvas, camera) }
             }
             await startSelector(lastWorkspace: device.state.lastWorkspace)
         } catch {
@@ -152,11 +164,12 @@ final class AppComposition {
 
     /// Opens the canvas of a workspace and notes it as the last workspace (D-53).
     func open(_ workspace: Workspace) {
+        let cards = storedPath(of: workspace.id)
         let deviceStore = deviceStore
         let logger = logger
         Task {
             do {
-                try await deviceStore?.save(lastWorkspace: workspace.id, navigationPath: [])
+                try await deviceStore?.save(lastWorkspace: workspace.id, navigationPath: cards)
             } catch {
                 logger.error("The last workspace was not saved: \(error)")
             }
@@ -167,50 +180,29 @@ final class AppComposition {
     }
 
     private func openCanvas(of workspace: Workspace) async {
-        guard let repository, let clock else { return }
-        let canvasID = workspace.canvasID
-        // The canvas is on the screen already, with its history (F-02).
-        guard container.canvas?.canvasID != canvasID else { return }
-        let bounds = container.view.bounds
-        let screenSize = Size(width: bounds.width, height: bounds.height)
+        guard let repository else { return }
         do {
             guard !Task.isCancelled else { return }
-            onLoadStarted?(canvasID)
-            let content = try await repository.content(of: canvasID)
-            let camera = try await storedCamera(for: canvasID)
+            // A card of the stored path can be deleted, so the path is cut there (D-112).
+            let path = try await repository.validPath(
+                storedPath(of: workspace.id),
+                in: workspace.id
+            )
+            // The canvas is on the screen already, with its history (F-02).
+            guard container.canvas?.canvasID != path.currentCanvas else { return }
+            onLoadStarted?(path.currentCanvas)
+            let content = try await repository.content(of: path.currentCanvas)
+            let camera = try await storedCamera(for: path.currentCanvas)
             // A later switch may have started while the content loaded.
             guard !Task.isCancelled, selector?.current?.id == workspace.id else { return }
-            var dependencies = CanvasDependencies(
-                renderer: try CanvasRenderer(
-                    configuration: CanvasComposition.rendererConfiguration(defaults),
-                    previews: previewStore.map { store in
-                        PreviewFiles(store: store, repository: repository, viewSize: screenSize)
-                    }
-                ),
-                clock: clock,
-                content: content
-            )
-            dependencies.camera = camera
-            dependencies.repository = repository
-            dependencies.sessions = sessions
-            dependencies.transientStrokes = fillStrokes(
-                canvasID: canvasID,
-                saved: content.strokes.count
-            )
-            dependencies.onCameraRest = { [weak self] camera in self?.save(camera, for: canvasID) }
-            dependencies.onMessage = { [weak self] text in self?.container.showMessage(text) }
-            // The new screen reads the sessions, so the old one keeps its steps first (F-02).
-            container.canvas?.endSession()
-            let canvas = CanvasViewController(dependencies: dependencies)
-            canvas.isEditingEnabled = !isReadOnly && !areSavesFailing
-            container.show(canvas)
+            try show(path, content: content, camera: camera)
         } catch {
             logger.error("The canvas did not open: \(error)")
             container.showMessage(AppStrings.canvasFailed)
         }
     }
 
-    private func storedCamera(for canvasID: CanvasID) async throws -> Camera? {
+    func storedCamera(for canvasID: CanvasID) async throws -> Camera? {
         if let launch = launchCamera, launch.canvas == canvasID {
             launchCamera = nil
             return launch.camera
@@ -219,7 +211,7 @@ final class AppComposition {
     }
 
     /// Returns the fill content of the launch argument, once, for the first canvas (D-55).
-    private func fillStrokes(canvasID: CanvasID, saved: Int) -> [Stroke] {
+    func fillStrokes(canvasID: CanvasID, saved: Int) -> [Stroke] {
         guard !hasFilled, let clock else { return [] }
         hasFilled = true
         let room = Limits.maxStrokesPerCanvas - saved

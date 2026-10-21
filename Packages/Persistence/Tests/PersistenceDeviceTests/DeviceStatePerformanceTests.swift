@@ -52,17 +52,17 @@ final class DeviceStatePerformanceTests: XCTestCase {
 
     private static func fill(_ store: DeviceStateStore, _ workspace: WorkspaceID) async throws {
         _ = try await store.open()
-        try await store.save(
-            lastWorkspace: workspace,
-            navigationPath: (0..<Limits.maxDepth).map { _ in CardID(rawValue: UUID()) }
-        )
+        let path = (0..<Limits.maxDepth).map { _ in CardID(rawValue: UUID()) }
+        try await store.save(lastWorkspace: workspace, navigationPath: path)
         for index in 0..<cameraCount {
             try await store.save(
                 Camera(center: Point(x: Double(index), y: 0), zoom: 1),
                 for: CanvasID(rawValue: UUID())
             )
         }
-        try await store.save(Camera(center: .zero, zoom: 2), for: CanvasID(workspace))
+        // The launch reads the camera of the deepest canvas of the path (D-99).
+        let deepest = path.last.map(CanvasID.init) ?? CanvasID(workspace)
+        try await store.save(Camera(center: .zero, zoom: 2), for: deepest)
     }
 
     private static func removeFolder(_ folder: URL, _ files: FileManager) {

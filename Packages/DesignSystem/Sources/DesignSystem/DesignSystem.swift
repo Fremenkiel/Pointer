@@ -89,5 +89,7 @@ public enum DesignSystem {
         public static let eraser = "eraser"
         /// The text tool (TOOL-01, D-87).
         public static let text = "character.cursor.ibeam"
+        /// Leaves the current card for its parent canvas (CARD-04).
+        public static let up = "arrow.up.left"
     }
 }

@@ -54,12 +54,13 @@ extension AppComposition {
         let repository = repository
         let deviceStore = deviceStore
         let workspace = selector?.current?.id
+        let cards = path?.workspace == workspace ? path?.cards ?? [] : []
         let camera = container.canvas.map { ($0.camera, $0.canvasID) }
         let logger = logger
         Task {
             do {
                 try await repository?.saveNow()
-                try await deviceStore?.save(lastWorkspace: workspace, navigationPath: [])
+                try await deviceStore?.save(lastWorkspace: workspace, navigationPath: cards)
                 if let (camera, canvasID) = camera {
                     try await deviceStore?.save(camera, for: canvasID)
                 }

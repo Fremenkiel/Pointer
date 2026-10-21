@@ -11,6 +11,9 @@ final class AppViewController: UIViewController {
     private var selector: UIViewController?
     /// The current-tool button of the shown canvas, next to the selector (D-64).
     private var toolButton: UIViewController?
+    /// The up button inside a card, next to the tool button (CARD-04), or `nil` on the root
+    /// canvas.
+    private(set) var upButton: UIViewController?
 
     /// Sets the canvas color as the background of the root view (D-106).
     override func viewDidLoad() {
@@ -65,6 +68,33 @@ final class AppViewController: UIViewController {
         ])
         button.didMove(toParent: self)
         toolButton = button
+    }
+
+    /// Shows the up button to the right of the tool button, or removes it for `nil` (CARD-04,
+    /// architecture.md 6.4).
+    func showUpButton(_ action: (() -> Void)?) {
+        if let old = upButton {
+            old.willMove(toParent: nil)
+            old.view.removeFromSuperview()
+            old.removeFromParent()
+            upButton = nil
+        }
+        guard let action, let toolButton else { return }
+        let host = UIHostingController(rootView: UpButton(action: action))
+        host.view.backgroundColor = .clear
+        host.sizingOptions = .intrinsicContentSize
+        addChild(host)
+        host.view.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(host.view)
+        NSLayoutConstraint.activate([
+            host.view.topAnchor.constraint(equalTo: toolButton.view.topAnchor),
+            host.view.leadingAnchor.constraint(
+                equalTo: toolButton.view.trailingAnchor,
+                constant: DesignSystem.Spacing.small
+            ),
+        ])
+        host.didMove(toParent: self)
+        upButton = host
     }
 
     /// Shows the workspace selector in the top left corner.

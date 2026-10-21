@@ -17,8 +17,9 @@ public struct CanvasSession: Sendable {
 /// it, so a workspace switch keeps the history of each canvas.
 @MainActor
 public final class CanvasSessions {
-    /// The most sessions. In M4 each canvas belongs to a workspace, so the workspace limit
-    /// bounds them. Past it, the session that was used least recently goes.
+    /// The most sessions. A canvas belongs to a workspace or to a card, so the sessions can pass
+    /// the workspace limit. Past it, the session that was used least recently goes, as the
+    /// camera rows of D-53 do.
     static let capacity = Limits.maxWorkspaces
 
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Canvas")

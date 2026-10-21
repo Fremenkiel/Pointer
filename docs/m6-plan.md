@@ -367,6 +367,8 @@ Done when: tests cover an open, a leave, a launch into a path of 3 cards, and a 
 
 Rules: CARD-03, CARD-04, UNDO-02, UNDO-04, WS-04, TEST-07, D-12, D-99, D-112.
 
+Status: done on 2026-10-21. `AppComposition` keeps the current `NavigationPath` and the last path of each workspace in this run, and writes the path to the device state at each navigation and at the move to the background. A workspace switch cuts the stored path with `validPath` and opens its deepest canvas at its stored camera. The launch read of `DeviceStateStore` now takes the camera of the deepest canvas of the stored path, as storage.md section 10 says; it took 1.35 ms (median) on the iPad. The open of a card and the leave run without animation until tasks 4.5 and 4.6. The up button is `UpButton` in `CanvasFeature`, with the icon `DesignSystem.Icon.up`. The snapshot `up-button` covers the button; the chrome around it has no snapshot of its own. A full run of `PointerDeviceTests` passed 274 of 275 tests; the one failure was `DeviceStatePerformanceTests`, which still stored the launch camera for the root canvas, and it passes after the fix.
+
 #### 4.5 Open animation
 
 1. The double tap starts the open of D-98. The parent camera animates for 0.35 s with a spring. At the end, the card covers the screen at the scale k = max(W / w, H / h) (architecture.md section 6.2).

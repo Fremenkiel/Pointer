@@ -24,11 +24,12 @@ public actor DeviceStateStore {
         }
     }
 
-    /// What the app needs at launch: the state and the camera of the last workspace.
+    /// What the app needs at launch: the state and the camera of the deepest canvas of the
+    /// stored path.
     public struct Launch: Equatable, Sendable {
         /// The device state.
         public let state: DeviceState
-        /// The camera of the root canvas of the last workspace, if one is stored.
+        /// The camera of the deepest canvas of the stored path, if one is stored (D-99).
         public let camera: Camera?
         /// True if the store made a new file, because the old one was missing or damaged.
         public let isNew: Bool
@@ -62,7 +63,8 @@ public actor DeviceStateStore {
         self.configuration = configuration
     }
 
-    /// Opens the file and reads the device rows and the camera of the last workspace only.
+    /// Opens the file and reads the device rows and the camera of the deepest canvas of the
+    /// stored path only (storage.md section 10).
     ///
     /// A missing file gives a new one. A damaged file, a file with a newer schema, or a bad row
     /// gives a new file with a new device ID, and the old file stays as `device.sqlite.damaged`.
@@ -174,7 +176,9 @@ public actor DeviceStateStore {
         let state = try readState(deviceID: deviceID, prepared)
         var camera: Camera?
         if let workspace = state.lastWorkspace {
-            camera = try self.camera(for: CanvasID(workspace))
+            // The deepest canvas of the stored path opens at launch (WS-04, D-99).
+            let deepest = state.navigationPath.last.map(CanvasID.init) ?? CanvasID(workspace)
+            camera = try self.camera(for: deepest)
         }
         assert(connection != nil && statements != nil, "The device state did not open")
         return Launch(state: state, camera: camera, isNew: isNew)
