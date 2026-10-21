@@ -177,6 +177,8 @@ Done when: parameterized tests cover levels 0, 1, 31, 32, and 33 (TEST-06).
 
 Rules: CARD-09, TEST-06, FLOW-01, D-95.
 
+Status: done on 2026-10-21. `NavigationPath` also gives `parentCanvas`, for the leave of tasks 4.4 and 4.6. `ModelError.depthLimitReached` is new. architecture.md section 6.4 named the type `NavigationState` and now names it `NavigationPath`. 118 Model tests pass. Density of `Model` 2.08.
+
 #### 1.4 Frame of a new card
 
 1. Add `Card.defaultFrame(at:camera:viewSize:)` in `Model`, or a small type next to it. It gives the frame of D-101: a quarter of the screen width at the current zoom, the aspect of the screen, centered on the press point.

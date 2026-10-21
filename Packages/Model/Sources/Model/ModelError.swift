@@ -26,6 +26,8 @@ public enum ModelError: Error, Equatable, Sendable {
     case sortKeyNeedsRebalance
     /// A navigation path has more than `Limits.maxDepth` cards.
     case navigationPathTooLong(count: Int)
+    /// A canvas at level `Limits.maxDepth` takes no new card (CARD-09, D-95).
+    case depthLimitReached
     /// The library has a newer schema than the app knows, so it opens read-only.
     case libraryIsReadOnly
     /// The storage failed. The reason holds the storage message, never user content.
