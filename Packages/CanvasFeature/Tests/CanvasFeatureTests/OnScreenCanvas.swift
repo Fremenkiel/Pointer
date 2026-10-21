@@ -27,8 +27,12 @@ struct TransitionMeasurement {
     let parentHeldMegabytes: Double
     /// The largest growth from the start of the open to the close of the parent.
     let openPeakMegabytes: Double
+    /// The growth after the parent closed, with the child shown.
+    let heldAfterOpenMegabytes: Double
     /// The largest growth from the load of the parent to the close of the child.
     let leavePeakMegabytes: Double
+    /// `true` if the closed parent screen went away, so nothing keeps its content.
+    let isParentFreed: Bool
 }
 
 /// The lowest free memory of the process since a start.
@@ -158,34 +162,55 @@ enum OnScreenCanvas {
         hostViews.forEach { $0.removeFromSuperview() }
         defer { hostViews.forEach { host.view.addSubview($0) } }
         try await waitForSteadyMemory()
-        let base = os_proc_available_memory()
-        var watch = MemoryWatch(base: base)
-        let parent = try await showCanvas(library, in: host, watch: &watch)
-        let parentHeld = watch.held()
-        let content = parent.content
-        guard let card = content.cards.values.first?.id else { throw OpenTimedOut() }
-        parent.renderer.beginOpen(of: card)
-        try await waitForFrames(parent.renderer, watch: &watch)
-        watch.resetLowest()
-        let child = try await showCanvas(library, in: host, watch: &watch)
-        close(parent)
+        var watch = MemoryWatch(base: os_proc_available_memory())
+        // The open runs in its own function, so no local value keeps the closed parent alive,
+        // as in the app, where the container drops the old screen.
+        let opened = try await openChild(library, in: host, watch: &watch)
         try await Task.sleep(for: settleTime)
         let openPeak = watch.peak()
+        let afterOpen = watch.held()
         watch.resetLowest()
-        let back = try await showCanvas(library, in: host, below: child, watch: &watch)
+        let back = try await showCanvas(library, in: host, below: opened.child, watch: &watch)
         back.renderer.camera = Camera(center: .zero, zoom: Limits.standardZoom)
-        back.renderer.beginLeave(into: card)
+        back.renderer.beginLeave(into: opened.card)
         try await waitForFrames(back.renderer, watch: &watch)
-        close(child)
+        close(opened.child)
         try await Task.sleep(for: settleTime)
         let leavePeak = watch.peak()
         close(back)
         try await Task.sleep(for: settleTime)
         return TransitionMeasurement(
-            parentHeldMegabytes: megabytes(parentHeld),
+            parentHeldMegabytes: megabytes(opened.parentHeld),
             openPeakMegabytes: megabytes(openPeak),
-            leavePeakMegabytes: megabytes(leavePeak)
+            heldAfterOpenMegabytes: megabytes(afterOpen),
+            leavePeakMegabytes: megabytes(leavePeak),
+            isParentFreed: opened.parent == nil
         )
+    }
+
+    /// The child screen after an open, and a weak reference to the closed parent.
+    private struct Opened {
+        let child: CanvasViewController
+        let card: CardID
+        let parentHeld: Int
+        weak var parent: CanvasViewController?
+    }
+
+    /// Shows the parent, opens its first card into a child, and closes the parent.
+    private static func openChild(
+        _ library: D56Library,
+        in host: UIViewController,
+        watch: inout MemoryWatch
+    ) async throws -> Opened {
+        let parent = try await showCanvas(library, in: host, watch: &watch)
+        let parentHeld = watch.held()
+        guard let card = parent.content.cards.values.first?.id else { throw OpenTimedOut() }
+        parent.renderer.beginOpen(of: card)
+        try await waitForFrames(parent.renderer, watch: &watch)
+        watch.resetLowest()
+        let child = try await showCanvas(library, in: host, watch: &watch)
+        close(parent)
+        return Opened(child: child, card: card, parentHeld: parentHeld, parent: parent)
     }
 
     /// Loads the canvas of `library`, shows it on top or below `other`, and waits for its first
