@@ -174,7 +174,7 @@ Done when: the frame loop test gives 120 fps and 0 late frames. The open of the 
 
 Rules: CAN-05, PERF-03, D-56, D-62.
 
-Status: done, with D-94 open. The text part of a build first had no time limit and made late frames (97 and 106 fps). It now uses the build time budget of 2 ms per frame. The pan of the D-56 text still shows uncovered screen in 166 to 179 of 480 frames. The target does not hold this measure (section 5.3).
+Status: done under D-94. The text part of a build first had no time limit and made late frames (97 and 106 fps). It now uses the build time budget of 2 ms per frame. The pan of the D-56 text still shows uncovered screen in 166 to 179 of 480 frames. The target does not hold this measure (section 5.3).
 
 ### Phase 3: canvas (Tier C)
 
@@ -277,7 +277,7 @@ Done when: each step passes, or the product owner accepts the failure.
 
 Rules: AGENT-05, DOC-06, TEST-02, TEST-07, PERF-03, D-79.
 
-Status: done on 2026-10-21, with the open question D-94 and the failures of section 5.6.
+Status: done on 2026-10-21. The product owner decided D-94 on the same day.
 
 ## 5. Results
 

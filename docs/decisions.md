@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21. It is open.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day.
 
 Status values: Open, Decided, Replaced.
 
@@ -101,7 +101,7 @@ Status values: Open, Decided, Replaced.
 | D-91 | The pass rule of M5 acceptance 2 | Lit-pixel bounds and profiles of each line match within 1 pixel | Decided (2026-10-20) |
 | D-92 | The open and the memory of the D-56 canvas with text pass their targets | Remove the extra peak at the open, and lay out the text after the first frame | Decided (2026-10-21) |
 | D-93 | The memory of the open with text after D-92 | Correct the test, keep the second channel, target 380 MB on the 11-inch iPad | Decided (2026-10-21) |
-| D-94 | Late frames of the zoom over the D-56 text in full device runs | Open | Open |
+| D-94 | Late frames of the zoom over the D-56 text in full device runs | Accept at most 2 late frames in a full run for M5. Glyph buffers on the GPU in a later milestone. | Decided (2026-10-21) |
 
 ## Details
 
@@ -975,7 +975,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-94 Late frames of the zoom over the D-56 text in full device runs
 
-- Open. Raised by task 5 of [m5-plan.md](m5-plan.md) on 2026-10-21.
+- Decided by the product owner on 2026-10-21: the recommendation, option (a) for M5 and option (b) for a later milestone. Raised by task 5 of [m5-plan.md](m5-plan.md) on 2026-10-21.
 - The target of task 2.4 is 120 fps and 0 late frames in the frame loop tests over the 5,000 text boxes of D-56.
 - The close ran 5 full runs of `PointerDeviceTests` in a row on the iPad Pro 11-inch (M4). The zoom over the text had 0, 1, 1, 2, and 2 late frames of 478 (119.5 to 120.0 fps). The pan over the text had 0 late frames in each run. The six frame loop tests of M2 had 0 late frames in each run.
 - Run alone, `FrameLoopTests` gave 0 late frames in the zoom over the text in 6 of 6 runs.
