@@ -262,4 +262,58 @@ extension CanvasViewController {
         let onCard = openableCard(at: canvasPoint(of: textEditing.fingerTap)) != nil
         logger.info("Tap wait \(wait, format: .fixed(precision: 1)) ms, on a card: \(onCard)")
     }
+
+    /// Starts the open of a card (architecture.md 6.2, D-98): the camera flies until the card
+    /// covers the screen at the scale k = max(W / w, H / h), and the parent fades out under the
+    /// card. Input is off until the end, so a second double tap does nothing. `onEnd` runs once
+    /// at the end of the flight.
+    public func beginOpen(of card: Card, onEnd: @escaping @MainActor () -> Void) {
+        guard cardTransition == nil, viewSize.width > 0, viewSize.height > 0 else { return }
+        endTextEdit()
+        canvasView.isUserInteractionEnabled = false
+        cardTransition = CardTransition(isOpen: true, start: camera, onEnd: onEnd)
+        renderer.beginOpen(of: card.id)
+        cameraController.fly(to: Self.coverCamera(of: card.frame, viewSize: viewSize))
+        canvasView.inkView.requestFrame()
+        assert(cameraController.flightProgress != nil, "The open flies")
+    }
+
+    /// Ends an open or a leave that cannot finish, for example when the child does not load:
+    /// the parent shows again at its camera before the flight, and input is on again.
+    public func cancelCardTransition() {
+        let start = cardTransition?.start
+        cardTransition = nil
+        renderer.endTransition()
+        if let start { cameraController.fly(to: start) }
+        canvasView.isUserInteractionEnabled = true
+        canvasView.inkView.requestFrame()
+    }
+
+    /// `true` after the renderer drew a frame with all strokes of the load, and needs no more
+    /// frames: the first frame of a canvas that opened.
+    public var hasDrawnLoad: Bool {
+        !renderer.needsMoreFrames && renderer.strokeCount >= content.strokes.count
+    }
+
+    /// The camera at which a card frame covers a screen of `viewSize` (D-98).
+    ///
+    /// - Precondition: The frame and the view have a size.
+    static func coverCamera(of frame: Rect, viewSize: Size) -> Camera {
+        precondition(frame.size.width > 0 && frame.size.height > 0, "A card has a size")
+        let zoom = max(viewSize.width / frame.size.width, viewSize.height / frame.size.height)
+        return Camera(center: frame.center, zoom: zoom)
+    }
+
+    /// Sets the weight of the parent from the progress of the flight, and ends the transition
+    /// with the flight. It runs in the frame callback and allocates nothing (PERF-01).
+    func stepCardTransition() {
+        guard let transition = cardTransition else { return }
+        guard let progress = cameraController.flightProgress else {
+            renderer.setParentWeight(transition.isOpen ? 0 : 1)
+            cardTransition = nil
+            transition.onEnd()
+            return
+        }
+        renderer.setParentWeight(transition.isOpen ? 1 - progress : progress)
+    }
 }

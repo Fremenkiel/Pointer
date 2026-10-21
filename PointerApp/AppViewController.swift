@@ -37,6 +37,53 @@ final class AppViewController: UIViewController {
         showToolButton(newCanvas.toolButton)
     }
 
+    /// Shows a new canvas above the shown one, at opacity 0, so that its first frame draws while
+    /// the open of a card ends (D-98). `completeSwap(to:)` makes it the canvas.
+    func showAbove(_ newCanvas: CanvasViewController) {
+        precondition(newCanvas !== canvas, "A new canvas")
+        addChild(newCanvas)
+        newCanvas.view.frame = view.bounds
+        newCanvas.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        newCanvas.view.alpha = 0
+        let index = canvas.map { view.subviews.firstIndex(of: $0.view) ?? 0 } ?? 0
+        view.insertSubview(newCanvas.view, at: index + 1)
+        newCanvas.didMove(toParent: self)
+    }
+
+    /// Removes a canvas that `showAbove(_:)` added, after a failed open.
+    func removeAbove(_ newCanvas: CanvasViewController) {
+        precondition(newCanvas !== canvas, "Only a canvas above the shown one goes")
+        newCanvas.willMove(toParent: nil)
+        newCanvas.view.removeFromSuperview()
+        newCanvas.removeFromParent()
+    }
+
+    /// Fades the canvas that `showAbove(_:)` added in over `duration` seconds, then removes the
+    /// old canvas and shows the chrome of the new one (D-98).
+    func completeSwap(
+        to newCanvas: CanvasViewController,
+        duration: TimeInterval,
+        completion: @escaping @MainActor () -> Void
+    ) {
+        let old = canvas
+        UIView.animate(
+            withDuration: duration,
+            animations: { newCanvas.view.alpha = 1 },
+            completion: { [weak self] _ in
+                MainActor.assumeIsolated {
+                    if let old {
+                        old.willMove(toParent: nil)
+                        old.view.removeFromSuperview()
+                        old.removeFromParent()
+                    }
+                    self?.canvas = newCanvas
+                    self?.showToolButton(newCanvas.toolButton)
+                    completion()
+                }
+            }
+        )
+    }
+
     /// Shows the current-tool button of the canvas to the right of the selector (D-64).
     private func showToolButton(_ button: UIViewController) {
         if let old = toolButton {

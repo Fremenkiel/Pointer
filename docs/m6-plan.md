@@ -381,6 +381,8 @@ Done when: a device test captures each frame of an open of a D-56 card and recor
 
 Rules: CARD-03, CAN-05, PERF-03, D-98.
 
+Status: done on 2026-10-21. `CameraController.fly(to:duration:)` steps a critically damped spring in closed form in the frame callback of the canvas, with no closure and no `Task` per frame. The zoom moves on a log scale, and the center moves so that the fixed point of the zoom stays in place. `CanvasViewController.beginOpen(of:onEnd:)` flies to the cover camera, sets the parent weight to 1 minus the progress at each step, and turns input off, so a second double tap does nothing. The app loads the child during the flight, shows it above the parent at opacity 0, and fades it in over 0.1 s when the flight and the first frame of the child are both done. Until then, the parent holds the last frame of the flight. A failed load cancels the open: the parent flies back and takes input again. The app drawables cannot be read back, so `OpenAnimationTests` records the cameras of the frames instead of their pixels: the open of the D-56 card nearest to the screen center took 465 ms to the child, with 56 frames, 0 late frames, a largest move of 14.8 points, and a largest zoom step of 1.223 between two frames. The navigation tests now put their container in the window of the test host, because the flight and the first frame of the child need frames.
+
 #### 4.6 Leave with the up button
 
 1. The tap starts the load of the parent and moves the child camera to the camera of the open in the same time (D-109).

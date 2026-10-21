@@ -112,7 +112,9 @@ struct NavigationTests {
             container: AppViewController(),
             defaults: try #require(UserDefaults(suiteName: "NavigationTests"))
         )
-        composition.container.view.frame = CGRect(x: 0, y: 0, width: 1_194, height: 834)
+        // The canvases need a window for their frames, as in the app.
+        composition.container.view.frame = host.view.bounds
+        host.view.addSubview(composition.container.view)
         composition.repository = tree.repository
         composition.clock = tree.clock
         // The composition shows a canvas only for the current workspace of the selector.
@@ -147,6 +149,7 @@ struct NavigationTests {
         let tree = try await Self.makeTree(depth: 1)
         defer { tree.remove() }
         let composition = try Self.composition(for: tree)
+        defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)
         try await Self.waitForCanvas(tree.workspace.canvasID, in: composition)
         #expect(composition.container.upButton == nil)
@@ -169,6 +172,7 @@ struct NavigationTests {
         let tree = try await Self.makeTree(depth: 3)
         defer { tree.remove() }
         let composition = try Self.composition(for: tree)
+        defer { composition.container.view.removeFromSuperview() }
         composition.launchPath = try NavigationPath(workspace: tree.workspace.id, cards: tree.chain)
         await composition.selector?.start(lastWorkspace: tree.workspace.id)
         try await Self.waitForCanvas(CanvasID(tree.chain[2]), in: composition)
@@ -182,6 +186,7 @@ struct NavigationTests {
         let tree = try await Self.makeTree(depth: 3, deleted: 1)
         defer { tree.remove() }
         let composition = try Self.composition(for: tree)
+        defer { composition.container.view.removeFromSuperview() }
         composition.launchPath = try NavigationPath(workspace: tree.workspace.id, cards: tree.chain)
         await composition.selector?.start(lastWorkspace: tree.workspace.id)
         try await Self.waitForCanvas(CanvasID(tree.chain[0]), in: composition)
@@ -193,6 +198,7 @@ struct NavigationTests {
         let tree = try await Self.makeTree(depth: 1)
         defer { tree.remove() }
         let composition = try Self.composition(for: tree)
+        defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)
         try await Self.waitForCanvas(tree.workspace.canvasID, in: composition)
         let card = try #require(composition.container.canvas?.content.cards[tree.chain[0]])

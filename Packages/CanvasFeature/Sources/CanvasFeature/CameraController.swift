@@ -17,6 +17,19 @@ struct CameraController {
     static let springTolerance = 0.001
     /// The largest time step of one animation frame. A longer pause does not jump.
     static let maximumStep: TimeInterval = 0.05
+    /// The time of the open and the leave of a card (architecture.md 6.2, D-98).
+    static let flightDuration: TimeInterval = 0.35
+    /// The stiffness of the flight, times its duration: a critically damped spring that
+    /// reaches 99.9 % of its way at the end, as (1 + 9.23) e^-9.23 = 0.001.
+    static let flightStiffness = 9.23
+
+    /// A camera flight in closed form: the progress is a critically damped spring of time.
+    struct Flight: Equatable {
+        let from: Camera
+        let to: Camera
+        let duration: TimeInterval
+        var elapsed: TimeInterval = 0
+    }
 
     private struct Pinch {
         let startCamera: Camera
@@ -28,6 +41,7 @@ struct CameraController {
         case none
         case deceleration(velocity: Vector)
         case spring(targetZoom: Double, anchor: Point)
+        case flight(Flight)
     }
 
     /// The camera.
@@ -118,8 +132,53 @@ struct CameraController {
             decelerate(velocity: velocity, delta: delta)
         case .spring(let targetZoom, let anchor):
             spring(to: targetZoom, anchor: anchor, delta: delta)
+        case .flight(var flight):
+            flight.elapsed += delta
+            camera = Self.camera(of: flight)
+            animation = flight.elapsed >= flight.duration ? .none : .flight(flight)
         }
         return isAnimating
+    }
+
+    /// Starts a flight from the camera to `target` in `duration` seconds, for the open and the
+    /// leave of a card (D-98). It ends exactly at `target`.
+    ///
+    /// - Precondition: `duration` is positive.
+    mutating func fly(to target: Camera, duration: TimeInterval = flightDuration) {
+        precondition(duration > 0 && duration.isFinite, "A flight takes time, got \(duration)")
+        pinch = nil
+        lastStepTime = nil
+        animation = .flight(Flight(from: camera, to: target, duration: duration))
+    }
+
+    /// The progress of a running flight from 0 to 1, or `nil` without a flight.
+    var flightProgress: Double? {
+        guard case .flight(let flight) = animation else { return nil }
+        return Self.progress(of: flight)
+    }
+
+    /// The progress of a flight: a critically damped spring, scaled to end at 1.
+    static func progress(of flight: Flight) -> Double {
+        let time = min(max(flight.elapsed / flight.duration, 0), 1)
+        return min(reach(at: time) / reach(at: 1), 1)
+    }
+
+    /// The way of a critically damped spring at a time from 0 to 1 of the flight.
+    private static func reach(at time: Double) -> Double {
+        1 - (1 + flightStiffness * time) * exp(-flightStiffness * time)
+    }
+
+    /// The camera of a flight at its progress. The zoom moves on a log scale, and the center
+    /// moves so that the fixed point of the zoom stays in place on the screen.
+    static func camera(of flight: Flight) -> Camera {
+        let progress = progress(of: flight)
+        let (from, to) = (flight.from, flight.to)
+        let zoom = from.zoom * pow(to.zoom / from.zoom, progress)
+        let share =
+            from.zoom == to.zoom
+            ? progress : (1 / from.zoom - 1 / zoom) / (1 / from.zoom - 1 / to.zoom)
+        let center = from.center + (to.center - from.center) * share
+        return progress >= 1 ? to : Camera(center: center, zoom: zoom)
     }
 
     private mutating func decelerate(velocity: Vector, delta: TimeInterval) {

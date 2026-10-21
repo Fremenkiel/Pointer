@@ -15,10 +15,11 @@ extension AppComposition {
         return []
     }
 
-    /// Opens the child canvas of a card at the camera of CARD-03: the standard zoom, centered
-    /// on the content bounds of the child (D-99).
+    /// Opens the child canvas of a card with the animation of D-98: the parent flies until the
+    /// card covers the screen, the child loads at the camera of CARD-03 in the same time, and
+    /// the child fades in when both are done (architecture.md 6.2, D-99).
     func openChild(_ card: Card) {
-        guard let path else { return }
+        guard let path, let parent = container.canvas, opening == nil else { return }
         let child: NavigationPath
         do {
             child = try path.pushing(card.id)
@@ -26,8 +27,54 @@ extension AppComposition {
             logger.error("A card below level 32 does not open: \(error)")
             return
         }
+        let opening = CardOpening(target: child)
+        self.opening = opening
+        parent.beginOpen(of: card) { [weak self] in
+            opening.isFlightDone = true
+            self?.finishOpen()
+        }
         loadTask?.cancel()
-        loadTask = Task { await navigate(to: child) { $0.openCamera } }
+        loadTask = Task { await loadChild(of: opening, parent: parent) }
+    }
+
+    /// Loads the child of an open above the parent at opacity 0 and waits for its first frame.
+    private func loadChild(of opening: CardOpening, parent: CanvasViewController) async {
+        guard let repository else { return }
+        let target = opening.target
+        do {
+            onLoadStarted?(target.currentCanvas)
+            let content = try await repository.content(of: target.currentCanvas)
+            guard !Task.isCancelled,
+                let canvas = try makeCanvas(target, content: content, camera: content.openCamera)
+            else { return }
+            container.showAbove(canvas)
+            try await CardOpening.waitForFirstFrame(of: canvas)
+            opening.canvas = canvas
+            finishOpen()
+        } catch {
+            logger.error("The canvas of a card did not open: \(error)")
+            self.opening = nil
+            opening.canvas.map(container.removeAbove)
+            parent.cancelCardTransition()
+            container.showMessage(AppStrings.canvasFailed)
+        }
+    }
+
+    /// Fades the child in when the flight and its first frame are both done (D-98). Until then,
+    /// the screen holds the last frame of the flight.
+    private func finishOpen() {
+        guard let opening, opening.isFlightDone, let canvas = opening.canvas else { return }
+        self.opening = nil
+        let level = opening.target.level
+        let showChrome: @MainActor () -> Void = { [weak self] in
+            self?.container.showUpButton(level > 0 ? { [weak self] in self?.leave() } : nil)
+        }
+        container.completeSwap(
+            to: canvas,
+            duration: CanvasRenderer.crossfadeDuration,
+            completion: showChrome
+        )
+        remember(opening.target)
     }
 
     /// Leaves the current card for its parent canvas at the camera of CARD-04: the standard
@@ -67,7 +114,23 @@ extension AppComposition {
     ///
     /// - Throws: `RenderingError` if the renderer does not start.
     func show(_ target: NavigationPath, content: CanvasContent, camera: Camera?) throws {
-        guard let repository, let clock else { return }
+        guard let canvas = try makeCanvas(target, content: content, camera: camera) else { return }
+        container.show(canvas)
+        container.showUpButton(target.level > 0 ? { [weak self] in self?.leave() } : nil)
+        remember(target)
+    }
+
+    /// Makes the canvas screen of `target` with its content at `camera`. The screen on the
+    /// screen keeps its session first, because the new one reads the sessions (F-02).
+    ///
+    /// - Throws: `RenderingError` if the renderer does not start.
+    /// - Returns: The screen, or `nil` before the launch opened the library.
+    func makeCanvas(
+        _ target: NavigationPath,
+        content: CanvasContent,
+        camera: Camera?
+    ) throws -> CanvasViewController? {
+        guard let repository, let clock else { return nil }
         precondition(content.canvasID == target.currentCanvas, "The content of the path")
         let canvasID = target.currentCanvas
         let bounds = container.view.bounds
@@ -93,13 +156,10 @@ extension AppComposition {
         dependencies.onMessage = { [weak self] text in self?.container.showMessage(text) }
         dependencies.level = target.level
         dependencies.onOpenCard = { [weak self] card in self?.openChild(card) }
-        // The new screen reads the sessions, so the old one keeps its steps first (F-02).
         container.canvas?.endSession()
         let canvas = CanvasViewController(dependencies: dependencies)
         canvas.isEditingEnabled = !isReadOnly && !areSavesFailing
-        container.show(canvas)
-        container.showUpButton(target.level > 0 ? { [weak self] in self?.leave() } : nil)
-        remember(target)
+        return canvas
     }
 
     /// Notes the path of the shown canvas and writes it to the device state (D-53).

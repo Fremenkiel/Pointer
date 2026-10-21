@@ -31,6 +31,8 @@ final class AppComposition {
     var path: NavigationPath?
     /// The last path of each workspace in this run, so a switch back opens its deepest canvas.
     var paths: [WorkspaceID: NavigationPath] = [:]
+    /// The open of a card that runs, or `nil` (D-98).
+    var opening: CardOpening?
     var isReadOnly = false
     var areSavesFailing = false
     var hasFilled = false

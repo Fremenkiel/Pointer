@@ -66,6 +66,8 @@ public final class CanvasViewController: UIViewController {
     let level: Int
     /// Opens a card after a double tap on it (CARD-03).
     let onOpenCard: @MainActor (Card) -> Void
+    /// The open or the leave of a card that runs on this canvas, or `nil` (D-98).
+    var cardTransition: CardTransition?
 
     /// Makes the canvas screen.
     ///
@@ -305,6 +307,7 @@ public final class CanvasViewController: UIViewController {
     private func stepCamera(to time: TimeInterval) -> Bool {
         let isAnimating = cameraController.step(to: time)
         applyCamera()
+        stepCardTransition()
         if !isAnimating { cameraMayRest() }
         return isAnimating
     }
