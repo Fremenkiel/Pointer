@@ -174,7 +174,7 @@ Done when: the frame loop test gives 120 fps and 0 late frames. The open of the 
 
 Rules: CAN-05, PERF-03, D-56, D-62.
 
-Status: done. The text part of a build first had no time limit and made late frames (97 and 106 fps). It now uses the build time budget of 2 ms per frame. The pan of the D-56 text still shows uncovered screen in 166 to 179 of 480 frames, a measure that the target does not hold (section 5.3).
+Status: done, with D-94 open. The text part of a build first had no time limit and made late frames (97 and 106 fps). It now uses the build time budget of 2 ms per frame. The pan of the D-56 text still shows uncovered screen in 166 to 179 of 480 frames. The target does not hold this measure (section 5.3).
 
 ### Phase 3: canvas (Tier C)
 
@@ -277,6 +277,8 @@ Done when: each step passes, or the product owner accepts the failure.
 
 Rules: AGENT-05, DOC-06, TEST-02, TEST-07, PERF-03, D-79.
 
+Status: done on 2026-10-21, with the open question D-94 and the failures of section 5.6.
+
 ## 5. Results
 
 ### 5.1 Baseline
@@ -334,4 +336,56 @@ In each run, the 6 frame loop tests ran at 120 fps with 0 late frames and 0 unco
 
 ### 5.6 Close
 
-Not run yet.
+Measured on 2026-10-21 on the iPad Pro 11-inch (M4) in Release, at commit bbcca1e.
+
+`make check` with the iPad passed. It ran the build, analyze (0 findings), and the Tier A tests on the Mac (29, 94, 14, and 89 tests). It also ran `PointerDeviceTests`, `make snapshots` with the 8 snapshot classes, format, lint, layers (0 findings), density, self-test, and plist. No snapshot test skipped.
+
+| Item | Target | Result |
+|---|---|---|
+| Line coverage of Geometry, Model, InkEngine, Persistence (TEST-02) | at least 90 % | 91.31, 91.15, 92.73, and 91.90 % |
+| Assertion density (CONTRACT-02) | at least 2.00 | Geometry 2.00, Model 2.16, InkEngine 2.00, Persistence 2.01, Rendering 2.00 |
+| 5 full runs of `PointerDeviceTests` in a row | pass | run 1: 208 of 209 pass, runs 2 to 5: 209 of 209 pass |
+
+The failure of run 1: `testStoreOfTwoHundredThousandHandwritingStrokes` measured 82.8 MB against the guard of 75 MB of D-49. It passed in `make check` and in runs 2 to 5. The test reads the malloc zone of the whole process, so other work of the process counts. The cause is not found. One possible source is the text layout of a load, which runs on a background queue after a canvas test ends.
+
+The steps of M4 acceptance 2 in the 5 runs (median / slowest, ms):
+
+| Run | Erase | Undo | Redo |
+|---|---|---|---|
+| 1 | 24.74 / 27.34 | 21.89 / 27.19 | 22.57 / 29.01 |
+| 2 | 26.37 / 29.04 | 26.02 / 29.05 | 18.41 / 26.08 |
+| 3 | 22.16 / 25.08 | 24.99 / 28.53 | 21.72 / 29.13 |
+| 4 | 26.20 / 27.45 | 26.87 / 28.67 | 22.64 / 26.48 |
+| 5 | 23.93 / 25.63 | 25.27 / 26.61 | 21.81 / 25.29 |
+
+The slowest step of all 5 runs took 29.13 ms, so M4 acceptance 2 passes under D-79.
+
+The M2, M3, and M4 performance tests in the same 5 runs, against section 5.3 of [m4-fix-plan.md](m4-fix-plan.md):
+
+| Test | Section 5.3 | 5 runs | Change |
+|---|---|---|---|
+| `testContentPassTwentyThousandStrokes` | 35 to 36 ms | 35 to 36 ms | same |
+| `testContentPassTwoHundredThousandStrokes` | 114 to 116 ms | 113 to 116 ms | same |
+| `testContentPassTwoHundredThousandHandwritingStrokes` | 170 to 171 ms | 170 to 171 ms | same |
+| Open of the D-56 canvas, median | 236.3 to 242.7 ms (old test) | 246.4 to 257.9 ms | the corrected test of D-93 gives 251.3 to 256.1 ms for M4, so the same |
+| Memory of the open of D-56 | 235 to 253 MB (old test) | 342 to 345 MB | under 380 MB (D-93). M4 takes 312 to 315 MB with the corrected test. |
+| Frame loop, the 6 tests of M2 | 120 fps, 0 late frames | 120 fps, 0 late frames in all 30 tests | same |
+| Frame allocations against a bare Metal frame | 15 and 15 | 15 and 15 | same |
+| Eraser frame, median CPU / GPU | 0.11 / 0.27 to 0.30 ms (section 5.1) | 0.11 / 0.31 to 0.41 ms | GPU up to 37 % slower, under the budget of 4 ms. The masked composite reads two channels now (D-82). |
+
+No speed test of section 5.3 is more than 10 % slower. The open and the memory compare with the corrected test of D-93.
+
+The frame loop tests over the text of D-56: the pan had 120 fps and 0 late frames in each run, with uncovered screen in 159 to 187 of 480 frames. The zoom had 0, 1, 1, 2, and 2 late frames of 478. Run alone, it had 0 late frames in 6 of 6 runs. D-94 holds the question.
+
+Manual tests for the product owner with the pencil on the iPad:
+
+1. Pick the text tool in the palette or with the current-tool button. Tap with the pencil on empty canvas. A box opens with the keyboard. Write a word with the pencil: Scribble turns it into text (acceptance 1).
+2. Tap beside the box. The text shows on the canvas at the same place as in the edit view, at zoom 0.5, 1, and 4 (acceptance 2).
+3. Force quit the app and launch it again. The box keeps its text.
+4. With the pen tool, tap a box with a finger. The edit starts. Change the text, then tap beside the box. Undo brings the old text back, and redo the new text.
+5. During an edit, tap the undo button. It undoes the typing in the box, not a step of the canvas.
+6. Delete all text of a box and end the edit. The box goes. Undo brings it back.
+7. Hold a finger on a box, then drag. The box moves. Undo puts it back.
+8. Hold a finger on a box without a drag. A menu with Delete opens. Delete removes the box.
+9. Erase across ink and a text box. The eraser hides the ink under it and leaves the text.
+10. Squeeze the pencil during an edit, and pick the pen. The edit ends.

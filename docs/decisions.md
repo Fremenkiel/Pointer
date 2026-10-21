@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21. It is open.
 
 Status values: Open, Decided, Replaced.
 
@@ -101,6 +101,7 @@ Status values: Open, Decided, Replaced.
 | D-91 | The pass rule of M5 acceptance 2 | Lit-pixel bounds and profiles of each line match within 1 pixel | Decided (2026-10-20) |
 | D-92 | The open and the memory of the D-56 canvas with text pass their targets | Remove the extra peak at the open, and lay out the text after the first frame | Decided (2026-10-21) |
 | D-93 | The memory of the open with text after D-92 | Correct the test, keep the second channel, target 380 MB on the 11-inch iPad | Decided (2026-10-21) |
+| D-94 | Late frames of the zoom over the D-56 text in full device runs | Open | Open |
 
 ## Details
 
@@ -971,6 +972,20 @@ Status values: Open, Decided, Replaced.
   - (c) Keep the target of 300 MB and save about 50 MB elsewhere. A texture margin of 1.5 instead of 2 saves about 28 MB, with twice the builds of D-47. Less memory per control point in `Model` (16 bytes now) saves the rest. Both change decided designs (D-47, D-26), and the second changes the data model.
   - (d) Correct the test, and keep the target of 300 MB as a goal for a later milestone, as D-75 did for 16 ms. The test then fails until that milestone.
 - Recommendation: (b). The test error is fixed in every case. The target of 300 MB was set before the measure was correct, and M4 already needs 315 MB. The second channel costs 32 MB and keeps the eraser and the text apart (D-82). The 13-inch iPad needs its own measure before a target there.
+
+### D-94 Late frames of the zoom over the D-56 text in full device runs
+
+- Open. Raised by task 5 of [m5-plan.md](m5-plan.md) on 2026-10-21.
+- The target of task 2.4 is 120 fps and 0 late frames in the frame loop tests over the 5,000 text boxes of D-56.
+- The close ran 5 full runs of `PointerDeviceTests` in a row on the iPad Pro 11-inch (M4). The zoom over the text had 0, 1, 1, 2, and 2 late frames of 478 (119.5 to 120.0 fps). The pan over the text had 0 late frames in each run. The six frame loop tests of M2 had 0 late frames in each run.
+- Run alone, `FrameLoopTests` gave 0 late frames in the zoom over the text in 6 of 6 runs.
+- The GPU time of a frame of the zoom over the text reaches 4.97 ms, against 2.86 ms without text. A glyph budget of 32,768 quads per build frame gave no measurable gain in alternating runs, so it is not kept.
+- The pan over the text shows uncovered screen at the edge in 159 to 187 of 480 frames. A texture with about a million glyphs at zoom 0.25 takes several frames to build. The target does not hold this measure.
+- Options:
+  - (a) Accept at most 2 late frames of 478 for the zoom over the text in a full run. Keep 0 late frames as the target of a run of `FrameLoopTests` alone.
+  - (b) Move the glyph quads of each box into a GPU buffer that a build reuses, as the strokes do with the point arena. A build then writes one draw entry per box, not one quad per glyph. This is a larger change to the renderer, and it can also reduce the uncovered frames of the pan.
+  - (c) Keep the target. M5 then stays open until (b) or another change meets it.
+- Recommendation: (a) for M5, and (b) as a task of a later milestone. The late frames show only next to other tests in the same process. The D-56 content holds a million glyphs, far more than normal notes.
 
 ## Points in the request that conflict or are not complete
 
