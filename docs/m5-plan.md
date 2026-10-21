@@ -391,3 +391,32 @@ Manual tests for the product owner with the pencil on the iPad:
 10. Squeeze the pencil during an edit, and pick the pen. The edit ends.
 
 The product owner ran the 10 manual tests on 2026-10-21. Tests 1 and 4 found two defects, and commits 7a68389 and 477f4bc fix them. After the fixes, all 10 manual tests pass.
+
+### 5.7 Review after the close
+
+Measured on 2026-10-21 on the iPad Pro 11-inch (M4) in Release, on branch `m5-review`. A temporary benchmark timed each suspect of the code review before any change. Each change below has a test that fails without it.
+
+| Item | Before | After | Test |
+|---|---|---|---|
+| Text pass over the 300 boxes of D-56 at zoom 1, CPU | 1.39 to 1.51 ms, 29 to 32 ns per glyph | 0.83 ms, 17 ns per glyph | `TextPassPerformanceTests`, budget 1.1 ms |
+| Text pass over the 3,050 boxes at zoom 0.25, CPU | 14.2 ms | 9.3 to 10.2 ms | none, recorded |
+| One drag step of a box of 200 characters, render thread | 0.012 ms, 58 to 60 allocations | 0.001 ms, 4 allocations | `TextMoveAllocationTests`, at most 8 |
+| One drag step of a box of 10,000 characters | 0.355 ms | 0.001 ms | none, recorded |
+| First tap below 10,000 stacked boxes, main thread | 121.6 to 124.9 ms | 0.17 ms | `TextHitTestPerformanceTests`, budget 4 ms |
+| Layout of 200 / 10,000 characters | 54 / 1,909 allocations | 43 / 1,414 allocations | none, recorded |
+| Font indices of the D-56 layouts | 1,406 KB | 1,093 KB | none, recorded |
+
+The changes:
+
+1. The text pass keeps its run state and its quad list in local values. Each access to a stored property of a class costs a dynamic exclusivity check, and the old loop made several per glyph.
+2. `TextStore.add(_:)` keeps the layout of a box whose text did not change. A drag sends the box at each finger move, and each step laid out the whole text again with Core Text.
+3. The hit test of `TextEditing` skips a box whose origin is too far above the tap. A text of n UTF-8 bytes has at most n + 1 lines.
+4. `TextLayout` reserves its lists once from the UTF-16 length and reuses the arrays of a run. A reserve per run copied the glyph list at each line.
+
+Measured and left as they are:
+
+- The font number lookup of the text pass takes 0.15 µs per box, 0.7 ms for 5,000 boxes in all.
+- A new `CanvasRenderer` takes 0.34 to 0.37 ms. M6 can make one per opened card.
+- During an edit, a camera change costs 0.38 ms on the main thread with 10,000 characters. A cache of the layout size did not lower it (0.44 ms), so the cost is in UIKit, and the change was not kept.
+
+The pan over the D-56 text still needs about 5 build frames of 2 ms at zoom 0.25, so the gap of D-94 stays. Option (b) of D-94 holds the fix.

@@ -11,7 +11,7 @@ public struct RendererConfiguration: Sendable {
     public var instanceBudgetPerFrame: Int
     /// The draw-list entries per frame.
     public var drawListCapacity: Int
-    /// The main-thread time in seconds that one frame can spend on a build. The device test of
+    /// The render-thread time in seconds that one frame can spend on a build. The device test of
     /// 2026-10-17 showed late frames at 120 Hz without this limit.
     public var buildTimeBudget: Double
     /// The byte budget of the glyph atlas: a start value (task 2.2 of docs/m5-plan.md). Tune it

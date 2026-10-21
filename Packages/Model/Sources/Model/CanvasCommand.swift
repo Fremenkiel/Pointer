@@ -5,8 +5,8 @@
 /// thrown error leaves the content as it was. Commands never touch disk: the canvas sends the
 /// returned rows to the repository.
 public protocol CanvasCommand: Sendable {
-    /// The control points of the strokes that the command holds. They count against the memory
-    /// budget of the history (D-76).
+    /// The memory cost of the command: the control points of its strokes (D-76) and the code
+    /// points of its texts (D-88). It counts against the memory budget of the history.
     var heldPointCount: Int { get }
 
     /// Calls `body` with the ID of each stroke that the command holds.
