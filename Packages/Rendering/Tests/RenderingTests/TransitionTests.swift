@@ -39,7 +39,7 @@ struct TransitionTests {
 
     /// A parent with a line through the card, a text box beside it, and the card with its
     /// preview in the atlas.
-    private func parent() throws -> Parent {
+    private func parent() async throws -> Parent {
         let source = FakePreviews(data: try FakePreviews.png(width: 300, height: 150))
         let renderer = try CanvasRenderer(previews: source)
         let layer = makeLayer(renderer: renderer)
@@ -50,7 +50,7 @@ struct TransitionTests {
         renderer.load([card])
         for _ in 0..<2_000 where Self.isLoading(renderer, source) {
             _ = renderer.renderFrame(into: layer, deadline: nil)
-            Thread.sleep(forTimeInterval: 0.001)
+            try await Task.sleep(for: .milliseconds(1))
         }
         for _ in 0..<100 where renderer.renderFrame(into: layer, deadline: nil) {}
         return Parent(renderer: renderer, layer: layer, card: card)
@@ -77,8 +77,8 @@ struct TransitionTests {
     private static func limit() -> Int { Int(Double(400 * 240) * Snapshot.tolerance) }
 
     @Test("An open freezes the parent, frees its textures, and shrinks the parent to the card")
-    func open() throws {
-        let parent = try parent()
+    func open() async throws {
+        let parent = try await parent()
         let (renderer, layer, card) = (parent.renderer, parent.layer, parent.card)
         let before = try capture(renderer, layer: layer)
         renderer.beginOpen(of: card.id)
@@ -106,8 +106,8 @@ struct TransitionTests {
     }
 
     @Test("A leave grows the parent from the card back to the live parent")
-    func leave() throws {
-        let parent = try parent()
+    func leave() async throws {
+        let parent = try await parent()
         let (renderer, layer, card) = (parent.renderer, parent.layer, parent.card)
         let parentImage = try capture(renderer, layer: layer)
         renderer.camera = Self.cover

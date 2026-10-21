@@ -35,10 +35,10 @@ struct CardRenderingTests {
 
     /// Waits for the layouts of a load, which run off the render thread (D-92), and draws the
     /// frames until the renderer needs no more.
-    private func drain(_ renderer: CanvasRenderer, layer: CAMetalLayer) {
+    private func drain(_ renderer: CanvasRenderer, layer: CAMetalLayer) async throws {
         for _ in 0..<2_000 where renderer.isLoadingCards || renderer.isLoadingText {
             _ = renderer.renderFrame(into: layer, deadline: nil)
-            Thread.sleep(forTimeInterval: 0.001)
+            try await Task.sleep(for: .milliseconds(1))
         }
         for _ in 0..<100 where renderer.renderFrame(into: layer, deadline: nil) {}
     }
@@ -77,7 +77,7 @@ struct CardRenderingTests {
     )
 
     @Test("A card shows a gray border and a white title at the zoom", arguments: [0.25, 1.0, 4.0])
-    func snapshot(zoom: Double) throws {
+    func snapshot(zoom: Double) async throws {
         let renderer = try CanvasRenderer()
         let card = try CardStoreTests.card(1, frame: Self.frame, title: "Tree")
         // At zoom 4, the camera looks at the top-left corner, where the title starts.
@@ -99,7 +99,7 @@ struct CardRenderingTests {
     }
 
     @Test("Ink over a card shows white, and the border beside it stays gray (D-16)")
-    func underInk() throws {
+    func underInk() async throws {
         let renderer = try CanvasRenderer()
         let card = try CardStoreTests.card(1, frame: Self.frame, title: "Tree")
         let image = try fresh(renderer, strokes: [Self.line], cards: [card])
@@ -109,19 +109,19 @@ struct CardRenderingTests {
     }
 
     @Test("The eraser mask hides the ink over a card and never the card (D-82)")
-    func underEraserMask() throws {
+    func underEraserMask() async throws {
         let renderer = try CanvasRenderer()
         let layer = makeLayer(renderer: renderer)
         renderer.load([Self.line])
         renderer.load([try CardStoreTests.card(1, frame: Self.frame, title: "Tree")])
-        drain(renderer, layer: layer)
+        try await drain(renderer, layer: layer)
         let before = try capture(renderer, layer: layer)
         renderer.setEraserReady(true)
         renderer.beginErase(radius: Self.radius)
         for step in 0...4 {
             renderer.addEraserSample(Point(x: 40, y: 56 + Double(step) * 2))
         }
-        drain(renderer, layer: layer)
+        try await drain(renderer, layer: layer)
         let image = try capture(renderer, layer: layer)
         #expect(before.gray(x: 80, y: 120) > 240, "The ink covers the border before the erase")
         let border = image.gray(x: 80, y: 120)
@@ -132,15 +132,15 @@ struct CardRenderingTests {
     }
 
     @Test("A moved card leaves no old pixels, and its new place equals a fresh draw")
-    func moveRedraw() throws {
+    func moveRedraw() async throws {
         let renderer = try CanvasRenderer()
         let layer = makeLayer(renderer: renderer)
         let card = try CardStoreTests.card(1, frame: Self.frame, title: "Tree")
         let moved = try card.moving(to: Point(x: -20, y: -10), at: card.meta.modified)
         renderer.load([card])
-        drain(renderer, layer: layer)
+        try await drain(renderer, layer: layer)
         renderer.changeCards(removing: [], adding: [moved])
-        drain(renderer, layer: layer)
+        try await drain(renderer, layer: layer)
         let image = try capture(renderer, layer: layer)
         let limit = Int(Double(400 * 240) * Snapshot.tolerance)
         #expect(Snapshot.differingPixels(image, try fresh(renderer, cards: [moved])) <= limit)
@@ -148,7 +148,7 @@ struct CardRenderingTests {
     }
 
     @Test("A text change over a card clears the green channel and keeps the card")
-    func textOverCardRedraw() throws {
+    func textOverCardRedraw() async throws {
         let renderer = try CanvasRenderer()
         let layer = makeLayer(renderer: renderer)
         let card = try CardStoreTests.card(1, frame: Self.frame, title: "Tree")
@@ -156,9 +156,9 @@ struct CardRenderingTests {
         let moved = try TextRenderingTests.box("node", at: Point(x: 0, y: 5))
         renderer.load([card])
         renderer.load([box])
-        drain(renderer, layer: layer)
+        try await drain(renderer, layer: layer)
         renderer.changeTextBoxes(removing: [], adding: [moved])
-        drain(renderer, layer: layer)
+        try await drain(renderer, layer: layer)
         let image = try capture(renderer, layer: layer)
         let expected = try fresh(renderer, textBoxes: [moved], cards: [card])
         let limit = Int(Double(400 * 240) * Snapshot.tolerance)
@@ -168,7 +168,7 @@ struct CardRenderingTests {
     }
 
     @Test("A card shows its preview inside its border at zoom 1 (D-97)")
-    func preview() throws {
+    func preview() async throws {
         let source = FakePreviews(data: try FakePreviews.png(width: 300, height: 150))
         let renderer = try CanvasRenderer(previews: source)
         let layer = makeLayer(renderer: renderer)
@@ -177,9 +177,9 @@ struct CardRenderingTests {
         for _ in 0..<2_000
         where renderer.isLoadingCards || renderer.isLoadingPreviews || source.readCount == 0 {
             _ = renderer.renderFrame(into: layer, deadline: nil)
-            Thread.sleep(forTimeInterval: 0.001)
+            try await Task.sleep(for: .milliseconds(1))
         }
-        drain(renderer, layer: layer)
+        try await drain(renderer, layer: layer)
         let image = try capture(renderer, layer: layer)
         #expect(source.readCount == 1)
         // The cross of the preview crosses the center of the card: canvas (0, 5).
@@ -191,16 +191,16 @@ struct CardRenderingTests {
     }
 
     @Test("A card change over a text box keeps the text, and a removed card leaves the screen")
-    func cardOverTextRedraw() throws {
+    func cardOverTextRedraw() async throws {
         let renderer = try CanvasRenderer()
         let layer = makeLayer(renderer: renderer)
         let card = try CardStoreTests.card(1, frame: Self.frame, title: "Tree")
         let box = try TextRenderingTests.box("node", at: Point(x: -70, y: -10))
         renderer.load([card])
         renderer.load([box])
-        drain(renderer, layer: layer)
+        try await drain(renderer, layer: layer)
         renderer.changeCards(removing: [card.id], adding: [])
-        drain(renderer, layer: layer)
+        try await drain(renderer, layer: layer)
         let image = try capture(renderer, layer: layer)
         let limit = Int(Double(400 * 240) * Snapshot.tolerance)
         let expected = try fresh(renderer, textBoxes: [box], cards: [])

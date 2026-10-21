@@ -25,10 +25,10 @@ struct PreviewRenderTests {
         layer: CAMetalLayer,
         camera: Camera,
         aspect: Double
-    ) throws -> PreviewImage {
+    ) async throws -> PreviewImage {
         for _ in 0..<2_000 where renderer.isLoadingText || renderer.isLoadingCards {
             _ = renderer.renderFrame(into: layer, deadline: nil)
-            Thread.sleep(forTimeInterval: 0.001)
+            try await Task.sleep(for: .milliseconds(1))
         }
         let result = Mutex<PreviewImage??>(nil)
         renderer.renderPreview(camera: camera, cardAspect: aspect) { image in
@@ -36,7 +36,7 @@ struct PreviewRenderTests {
         }
         for _ in 0..<2_000 where result.withLock({ $0 == nil }) {
             _ = renderer.renderFrame(into: layer, deadline: nil)
-            Thread.sleep(forTimeInterval: 0.001)
+            try await Task.sleep(for: .milliseconds(1))
         }
         let delivered = result.withLock { $0 }
         return try #require(delivered.flatMap { $0 }, "The preview arrived")
@@ -70,7 +70,7 @@ struct PreviewRenderTests {
     }
 
     @Test("The preview of a known canvas matches its reference, with cards as frames only")
-    func knownCanvas() throws {
+    func knownCanvas() async throws {
         let source = FakePreviews(data: try FakePreviews.png(width: 300, height: 150))
         let renderer = try CanvasRenderer(previews: source)
         let layer = makeLayer(renderer: renderer)
@@ -86,7 +86,7 @@ struct PreviewRenderTests {
             title: "Tree"
         )
         renderer.load([card])
-        let image = try render(
+        let image = try await render(
             renderer,
             layer: layer,
             camera: Camera(center: .zero, zoom: 1),
@@ -99,7 +99,7 @@ struct PreviewRenderTests {
     }
 
     @Test("The offscreen preview of a missing file equals the preview of the screen")
-    func offscreen() throws {
+    func offscreen() async throws {
         let renderer = try CanvasRenderer()
         let layer = makeLayer(renderer: renderer)
         let line = StrokeBuilder.stroke(
@@ -110,7 +110,7 @@ struct PreviewRenderTests {
         var content = CanvasContent(canvasID: line.canvasID)
         try content.add(line)
         let camera = content.openCamera
-        let screen = try render(renderer, layer: layer, camera: camera, aspect: 1.25)
+        let screen = try await render(renderer, layer: layer, camera: camera, aspect: 1.25)
         let offscreen = try PreviewMaker.render(
             content,
             camera: camera,
@@ -124,7 +124,7 @@ struct PreviewRenderTests {
     }
 
     @Test("A preview encodes to a PNG and decodes to the same pixels")
-    func pngRoundTrip() throws {
+    func pngRoundTrip() async throws {
         let pixels = (0..<(64 * 48)).map { UInt8($0 % 256) }
         let image = PreviewImage(width: 64, height: 48, pixels: pixels)
         let data = try #require(image.pngData())
@@ -138,7 +138,7 @@ struct PreviewRenderTests {
     }
 
     @Test("A new preview shows in the parent without a read of its file")
-    func showInParent() throws {
+    func showInParent() async throws {
         let source = FakePreviews(data: nil)
         let renderer = try CanvasRenderer(previews: source)
         let layer = makeLayer(renderer: renderer)
@@ -146,7 +146,7 @@ struct PreviewRenderTests {
         renderer.load([card])
         for _ in 0..<2_000 where renderer.isLoadingCards {
             _ = renderer.renderFrame(into: layer, deadline: nil)
-            Thread.sleep(forTimeInterval: 0.001)
+            try await Task.sleep(for: .milliseconds(1))
         }
         let pixels = [UInt8](repeating: 255, count: 300 * 200)
         renderer.showPreview(PreviewImage(width: 300, height: 200, pixels: pixels), of: card.id)

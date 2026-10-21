@@ -41,16 +41,16 @@ struct CardStoreTests {
 
     /// Waits for the title layout of a load, which runs off the render thread (D-92), and draws
     /// the frames until the renderer needs no more.
-    private func drain(_ renderer: CanvasRenderer, layer: CAMetalLayer) {
+    private func drain(_ renderer: CanvasRenderer, layer: CAMetalLayer) async throws {
         for _ in 0..<2_000 where renderer.isLoadingCards || renderer.isLoadingText {
             _ = renderer.renderFrame(into: layer, deadline: nil)
-            Thread.sleep(forTimeInterval: 0.001)
+            try await Task.sleep(for: .milliseconds(1))
         }
         for _ in 0..<100 where renderer.renderFrame(into: layer, deadline: nil) {}
     }
 
     @Test("A load lays out each title off the render thread and fills the store and the grid")
-    func load() throws {
+    func load() async throws {
         let renderer = try CanvasRenderer()
         let layer = makeLayer(renderer: renderer)
         let long = String(repeating: "m", count: Limits.maxTitleLength)
@@ -59,7 +59,7 @@ struct CardStoreTests {
             try Self.card(3, title: long), try Self.card(4, title: ""),
         ]
         renderer.load(cards)
-        drain(renderer, layer: layer)
+        try await drain(renderer, layer: layer)
         #expect(!renderer.isLoadingCards)
         let (count, lines, found) = renderer.engine.withRenderer { frames in
             var found = 0
@@ -81,7 +81,7 @@ struct CardStoreTests {
     }
 
     @Test("The bounds hold the frame and the title above its top-left corner")
-    func bounds() throws {
+    func bounds() async throws {
         let store = CardStore()
         let card = try Self.card(1, title: "A title")
         store.add(card)
@@ -100,17 +100,17 @@ struct CardStoreTests {
     }
 
     @Test("A change removes, replaces, and adds cards")
-    func change() throws {
+    func change() async throws {
         let renderer = try CanvasRenderer()
         let layer = makeLayer(renderer: renderer)
         let first = try Self.card(1)
         let second = try Self.card(2, title: "old")
         renderer.load([first, second])
-        drain(renderer, layer: layer)
+        try await drain(renderer, layer: layer)
         let renamed = try second.retitling("new", at: second.meta.modified)
         let third = try Self.card(3)
         renderer.changeCards(removing: [first.id], adding: [renamed, third])
-        drain(renderer, layer: layer)
+        try await drain(renderer, layer: layer)
         let (ids, title) = renderer.engine.withRenderer { frames in
             (Set(frames.cards.entries.keys), frames.cards.entries[second.id]?.title)
         }
@@ -119,7 +119,7 @@ struct CardStoreTests {
     }
 
     @Test("A move keeps the title layout, and a new title lays out again")
-    func moveKeepsLayout() throws {
+    func moveKeepsLayout() async throws {
         let store = CardStore()
         let card = try Self.card(1, title: "Tree")
         // A stand-in layout with 5 glyphs shows whether the move lays out "Tree" again.
@@ -138,14 +138,14 @@ struct CardStoreTests {
     }
 
     @Test("An edit of a card during its load wins over the loaded card")
-    func editDuringLoad() throws {
+    func editDuringLoad() async throws {
         let renderer = try CanvasRenderer()
         let layer = makeLayer(renderer: renderer)
         let card = try Self.card(1, title: "loaded")
         let edited = try card.retitling("edited", at: card.meta.modified)
         renderer.load([card])
         renderer.changeCards(removing: [], adding: [edited])
-        drain(renderer, layer: layer)
+        try await drain(renderer, layer: layer)
         let title = renderer.engine.withRenderer { $0.cards.entries[card.id]?.title }
         #expect(title == "edited")
     }
