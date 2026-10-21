@@ -220,7 +220,7 @@ Done when: tests cover each start and each end, each kind of step, the node limi
 
 Rules: TOOL-05, TOOL-06, UNDO-01, UNDO-02, UNDO-03, STO-06, D-86, D-87.
 
-Status: done in code and in the tests of `TextEditTests`. The check that a new box keeps its text after a force quit is a manual test of section 5.6. The app ends an edit at the move to the background, and the canvas shows the messages through `CanvasDependencies.onMessage`.
+Status: done in code and in the tests of `TextEditTests`. The manual test of the product owner on 2026-10-21 found that a pencil tap on empty canvas made no box: the guard of the tap handler returned when both IDs were `nil`. Commit 7a68389 fixes it, and its tests go through the handler of the tap recognizer. The check that a new box keeps its text after a force quit is a manual test of section 5.6. The app ends an edit at the move to the background, and the canvas shows the messages through `CanvasDependencies.onMessage`.
 
 #### 3.4 Move and delete
 
