@@ -188,6 +188,8 @@ Done when: tests of the tool state cover the text tool, and snapshot tests cover
 
 Rules: TOOL-01, TOOL-07, PEN-03, TEST-07, D-34, D-63, D-64, D-70, D-87.
 
+Status: done. The palette shows pen, eraser, text, undo, and redo. The references of the pen and eraser palettes changed, because the palette holds a third tool. The new references come from the iPad.
+
 #### 3.2 Edit view
 
 1. Add the edit view: a `UITextView` (TextKit 2) at the place of the box, above the ink view and below the chrome.
@@ -201,6 +203,8 @@ Rules: TOOL-01, TOOL-07, PEN-03, TEST-07, D-34, D-63, D-64, D-70, D-87.
 Done when: a test makes sure that the frame of the edit view equals the box of `TextLayout` at zoom 0.5, 1, and 4. Other tests make sure that pasted rich text becomes plain text, and that the edit view refuses text past the limit with a message.
 
 Rules: TOOL-05, STYLE-03, STYLE-05, D-15, D-57, D-83, D-85.
+
+Status: done. The edit view is as wide as `TextStyle.maxWidth` times the zoom, so that it wraps where the layout wraps. It takes touches only on the box. The first device run found that the style was set only at a zoom change, so at zoom 1 the edit view kept the system font. The style now comes at the first layout of each text.
 
 #### 3.3 Start and end of an edit
 
@@ -216,6 +220,8 @@ Done when: tests cover each start and each end, each kind of step, the node limi
 
 Rules: TOOL-05, TOOL-06, UNDO-01, UNDO-02, UNDO-03, STO-06, D-86, D-87.
 
+Status: done in code and in the tests of `TextEditTests`. The check that a new box keeps its text after a force quit is a manual test of section 5.6. The app ends an edit at the move to the background, and the canvas shows the messages through `CanvasDependencies.onMessage`.
+
 #### 3.4 Move and delete
 
 1. A finger long press on a box, then a drag, moves it (CARD-07, D-10). The drag records one `MoveNode` step.
@@ -225,6 +231,8 @@ Rules: TOOL-05, TOOL-06, UNDO-01, UNDO-02, UNDO-03, STO-06, D-86, D-87.
 Done when: tests cover a move, a delete, and an undo of each. The finger pan of the canvas still works on empty canvas.
 
 Rules: CARD-07, UNDO-03, D-10, D-89.
+
+Status: done. The menu is a `UIEditMenuInteraction` with one destructive action.
 
 ### Phase 4: acceptance tests
 
@@ -307,10 +315,10 @@ In each run, the 6 frame loop tests ran at 120 fps with 0 late frames and 0 unco
 
 | Item | Target | Result |
 |---|---|---|
-| Tool state and snapshots with the text tool | pass | not run |
-| Edit view frame at zoom 0.5, 1, and 4 | equal to the layout box | not run |
-| Start, end, steps, and limits of an edit | pass | not run |
-| Move and delete | pass | not run |
+| Tool state and snapshots with the text tool | pass | pass |
+| Edit view frame at zoom 0.5, 1, and 4 | equal to the layout box | pass, within 0.001 points |
+| Start, end, steps, and limits of an edit | pass | pass |
+| Move and delete | pass | pass |
 
 ### 5.5 Acceptance
 

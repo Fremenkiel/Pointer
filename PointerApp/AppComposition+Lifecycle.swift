@@ -40,6 +40,8 @@ extension AppComposition {
     /// Writes the pending rows, the last workspace, and the camera at the move to the
     /// background, with extra time from the system (storage.md section 4, D-53).
     func enterBackground() {
+        // A running text edit records its step now, so that its rows join the save (D-86).
+        container.canvas?.finishTextEdit()
         stopIdleTimer()
         endBackgroundTask()
         let expire: @Sendable () -> Void = { [weak self] in

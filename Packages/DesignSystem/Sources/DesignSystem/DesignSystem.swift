@@ -75,5 +75,7 @@ public enum DesignSystem {
         public static let pen = "pencil.tip"
         /// The eraser tool (TOOL-01).
         public static let eraser = "eraser"
+        /// The text tool (TOOL-01, D-87).
+        public static let text = "character.cursor.ibeam"
     }
 }

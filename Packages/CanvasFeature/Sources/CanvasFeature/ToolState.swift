@@ -41,4 +41,7 @@ struct ToolState: Equatable {
 
     /// `true` if the pencil erases.
     var isErasingEnabled: Bool { isEditingEnabled && active == .eraser }
+
+    /// `true` if a pencil tap makes or edits a text box (TOOL-05, D-87).
+    var isTextEnabled: Bool { isEditingEnabled && selected == .text }
 }

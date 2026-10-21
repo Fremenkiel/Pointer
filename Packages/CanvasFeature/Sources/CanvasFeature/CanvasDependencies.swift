@@ -21,6 +21,8 @@ public struct CanvasDependencies {
     public var sessions: CanvasSessions?
     /// Receives the camera when it comes to rest, for the device state (D-53).
     public var onCameraRest: @MainActor (Camera) -> Void = { _ in }
+    /// Shows a short message, for example at a limit (architecture.md section 10).
+    public var onMessage: @MainActor (String) -> Void = { _ in }
 
     /// Makes the dependencies of a canvas without a stored camera, fill content, or storage.
     public init(renderer: CanvasRenderer, clock: AppClock, content: CanvasContent) {

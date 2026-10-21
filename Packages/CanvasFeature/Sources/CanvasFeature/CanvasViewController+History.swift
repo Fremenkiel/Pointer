@@ -8,6 +8,12 @@ import UIKit
 extension CanvasViewController {
     /// Undoes the newest step of this canvas. It does nothing if the undo list is empty.
     public func undo() {
+        // During an edit, undo and redo act on the text view (D-86).
+        if textEditing.isEditing {
+            textEditing.view.undoManager?.undo()
+            historyDidChange()
+            return
+        }
         let command = history.undoSteps.last
         runStep(command, isUndo: true) { history, content, clock throws(CommandError) in
             try history.undo(on: &content, clock: &clock)
@@ -16,6 +22,11 @@ extension CanvasViewController {
 
     /// Redoes the newest undone step of this canvas. It does nothing if the redo list is empty.
     public func redo() {
+        if textEditing.isEditing {
+            textEditing.view.undoManager?.redo()
+            historyDidChange()
+            return
+        }
         let command = history.redoSteps.last
         runStep(command, isUndo: false) { history, content, clock throws(CommandError) in
             try history.redo(on: &content, clock: &clock)
@@ -52,15 +63,22 @@ extension CanvasViewController {
             return
         }
         guard !rows.isEmpty else { return }
+        let texts = textDelta(of: rows)
+        if !texts.removed.isEmpty || !texts.added.isEmpty {
+            renderer.changeTextBoxes(removing: texts.removed, adding: texts.added)
+        }
         let (removed, added) =
             Self.renderDelta(of: command, isUndo: isUndo) ?? renderDelta(of: rows)
-        renderer.change(
-            removing: removed,
-            adding: added,
-            area: (command as? EraseStrokes)?.area,
-            onCompleted: stepDrawnCallback(),
-            onPresented: {}
-        )
+        let isTextOnly = texts.added.count + texts.removed.count == rows.count
+        if !removed.isEmpty || !added.isEmpty || !isTextOnly {
+            renderer.change(
+                removing: removed,
+                adding: added,
+                area: (command as? EraseStrokes)?.area,
+                onCompleted: stepDrawnCallback(),
+                onPresented: {}
+            )
+        }
         // The send schedules the save of the rows (P-09).
         send(rows)
         historyDidChange()
@@ -107,6 +125,22 @@ extension CanvasViewController {
         return (removed, added)
     }
 
+    /// Returns the text boxes that the rows of a step remove from the screen and add to it: a
+    /// tombstone removes a box, and a live box takes its place.
+    private func textDelta(of rows: [LibraryChange]) -> (removed: [TextBoxID], added: [TextBox]) {
+        var removed: [TextBoxID] = []
+        var added: [TextBox] = []
+        for case .textBox(let box) in rows {
+            if box.meta.isDeleted {
+                removed.append(box.id)
+            } else {
+                added.append(box)
+            }
+        }
+        assert(removed.count + added.count <= rows.count, "Each text row gives one change")
+        return (removed, added)
+    }
+
     /// Returns the callback of the GPU end of a step for `onStepDrawn`, or `nil` without it, so
     /// that the renderer adds no handler to the frame (P-08).
     func stepDrawnCallback() -> (@MainActor (Double) -> Void)? {
@@ -118,6 +152,7 @@ extension CanvasViewController {
     /// before it makes the next canvas screen, so that a screen of the same canvas finds the
     /// steps of this visit (F-02). A second call does nothing.
     public func endSession() {
+        endTextEdit()
         guard !hasEndedSession else { return }
         hasEndedSession = true
         saveSession()
@@ -141,8 +176,14 @@ extension CanvasViewController {
 
     /// Updates the buttons after a step.
     func historyDidChange() {
-        historyControls.canUndo = history.canUndo
-        historyControls.canRedo = history.canRedo
+        // During an edit, the buttons show the steps of the text view (D-86).
+        guard textEditing.isEditing else {
+            historyControls.canUndo = history.canUndo
+            historyControls.canRedo = history.canRedo
+            return
+        }
+        historyControls.canUndo = textEditing.view.undoManager?.canUndo ?? false
+        historyControls.canRedo = textEditing.view.undoManager?.canRedo ?? false
     }
 
     /// Shows the undo and redo buttons in the top right corner (UNDO-01).

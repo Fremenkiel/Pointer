@@ -27,7 +27,7 @@ struct ToolStateTests {
     }
 
     @Test(
-        "While the library cannot save, neither the pen nor the eraser works",
+        "While the library cannot save, no tool works",
         arguments: Tool.allCases
     )
     func editingFlag(tool: Tool) {
@@ -40,5 +40,17 @@ struct ToolStateTests {
         state.isEditingEnabled = true
         #expect(state.isDrawingEnabled == (tool == .pen))
         #expect(state.isErasingEnabled == (tool == .eraser))
+        #expect(state.isTextEnabled == (tool == .text))
+    }
+
+    @Test("The text tool turns off the pen and the eraser, and the editing flag stops it")
+    func textTool() {
+        var state = ToolState()
+        state.select(.text)
+        #expect(state.isTextEnabled)
+        #expect(!state.isDrawingEnabled)
+        #expect(!state.isErasingEnabled)
+        state.isEditingEnabled = false
+        #expect(!state.isTextEnabled)
     }
 }

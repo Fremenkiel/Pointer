@@ -43,10 +43,10 @@ public final class CanvasViewController: UIViewController {
     var eraserSamples: [Point]?
     /// The sample list of the last gesture, kept for its capacity.
     var spareEraserSamples: [Point] = []
-    private(set) var cameraController: CameraController
-    private var palmGuard = PalmGuard()
-    private let panRecognizer = UIPanGestureRecognizer()
-    private let pinchRecognizer = UIPinchGestureRecognizer()
+    var cameraController: CameraController
+    var palmGuard = PalmGuard()
+    let panRecognizer = UIPanGestureRecognizer()
+    let pinchRecognizer = UIPinchGestureRecognizer()
     let pencilObserver = PencilTouchObserver()
     let repository: (any LibraryRepository)?
     /// Sends the rows of the steps in order, or `nil` without a library (F-11).
@@ -58,6 +58,10 @@ public final class CanvasViewController: UIViewController {
     var hasEndedSession = false
     /// The key commands of undo and redo, made once (C-05).
     lazy var historyKeyCommands = makeHistoryKeyCommands()
+    /// The edit view, the running edit, and the move of the text boxes.
+    let textEditing = TextEditing()
+    /// Shows a short message, for example at a limit.
+    let onMessage: @MainActor (String) -> Void
 
     /// Makes the canvas screen.
     ///
@@ -86,6 +90,7 @@ public final class CanvasViewController: UIViewController {
             assert(skipped == 0, "\(skipped) erase records of the session do not fit the load")
         }
         onCameraRest = dependencies.onCameraRest
+        onMessage = dependencies.onMessage
         cameraController = CameraController(camera: renderer.camera, viewSize: .zero)
         let converter = PencilKitStrokeConverter(
             clock: dependencies.clock,
@@ -126,8 +131,10 @@ public final class CanvasViewController: UIViewController {
     /// The tool that the user picked last.
     public var tool: Tool { toolState.selected }
 
-    /// Picks a tool. It takes effect at the next pencil down (D-70).
+    /// Picks a tool. It takes effect at the next pencil down (D-70). A running text edit ends at
+    /// once (D-87).
     public func select(_ tool: Tool) {
+        endTextEdit()
         toolState.select(tool)
         toolControls.selected = tool
         // The mask texture is made now, not at the first sample (D-78).
@@ -163,6 +170,7 @@ public final class CanvasViewController: UIViewController {
         installGestures()
         installHistoryButtons()
         installToolControls()
+        installTextControls()
     }
 
     /// Keeps the session when the canvas leaves its parent, for example at a workspace switch.
@@ -185,7 +193,8 @@ public final class CanvasViewController: UIViewController {
         cameraController.viewSize = viewSize
     }
 
-    private var viewSize: Size {
+    /// The size of the canvas view in view points.
+    var viewSize: Size {
         Size(width: canvasView.bounds.width, height: canvasView.bounds.height)
     }
 
@@ -329,6 +338,7 @@ public final class CanvasViewController: UIViewController {
             canvasView.liveCanvas.tool = PenTool.inkingTool(zoom: camera.zoom)
         }
         renderer.camera = camera
+        textCameraDidChange(isPinching: isPinchActive)
         if cameraController.isAnimating {
             canvasView.inkView.requestFrame()
         }
@@ -352,37 +362,5 @@ extension CanvasViewController: PKCanvasViewDelegate {
         handoff.isToolInUse = false
         guard let repository else { return }
         Task { await repository.requestSave() }
-    }
-}
-
-extension CanvasViewController: UIGestureRecognizerDelegate {
-    /// The palm guard filters the finger touches of pan and pinch (architecture.md 4.1).
-    public func gestureRecognizer(
-        _ gestureRecognizer: UIGestureRecognizer,
-        shouldReceive touch: UITouch
-    ) -> Bool {
-        guard touch.type == .direct else { return false }
-        let isAllowed = palmGuard.allowsFingerTouch(
-            at: touch.timestamp,
-            majorRadius: Double(touch.majorRadius)
-        )
-        // A finger that touches down stops a glide at once, as in UIScrollView. The pan itself
-        // begins only after the movement threshold of UIKit.
-        if isAllowed {
-            cameraController.stopAnimation()
-        }
-        return isAllowed
-    }
-
-    /// Pan and pinch run together, so a second finger can join a pan.
-    public func gestureRecognizer(
-        _ gestureRecognizer: UIGestureRecognizer,
-        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
-    ) -> Bool {
-        // An identity check, without a set per call (C-05).
-        let first = gestureRecognizer === panRecognizer || gestureRecognizer === pinchRecognizer
-        let second =
-            otherGestureRecognizer === panRecognizer || otherGestureRecognizer === pinchRecognizer
-        return first && second
     }
 }

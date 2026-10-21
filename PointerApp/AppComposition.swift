@@ -190,6 +190,7 @@ final class AppComposition {
                 saved: content.strokes.count
             )
             dependencies.onCameraRest = { [weak self] camera in self?.save(camera, for: canvasID) }
+            dependencies.onMessage = { [weak self] text in self?.container.showMessage(text) }
             // The new screen reads the sessions, so the old one keeps its steps first (F-02).
             container.canvas?.endSession()
             let canvas = CanvasViewController(dependencies: dependencies)

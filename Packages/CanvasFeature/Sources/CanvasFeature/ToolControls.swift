@@ -20,6 +20,7 @@ extension Tool {
         switch self {
         case .pen: DesignSystem.Icon.pen
         case .eraser: DesignSystem.Icon.eraser
+        case .text: DesignSystem.Icon.text
         }
     }
 
@@ -28,6 +29,7 @@ extension Tool {
         switch self {
         case .pen: CanvasStrings.pen
         case .eraser: CanvasStrings.eraser
+        case .text: CanvasStrings.text
         }
     }
 }
