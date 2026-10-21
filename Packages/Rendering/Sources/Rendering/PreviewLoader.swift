@@ -146,7 +146,8 @@ final class PreviewLoader: Sendable {
         if let area, !area.intersects(request.bounds) {
             return result(.dropped)
         }
-        guard let data = await source.preview(of: CanvasID(request.card)),
+        let canvas = CanvasID(request.card)
+        guard let data = await source.preview(of: canvas, cardAspect: request.cardAspect),
             let image = decoder.decode(data, step: request.step)
         else { return result(.unavailable) }
         return result(.pixels(image.pixels), width: image.width, height: image.height)

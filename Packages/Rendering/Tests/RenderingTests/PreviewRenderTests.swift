@@ -98,6 +98,31 @@ struct PreviewRenderTests {
         Snapshot.assertMatches(Self.rgba(image), named: "preview-render")
     }
 
+    @Test("The offscreen preview of a missing file equals the preview of the screen")
+    func offscreen() throws {
+        let renderer = try CanvasRenderer()
+        let layer = makeLayer(renderer: renderer)
+        let line = StrokeBuilder.stroke(
+            (0...40).map { Point(x: -60 + Double($0) * 3, y: Double($0 % 5) * 6 - 20) },
+            seed: 3
+        )
+        renderer.load([line])
+        var content = CanvasContent(canvasID: line.canvasID)
+        try content.add(line)
+        let camera = content.openCamera
+        let screen = try render(renderer, layer: layer, camera: camera, aspect: 1.25)
+        let offscreen = try PreviewMaker.render(
+            content,
+            camera: camera,
+            cardAspect: 1.25,
+            viewSize: Size(width: 200, height: 120)
+        )
+        #expect(offscreen.width == screen.width && offscreen.height == screen.height)
+        let differing = zip(offscreen.pixels, screen.pixels).filter { abs(Int($0) - Int($1)) > 2 }
+        #expect(differing.count <= offscreen.pixels.count / 200, "\(differing.count) pixels differ")
+        #expect(offscreen.pixels.contains { $0 > 200 }, "The offscreen preview shows the ink")
+    }
+
     @Test("A preview encodes to a PNG and decodes to the same pixels")
     func pngRoundTrip() throws {
         let pixels = (0..<(64 * 48)).map { UInt8($0 % 256) }

@@ -58,11 +58,14 @@ extension TextEncoder {
         guard let previews else { return }
         precondition(size.x >= 0 && size.y >= 0, "A card has a size on the screen")
         let step = PreviewAtlas.step(forPixels: Double(max(size.x, size.y)))
+        let aspect = entry.frame.size.width / entry.frame.size.height
         guard let preview = previews.entries[id] else {
-            previews.want(id, bounds: entry.bounds, step: step)
+            previews.want(id, bounds: entry.bounds, step: step, cardAspect: aspect)
             return
         }
-        if preview.step < step { previews.want(id, bounds: entry.bounds, step: step) }
+        if preview.step < step {
+            previews.want(id, bounds: entry.bounds, step: step, cardAspect: aspect)
+        }
         previews.markUsed(preview, frame: frame)
         previewQuads.append(
             GlyphInstance(

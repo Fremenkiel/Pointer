@@ -79,13 +79,15 @@ final class PreviewAtlas {
 
     /// Asks for the preview of a card in the step `step`, unless a request of it waits, the card
     /// has no preview file, or the limit of waiting requests is reached.
-    func want(_ card: CardID, bounds: Rect, step: Int) {
+    func want(_ card: CardID, bounds: Rect, step: Int, cardAspect: Double) {
         precondition(Self.steps.contains(step), "Step \(step) is not a preview size")
         guard !requested.contains(card), !unavailable.contains(card),
             requested.count < requestLimit
         else { return }
         requested.insert(card)
-        wanted.append(PreviewRequest(card: card, bounds: bounds, step: step))
+        wanted.append(
+            PreviewRequest(card: card, bounds: bounds, step: step, cardAspect: cardAspect)
+        )
         assert(requested.count <= requestLimit, "At most \(requestLimit) requests wait")
     }
 

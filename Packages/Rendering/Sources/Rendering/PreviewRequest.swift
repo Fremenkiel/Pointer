@@ -10,4 +10,7 @@ struct PreviewRequest: Sendable {
     let bounds: Rect
     /// The size step: 128, 256, or 512 pixels.
     let step: Int
+    /// The width over the height of the card frame, for a preview that the source must render
+    /// first (m6-plan.md task 3.3, item 6).
+    let cardAspect: Double
 }

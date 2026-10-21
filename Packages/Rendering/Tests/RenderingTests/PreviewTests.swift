@@ -21,7 +21,7 @@ final class FakePreviews: PreviewSource {
     /// The number of reads so far.
     var readCount: Int { reads.withLock { $0 } }
 
-    func preview(of canvas: CanvasID) async -> Data? {
+    func preview(of canvas: CanvasID, cardAspect: Double) async -> Data? {
         reads.withLock { $0 += 1 }
         return data
     }
@@ -160,12 +160,14 @@ struct PreviewTests {
         let inside = PreviewRequest(
             card: Self.card(1),
             bounds: Rect(origin: Point(x: 10, y: 10), size: Size(width: 64, height: 48)),
-            step: 128
+            step: 128,
+            cardAspect: 4.0 / 3.0
         )
         let outside = PreviewRequest(
             card: Self.card(2),
             bounds: Rect(origin: Point(x: 900, y: 900), size: Size(width: 64, height: 48)),
-            step: 128
+            step: 128,
+            cardAspect: 4.0 / 3.0
         )
         loader.request([outside, inside], area: area)
         for _ in 0..<2_000 where loader.isLoading || results.withLock({ $0.count }) < 2 {

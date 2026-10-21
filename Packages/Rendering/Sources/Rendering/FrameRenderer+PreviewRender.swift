@@ -114,7 +114,9 @@ extension FrameRenderer {
     }
 
     /// Encodes the resolve pass into `encoder` and returns a blit encoder after it.
-    private static func resolve(
+    ///
+    /// - Returns: The blit encoder, or `nil` if Metal gives none.
+    static func resolve(
         _ encoder: any MTLRenderCommandEncoder,
         renderer: PreviewRenderer,
         commandBuffer: any MTLCommandBuffer

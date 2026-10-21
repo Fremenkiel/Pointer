@@ -171,6 +171,8 @@ final class AppComposition {
         let canvasID = workspace.canvasID
         // The canvas is on the screen already, with its history (F-02).
         guard container.canvas?.canvasID != canvasID else { return }
+        let bounds = container.view.bounds
+        let screenSize = Size(width: bounds.width, height: bounds.height)
         do {
             guard !Task.isCancelled else { return }
             onLoadStarted?(canvasID)
@@ -181,7 +183,9 @@ final class AppComposition {
             var dependencies = CanvasDependencies(
                 renderer: try CanvasRenderer(
                     configuration: CanvasComposition.rendererConfiguration(defaults),
-                    previews: previewStore.map(PreviewFiles.init)
+                    previews: previewStore.map { store in
+                        PreviewFiles(store: store, repository: repository, viewSize: screenSize)
+                    }
                 ),
                 clock: clock,
                 content: content

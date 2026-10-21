@@ -77,6 +77,41 @@ final class PreviewRenderer {
         return Rect(origin: camera.center - size.halfDiagonal, size: size)
     }
 
+    /// Where a preview lies: the child region, the camera of the target, and the pixel rectangle
+    /// of the image in the targets.
+    struct Placement {
+        let region: Rect
+        let camera: Camera
+        let image: MTLRegion
+    }
+
+    /// Returns the placement of a preview of `size` pixels on its longer side.
+    ///
+    /// - Precondition: `size` is from 1 to `side`, and the aspect and the view size are positive.
+    static func placement(
+        camera: Camera,
+        cardAspect: Double,
+        size: Int,
+        viewSize: Size
+    ) -> Placement {
+        precondition(size > 0 && size <= side, "Size \(size)")
+        let region = Self.region(camera: camera, cardAspect: cardAspect, viewSize: viewSize)
+        let wide = cardAspect >= 1
+        let width = wide ? size : max(1, Int((Double(size) * cardAspect).rounded()))
+        let height = wide ? max(1, Int((Double(size) / cardAspect).rounded())) : size
+        let image = MTLRegion(
+            origin: MTLOrigin(x: (side - width) / 2, y: (side - height) / 2, z: 0),
+            size: MTLSize(width: width, height: height, depth: 1)
+        )
+        let zoom = Double(width) / region.size.width
+        assert(zoom > 0 && zoom.isFinite, "The target has pixels per canvas point")
+        return Placement(
+            region: region,
+            camera: Camera(center: region.center, zoom: zoom),
+            image: image
+        )
+    }
+
     /// Starts a job for `request` on a canvas shown in `viewSize`. A job in progress ends with
     /// `nil`, because the newer request wins.
     func start(_ request: PreviewRenderRequest, viewSize: Size) {
@@ -87,26 +122,19 @@ final class PreviewRenderer {
             request.completion(nil)
             return
         }
-        let region = Self.region(
+        let placement = Self.placement(
             camera: request.camera,
             cardAspect: request.cardAspect,
+            size: request.size,
             viewSize: viewSize
         )
-        let wide = request.cardAspect >= 1
-        let size = Double(request.size)
-        let width = wide ? request.size : max(1, Int((size * request.cardAspect).rounded()))
-        let height = wide ? max(1, Int((size / request.cardAspect).rounded())) : request.size
-        let pixels = Double(width) / region.size.width
-        let target = InkTarget(
-            texture: coverage,
-            camera: Camera(center: region.center, zoom: pixels),
-            displayScale: 1
+        let target = InkTarget(texture: coverage, camera: placement.camera, displayScale: 1)
+        job = Job(
+            request: request,
+            region: placement.region,
+            target: target,
+            image: placement.image
         )
-        let image = MTLRegion(
-            origin: MTLOrigin(x: (Self.side - width) / 2, y: (Self.side - height) / 2, z: 0),
-            size: MTLSize(width: width, height: height, depth: 1)
-        )
-        job = Job(request: request, region: region, target: target, image: image)
         assert(job != nil, "A request starts a job")
     }
 }

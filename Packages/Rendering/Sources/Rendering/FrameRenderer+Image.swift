@@ -68,6 +68,60 @@ extension FrameRenderer {
         return RenderedImage(width: width, height: height, pixels: readPixels(of: output))
     }
 
+    /// Renders a preview of strokes, text boxes, and cards at `placement`, with the passes of
+    /// `renderImage`. Cards show their frames and titles without previews. It blocks until the
+    /// GPU completes (m6-plan.md task 3.3, item 6).
+    ///
+    /// - Throws: `RenderingError` if a Metal object fails.
+    /// - Returns: The gray image of the placement.
+    func renderPreviewImage(
+        strokes: [Stroke],
+        textBoxes: [TextBox],
+        cards: [Card],
+        placement: PreviewRenderer.Placement
+    ) throws(RenderingError) -> PreviewImage {
+        precondition(cards.count + textBoxes.count <= Limits.maxNodesPerCanvas, "Too many nodes")
+        let preview = try PreviewRenderer(resources: resources)
+        guard let commandBuffer = resources.queue.makeCommandBuffer() else {
+            throw .resourceUnavailable("command buffer")
+        }
+        let target = InkTarget(texture: preview.coverage, camera: placement.camera, displayScale: 1)
+        let ink = try encodeStrokes(strokes, target: target, commandBuffer: commandBuffer)
+        let text = try encodeText(
+            textBoxes,
+            cards: cards,
+            target: target,
+            commandBuffer: commandBuffer
+        )
+        let pass = MTLRenderPassDescriptor()
+        pass.colorAttachments[0].texture = preview.resolved
+        pass.colorAttachments[0].loadAction = .dontCare
+        pass.colorAttachments[0].storeAction = .store
+        guard let resolve = commandBuffer.makeRenderCommandEncoder(descriptor: pass),
+            let blit = Self.resolve(resolve, renderer: preview, commandBuffer: commandBuffer)
+        else { throw .resourceUnavailable("preview resolve") }
+        let size = placement.image.size
+        blit.copy(
+            from: preview.resolved,
+            sourceSlice: 0,
+            sourceLevel: 0,
+            sourceOrigin: placement.image.origin,
+            sourceSize: size,
+            to: preview.readback,
+            destinationOffset: 0,
+            destinationBytesPerRow: size.width,
+            destinationBytesPerImage: size.width * size.height
+        )
+        blit.endEncoding()
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        withExtendedLifetime((ink, text)) {}
+        guard let image = preview.readImage(width: size.width, height: size.height) else {
+            throw .resourceUnavailable("preview readback")
+        }
+        return image
+    }
+
     /// Draws all strokes in one pass with a store of their own. The encoder must live until the
     /// GPU completes, because it owns the arena.
     private func encodeStrokes(
