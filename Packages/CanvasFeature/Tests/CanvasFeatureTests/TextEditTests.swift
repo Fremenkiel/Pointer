@@ -218,6 +218,16 @@ struct TextEditTests {
         #expect(controller.textBox(at: Point(x: 100, y: 100)) == nil)
     }
 
+    @Test("A tap on the last line of a box of empty lines finds the box, below it finds none")
+    func hitTestTallBox() throws {
+        // 400 new lines give 401 lines, the most lines per UTF-8 byte that a text can have.
+        let box = try Self.box(String(repeating: "\n", count: 400), at: Point(x: 0, y: 0))
+        let controller = try makeController(boxes: [box])
+        let bottom = 401 * TextLayout.lineHeight
+        #expect(controller.textBox(at: Point(x: 2, y: bottom - 2))?.id == box.id)
+        #expect(controller.textBox(at: Point(x: 2, y: bottom + 50)) == nil)
+    }
+
     @Test("A drag moves a box with one step, and an undo puts it back (CARD-07)")
     func move() throws {
         let box = try Self.box("node", at: Point(x: 0, y: 0))

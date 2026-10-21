@@ -74,11 +74,15 @@ final class TextEditing {
         let reach = tapTarget / zoom
         var best: TextBox?
         for box in boxes.values {
-            // A box is at most `TextStyle.maxWidth` wide, so the origin rules out most boxes
-            // before a layout.
+            // A box is at most `TextStyle.maxWidth` wide, and each line but an empty last line
+            // takes one UTF-16 unit at least, at most one per UTF-8 byte. Thus the origin rules
+            // out most boxes before a layout: a cold tap over 10,000 stacked boxes took 125 ms
+            // without the height bound (review of M5).
+            let maxHeight = Double(box.text.utf8.count + 1) * TextLayout.lineHeight
             guard point.x >= box.origin.x - reach,
                 point.x <= box.origin.x + TextStyle.maxWidth + reach,
-                point.y >= box.origin.y - reach
+                point.y >= box.origin.y - reach,
+                point.y <= box.origin.y + maxHeight + reach
             else { continue }
             let size = size(of: box)
             let grow = Vector(
