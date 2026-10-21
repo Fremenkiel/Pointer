@@ -65,8 +65,10 @@ public struct TextLayout: Sendable {
         )
         RenderSignpost.begin("TextLayout")
         defer { RenderSignpost.end("TextLayout") }
-        var builder = Builder()
         let length = text.utf16.count
+        // Each glyph comes from at least one UTF-16 unit in almost all text, so one reserve
+        // holds the glyphs: a reserve per run copied the list at each line (review of M5).
+        var builder = Builder(capacity: length)
         let attributed = NSAttributedString(
             string: text,
             attributes: [.font: Self.baseFont]
@@ -99,6 +101,15 @@ public struct TextLayout: Sendable {
         var fontIndices: [UInt8] = []
         var lineCount = 0
         var width = 0.0
+        /// The glyph IDs and positions of one run, reused by each run.
+        private var runIDs: [CGGlyph] = []
+        private var runPoints: [CGPoint] = []
+
+        init(capacity: Int) {
+            precondition(capacity >= 0, "A capacity is not negative, got \(capacity)")
+            glyphs.reserveCapacity(capacity)
+            fontIndices.reserveCapacity(capacity)
+        }
 
         mutating func append(_ line: CTLine) {
             precondition(lineCount < Int(UInt16.max), "Line \(lineCount) fits the glyph line")
@@ -121,24 +132,28 @@ public struct TextLayout: Sendable {
         private mutating func append(_ run: CTRun, line: UInt16) {
             let count = CTRunGetGlyphCount(run)
             guard count > 0 else { return }
-            var ids = [CGGlyph](repeating: 0, count: count)
-            var points = [CGPoint](repeating: .zero, count: count)
-            CTRunGetGlyphs(run, CFRange(location: 0, length: 0), &ids)
-            CTRunGetPositions(run, CFRange(location: 0, length: 0), &points)
-            assert(ids.count == points.count, "Each glyph of a run has a position")
+            runIDs.removeAll(keepingCapacity: true)
+            runPoints.removeAll(keepingCapacity: true)
+            runIDs.append(contentsOf: repeatElement(0, count: count))
+            runPoints.append(contentsOf: repeatElement(.zero, count: count))
+            CTRunGetGlyphs(run, CFRange(location: 0, length: 0), &runIDs)
+            CTRunGetPositions(run, CFRange(location: 0, length: 0), &runPoints)
+            assert(runIDs.count == runPoints.count, "Each glyph of a run has a position")
             let attributes = CTRunGetAttributes(run) as NSDictionary
             let font = attributes[NSAttributedString.Key.font] as? UIFont ?? TextLayout.baseFont
             let index = fontIndex(font)
             precondition(index < fonts.count, "Font \(index) is in the font table")
-            glyphs.reserveCapacity(glyphs.count + count)
             // The glyphs of a run share the baseline of the line, so only x is kept.
-            for (glyph, point) in zip(ids, points) {
+            for (glyph, point) in zip(runIDs, runPoints) {
                 glyphs.append(Glyph(x: Float(point.x), glyph: glyph, line: line))
             }
             fontIndices.append(contentsOf: repeatElement(UInt8(index), count: count))
         }
 
         private mutating func fontIndex(_ font: UIFont) -> Int {
+            // Core Text gives the runs of SF Mono the font of the attributes, so an identity
+            // check skips the compare of the names.
+            if font === fonts[0] { return 0 }
             if let index = fonts.firstIndex(where: { $0.fontName == font.fontName }) {
                 return index
             }
