@@ -46,8 +46,8 @@ Layer 0  Foundations      InkEngine ---- Model ---- Geometry
 | `Geometry` | 0 | Foundation | `Point`, `Vector`, `Rect`, `Transform` in `Double`. `Camera` and camera math. `SpatialGrid`. `StrokeCurve`, the B-spline math. |
 | `Model` | 0 | `Geometry` | Value types: `Workspace`, `Card`, `TextBox`, `Stroke`, IDs, `HybridClock`, `FractionalIndex`. Commands and `History`. Protocol `LibraryRepository`. |
 | `InkEngine` | 0 | `Model`, `Geometry` | Eraser hit test and stroke split. |
-| `Persistence` | 1 | `Model`, `Geometry`, SQLite3 | `SQLiteLibraryRepository` (an actor), a small SQLite wrapper, row codecs, migrations, snapshots, restore. |
-| `Rendering` | 1 | `Model`, `Geometry`, `InkEngine`, Metal | `CanvasRenderer`, the point arena, shaders, the committed texture cache, text layout, the glyph atlas (D-81). |
+| `Persistence` | 1 | `Model`, `Geometry`, SQLite3 | `SQLiteLibraryRepository` (an actor), a small SQLite wrapper, row codecs, migrations, snapshots, restore. `PreviewStore`, which reads and writes the preview files as `Data` (D-107). |
+| `Rendering` | 1 | `Model`, `Geometry`, `InkEngine`, Metal, ImageIO | `CanvasRenderer`, the point arena, shaders, the committed texture cache, text layout, the glyph atlas (D-81). The card previews and their PNG code (D-107). |
 | `Export` | 1 | `Model`, `Geometry`, `InkEngine`, Core Graphics, Core Text | `PDFExporter`. |
 | `DesignSystem` | 1 | SwiftUI, UIKit | Color, spacing, size, and icon tokens. |
 | `CanvasFeature` | 2 | Layer 0 and 1, PencilKit | `CanvasViewController`, `CanvasView`, the live `PKCanvasView`, `PencilKitStrokeConverter`, input routing, camera control, card navigation, text editing, top bars. |
@@ -176,6 +176,7 @@ A `UIHoverGestureRecognizer` with `allowedTouchTypes = [.pencil]` shows a small 
 | Two-finger pinch | Canvas | Zoom about the midpoint of the two fingers. Pan at the same time. |
 | Tap | Text box | Start editing (TOOL-06). |
 | Double tap | Card | Open the card (decision D-09). The double tap begins only on a card that no text box covers. A single tap waits for it only on such a card, so a tap on a text box starts its edit at once (D-100). |
+| Long press | Empty canvas | Menu with "New card" (D-08). Empty means no card and no text box under the finger. Ink does not count (D-113). |
 | Long press | Card or text box | Context menu: rename (card), delete. |
 | Long press, then drag | Card or text box | Move it (decision D-10). |
 
@@ -299,7 +300,7 @@ The renderer draws cards into the green channel of the committed textures, with 
 
 Layer order on a canvas, from bottom to top: cards, ink, text boxes (decision D-16). The composite takes the larger coverage of the two channels, and a card has no fill. Thus the screen shows the same image as cards drawn below the ink.
 
-The preview is a gray 8-bit PNG per child canvas in `Caches/Pointer/previews/<canvas-id>.png` (D-97). The app writes it when you leave the child canvas, because a canvas changes only while it is on the screen (STO-01). The preview shows the region of the child that the open camera of section 6.2 shows, cut to the aspect of the card (D-98). It shows content one level deep. Deeper cards show as empty frames. The renderer reads the files of the visible cards off the main actor, after the first frame, as it lays out the text (D-92). A cache with a byte budget holds the decoded previews, 8 MB as a start value. The size comes in steps of 128, 256, and 512 pixels, from the size of the card on the screen. If a file is missing, the app loads that child canvas alone off the main actor and draws its preview. A restore (M9) clears the folder.
+The preview is a gray 8-bit PNG per child canvas in `Caches/Pointer/previews/<canvas-id>.png` (D-97). The app writes it when you leave the child canvas, because a canvas changes only while it is on the screen (STO-01). A leave is the up button, the pinch-out, a workspace switch, or the move to the background (D-111). `Rendering` encodes and decodes the PNG with ImageIO, and `PreviewStore` in `Persistence` reads and writes the file as `Data` (D-107). The preview shows the region of the child that the open camera of section 6.2 shows, cut to the aspect of the card (D-98). It shows content one level deep. Deeper cards show as empty frames. The renderer reads the files of the visible cards off the main actor, after the first frame, as it lays out the text (D-92). A cache with a byte budget holds the decoded previews, 8 MB as a start value. The size comes in steps of 128, 256, and 512 pixels, from the size of the card on the screen. If a file is missing, the app loads that child canvas alone off the main actor and draws its preview. A restore (M9) clears the folder.
 
 A new card is a quarter of the screen width wide, with the aspect of the screen, centered on the point of the long press, and has no title (D-101). At a high zoom, the minimum size of data-model.md section 7.2 sets the size. "Rename" opens an alert with a text field, as the workspace rename does. Version 1 has no resize of a card (D-102).
 
@@ -327,7 +328,7 @@ The camera of each canvas is stored in the device state, not in the library (see
 ### 6.2 Open a card
 
 1. The user opens a card (decision D-09).
-2. The controller animates the camera of the parent until the card frame covers the screen (D-98). The animation takes 0.35 s with a spring curve. During it, the ink and the text of the parent fade out, because they lie on top of the card (D-16).
+2. The controller animates the camera of the parent until the card frame covers the screen (D-98). The animation takes 0.35 s with a spring curve. During it, the parent fades out, because its ink and its text lie on top of the card (D-16). Text and cards share the green channel, so the whole parent composite fades. A card pass draws the opened card on top at full weight (D-108). At the start of the animation, the parent copies its frame into one `.r8Unorm` texture of the drawable size. Then it frees its committed textures and the eraser mask. The animation draws this frozen copy (D-110).
 3. The child canvas loads during the animation. Its camera starts at the standard zoom, centered on the content bounds of the child. If the child is empty, the camera centers on the origin.
 4. When the animation ends and the first frame of the child is ready, the child replaces the preview with a crossfade of 0.1 s.
 5. The swap has no visible jump. The child shows W by H view points at zoom 1. A card of w by h parent points covers the screen at the scale k = max(W / w, H / h). The preview shows the child region of w × k by h × k points around the center of the open camera, so the preview and the first frame of the child show the same content at the same size.
@@ -336,8 +337,8 @@ The camera of each canvas is stored in the device state, not in the library (see
 
 There are two ways to leave a card:
 
-- Up button. The controller first moves the child camera to the camera of the open (section 6.2). Then it shows the parent canvas with the camera on the card center at the standard zoom, and plays the open animation in reverse: the child shrinks into the card frame.
-- Pinch out. Below `minZoom`, the zoom does not stop. It continues with resistance (rubber band). While below `minZoom`, the controller shows the child as a shrinking card over a faded image of the parent. If the fingers lift when the zoom of the fingers, without the rubber band, is under `minZoom * 0.6`, the controller plays the minimize animation and shows the parent at the standard zoom (D-104). During it, the child image crossfades to the preview while the card shrinks. Otherwise, the camera springs back to `minZoom`.
+- Up button. The tap starts the load of the parent. In the same time, the controller moves the child camera to the camera of the open (section 6.2). When both are done, the animation starts (D-109). Then it shows the parent canvas with the camera on the card center at the standard zoom, and plays the open animation in reverse: the child shrinks into the card frame.
+- Pinch out. Below `minZoom`, the zoom does not stop. It continues with resistance (rubber band). While below `minZoom`, the controller shows the child as a shrinking card over a faded image of the parent. The image is the frozen copy of the open (section 6.2). It exists only for the direct parent of an open in this run of the app. Without it, the pinch below `minZoom` starts the load of the parent. It shows the canvas color until the first frame of the parent (D-109). If the fingers lift when the zoom of the fingers, without the rubber band, is under `minZoom * 0.6`, the controller plays the minimize animation and shows the parent at the standard zoom (D-104). During it, the child image crossfades to the preview while the card shrinks. Otherwise, the camera springs back to `minZoom`.
 
 On the root canvas, the rubber band springs back. No transition happens (CARD-06).
 
@@ -345,7 +346,7 @@ The threshold `0.6` is a start value. Tune it on a device. The shown zoom is a p
 
 ### 6.4 Navigation state
 
-`NavigationState` holds the path from the root canvas to the current canvas as a list of card IDs. The list has a limit of `Limits.maxDepth = 32`. The root canvas is level 0, so a list of 32 cards reaches level 32, and "New card" there is refused with a message (D-95). If the list is not empty, the up button shows.
+`NavigationState` holds the path from the root canvas to the current canvas as a list of card IDs. The list has a limit of `Limits.maxDepth = 32`. The root canvas is level 0, so a list of 32 cards reaches level 32, and "New card" there is refused with a message (D-95). If the list is not empty, the up button shows. At launch, the app cuts the stored path before the first card that is not valid (D-112). A valid card is live, and its `canvasID` is the canvas above it.
 
 ## 7. Text boxes
 

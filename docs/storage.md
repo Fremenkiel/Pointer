@@ -33,7 +33,7 @@ The costs:
       library.sqlite                   the live database (with -wal and -shm files)
       device.sqlite                    device state (not part of the library, section 10)
     Caches/Pointer/
-      previews/<canvas-id>.png         card previews, written when you leave the canvas (D-97)
+      previews/<canvas-id>.png         card previews, written when you leave the canvas (D-97, D-111)
   Documents/                           visible in Files as "On My iPad > Pointer"
     Backups/
       Pointer-2026-10-17-220000.sqlite snapshots, newest first
@@ -191,7 +191,7 @@ If a transaction fails, the repository rolls it back and keeps the rows in the p
 3. If it is older, run the migrations (section 6).
 4. Read all workspaces for the selector.
 5. To open a canvas, first write the pending rows, so that the load holds them. If that write fails, the open fails with `storageFailed` and loads nothing (F-01 of [m4-fix-plan.md](m4-fix-plan.md)). Then read the live rows with its `canvas_id`: cards and text boxes with `is_deleted = 0`, and strokes without a live erase record (`LEFT JOIN stroke_erase ... ON ... AND stroke_erase.is_deleted = 0 WHERE stroke_erase.stroke_id IS NULL`). Do not load erase records or erased strokes (review A-07). The renderer builds the `SpatialGrid` of the strokes in memory.
-6. For the previews of visible cards, read the files in `Caches/Pointer/previews/` off the main actor (D-97). Read a child canvas only if its file is missing. Reading all children at each open cost about 72 MB for 300 typical children on the iPad.
+6. For the previews of visible cards, `PreviewStore` reads the files in `Caches/Pointer/previews/` off the main actor (D-97, D-107). Read a child canvas only if its file is missing. Reading all children at each open cost about 72 MB for 300 typical children on the iPad.
 
 The repository loads one canvas at a time. It never loads the whole library into memory.
 
@@ -311,4 +311,5 @@ Rules:
 - After a camera write, the store keeps the 1,000 rows with the largest `used` and deletes the others in the same transaction.
 - `PRAGMA user_version` holds the schema version of this file. It has its own migrations, as in section 6.
 - If the file is missing or damaged, the store renames a damaged file to `device.sqlite.damaged`, makes a new file with a new `DeviceID`, and logs the fault. The app does not stop. The camera positions are lost, but no work is lost (STO-06).
+- At launch, the app cuts the stored path before the first card that is not valid (D-112). A valid card is live, and its `canvasID` is the canvas above it.
 - A file with a newer schema, a row of a wrong length, or a navigation path above `Limits.maxDepth` counts as damaged. A camera row with a zoom outside the range or a center that is not finite reads as no camera.

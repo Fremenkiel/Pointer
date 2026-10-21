@@ -270,6 +270,8 @@ struct DeviceState: Hashable, Sendable {
 }
 ```
 
+A stored path can name a card that is deleted or that has another parent. At launch, the app cuts the path before the first such card (D-112).
+
 The last camera of each canvas is not part of `DeviceState`. `DeviceStateStore` reads the camera of one canvas when the canvas opens and writes it as one row. It keeps at most 1,000 cameras and drops the least recently used one. `Camera` is in `Geometry`.
 
 ## 11. Readiness for sync and backup

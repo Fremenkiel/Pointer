@@ -122,6 +122,8 @@ Acceptance:
 
 - Card creation (D-08), card previews, open (D-09), up button, pinch-out exit with the minimize animation, navigation path.
 
+The tasks are in [m6-plan.md](m6-plan.md). The product owner decided D-95 to D-106 and D-107 to D-113 on 2026-10-21.
+
 Acceptance:
 
 1. Open and leave a card with no visible jump (screen recording, frame by frame).

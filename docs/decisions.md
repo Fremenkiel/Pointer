@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day.
 
 Status values: Open, Decided, Replaced.
 
@@ -114,6 +114,13 @@ Status values: Open, Decided, Replaced.
 | D-104 | Threshold of the pinch-out exit (CARD-05) | Test the threshold on the zoom of the fingers, start value 0.6 | Decided (2026-10-21) |
 | D-105 | When the GPU glyph buffers of D-94 come | After M6, in M10 | Decided (2026-10-21) |
 | D-106 | Color of the canvas | RGB(24, 24, 24), `#181818`, instead of black | Decided (2026-10-21) |
+| D-107 | PNG code and the owner of the preview files | ImageIO in `Rendering` for the PNG bytes, `PreviewStore` in `Persistence` for the files | Decided (2026-10-21) |
+| D-108 | The fade of the parent during the open | The whole parent composite fades, and the opened card draws on top | Decided (2026-10-21) |
+| D-109 | The image of the parent during a leave | A frozen copy of the last parent frame, else a load of the parent below `minZoom` or at the up button | Decided (2026-10-21) |
+| D-110 | The memory peak of a transition | The parent frees its committed textures at the start of the animation. A transition budget from a measure. | Decided (2026-10-21) |
+| D-111 | The events that write a preview | Up button, pinch-out, workspace switch, and the move to the background | Decided (2026-10-21) |
+| D-112 | A path that names a deleted card | Cut the path before the first card that is not valid | Decided (2026-10-21) |
+| D-113 | What "an empty part of the canvas" is | No card and no text box under the finger. Ink does not count. | Decided (2026-10-21) |
 
 ## Details
 
@@ -1133,6 +1140,67 @@ Status values: Open, Decided, Replaced.
 - The composite pass mixes the background and white with the coverage as weight: `background + (1 - background) * coverage`. It mixes the sRGB values that the drawable stores, as Core Animation does when it puts the live `PKCanvasView` on top. Full coverage stays 255 in each channel (D-38).
 - `DesignSystem.Color.canvasBackground` holds the color. `RendererConfiguration.background` takes it from the app, so `Rendering` needs no `DesignSystem` import. The default of the configuration stays black, so the coverage tests and their reference images do not change. A pixel test covers the new background.
 - The chrome background is gray 0.14 (RGB 36, 36, 36), a little brighter than the canvas. This decision does not change the chrome.
+
+### D-107 PNG code and the owner of the preview files
+
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
+- D-97 stores a PNG. No source file imports ImageIO, and BUILD-03 needs a decision for a new Apple framework.
+- ARCH-04 lets only `Persistence` touch the file system. `Persistence` is Tier A and must not import CoreGraphics or ImageIO (ARCH-03).
+- Options:
+  - (a) ImageIO in `Rendering`: it encodes and decodes the PNG bytes as `Data`. A `PreviewStore` in `Persistence` reads, writes, and removes the files as `Data`.
+  - (b) No PNG: raw 8-bit gray bytes with a short header. A preview of 512 by 358 then takes 183 KB on disk instead of about 9 KB. D-97 changes.
+- Recommendation: (a). It keeps D-97 and the layer rules.
+
+### D-108 The fade of the parent during the open
+
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
+- D-98 fades the ink and the text of the parent and keeps the card. Text and cards share the green channel (D-96), so the composite cannot fade the text and keep the cards.
+- Options:
+  - (a) At the start of the animation, the renderer of the parent fades its whole composite: ink, text, and the other cards. A card pass draws the opened card on top at full weight: its border and its preview. The other cards leave the screen as the card grows, so the result is almost the same.
+  - (b) Fade red only, and keep green. The text of the parent then stays on the card until the swap, which is jump 2 of D-98.
+- Recommendation: (a).
+
+### D-109 The image of the parent during a leave
+
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
+- While a child shows, the parent is not loaded. The pinch-out of CARD-05 shows "a faded image of the parent" at once. The open of the D-56 canvas takes about 250 ms.
+- After a launch into a child (WS-04) and after an up button, no image of the new parent exists.
+- Options:
+  - (a) At the open, keep a frozen copy of the last frame of the parent: one texture of the drawable size in `.r8Unorm` (about 4 MB on the 11-inch iPad). Keep only the copy of the direct parent. If no copy exists, show the canvas color, and fade the parent in when its first frame is ready.
+  - (b) When the pinch passes below `minZoom`, load the parent. Until its first frame is ready, show the canvas color.
+  - (c) Keep the parent loaded while the child shows. That doubles the memory of a large canvas.
+- For the up button, the leave starts the load of the parent at the tap. The child camera moves to the camera of the open in the same time (architecture.md section 6.3). When both are done, the reverse animation starts.
+- Recommendation: (a) together with (b). The copy covers the common case. The load covers the launch and the up button.
+
+### D-110 The memory peak of a transition
+
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
+- During an open, the parent and the child are both loaded: two contents, two point arenas, four committed textures, and two sets of three drawables (16.1 MB each, D-93). With the D-56 canvas as the parent and a D-56 child, the peak is about twice 350 MB.
+- Options:
+  - (a) Accept the peak, and set a separate budget for a transition after a measure in task 3.6.
+  - (b) At the start of the animation, the parent renderer copies its frame into the texture of D-109 (a). Then it frees its committed textures and the eraser mask. The animation draws the frozen copy. After the crossfade, the parent screen goes, and its point arena goes with it.
+- Recommendation: (b), with the budget of (a) set from the measure of task 3.6.
+
+### D-111 The events that write a preview
+
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
+- D-97 writes the preview "when you leave the child". A workspace switch from inside a child also leaves it. A force quit inside a child leaves an old preview until the next leave.
+- Options: (a) up button and pinch-out only. (b) Also the workspace switch and the move to the background.
+- Recommendation: (b). The move to the background already writes the pending rows (STO-06).
+
+### D-112 A path that names a deleted card
+
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
+- At launch, the app opens the deepest canvas of the stored path (WS-04). A card of the path can be deleted (D-18), or the path can point to the wrong parent after a restore (M9). No document says what then happens.
+- Options: (a) Cut the path before the first card that is not live or whose `canvasID` is not the canvas above it. (b) Open the root canvas.
+- Recommendation: (a). It keeps the deepest canvas that is still valid.
+
+### D-113 What "an empty part of the canvas" is
+
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
+- CARD-01 makes a card with a long press "on an empty part of the canvas". Ink cannot be selected (CARD-07), and cards lie under the ink (D-16).
+- Options: (a) Empty means no card and no text box under the finger. Ink does not count. (b) Ink counts too, so a long press on ink does nothing.
+- Recommendation: (a). A hit test of ink costs a pass over the strokes, and ink has no menu.
 
 ## Points in the request that conflict or are not complete
 
