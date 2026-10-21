@@ -52,4 +52,27 @@ extension CanvasViewController: UIGestureRecognizerDelegate {
     var isPinchActive: Bool {
         pinchRecognizer.state == .began || pinchRecognizer.state == .changed
     }
+
+    /// `true` if a recognizer takes finger touches. An empty list of touch types takes all.
+    static func takesFingerTouches(_ recognizer: UIGestureRecognizer) -> Bool {
+        let types = recognizer.allowedTouchTypes
+        return types.isEmpty || types.contains(NSNumber(value: UITouch.TouchType.direct.rawValue))
+    }
+
+    /// A recognizer of PencilKit that takes finger touches waits for the finger tap and the long
+    /// press of the canvas to fail. The selection of PencilKit, which Pointer does not use (D-10),
+    /// took a finger tap on a box and ended the focus of the edit view 0.35 s later (manual test
+    /// 4 of docs/m5-plan.md section 5.6). The drawing of the pencil waits for nothing.
+    public func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        let isOwn =
+            gestureRecognizer === textEditing.fingerTap
+            || gestureRecognizer === textEditing.longPress
+        guard isOwn, let view = otherGestureRecognizer.view,
+            view.isDescendant(of: canvasView.liveCanvas)
+        else { return false }
+        return Self.takesFingerTouches(otherGestureRecognizer)
+    }
 }

@@ -88,4 +88,46 @@ final class ScribbleConditionTests: XCTestCase {
         _ = canvas.canvasView.liveCanvas.becomeFirstResponder()
         XCTAssertTrue(canvas.textEditing.view.isFirstResponder, "The edit view keeps the keyboard")
     }
+
+    /// The selection of PencilKit takes finger taps on the live canvas and ends the focus of the
+    /// edit view after the wait for a second tap (manual test 4 of docs/m5-plan.md section 5.6).
+    /// Each recognizer in the live canvas that takes finger touches waits for the finger tap and
+    /// the long press of the canvas to fail. The drawing recognizer of the pencil does not.
+    func testLiveCanvasFingerRecognizersWaitForTheCanvas() throws {
+        let host = try OnScreenCanvas.host()
+        let canvas = CanvasViewController(
+            dependencies: CanvasDependencies(
+                renderer: try CanvasRenderer(),
+                clock: Fixtures.clock(),
+                content: CanvasContent(canvasID: Fixtures.canvas)
+            )
+        )
+        OnScreenCanvas.show(canvas, in: host)
+        defer { OnScreenCanvas.close(canvas) }
+        let live = canvas.canvasView.liveCanvas
+        var fingerRecognizers: [UIGestureRecognizer] = []
+        var stack: [UIView] = [live]
+        for _ in 0..<500 {
+            guard let view = stack.popLast() else { break }
+            let takesFinger = (view.gestureRecognizers ?? []).filter { recognizer in
+                recognizer.isEnabled && CanvasViewController.takesFingerTouches(recognizer)
+            }
+            fingerRecognizers += takesFinger
+            stack += view.subviews
+        }
+        XCTAssertFalse(fingerRecognizers.isEmpty, "PencilKit has recognizers for the finger")
+        for own in [canvas.textEditing.fingerTap, canvas.textEditing.longPress] {
+            for other in fingerRecognizers {
+                XCTAssertTrue(
+                    canvas.gestureRecognizer(own, shouldBeRequiredToFailBy: other),
+                    "\(type(of: other)) waits for the canvas"
+                )
+            }
+            let drawing = live.drawingGestureRecognizer
+            XCTAssertFalse(
+                canvas.gestureRecognizer(own, shouldBeRequiredToFailBy: drawing),
+                "The pencil drawing waits for nothing"
+            )
+        }
+    }
 }
