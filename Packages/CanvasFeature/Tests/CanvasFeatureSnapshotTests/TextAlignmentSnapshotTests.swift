@@ -105,7 +105,11 @@ struct TextAlignmentSnapshotTests {
         let report = results.map { "\(name) \($0)" }.joined(separator: "\n")
         Attachment.record(report, named: "\(name).txt")
         Snapshot.assertMatches(images.canvas, named: "\(name)-canvas")
-        Snapshot.assertMatches(images.edit, named: "\(name)-edit")
+        Snapshot.assertMatches(
+            images.edit,
+            named: "\(name)-edit",
+            channelTolerance: Snapshot.textChannelTolerance
+        )
     }
 }
 

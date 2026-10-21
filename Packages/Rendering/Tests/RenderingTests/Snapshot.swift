@@ -14,9 +14,14 @@ enum Snapshot {
     /// A channel difference up to this value counts as equal. It absorbs GPU rounding.
     static let channelTolerance = 2
 
+    /// A channel difference up to this value counts as equal in an image of UIKit text. The
+    /// antialiasing of UIKit text varies by up to 7 between runs, as `ViewSnapshot` found.
+    static let textChannelTolerance = 8
+
     static func assertMatches(
         _ image: RenderedImage,
         named name: String,
+        channelTolerance: Int = channelTolerance,
         sourceLocation: SourceLocation = #_sourceLocation
     ) {
         let url = Bundle(for: BundleToken.self).url(forResource: name, withExtension: "png")
@@ -36,7 +41,7 @@ enum Snapshot {
             )
             return
         }
-        let differing = differingPixels(image, expected)
+        let differing = differingPixels(image, expected, channelTolerance: channelTolerance)
         let limit = Int(Double(image.width * image.height) * tolerance)
         #expect(
             differing <= limit,
@@ -56,7 +61,11 @@ enum Snapshot {
         Attachment.record(data, named: "\(name).png", sourceLocation: sourceLocation)
     }
 
-    static func differingPixels(_ first: RenderedImage, _ second: RenderedImage) -> Int {
+    static func differingPixels(
+        _ first: RenderedImage,
+        _ second: RenderedImage,
+        channelTolerance: Int = channelTolerance
+    ) -> Int {
         var count = 0
         for pixel in 0..<(first.width * first.height) {
             let base = pixel * 4
