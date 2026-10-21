@@ -104,8 +104,10 @@ final class FrameRenderer {
         textEncoder = TextEncoder(
             resources: resources,
             store: texts,
+            cards: cards,
             atlas: GlyphAtlas(device: device, byteBudget: configuration.glyphAtlasByteBudget),
-            ring: try GlyphRing(device: device, capacity: configuration.glyphCapacity)
+            ring: try GlyphRing(device: device, capacity: configuration.glyphCapacity),
+            borderCoverage: configuration.cardBorderCoverage
         )
         pendingSlots.reserveCapacity(Self.pendingCapacity)
     }
@@ -243,7 +245,8 @@ final class FrameRenderer {
             camera: camera,
             displayScale: displayScale,
             store: store,
-            texts: texts
+            texts: texts,
+            cards: cards
         )
         layer.continueBuild(
             encoder: encoder,

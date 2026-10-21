@@ -2,9 +2,10 @@ import Geometry
 import Metal
 import Model
 
-/// The text of the committed layer: the text part of a build and the redraw of a text change
-/// (architecture.md 5.4, D-82). The text lives in the green channel, so the ink passes and the
-/// eraser mask leave it as it is.
+/// The text and the cards of the committed layer: the green part of a build and the redraw of a
+/// text or card change (architecture.md 5.4 and 5.5, D-82, D-96). They live in the green
+/// channel, so the ink passes and the eraser mask leave them as they are. A green clear draws the
+/// cards and the text of its area again, never one of them alone.
 extension CommittedLayer {
     /// The redraw of the text of an area in the front texture. A full glyph buffer leaves the
     /// other boxes for the next frame.
@@ -18,10 +19,16 @@ extension CommittedLayer {
     /// `true` while a text redraw has boxes left for the next frames.
     var isRedrawingText: Bool { textRedraw != nil }
 
-    /// Lists the text boxes that touch a target, for a build.
-    func listText(of target: InkTarget, from texts: TextStore?) {
+    /// Lists the cards and the text boxes that touch a target, for a build.
+    func listText(of target: InkTarget, texts: TextStore?, cards: CardStore?) {
+        precondition(target.pixelsPerCanvasPoint > 0, "A target has pixels per canvas point")
         buildTextIDs.removeAll(keepingCapacity: true)
-        texts?.grid.forEachItem(touching: target.canvasRect) { buildTextIDs.append($0) }
+        cards?.grid.forEachItem(touching: target.canvasRect) { buildTextIDs.append(.card($0)) }
+        texts?.grid.forEachItem(touching: target.canvasRect) { buildTextIDs.append(.textBox($0)) }
+        assert(
+            buildTextIDs.count <= (cards?.count ?? 0) + (texts?.count ?? 0),
+            "The build lists each item once"
+        )
     }
 
     /// Draws the next boxes of the text part of a build.
@@ -55,16 +62,16 @@ extension CommittedLayer {
         return build.textCursor >= buildTextIDs.count
     }
 
-    /// Notes a change of the text boxes in `area`. The front texture redraws the text of the
-    /// area, and a running build lists its text again (D-82).
+    /// Notes a change of the text boxes or the cards in `area`. The front texture redraws the
+    /// text and the cards of the area, and a running build lists them again (D-82, D-96).
     ///
     /// - Precondition: `area` is finite.
-    func textChanged(_ area: Rect, texts: TextStore) {
+    func textChanged(_ area: Rect, texts: TextStore, cards: CardStore) {
         precondition(area.origin.isFinite, "Text area is not finite")
         if var current = build {
             current.clearsText = current.textCursor > 0
             current.textCursor = 0
-            listText(of: current.target, from: texts)
+            listText(of: current.target, texts: texts, cards: cards)
             build = current
         }
         let whole = textRedrawArea.map { Self.joined($0, area) } ?? area
@@ -76,7 +83,9 @@ extension CommittedLayer {
         }
         textRedrawIDs.removeAll(keepingCapacity: true)
         let margin = Self.redrawMarginPixels / front.pixelsPerCanvasPoint
-        texts.grid.forEachItem(touching: whole.expanded(by: margin)) { textRedrawIDs.append($0) }
+        let listed = whole.expanded(by: margin)
+        cards.grid.forEachItem(touching: listed) { textRedrawIDs.append(.card($0)) }
+        texts.grid.forEachItem(touching: listed) { textRedrawIDs.append(.textBox($0)) }
         textRedraw = TextRedraw(target: front, scissor: scissor)
         assert(textRedraw != nil, "A change in the front texture starts a redraw")
     }

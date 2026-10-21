@@ -30,6 +30,26 @@ public struct RendererConfiguration: Sendable {
             )
         }
     }
+    /// The coverage of a card border, below 1, so that the border shows gray (D-96). The app
+    /// passes `DesignSystem.Color.cardBorder`.
+    ///
+    /// - Precondition: The value is above 0 and below 1.
+    public var cardBorderCoverage: Float = defaultCardBorderCoverage {
+        didSet {
+            precondition(
+                cardBorderCoverage > 0 && cardBorderCoverage < 1,
+                "A card border has a coverage below 1, got \(cardBorderCoverage)"
+            )
+        }
+    }
+    /// The coverage of a card border without a value of the app: the value of
+    /// `DesignSystem.Color.cardBorder`.
+    public static let defaultCardBorderCoverage: Float = 0.5
+    /// The width of a card border in view points (architecture.md 5.5).
+    static let cardBorderWidth = 1.0
+    /// The corner radius of a card in canvas points. The border of a small card takes at most
+    /// half its shorter side.
+    static let cardCornerRadius = 12.0
     /// The glyph quads per frame. A text box holds at most `Limits.maxTextLength` glyphs, so a
     /// frame holds several boxes.
     public var glyphCapacity: Int

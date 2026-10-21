@@ -248,8 +248,8 @@ public final class CanvasRenderer {
         ).needsMore
     }
 
-    /// Renders strokes and text boxes into an image with the same pipelines as the screen. Only
-    /// the tests use it.
+    /// Renders strokes, text boxes, and cards into an image with the same pipelines as the screen.
+    /// Only the tests use it.
     ///
     /// - Precondition: The view size times the scale gives at least one pixel.
     /// - Throws: `RenderingError` if a Metal object fails.
@@ -258,6 +258,7 @@ public final class CanvasRenderer {
     public func renderImage(
         of strokes: [Stroke],
         textBoxes: [TextBox] = [],
+        cards: [Card] = [],
         camera: Camera,
         viewSize: Size,
         displayScale: Double
@@ -267,6 +268,7 @@ public final class CanvasRenderer {
             try renderer.renderImage(
                 of: strokes,
                 textBoxes: textBoxes,
+                cards: cards,
                 camera: camera,
                 viewSize: viewSize,
                 displayScale: displayScale

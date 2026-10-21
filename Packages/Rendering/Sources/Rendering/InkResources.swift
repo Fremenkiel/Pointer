@@ -25,6 +25,8 @@ final class InkResources {
     let clearTextPipeline: any MTLRenderPipelineState
     /// Draws glyph quads from the atlas into the text channel with `max` blending (D-29, D-82).
     let glyphPipeline: any MTLRenderPipelineState
+    /// Draws the rounded border of a card into the text channel with `max` blending (D-96).
+    let cardBorderPipeline: any MTLRenderPipelineState
 
     /// Makes the resources on a device.
     ///
@@ -49,12 +51,8 @@ final class InkResources {
             library: library,
             mask: .green
         )
-        glyphPipeline = try Self.makeInkPipeline(
-            device: device,
-            library: library,
-            functions: ("glyphVertex", "glyphFragment"),
-            channel: .green
-        )
+        glyphPipeline = try Self.makeGreenPipeline(device, library, "glyph")
+        cardBorderPipeline = try Self.makeGreenPipeline(device, library, "cardBorder")
         compositeMaskedPipeline = try Self.makeCompositePipeline(
             device: device,
             library: library,
@@ -98,6 +96,22 @@ final class InkResources {
         attachment.destinationAlphaBlendFactor = .one
         assert(attachment.rgbBlendOperation == .max, "Ink blends with max (D-38)")
         return try makePipeline(device: device, descriptor: descriptor)
+    }
+
+    /// Makes a pipeline of the text channel from the shaders `<name>Vertex` and
+    /// `<name>Fragment`: green only, with `max` blending (D-82, D-96).
+    private static func makeGreenPipeline(
+        _ device: any MTLDevice,
+        _ library: any MTLLibrary,
+        _ name: String
+    ) throws(RenderingError) -> any MTLRenderPipelineState {
+        precondition(!name.isEmpty, "A pipeline needs a shader name")
+        return try makeInkPipeline(
+            device: device,
+            library: library,
+            functions: (name + "Vertex", name + "Fragment"),
+            channel: .green
+        )
     }
 
     private static func makeCompositePipeline(

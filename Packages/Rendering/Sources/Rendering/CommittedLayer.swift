@@ -56,10 +56,11 @@ final class CommittedLayer {
     private var stillFrames = 0
     /// The strokes of the build, in drawing order. Reused, so a build allocates nothing.
     private var buildSlots: [Int] = []
-    /// The text boxes of the build, in drawing order. Reused like `buildSlots`.
-    var buildTextIDs: [TextBoxID] = []
-    /// The text boxes of the text redraw of the front texture. Reused like `buildSlots`.
-    var textRedrawIDs: [TextBoxID] = []
+    /// The text boxes and the cards of the build. Reused like `buildSlots`.
+    var buildTextIDs: [GreenItem] = []
+    /// The text boxes and the cards of the green redraw of the front texture. Reused like
+    /// `buildSlots`.
+    var textRedrawIDs: [GreenItem] = []
     /// The text redraw of the front texture that is not done.
     var textRedraw: TextRedraw?
     /// The area of the running text redraw. A new area joins it, and the redraw starts again.
@@ -151,7 +152,8 @@ final class CommittedLayer {
         camera: Camera,
         displayScale: Double,
         store: StrokeStore,
-        texts: TextStore? = nil
+        texts: TextStore? = nil,
+        cards: CardStore? = nil
     ) -> Bool {
         precondition(displayScale > 0, "Display scale must be positive, got \(displayScale)")
         RenderSignpost.begin("StartBuildIfNeeded")
@@ -166,7 +168,7 @@ final class CommittedLayer {
         let target = InkTarget(texture: texture, camera: camera, displayScale: displayScale)
         buildSlots.removeAll(keepingCapacity: true)
         store.grid.forEachItem(touching: target.canvasRect) { buildSlots.append($0) }
-        listText(of: target, from: texts)
+        listText(of: target, texts: texts, cards: cards)
         build = Build(target: target)
         assert(front?.texture !== texture, "A build never draws into the front texture")
         return true

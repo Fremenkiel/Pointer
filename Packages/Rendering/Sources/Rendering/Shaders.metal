@@ -74,6 +74,15 @@ struct GlyphVertexOut {
     float2 atlasPoint;    // atlas pixels
 };
 
+struct CardBorderVertexOut {
+    float4 position [[position]];
+    float2 center [[flat]];      // target pixels
+    float2 halfSize [[flat]];    // target pixels
+    float halfWidth [[flat]];    // half the line width, pixels
+    float radius [[flat]];       // corner radius, pixels
+    float coverage [[flat]];     // the gray of the border (D-96)
+};
+
 struct InkVertexOut {
     float4 position [[position]];
     float2 start [[flat]];
@@ -279,4 +288,35 @@ fragment half4 glyphFragment(GlyphVertexOut in [[stage_in]],
     constexpr sampler linearSampler(address::clamp_to_zero, filter::linear);
     float coverage = atlas.sample(linearSampler, in.atlasPoint / uniforms.atlasSize).r;
     return half4(coverage);
+}
+
+// The border of one card: a rounded rectangle on a quad that holds the line and its edge (D-96).
+// The quad uses the glyph instance: `atlasOrigin` holds the line width and the corner radius in
+// pixels, and `atlasSize.x` holds the coverage of the border.
+vertex CardBorderVertexOut cardBorderVertex(uint vertexID [[vertex_id]],
+                                            uint instanceID [[instance_id]],
+                                            constant GlyphInstance *quads [[buffer(0)]],
+                                            constant GlyphUniforms &uniforms [[buffer(1)]]) {
+    GlyphInstance quad = quads[instanceID];
+    float halfWidth = quad.atlasOrigin.x * 0.5;
+    float pad = halfWidth + 1.0;
+    float2 corner = float2((vertexID & 1) ? 1.0 : 0.0, (vertexID & 2) ? 1.0 : 0.0);
+    float2 pixel = quad.position - pad + corner * (quad.size + 2.0 * pad);
+    CardBorderVertexOut out;
+    out.position = float4(pixel.x / uniforms.targetSize.x * 2.0 - 1.0,
+                          1.0 - pixel.y / uniforms.targetSize.y * 2.0, 0.0, 1.0);
+    out.halfSize = quad.size * 0.5;
+    out.center = quad.position + out.halfSize;
+    out.halfWidth = halfWidth;
+    out.radius = min(quad.atlasOrigin.y, min(out.halfSize.x, out.halfSize.y));
+    out.coverage = quad.atlasSize.x;
+    return out;
+}
+
+// The coverage of the border line: the distance to the rounded rectangle, with a one-pixel edge.
+fragment half4 cardBorderFragment(CardBorderVertexOut in [[stage_in]]) {
+    float2 q = abs(in.position.xy - in.center) - (in.halfSize - in.radius);
+    float distance = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - in.radius;
+    float line = clamp(in.halfWidth + 0.5 - abs(distance), 0.0, 1.0);
+    return half4(line * in.coverage);
 }

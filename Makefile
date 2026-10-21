@@ -54,7 +54,8 @@ snapshots:
 		-only-testing:PointerDeviceTests/HistoryButtonsSnapshotTests \
 		-only-testing:PointerDeviceTests/ToolControlsSnapshotTests \
 		-only-testing:PointerDeviceTests/TextRenderingTests \
-		-only-testing:PointerDeviceTests/TextAlignmentSnapshotTests
+		-only-testing:PointerDeviceTests/TextAlignmentSnapshotTests \
+		-only-testing:PointerDeviceTests/CardRenderingTests
 	@echo "snapshots: done"
 
 # STYLE-04. The fixtures hold deliberate violations, so the formatter skips them.

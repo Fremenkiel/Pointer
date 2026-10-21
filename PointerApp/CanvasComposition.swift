@@ -22,6 +22,7 @@ enum CanvasComposition {
     static func rendererConfiguration(_ defaults: UserDefaults) -> RendererConfiguration {
         var configuration = RendererConfiguration()
         configuration.background = DesignSystem.Color.canvasBackgroundSRGB
+        configuration.cardBorderCoverage = DesignSystem.Color.cardBorder
         let budget = defaults.integer(forKey: instanceBudgetKey)
         if budget > 0 {
             configuration.instanceBudgetPerFrame = budget

@@ -21,8 +21,8 @@ extension FrameRenderer {
         return color
     }
 
-    /// Renders strokes and text boxes into an image with the same pipelines as the screen. Only
-    /// the tests use it.
+    /// Renders strokes, text boxes, and cards into an image with the same pipelines as the screen.
+    /// Only the tests use it.
     ///
     /// - Precondition: The view size times the scale gives at least one pixel.
     /// - Throws: `RenderingError` if a Metal object fails.
@@ -31,6 +31,7 @@ extension FrameRenderer {
     func renderImage(
         of strokes: [Stroke],
         textBoxes: [TextBox] = [],
+        cards: [Card] = [],
         camera: Camera,
         viewSize: Size,
         displayScale: Double
@@ -54,7 +55,12 @@ extension FrameRenderer {
         }
         let target = InkTarget(texture: coverage, camera: camera, displayScale: displayScale)
         let encoder = try encodeStrokes(strokes, target: target, commandBuffer: commandBuffer)
-        let text = try encodeText(textBoxes, target: target, commandBuffer: commandBuffer)
+        let text = try encodeText(
+            textBoxes,
+            cards: cards,
+            target: target,
+            commandBuffer: commandBuffer
+        )
         encodeCopy(coverage: coverage, output: output, commandBuffer: commandBuffer)
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
@@ -100,10 +106,11 @@ extension FrameRenderer {
         return encoder
     }
 
-    /// Draws all text boxes in one pass with a store, an atlas, and a glyph buffer of their own.
-    /// The encoder must live until the GPU completes, because it owns the buffer.
+    /// Draws all text boxes and cards in one pass with stores, an atlas, and a glyph buffer of
+    /// their own. The encoder must live until the GPU completes, because it owns the buffer.
     private func encodeText(
         _ boxes: [TextBox],
+        cards: [Card],
         target: InkTarget,
         commandBuffer: any MTLCommandBuffer
     ) throws(RenderingError) -> TextEncoder {
@@ -112,18 +119,26 @@ extension FrameRenderer {
         for box in boxes {
             store.add(box)
         }
-        let glyphs = store.entries.values.reduce(0) { $0 + $1.layout.glyphs.count }
+        let cardStore = CardStore()
+        for card in cards {
+            cardStore.add(card)
+        }
+        assert(cardStore.count == Set(cards.map(\.id)).count, "Each card is in the store once")
+        let titles = cardStore.entries.values.reduce(0) { $0 + 1 + ($1.layout?.glyphs.count ?? 0) }
+        let glyphs = store.entries.values.reduce(titles) { $0 + $1.layout.glyphs.count }
         let encoder = TextEncoder(
             resources: resources,
             store: store,
+            cards: cardStore,
             atlas: GlyphAtlas(
                 device: resources.device,
                 byteBudget: configuration.glyphAtlasByteBudget
             ),
-            ring: try GlyphRing(device: resources.device, capacity: max(1, glyphs))
+            ring: try GlyphRing(device: resources.device, capacity: max(1, glyphs)),
+            borderCoverage: configuration.cardBorderCoverage
         )
         encoder.beginFrame()
-        let ids = boxes.map(\.id)
+        let ids = cards.map { GreenItem.card($0.id) } + boxes.map { GreenItem.textBox($0.id) }
         let context = FrameContext(commandBuffer: commandBuffer, frame: 1)
         let cursor = encoder.encodePass(
             context,
@@ -133,7 +148,7 @@ extension FrameRenderer {
             options: TextEncoder.Options()
         )
         guard cursor == ids.count else {
-            throw .resourceUnavailable("glyph buffer for \(ids.count) text boxes")
+            throw .resourceUnavailable("glyph buffer for \(ids.count) text boxes and cards")
         }
         return encoder
     }

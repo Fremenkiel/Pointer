@@ -15,6 +15,10 @@ public enum DesignSystem {
             blue: CGFloat(canvasBackgroundSRGB.z),
             alpha: 1
         )
+        /// The coverage of the border of a card, below 1, so that the border shows gray on the
+        /// canvas color: 0.5 mixes RGB(24, 24, 24) and white to about RGB(140, 140, 140)
+        /// (architecture.md 5.5, D-96). The renderer takes this value.
+        public static let cardBorder: Float = 0.5
         /// The text and the icons of the controls on top of the canvas.
         public static let chromeForeground = SwiftUI.Color.white
         /// The background of the controls on top of the canvas: a dark gray, a little brighter than

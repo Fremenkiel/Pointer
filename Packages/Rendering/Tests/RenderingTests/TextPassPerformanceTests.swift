@@ -20,7 +20,7 @@ final class TextPassPerformanceTests: XCTestCase {
     private struct Rig {
         let encoder: TextEncoder
         let target: InkTarget
-        let ids: [TextBoxID]
+        let ids: [GreenItem]
         let resources: InkResources
     }
 
@@ -46,8 +46,8 @@ final class TextPassPerformanceTests: XCTestCase {
             camera: Camera(center: .zero, zoom: 1),
             displayScale: 2
         )
-        var ids: [TextBoxID] = []
-        store.grid.forEachItem(touching: target.canvasRect) { ids.append($0) }
+        var ids: [GreenItem] = []
+        store.grid.forEachItem(touching: target.canvasRect) { ids.append(.textBox($0)) }
         return Rig(encoder: encoder, target: target, ids: ids, resources: resources)
     }
 

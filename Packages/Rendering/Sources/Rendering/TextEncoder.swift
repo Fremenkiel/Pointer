@@ -4,7 +4,8 @@ import Model
 import QuartzCore
 
 /// Encodes text passes: one glyph quad per glyph from the atlas into the text channel of a
-/// committed texture (architecture.md 5.4, D-29, D-82).
+/// committed texture (architecture.md 5.4, D-29, D-82). A card adds a border quad and the glyphs
+/// of its title to the same pass (architecture.md 5.5, D-96).
 final class TextEncoder {
     /// The options of one text pass.
     struct Options {
@@ -21,7 +22,7 @@ final class TextEncoder {
     static let deadlineCheckInterval = 8
 
     /// The glyph quads of one atlas page in the buffer of the frame.
-    private struct Run {
+    struct Run {
         let page: Int
         let first: Int
         var count: Int
@@ -30,16 +31,25 @@ final class TextEncoder {
     /// The first capacity of the run list. It grows once to the most runs of a pass.
     private static let initialRunCapacity = 64
 
-    private let resources: InkResources
+    let resources: InkResources
     private let store: TextStore
+    /// The cards of the canvas, for the cards in the list of a pass (D-96).
+    let cards: CardStore
+    /// The coverage of a card border (D-96).
+    let borderCoverage: Float
+    /// The border quads of the current pass. They go into the glyph buffer as one run at the end
+    /// of the pass, so that a pass makes one border draw. Reused (PERF-01).
+    var borderQuads: [GlyphInstance] = []
+    /// The run of the border quads of the current pass in the glyph buffer, or `nil`.
+    var borderRun: (first: Int, count: Int)?
     let atlas: GlyphAtlas
     let ring: GlyphRing
     /// The runs of the current pass, reused (PERF-01).
-    private var runs: [Run] = []
+    var runs: [Run] = []
     /// The glyph quads of one box, reused and copied into the buffer in one step.
     private var boxGlyphs: [GlyphInstance] = []
     /// The text pass, made once (PERF-01).
-    private let textPass: MTLRenderPassDescriptor = {
+    let textPass: MTLRenderPassDescriptor = {
         let pass = MTLRenderPassDescriptor()
         pass.colorAttachments[0].storeAction = .store
         pass.colorAttachments[0].loadAction = .load
@@ -47,13 +57,26 @@ final class TextEncoder {
     }()
 
     /// Makes an encoder.
-    init(resources: InkResources, store: TextStore, atlas: GlyphAtlas, ring: GlyphRing) {
+    ///
+    /// - Precondition: `borderCoverage` is above 0 and below 1.
+    init(
+        resources: InkResources,
+        store: TextStore,
+        cards: CardStore = CardStore(),
+        atlas: GlyphAtlas,
+        ring: GlyphRing,
+        borderCoverage: Float = RendererConfiguration.defaultCardBorderCoverage
+    ) {
+        precondition(borderCoverage > 0 && borderCoverage < 1, "Border \(borderCoverage)")
         self.resources = resources
         self.store = store
+        self.cards = cards
         self.atlas = atlas
         self.ring = ring
+        self.borderCoverage = borderCoverage
         runs.reserveCapacity(Self.initialRunCapacity)
         boxGlyphs.reserveCapacity(Limits.maxTextLength)
+        borderQuads.reserveCapacity(Limits.maxNodesPerCanvas)
     }
 
     /// Starts a frame. Call it after `InkEncoder.beginFrame`, which waits for a free buffer.
@@ -61,34 +84,37 @@ final class TextEncoder {
         ring.beginFrame()
     }
 
-    /// Encodes the text boxes of `ids` from `cursor` on until the glyph buffer of the frame is
-    /// full. A box that the store does not hold is skipped.
+    /// Encodes the text boxes and the cards of `ids` from `cursor` on until the glyph buffer of
+    /// the frame is full. An item that its store does not hold is skipped.
     ///
     /// - Precondition: `cursor` is a valid start in `ids`.
     /// - Returns: The new cursor. It equals `ids.count` when all boxes are drawn.
     func encodePass(
         _ context: FrameContext,
         target: InkTarget,
-        ids: [TextBoxID],
+        ids: [GreenItem],
         cursor: Int,
         options: Options
     ) -> Int {
         precondition(cursor >= 0 && cursor <= ids.count, "Cursor \(cursor) out of \(ids.count)")
         precondition(!options.clearsScissor || options.scissor != nil, "A clear needs a scissor")
         runs.removeAll(keepingCapacity: true)
+        borderQuads.removeAll(keepingCapacity: true)
+        borderRun = nil
         var position = cursor
         let exponent = GlyphAtlas.exponent(pixelsPerCanvasPoint: target.pixelsPerCanvasPoint)
-        for id in ids[cursor...] {
-            guard let entry = store.entries[id] else {
+        for item in ids[cursor...] {
+            guard let needed = quadCount(of: item) else {
                 position += 1
                 continue
             }
-            guard entry.layout.glyphs.count <= ring.remaining else { break }
+            guard needed + borderQuads.count <= ring.remaining else { break }
             guard !Self.isPastDeadline(position - cursor, options.deadline) else { break }
-            append(entry, target: target, exponent: exponent, frame: context.frame)
+            append(item, target: target, exponent: exponent, frame: context.frame)
             position += 1
         }
-        if !runs.isEmpty || options.clearsScissor {
+        flushBorders()
+        if !runs.isEmpty || borderRun != nil || options.clearsScissor {
             encode(into: context.commandBuffer, target: target, options: options)
         }
         assert(position >= cursor, "A text pass never goes back")
@@ -104,7 +130,7 @@ final class TextEncoder {
     }
 
     /// The map from the glyph points of one box to the pixels of a target.
-    private struct Mapping {
+    struct Mapping {
         /// The baseline origin of the box in target pixels.
         let base: SIMD2<Float>
         /// The pixels per canvas point of the target.
@@ -113,16 +139,17 @@ final class TextEncoder {
         let ratio: Float
     }
 
-    /// Returns the map of a box into a target at the atlas scale `exponent`.
-    private static func mapping(
-        of entry: TextStore.Entry,
+    /// Returns the map of a box with its top-left corner at `origin` into a target at the atlas
+    /// scale `exponent`.
+    static func mapping(
+        of origin: Point,
         target: InkTarget,
         exponent: Int
     ) -> Mapping {
         let pixels = target.pixelsPerCanvasPoint
         precondition(pixels > 0, "A target has pixels per canvas point, got \(pixels)")
         // The subtraction runs in Double before the conversion to Float (architecture.md 5.3).
-        let delta = entry.origin - target.camera.center
+        let delta = origin - target.camera.center
         let size = target.pixelSize
         let base = SIMD2(
             Float(size.width / 2 + delta.dx * pixels),
@@ -136,14 +163,46 @@ final class TextEncoder {
         )
     }
 
-    /// Writes the glyph quads of one box into the buffer of the frame.
-    private func append(_ entry: TextStore.Entry, target: InkTarget, exponent: Int, frame: UInt64) {
-        precondition(entry.layout.glyphs.count <= ring.remaining, "The box fits the glyph buffer")
+    /// Returns the quads that an item writes into the glyph buffer, or `nil` if its store does
+    /// not hold it: the glyphs of a box, or the border and the title glyphs of a card.
+    private func quadCount(of item: GreenItem) -> Int? {
+        switch item {
+        case .textBox(let id):
+            return store.entries[id]?.layout.glyphs.count
+        case .card(let id):
+            guard let entry = cards.entries[id] else { return nil }
+            assert((entry.layout == nil) == (entry.titleOrigin == nil), "A title has its place")
+            return 1 + (entry.layout?.glyphs.count ?? 0)
+        }
+    }
+
+    /// Writes the quads of one item into the pass.
+    private func append(_ item: GreenItem, target: InkTarget, exponent: Int, frame: UInt64) {
+        switch item {
+        case .textBox(let id):
+            guard let entry = store.entries[id] else { return }
+            append(entry.layout, at: entry.origin, target: target, exponent: exponent, frame: frame)
+        case .card(let id):
+            guard let entry = cards.entries[id] else { return }
+            appendCard(entry, target: target, exponent: exponent, frame: frame)
+        }
+    }
+
+    /// Writes the glyph quads of one layout with its top-left corner at `origin` into the buffer
+    /// of the frame.
+    func append(
+        _ layout: TextLayout,
+        at origin: Point,
+        target: InkTarget,
+        exponent: Int,
+        frame: UInt64
+    ) {
+        precondition(layout.glyphs.count <= ring.remaining, "The layout fits the glyph buffer")
         precondition(
-            entry.layout.fontIndices.count == entry.layout.glyphs.count,
-            "Each of the \(entry.layout.glyphs.count) glyphs has a font index"
+            layout.fontIndices.count == layout.glyphs.count,
+            "Each of the \(layout.glyphs.count) glyphs has a font index"
         )
-        let mapping = Self.mapping(of: entry, target: target, exponent: exponent)
+        let mapping = Self.mapping(of: origin, target: target, exponent: exponent)
         // The loop works on local values: each access to a stored property of a class costs a
         // dynamic exclusivity check, and a glyph needs several. Local values took the pass from
         // 29 to 17 ns per glyph (review of M5). The swap keeps the capacity of the reused list.
@@ -151,7 +210,7 @@ final class TextEncoder {
         boxGlyphs = []
         quads.removeAll(keepingCapacity: true)
         let run = writeQuads(
-            of: entry.layout,
+            of: layout,
             into: &quads,
             mapping: mapping,
             exponent: exponent,
@@ -160,7 +219,7 @@ final class TextEncoder {
         flush(run)
         ring.append(contentsOf: quads)
         boxGlyphs = quads
-        assert(boxGlyphs.count <= entry.layout.glyphs.count, "One quad per glyph at most")
+        assert(boxGlyphs.count <= layout.glyphs.count, "One quad per glyph at most")
     }
 
     /// Appends the quads of the glyphs of a layout, and returns the open run of the last page.
@@ -224,53 +283,5 @@ final class TextEncoder {
             runs.append(run)
         }
         assert(runs.last?.count == run.count, "The run list ends with the run")
-    }
-
-    private func encode(
-        into commandBuffer: any MTLCommandBuffer,
-        target: InkTarget,
-        options: Options
-    ) {
-        precondition(!runs.isEmpty || options.clearsScissor, "A text pass draws or clears")
-        let pass = textPass
-        pass.colorAttachments[0].texture = target.texture
-        let made = commandBuffer.makeRenderCommandEncoder(descriptor: pass)
-        // The descriptor lives on, so it must not hold the texture after the pass.
-        pass.colorAttachments[0].texture = nil
-        guard let encoder = made else {
-            assertionFailure("Metal gave no render encoder for the text pass")
-            return
-        }
-        if let scissor = options.scissor {
-            encoder.setScissorRect(scissor)
-        }
-        if options.clearsScissor {
-            encoder.setRenderPipelineState(resources.clearTextPipeline)
-            encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
-        }
-        encoder.setRenderPipelineState(resources.glyphPipeline)
-        let size = target.pixelSize
-        for run in runs {
-            guard let page = atlas.pages[run.page] else { continue }
-            let uniforms = GlyphUniforms(
-                targetSize: SIMD2(Float(size.width), Float(size.height)),
-                atlasSize: SIMD2(Float(page.texture.width), Float(page.texture.height))
-            )
-            encoder.setVertexBuffer(
-                ring.buffer,
-                offset: run.first * MemoryLayout<GlyphInstance>.stride,
-                index: 0
-            )
-            encoder.setVertexValue(uniforms, index: 1)
-            encoder.setFragmentValue(uniforms, index: 1)
-            encoder.setFragmentTexture(page.texture, index: 0)
-            encoder.drawPrimitives(
-                type: .triangleStrip,
-                vertexStart: 0,
-                vertexCount: 4,
-                instanceCount: run.count
-            )
-        }
-        encoder.endEncoding()
     }
 }

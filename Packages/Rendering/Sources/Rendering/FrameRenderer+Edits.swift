@@ -74,7 +74,7 @@ extension FrameRenderer {
     func encodeTextChange(layer: CommittedLayer, context: FrameContext) {
         precondition(layer.front == nil || layer.drawableWidth > 0, "A layer has a drawable size")
         if let area = dirtyTextArea {
-            layer.textChanged(area, texts: texts)
+            layer.textChanged(area, texts: texts, cards: cards)
             dirtyTextArea = nil
         }
         layer.continueTextRedraw(text: textEncoder, context: context)
@@ -107,7 +107,8 @@ extension FrameRenderer {
         waitingCompletion = waitingCompletion || wantsCompletion
     }
 
-    private static func union(_ first: Rect, _ second: Rect) -> Rect {
+    /// Returns the smallest rectangle that holds both rectangles.
+    static func union(_ first: Rect, _ second: Rect) -> Rect {
         Rect(
             minX: min(first.minX, second.minX),
             minY: min(first.minY, second.minY),

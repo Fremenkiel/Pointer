@@ -13,7 +13,7 @@ final class TextPassAllocationTests: XCTestCase {
     private struct Rig {
         let encoder: TextEncoder
         let target: InkTarget
-        let ids: [TextBoxID]
+        let ids: [GreenItem]
         let resources: InkResources
     }
 
@@ -47,7 +47,7 @@ final class TextPassAllocationTests: XCTestCase {
             camera: Camera(center: .zero, zoom: 1),
             displayScale: 2
         )
-        return Rig(encoder: encoder, target: target, ids: [box.id], resources: resources)
+        return Rig(encoder: encoder, target: target, ids: [.textBox(box.id)], resources: resources)
     }
 
     func testTextPassWithCachedGlyphsAllocatesNoMoreThanBarePass() throws {
