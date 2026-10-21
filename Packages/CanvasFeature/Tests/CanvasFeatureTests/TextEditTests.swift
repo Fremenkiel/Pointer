@@ -244,4 +244,31 @@ struct TextEditTests {
         controller.undo()
         #expect(controller.content.textBoxes[box.id] != nil)
     }
+
+    @Test("A pencil tap with the text tool on empty canvas makes a box and starts its edit")
+    func pencilTapMakesBox() throws {
+        let controller = try makeController()
+        controller.select(.text)
+        controller.handlePencilTap(at: Point(x: 50, y: 10))
+        #expect(controller.textEditing.isEditing)
+        #expect(controller.textEditing.edit?.original == nil)
+    }
+
+    @Test("A pencil tap with the text tool edits the box under it, and the edited box stays")
+    func pencilTapOnBox() throws {
+        let box = try Self.box("node", at: Point(x: 0, y: 0))
+        let controller = try makeController(boxes: [box])
+        controller.select(.text)
+        controller.handlePencilTap(at: Point(x: 5, y: 5))
+        #expect(controller.textEditing.edit?.id == box.id)
+        controller.handlePencilTap(at: Point(x: 5, y: 5))
+        #expect(controller.textEditing.edit?.id == box.id)
+    }
+
+    @Test("A pencil tap with another tool makes no box")
+    func pencilTapWithPen() throws {
+        let controller = try makeController()
+        controller.handlePencilTap(at: Point(x: 50, y: 10))
+        #expect(!controller.textEditing.isEditing)
+    }
 }

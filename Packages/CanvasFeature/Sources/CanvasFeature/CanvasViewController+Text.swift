@@ -53,13 +53,18 @@ extension CanvasViewController: UITextViewDelegate {
         )
     }
 
-    /// A pencil tap with the text tool edits the box under it, or makes a new box (TOOL-05,
-    /// D-87).
+    /// Passes an ended pencil tap to `handlePencilTap(at:)`.
     @objc private func handlePencilTap(_ recognizer: UITapGestureRecognizer) {
-        guard recognizer.state == .ended, isEditingEnabled, tool == .text else { return }
-        let point = canvasPoint(of: recognizer)
+        guard recognizer.state == .ended else { return }
+        handlePencilTap(at: canvasPoint(of: recognizer))
+    }
+
+    /// A pencil tap with the text tool edits the box under it, or makes a new box (TOOL-05,
+    /// D-87). A tap on the box of the running edit changes nothing.
+    func handlePencilTap(at point: Point) {
+        guard isEditingEnabled, tool == .text else { return }
         let hit = textBox(at: point)
-        guard hit?.id != textEditing.edit?.id else { return }
+        if let hit, hit.id == textEditing.edit?.id { return }
         endTextEdit()
         if let hit {
             startTextEdit(of: hit)
