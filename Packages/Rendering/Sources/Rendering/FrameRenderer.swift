@@ -31,6 +31,8 @@ final class FrameRenderer {
     var previews: PreviewAtlas?
     /// The render of the preview of this canvas, made at the first leave (D-97).
     var previewRenderer: PreviewRenderer?
+    /// The open or the leave of a card that runs, or `nil` (D-98).
+    var transition: FrameTransition?
     private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     /// The committed layer, or `nil` before the first frame with a drawable size.
@@ -42,7 +44,7 @@ final class FrameRenderer {
     /// `true` if a waiting handoff asks for the GPU end of its frame. Only the tests ask (P-08).
     var waitingCompletion = false
     /// The number of the last frame.
-    private(set) var frame: UInt64 = 0
+    var frame: UInt64 = 0
     /// The eraser circles of the running gesture (D-66).
     var eraserMask = EraserMask()
     /// `true` while the eraser is the tool. The mask texture exists only then, or while a
@@ -169,6 +171,9 @@ final class FrameRenderer {
         precondition(drawableSize.width >= 0 && drawableSize.height >= 0, "Size is negative")
         RenderSignpost.begin("Frame")
         defer { RenderSignpost.end("Frame") }
+        if transition?.freezes == true {
+            return renderFrozenFrame(drawableSize: drawableSize, drawable: drawable)
+        }
         guard let layer = committedLayer(for: drawableSize),
             let commandBuffer = resources.queue.makeCommandBuffer()
         else { return false }
@@ -181,14 +186,7 @@ final class FrameRenderer {
         let context = FrameContext(commandBuffer: commandBuffer, frame: frame)
         encoder.beginFrame(context)
         encodeContent(layer: layer, context: context)
-        if let front = layer.front, let mask = layer.mask {
-            eraserMask.encode(
-                into: mask,
-                front: front,
-                resources: resources,
-                commandBuffer: commandBuffer
-            )
-        }
+        encodeEraserMask(layer: layer, commandBuffer: commandBuffer)
         RenderSignpost.begin("NextDrawable")
         let target = drawable.next()
         RenderSignpost.end("NextDrawable")
@@ -205,6 +203,25 @@ final class FrameRenderer {
             signposter.emitEvent("LateFrame")
         }
         return needsMoreFrames
+    }
+
+    /// Stamps the new eraser samples into the mask of the front texture.
+    private func encodeEraserMask(layer: CommittedLayer, commandBuffer: any MTLCommandBuffer) {
+        guard let front = layer.front, let mask = layer.mask else { return }
+        eraserMask.encode(
+            into: mask,
+            front: front,
+            resources: resources,
+            commandBuffer: commandBuffer
+        )
+    }
+
+    /// Frees the committed textures and the eraser mask, for an open (D-110). A later frame
+    /// without a transition makes new ones.
+    func releaseCommittedLayer() {
+        layer = nil
+        needsNewLayer = true
+        assert(layer == nil, "The committed textures go")
     }
 
     /// A drawable of a new size, for example after a rotation, makes new textures.

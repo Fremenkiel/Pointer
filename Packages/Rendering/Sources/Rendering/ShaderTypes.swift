@@ -83,6 +83,33 @@ struct CompositeUniforms {
     var background: SIMD4<Float>
 }
 
+/// The values of one transition frame (D-98, D-108). The layout matches `TransitionUniforms` in
+/// Shaders.metal.
+struct TransitionUniforms {
+    /// The canvas color in sRGB, with alpha 1 (D-106).
+    var background: SIMD4<Float>
+    /// The opened card: min x, min y, max x, max y, in drawable pixels.
+    var cardRect: SIMD4<Float>
+    /// The preview in the atlas: origin and size from 0 to 1. A size of 0 shows no preview.
+    var previewRect: SIMD4<Float>
+    /// The factor from a drawable pixel to a source texture pixel.
+    var scale: SIMD2<Float>
+    /// The offset from a drawable pixel to a source texture pixel.
+    var offset: SIMD2<Float>
+    /// The size of the source texture, in pixels.
+    var textureSize: SIMD2<Float>
+    /// The weight of the parent image, from 0 to 1.
+    var parentWeight: Float
+    /// The coverage of the card border (D-96).
+    var borderCoverage: Float
+    /// Half the width of the border, in pixels.
+    var borderHalfWidth: Float
+    /// The corner radius of the card, in pixels.
+    var cornerRadius: Float
+    /// 1 if a parent image exists, else 0.
+    var hasSource: Float
+}
+
 /// One eraser stamp in mask pixels. The layout matches `EraserStamp` in Shaders.metal.
 struct EraserStamp {
     /// The pixel position of the earlier sample.

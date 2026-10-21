@@ -27,6 +27,12 @@ struct RenderInput: Sendable {
     let decodedPreviews: [DecodedPreview]
     /// A request of a preview of this canvas, or `nil` (D-97).
     let previewRender: PreviewRenderRequest?
+    /// An open or a leave that starts, or `nil` (D-98).
+    let transitionStart: TransitionStart?
+    /// The new weight of the parent image, or `nil`.
+    let transitionWeight: Double?
+    /// `true` if the transition ends.
+    let endsTransition: Bool
     /// The edits, in order.
     let edits: [RenderEdit]
     /// The newest handoff of `edits`, or 0.
@@ -49,7 +55,8 @@ struct RenderInput: Sendable {
         camera != nil || viewport != nil || !loaded.isEmpty || !edits.isEmpty
             || !laidOutText.isEmpty || !textEdits.isEmpty
             || !laidOutCards.isEmpty || !cardEdits.isEmpty || !decodedPreviews.isEmpty
-            || previewRender != nil || eraserStart != nil || !eraserSamples.isEmpty || endsEraser
+            || previewRender != nil || transitionStart != nil || transitionWeight != nil
+            || endsTransition || eraserStart != nil || !eraserSamples.isEmpty || endsEraser
             || eraserReady != nil
     }
 }

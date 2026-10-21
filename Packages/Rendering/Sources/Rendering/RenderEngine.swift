@@ -237,6 +237,7 @@ final class RenderEngine: Sendable {
         renderer.makePreviewAtlasIfNeeded()
         renderer.takePreviews(input.decodedPreviews)
         if let request = input.previewRender { renderer.startPreviewRender(request) }
+        applyTransition(input, to: renderer)
         assert(renderer.cards.count <= Limits.maxNodesPerCanvas, "The cards keep the node limit")
     }
 

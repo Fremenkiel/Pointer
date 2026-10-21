@@ -47,6 +47,22 @@ struct CompositeUniforms {
     float4 background;    // canvas color in sRGB, alpha 1 (D-106)
 };
 
+// The values of one transition frame (D-98, D-108). The layout matches `TransitionUniforms` in
+// ShaderTypes.swift: three float4, three float2, and five float, 96 bytes.
+struct TransitionUniforms {
+    float4 background;    // canvas color in sRGB, alpha 1 (D-106)
+    float4 cardRect;      // the opened card: min x, min y, max x, max y, drawable pixels
+    float4 previewRect;   // the preview in the atlas: origin and size, 0 to 1; size 0 for none
+    float2 scale;         // drawable pixel to source texture pixel
+    float2 offset;
+    float2 textureSize;   // source texture, pixels
+    float parentWeight;   // the weight of the parent image, 0 to 1
+    float borderCoverage; // the gray of the card border
+    float borderHalfWidth;// pixels
+    float cornerRadius;   // pixels
+    float hasSource;      // 1 if a parent image exists
+};
+
 // One eraser stamp: a capsule from one sample to the next, in mask pixels (D-66). 32 bytes.
 struct EraserStamp {
     float2 start;
@@ -327,4 +343,42 @@ fragment half4 previewResolveFragment(CompositeVertexOut in [[stage_in]],
                                       texture2d<float> committed [[texture(0)]]) {
     float2 coverage = committed.read(uint2(in.position.xy)).rg;
     return half4(max(coverage.r, coverage.g));
+}
+
+// The frozen copy of a parent at the start of an open: the coverage that the composite shows,
+// in one channel (D-109).
+fragment half4 freezeFragment(CompositeVertexOut in [[stage_in]],
+                              texture2d<float> committed [[texture(0)]],
+                              constant CompositeUniforms &uniforms [[buffer(0)]]) {
+    constexpr sampler linearSampler(address::clamp_to_zero, filter::linear);
+    float2 texel = in.position.xy * uniforms.scale + uniforms.offset;
+    float2 coverage = committed.sample(linearSampler, texel / uniforms.textureSize).rg;
+    return half4(max(coverage.r, coverage.g));
+}
+
+// A frame of an open or a leave: the parent image with a weight, and the opened card on top at
+// full weight: its border and its preview (D-98, D-108). A one-channel source reads 0 in green.
+fragment float4 transitionFragment(CompositeVertexOut in [[stage_in]],
+                                   texture2d<float> source [[texture(0)]],
+                                   texture2d<float> atlas [[texture(1)]],
+                                   constant TransitionUniforms &u [[buffer(0)]]) {
+    constexpr sampler linearSampler(address::clamp_to_zero, filter::linear);
+    float2 p = in.position.xy;
+    float parent = 0.0;
+    if (u.hasSource > 0.5) {
+        float2 coverage = source.sample(linearSampler, (p * u.scale + u.offset) / u.textureSize).rg;
+        parent = max(coverage.r, coverage.g) * u.parentWeight;
+    }
+    float2 low = u.cardRect.xy;
+    float2 high = u.cardRect.zw;
+    float2 halfSize = (high - low) * 0.5;
+    float radius = min(u.cornerRadius, min(halfSize.x, halfSize.y));
+    float2 q = abs(p - (low + halfSize)) - (halfSize - radius);
+    float distance = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
+    float card = clamp(u.borderHalfWidth + 0.5 - abs(distance), 0.0, 1.0) * u.borderCoverage;
+    if (u.previewRect.z > 0.0 && all(p >= low) && all(p <= high)) {
+        float2 uv = u.previewRect.xy + (p - low) / (high - low) * u.previewRect.zw;
+        card = max(card, atlas.sample(linearSampler, uv).r);
+    }
+    return float4(mix(u.background.rgb, float3(1.0), max(parent, card)), 1.0);
 }

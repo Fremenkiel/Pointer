@@ -5,7 +5,7 @@ import Metal
 extension FrameRenderer {
     /// Draws the shown committed texture into the drawable: the canvas color, mixed with white
     /// by the larger coverage of the two channels, with the eraser mask over the red channel
-    /// (architecture.md 5.2, D-82, D-106).
+    /// (architecture.md 5.2, D-82, D-106). During a leave, the transition pass draws instead.
     func encodeComposite(
         layer: CommittedLayer,
         commandBuffer: any MTLCommandBuffer,
@@ -15,6 +15,10 @@ extension FrameRenderer {
             texture.pixelFormat == InkResources.drawableFormat,
             "Drawable format is not BGRA"
         )
+        guard transition == nil else {
+            encodeTransition(source: layer.shown, commandBuffer: commandBuffer, texture: texture)
+            return
+        }
         let pass = compositePass
         pass.colorAttachments[0].texture = texture
         let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass)
@@ -29,28 +33,40 @@ extension FrameRenderer {
             encoder.label = "Composite"
         #endif
         if let front = layer.shown {
-            let size = Size(width: Double(texture.width), height: Double(texture.height))
-            // The mask uses the mapping of the front texture, so a fallback shows no mask.
-            let mask =
-                eraserMask.hasStamps && front.texture === layer.front?.texture ? layer.mask : nil
-            encoder.setRenderPipelineState(
-                mask == nil ? resources.compositePipeline : resources.compositeMaskedPipeline
-            )
-            encoder.setFragmentTexture(front.texture, index: 0)
-            if let mask {
-                encoder.setFragmentTexture(mask, index: 1)
-            }
-            encoder.setFragmentValue(
-                layer.compositeUniforms(
-                    camera: camera,
-                    displayScale: displayScale,
-                    drawableSize: size,
-                    background: configuration.background
-                ),
-                index: 0
-            )
-            encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+            drawShown(front, layer: layer, encoder: encoder, texture: texture)
         }
         encoder.endEncoding()
+    }
+
+    /// Draws the shown texture with the eraser mask while the mask has stamps.
+    private func drawShown(
+        _ front: InkTarget,
+        layer: CommittedLayer,
+        encoder: any MTLRenderCommandEncoder,
+        texture: any MTLTexture
+    ) {
+        precondition(texture.width > 0 && texture.height > 0, "A drawable has pixels")
+        let size = Size(width: Double(texture.width), height: Double(texture.height))
+        // The mask uses the mapping of the front texture, so a fallback shows no mask.
+        let mask =
+            eraserMask.hasStamps && front.texture === layer.front?.texture ? layer.mask : nil
+        encoder.setRenderPipelineState(
+            mask == nil ? resources.compositePipeline : resources.compositeMaskedPipeline
+        )
+        encoder.setFragmentTexture(front.texture, index: 0)
+        if let mask {
+            encoder.setFragmentTexture(mask, index: 1)
+        }
+        encoder.setFragmentValue(
+            layer.compositeUniforms(
+                camera: camera,
+                displayScale: displayScale,
+                drawableSize: size,
+                background: configuration.background
+            ),
+            index: 0
+        )
+        encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+        assert(front.texture !== texture, "The composite never reads its target")
     }
 }

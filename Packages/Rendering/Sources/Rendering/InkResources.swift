@@ -29,6 +29,12 @@ final class InkResources {
     let cardBorderPipeline: any MTLRenderPipelineState
     /// Writes the larger coverage of the two channels into one channel, for a preview (D-97).
     let previewResolvePipeline: any MTLRenderPipelineState
+    /// Writes the coverage that the composite shows into one channel: the frozen copy (D-109).
+    let freezePipeline: any MTLRenderPipelineState
+    /// Draws a frame of an open or a leave into the drawable (D-98, D-108).
+    let transitionPipeline: any MTLRenderPipelineState
+    /// A texture of one pixel for a pass argument that a frame does not read.
+    let placeholder: any MTLTexture
 
     /// Makes the resources on a device.
     ///
@@ -45,6 +51,7 @@ final class InkResources {
         }
         self.device = device
         self.queue = queue
+        placeholder = try Self.makePlaceholder(device)
         inkPipeline = try Self.makeInkPipeline(device: device, library: library)
         compositePipeline = try Self.makeCompositePipeline(device: device, library: library)
         clearPipeline = try Self.makeClearPipeline(device: device, library: library, mask: .red)
@@ -55,11 +62,11 @@ final class InkResources {
         )
         glyphPipeline = try Self.makeGreenPipeline(device, library, "glyph")
         cardBorderPipeline = try Self.makeGreenPipeline(device, library, "cardBorder")
-        previewResolvePipeline = try Self.makeResolvePipeline(device, library)
-        compositeMaskedPipeline = try Self.makeCompositePipeline(
-            device: device,
-            library: library,
-            fragment: "compositeMaskedFragment"
+        previewResolvePipeline = try Self.makeResolvePipeline(device, library, "previewResolve")
+        freezePipeline = try Self.makeResolvePipeline(device, library, "freeze")
+        (compositeMaskedPipeline, transitionPipeline) = try Self.makeCompositeVariants(
+            device,
+            library
         )
         eraserPipeline = try Self.makeInkPipeline(
             device: device,
@@ -101,17 +108,58 @@ final class InkResources {
         return try makePipeline(device: device, descriptor: descriptor)
     }
 
-    /// Makes the pipeline that resolves a preview into one `.r8Unorm` channel, without blending.
-    private static func makeResolvePipeline(
+    /// Makes the composite through the eraser mask (D-66) and the transition pass (D-108).
+    private static func makeCompositeVariants(
         _ device: any MTLDevice,
         _ library: any MTLLibrary
+    ) throws(RenderingError) -> (any MTLRenderPipelineState, any MTLRenderPipelineState) {
+        let masked = try makeCompositePipeline(
+            device: device,
+            library: library,
+            fragment: "compositeMaskedFragment"
+        )
+        let transition = try makeCompositePipeline(
+            device: device,
+            library: library,
+            fragment: "transitionFragment"
+        )
+        assert(masked !== transition, "Two pipelines")
+        return (masked, transition)
+    }
+
+    /// Makes the texture of one pixel for pass arguments that a frame does not read.
+    private static func makePlaceholder(
+        _ device: any MTLDevice
+    ) throws(RenderingError) -> any MTLTexture {
+        let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+            pixelFormat: maskFormat,
+            width: 1,
+            height: 1,
+            mipmapped: false
+        )
+        descriptor.usage = .shaderRead
+        descriptor.storageMode = .private
+        guard let texture = device.makeTexture(descriptor: descriptor) else {
+            throw .resourceUnavailable("placeholder texture")
+        }
+        assert(texture.width == 1, "One pixel")
+        return texture
+    }
+
+    /// Makes a full-screen pipeline from the shader `<name>Fragment` that writes one
+    /// `.r8Unorm` channel without blending: the resolve of a preview or the frozen copy.
+    private static func makeResolvePipeline(
+        _ device: any MTLDevice,
+        _ library: any MTLLibrary,
+        _ name: String
     ) throws(RenderingError) -> any MTLRenderPipelineState {
+        precondition(!name.isEmpty, "A pipeline needs a shader name")
         let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.label = "Preview resolve"
+        descriptor.label = name
         descriptor.vertexFunction = library.makeFunction(name: "compositeVertex")
-        descriptor.fragmentFunction = library.makeFunction(name: "previewResolveFragment")
+        descriptor.fragmentFunction = library.makeFunction(name: name + "Fragment")
         guard let attachment = descriptor.colorAttachments[0] else {
-            throw .pipelineFailed("preview resolve color attachment")
+            throw .pipelineFailed("\(name) color attachment")
         }
         attachment.pixelFormat = maskFormat
         assert(!attachment.isBlendingEnabled, "The resolve replaces the pixels")

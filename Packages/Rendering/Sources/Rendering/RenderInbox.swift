@@ -30,6 +30,12 @@ struct RenderInbox {
     var decodedPreviews: [DecodedPreview] = []
     /// The newest request of a preview of this canvas that no frame took yet (D-97).
     var previewRender: PreviewRenderRequest?
+    /// An open or a leave that starts, or `nil` (D-98).
+    var transitionStart: TransitionStart?
+    /// The newest weight of the parent image of a transition, or `nil` without a change.
+    var transitionWeight: Double?
+    /// `true` after the end of a transition that no frame took yet.
+    var endsTransition = false
     /// The edits of handoffs, erases, undo steps, and redo steps, in order.
     var edits: [RenderEdit] = []
     /// The number of the newest handoff in `edits`, or 0.
@@ -68,7 +74,8 @@ struct RenderInbox {
         viewport != nil || !loaded.isEmpty || !edits.isEmpty || eraserStart != nil
             || !laidOutText.isEmpty || !textEdits.isEmpty
             || !laidOutCards.isEmpty || !cardEdits.isEmpty || !decodedPreviews.isEmpty
-            || previewRender != nil || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
+            || previewRender != nil || transitionStart != nil || transitionWeight != nil
+            || endsTransition || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
     }
 
     /// Moves the waiting changes out. The camera stays as the newest value.
@@ -87,6 +94,9 @@ struct RenderInbox {
             cardEdits: cardEdits,
             decodedPreviews: decodedPreviews,
             previewRender: previewRender,
+            transitionStart: transitionStart,
+            transitionWeight: transitionWeight,
+            endsTransition: endsTransition,
             edits: edits,
             editHandoff: editHandoff,
             editsWantCompletion: editsWantCompletion,
@@ -119,6 +129,9 @@ struct RenderInbox {
         cardEdits = []
         decodedPreviews = []
         previewRender = nil
+        transitionStart = nil
+        transitionWeight = nil
+        endsTransition = false
         edits = []
         editHandoff = 0
         editsWantCompletion = false
