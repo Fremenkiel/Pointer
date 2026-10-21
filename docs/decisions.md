@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21. It is open.
 
 Status values: Open, Decided, Replaced.
 
@@ -100,6 +100,7 @@ Status values: Open, Decided, Replaced.
 | D-90 | The test of M5 acceptance 1 (Scribble) | A device test of the conditions of Scribble, and a manual test as the pass | Decided (2026-10-20) |
 | D-91 | The pass rule of M5 acceptance 2 | Lit-pixel bounds and profiles of each line match within 1 pixel | Decided (2026-10-20) |
 | D-92 | The open and the memory of the D-56 canvas with text pass their targets | Remove the extra peak at the open, and lay out the text after the first frame | Decided (2026-10-21) |
+| D-93 | The memory of the open with text after D-92 | Open | Open |
 
 ## Details
 
@@ -934,6 +935,29 @@ Status values: Open, Decided, Replaced.
   - (d) Lay out the text after the first frame with the strokes. The open then keeps its time, and the text shows a few frames later.
   - (e) Accept 273.6 ms. It is under the budget of 300 ms, but 14.5 % over the baseline.
 - Recommendation: (b) and (d). They keep the design of D-82 and the time of the open. If (b) cannot find the cause of the peak inside one task, (a).
+
+### D-93 The memory of the open with text after D-92
+
+- Open. Raised by task 2.3 of [m5-plan.md](m5-plan.md) on 2026-10-21.
+- D-92 decided: remove the extra peak of the open, and lay out the text after the first frame. If the cause of the peak cannot be found, fall back to option (a) of D-92, the single channel of D-82 option (c).
+- The layout after the first frame works. The open of the D-56 canvas takes 234.9 to 239.8 ms (median), against 238.9 ms in the baseline.
+- The cause of the extra peak is not found. A probe showed one committed layer per renderer, so a second layer is not the cause. The peak is not in every run. Four runs of the open on the iPad Pro 11-inch (M4), after D-92:
+
+| Run | Held | Peak |
+|---|---|---|
+| Memory test alone | 299 MB | 299 MB |
+| Memory test alone | 283 MB | 283 MB |
+| Memory test alone | 271 MB | 271 MB |
+| Full run of `PointerDeviceTests` | 299 MB | 315 MB |
+
+- The baseline had the extra peak in 2 of 3 full runs: held 252 to 254 MB, peak 254 to 284 MB. The held memory of one open varies by about 28 MB between runs.
+- The fallback of D-92 saves the 32 MB of the second channel. Then the held memory is about 255 to 270 MB, and the peak with the extra 31 MB is about 285 to 300 MB. The fallback can still fail the target of 300 MB in a run with the extra peak.
+- Options:
+  - (a) The fallback of D-92: text in the one channel, and a text pass during an eraser gesture. It takes one task or more, and the target stays close.
+  - (b) Keep the second channel, and raise the memory target of the open of D-56 to 330 MB in architecture.md section 12 and in the test.
+  - (c) Keep the second channel, and keep the layouts of the text boxes near the camera only. The text data of D-56 then drops by up to about 10 MB, and the target stays close.
+  - (d) Keep the target, and look further for the cause of the extra peak. The time of this search is not known.
+- Recommendation: (b). The second channel keeps the eraser and the text apart, as D-82 decided, and the measured worst case of 315 MB leaves a margin of 15 MB under 330 MB. The other options leave the target within a few MB of the measured peak.
 
 ## Points in the request that conflict or are not complete
 
