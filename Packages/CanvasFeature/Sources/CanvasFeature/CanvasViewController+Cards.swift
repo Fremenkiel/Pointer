@@ -271,7 +271,7 @@ extension CanvasViewController {
         guard cardTransition == nil, viewSize.width > 0, viewSize.height > 0 else { return }
         endTextEdit()
         canvasView.isUserInteractionEnabled = false
-        cardTransition = CardTransition(isOpen: true, start: camera, onEnd: onEnd)
+        cardTransition = CardTransition(kind: .open, start: camera, onEnd: onEnd)
         renderer.beginOpen(of: card.id)
         cameraController.fly(to: Self.coverCamera(of: card.frame, viewSize: viewSize))
         canvasView.inkView.requestFrame()
@@ -289,6 +289,9 @@ extension CanvasViewController {
         canvasView.inkView.requestFrame()
     }
 
+    /// `true` while an open, a leave, or the flight before a leave runs on this canvas.
+    public var isInCardTransition: Bool { cardTransition != nil }
+
     /// `true` after the renderer drew a frame with all strokes of the load, and needs no more
     /// frames: the first frame of a canvas that opened.
     public var hasDrawnLoad: Bool {
@@ -298,7 +301,7 @@ extension CanvasViewController {
     /// The camera at which a card frame covers a screen of `viewSize` (D-98).
     ///
     /// - Precondition: The frame and the view have a size.
-    static func coverCamera(of frame: Rect, viewSize: Size) -> Camera {
+    public static func coverCamera(of frame: Rect, viewSize: Size) -> Camera {
         precondition(frame.size.width > 0 && frame.size.height > 0, "A card has a size")
         let zoom = max(viewSize.width / frame.size.width, viewSize.height / frame.size.height)
         return Camera(center: frame.center, zoom: zoom)
@@ -309,11 +312,57 @@ extension CanvasViewController {
     func stepCardTransition() {
         guard let transition = cardTransition else { return }
         guard let progress = cameraController.flightProgress else {
-            renderer.setParentWeight(transition.isOpen ? 0 : 1)
             cardTransition = nil
+            switch transition.kind {
+            case .open: renderer.setParentWeight(0)
+            case .leave:
+                renderer.endTransition()
+                canvasView.isUserInteractionEnabled = true
+            case .settle: break
+            }
             transition.onEnd()
             return
         }
-        renderer.setParentWeight(transition.isOpen ? 1 - progress : progress)
+        switch transition.kind {
+        case .open: renderer.setParentWeight(1 - progress)
+        case .leave: renderer.setParentWeight(progress)
+        case .settle: break
+        }
+    }
+
+    /// Prepares the leave of this canvas into its card (D-109): input goes off, and the camera
+    /// flies to the camera of the open, so that the child shows what the preview shows. `onEnd`
+    /// runs at the end of the flight, at once if the camera is there already.
+    public func prepareLeave(onEnd: @escaping @MainActor () -> Void) {
+        guard cardTransition == nil else { return }
+        endTextEdit()
+        canvasView.isUserInteractionEnabled = false
+        let target = content.openCamera
+        guard target != camera else {
+            onEnd()
+            return
+        }
+        cardTransition = CardTransition(kind: .settle, start: camera, onEnd: onEnd)
+        cameraController.fly(to: target)
+        canvasView.inkView.requestFrame()
+    }
+
+    /// Shows only the card that the child of a leave covers: the parent at weight 0 under the
+    /// card, input off (D-108). The canvas opens at the cover camera of the card. `runLeave`
+    /// then plays the leave.
+    public func holdLeave(into card: Card) {
+        canvasView.isUserInteractionEnabled = false
+        renderer.beginLeave(into: card.id)
+        renderer.setParentWeight(0)
+    }
+
+    /// Plays the leave: the camera flies from the card to the camera of CARD-04, the standard
+    /// zoom centered on the card, while the parent fades in (D-98, D-99). `onEnd` runs at the
+    /// end, when the transition is over and input is on again.
+    public func runLeave(into card: Card, onEnd: @escaping @MainActor () -> Void) {
+        guard cardTransition == nil else { return }
+        cardTransition = CardTransition(kind: .leave, start: camera, onEnd: onEnd)
+        cameraController.fly(to: Camera(center: card.frame.center, zoom: Limits.standardZoom))
+        canvasView.inkView.requestFrame()
     }
 }

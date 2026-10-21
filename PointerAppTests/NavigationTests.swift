@@ -144,6 +144,19 @@ struct NavigationTests {
         }
     }
 
+    /// Waits until the shown canvas reaches `camera`.
+    private static func waitForCamera(
+        _ camera: Camera,
+        in composition: AppComposition
+    ) async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while composition.container.canvas?.camera != camera {
+            guard clock.now < deadline else { throw OpenTimedOut() }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+    }
+
     @Test("A double tap opens a card at the camera of CARD-03, and up leaves at CARD-04")
     func openAndLeave() async throws {
         let tree = try await Self.makeTree(depth: 1)
@@ -162,7 +175,10 @@ struct NavigationTests {
         #expect(composition.path?.level == 1)
         composition.leave()
         try await Self.waitForCanvas(tree.workspace.canvasID, in: composition)
-        #expect(composition.container.canvas?.camera == Camera(center: Self.frame.center, zoom: 1))
+        // The leave flies from the card to the camera of CARD-04 after the swap.
+        let target = Camera(center: Self.frame.center, zoom: 1)
+        try await Self.waitForCamera(target, in: composition)
+        #expect(composition.container.canvas?.camera == target)
         #expect(composition.container.upButton == nil)
         #expect(composition.path?.level == 0)
     }
@@ -208,6 +224,7 @@ struct NavigationTests {
         #expect(composition.container.canvas?.history.undoSteps.count == 1)
         composition.leave()
         try await Self.waitForCanvas(tree.workspace.canvasID, in: composition)
+        try await Self.waitForCamera(Camera(center: Self.frame.center, zoom: 1), in: composition)
         #expect(composition.container.canvas?.history.undoSteps.isEmpty == true)
         let again = try #require(composition.container.canvas?.content.cards[tree.chain[0]])
         composition.openChild(again)

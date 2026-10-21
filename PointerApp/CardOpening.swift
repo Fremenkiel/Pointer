@@ -1,8 +1,8 @@
 import CanvasFeature
 import Model
 
-/// One open of a card: the path of the child, the end of the flight, and the child screen
-/// when its first frame is ready (architecture.md 6.2, D-98).
+/// One open of a card or one leave: the path of the canvas to show, the end of the flight, and
+/// the new screen when its first frame is ready (architecture.md 6.2 and 6.3, D-98, D-109).
 @MainActor
 final class CardOpening {
     /// The longest wait for the first frame of the child.
@@ -10,11 +10,13 @@ final class CardOpening {
     /// The wait between two looks at the renderer of the child: about one frame at 120 Hz.
     private static let pollInterval = Duration.milliseconds(4)
 
-    /// The path of the child canvas.
+    /// The path of the canvas to show.
     let target: NavigationPath
-    /// `true` after the flight of the parent ended.
+    /// `true` after the flight of the shown screen ended.
     var isFlightDone = false
-    /// The child screen after its first frame, or `nil`.
+    /// The card of a leave in the parent canvas, after the load of the parent.
+    var card: Card?
+    /// The new screen after its first frame, or `nil`.
     var canvas: CanvasViewController?
 
     init(target: NavigationPath) {

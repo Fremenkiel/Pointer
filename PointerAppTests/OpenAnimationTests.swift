@@ -87,6 +87,75 @@ final class OpenAnimationTests: XCTestCase {
         XCTAssertEqual(child.camera.zoom, Limits.standardZoom)
     }
 
+    /// The leave of a D-56 card back to the D-56 canvas (m6-plan.md task 4.6): the late frames
+    /// of the child and of the parent, from the tap to the end of the flight of the parent.
+    func testLeaveOfD56CardHasNoLateFrame() async throws {
+        let host = try OnScreenCanvas.host()
+        let window = try XCTUnwrap(host.view.window as? InputTrackingWindow)
+        let library = try await D56Library.make()
+        defer { library.remove() }
+        let container = AppViewController()
+        let composition = try await Self.composition(of: library, window: window, in: container)
+        let hostViews = host.view.subviews
+        hostViews.forEach { $0.removeFromSuperview() }
+        defer {
+            container.view.removeFromSuperview()
+            hostViews.forEach { host.view.addSubview($0) }
+        }
+        container.view.frame = host.view.bounds
+        host.view.addSubview(container.view)
+        await composition.selector?.start(
+            lastWorkspace: WorkspaceID(rawValue: library.canvas.rawValue)
+        )
+        let parent = try await Self.waitForCanvas(library.canvas, in: composition)
+        try await Self.waitForDrawn(parent)
+        let card = try XCTUnwrap(Self.cardNearestToCenter(of: parent))
+        composition.openChild(card)
+        let child = try await Self.waitForCanvas(card.childCanvasID, in: composition)
+        try await Self.waitForDrawn(child)
+        let line = try await Self.measureLeave(of: child, card: card, in: composition)
+        XCTContext.runActivity(named: line.text) { _ in }
+        XCTAssertEqual(line.late, 0, line.text)
+    }
+
+    /// Runs the leave and returns its report line and its late frames.
+    private static func measureLeave(
+        of child: CanvasViewController,
+        card: Card,
+        in composition: AppComposition
+    ) async throws -> (text: String, late: Int) {
+        let viewSize = Size(width: child.view.bounds.width, height: child.view.bounds.height)
+        let childFrames = FrameLoopCollector(viewSize: viewSize)
+        let parentFrames = FrameLoopCollector(viewSize: viewSize)
+        let start = CACurrentMediaTime()
+        childFrames.measure(from: start, to: start + 5)
+        parentFrames.measure(from: start, to: start + 5)
+        child.renderer.engine.post { $0.observer = Cameras(collector: childFrames) }
+        composition.leave()
+        let parent = try await waitForCanvas(card.canvasID, in: composition)
+        parent.renderer.engine.post { $0.observer = Cameras(collector: parentFrames) }
+        let target = Camera(center: card.frame.center, zoom: Limits.standardZoom)
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while parent.camera != target, clock.now < deadline {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        let end = CACurrentMediaTime()
+        var childReport = FrameLoopReport()
+        childFrames.fill(&childReport)
+        var parentReport = FrameLoopReport()
+        parentFrames.fill(&parentReport)
+        let late = childReport.lateIntervals + parentReport.lateIntervals
+        let text = String(
+            format: "leave of a D-56 card: %.0f ms, child %d frames, parent %d frames, late %d",
+            (end - start) * 1000,
+            childReport.frames,
+            parentReport.frames,
+            late
+        )
+        return (text, late)
+    }
+
     /// A double tap hits a card on the screen: the card nearest to the screen center.
     private static func cardNearestToCenter(of canvas: CanvasViewController) -> Card? {
         let center = canvas.camera.center

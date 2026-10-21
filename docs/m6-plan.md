@@ -392,6 +392,8 @@ Done when: a device test captures each frame of the leave, as in task 4.5.
 
 Rules: CARD-04, D-98, D-109.
 
+Status: done on 2026-10-21. The tap turns input off on the child, which flies to the camera of its open (`prepareLeave`). In the same time, the app loads the parent below the child at the cover camera of the card, with the leave transition at parent weight 0 (`holdLeave`). When both are done, the child fades out over 0.1 s, and the parent flies to the camera of CARD-04 while its weight rises to 1 (`runLeave`). No open and no leave starts while a transition runs on the shown canvas. The history test found that case: an open during the leave flight was noted but never ran. In `OpenAnimationTests`, the leave of a D-56 card took 598 ms from the tap to the end of the flight of the parent, with 42 frames of the parent and 0 late frames. The child needed no flight, because it was at the camera of its open.
+
 #### 4.7 Pinch-out exit
 
 1. Below `minZoom`, the child shows as a shrinking card over the faded image of the parent (D-109).

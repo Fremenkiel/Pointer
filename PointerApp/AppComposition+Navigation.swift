@@ -19,7 +19,9 @@ extension AppComposition {
     /// card covers the screen, the child loads at the camera of CARD-03 in the same time, and
     /// the child fades in when both are done (architecture.md 6.2, D-99).
     func openChild(_ card: Card) {
-        guard let path, let parent = container.canvas, opening == nil else { return }
+        guard let path, let parent = container.canvas, opening == nil,
+            !parent.isInCardTransition
+        else { return }
         let child: NavigationPath
         do {
             child = try path.pushing(card.id)
@@ -77,18 +79,77 @@ extension AppComposition {
         remember(opening.target)
     }
 
-    /// Leaves the current card for its parent canvas at the camera of CARD-04: the standard
-    /// zoom, centered on the card (D-99).
+    /// Leaves the current card for its parent canvas with the animation of D-98 and D-109:
+    /// the child flies to the camera of its open while the parent loads below it, showing the
+    /// card alone. Then the child fades out, and the parent flies to the camera of CARD-04.
     func leave() {
-        guard let path, let card = path.cards.last else { return }
-        let parent = path.popping()
-        loadTask?.cancel()
-        loadTask = Task {
-            await navigate(to: parent) { content in
-                let center = content.cards[card]?.frame.center ?? .zero
-                return Camera(center: center, zoom: Limits.standardZoom)
-            }
+        guard let path, let child = container.canvas, let card = path.cards.last, opening == nil,
+            !child.isInCardTransition
+        else { return }
+        let leaving = CardOpening(target: path.popping())
+        opening = leaving
+        child.prepareLeave { [weak self] in
+            leaving.isFlightDone = true
+            self?.finishLeave(into: card)
         }
+        loadTask?.cancel()
+        loadTask = Task { await loadParent(of: leaving, card: card, child: child) }
+    }
+
+    /// Loads the parent of a leave below the child, at the camera where the card covers the
+    /// screen, with the parent at weight 0, and waits for its first frame.
+    private func loadParent(
+        of leaving: CardOpening,
+        card: CardID,
+        child: CanvasViewController
+    ) async {
+        guard let repository else { return }
+        let target = leaving.target
+        do {
+            onLoadStarted?(target.currentCanvas)
+            let content = try await repository.content(of: target.currentCanvas)
+            let frame =
+                content.cards[card]?.frame ?? Rect(origin: .zero, size: Size(width: 1, height: 1))
+            let bounds = container.view.bounds
+            let screen = Size(width: bounds.width, height: bounds.height)
+            let cover = CanvasViewController.coverCamera(of: frame, viewSize: screen)
+            guard !Task.isCancelled,
+                let canvas = try makeCanvas(target, content: content, camera: cover),
+                let parentCard = content.cards[card]
+            else { return }
+            canvas.holdLeave(into: parentCard)
+            leaving.card = parentCard
+            container.showBelow(canvas)
+            try await CardOpening.waitForFirstFrame(of: canvas)
+            leaving.canvas = canvas
+            finishLeave(into: card)
+        } catch {
+            logger.error("The parent of a card did not open: \(error)")
+            opening = nil
+            leaving.canvas.map(container.removeAbove)
+            child.cancelCardTransition()
+            container.showMessage(AppStrings.canvasFailed)
+        }
+    }
+
+    /// Fades the child out when its flight and the first frame of the parent are both done,
+    /// then plays the leave on the parent (D-98).
+    private func finishLeave(into card: CardID) {
+        guard let leaving = opening, leaving.isFlightDone, let parent = leaving.canvas,
+            let parentCard = leaving.card, parentCard.id == card
+        else { return }
+        opening = nil
+        let level = leaving.target.level
+        let runLeave: @MainActor () -> Void = { [weak self] in
+            self?.container.showUpButton(level > 0 ? { [weak self] in self?.leave() } : nil)
+            parent.runLeave(into: parentCard) {}
+        }
+        container.fadeOut(
+            to: parent,
+            duration: CanvasRenderer.crossfadeDuration,
+            completion: runLeave
+        )
+        remember(leaving.target)
     }
 
     /// Loads the canvas of `target` and shows it at the camera that `camera` gives for its

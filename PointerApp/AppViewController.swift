@@ -50,6 +50,44 @@ final class AppViewController: UIViewController {
         newCanvas.didMove(toParent: self)
     }
 
+    /// Shows a new canvas below the shown one, for a leave (D-109).
+    /// `fadeOut(to:duration:completion:)` makes it the canvas.
+    func showBelow(_ newCanvas: CanvasViewController) {
+        precondition(newCanvas !== canvas, "A new canvas")
+        addChild(newCanvas)
+        newCanvas.view.frame = view.bounds
+        newCanvas.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        let index = canvas.map { view.subviews.firstIndex(of: $0.view) ?? 0 } ?? 0
+        view.insertSubview(newCanvas.view, at: index)
+        newCanvas.didMove(toParent: self)
+    }
+
+    /// Fades the shown canvas out over `duration` seconds above the canvas that
+    /// `showBelow(_:)` added, then removes it and shows the chrome of the new canvas (D-98).
+    func fadeOut(
+        to newCanvas: CanvasViewController,
+        duration: TimeInterval,
+        completion: @escaping @MainActor () -> Void
+    ) {
+        let old = canvas
+        UIView.animate(
+            withDuration: duration,
+            animations: { old?.view.alpha = 0 },
+            completion: { [weak self] _ in
+                MainActor.assumeIsolated {
+                    if let old {
+                        old.willMove(toParent: nil)
+                        old.view.removeFromSuperview()
+                        old.removeFromParent()
+                    }
+                    self?.canvas = newCanvas
+                    self?.showToolButton(newCanvas.toolButton)
+                    completion()
+                }
+            }
+        )
+    }
+
     /// Removes a canvas that `showAbove(_:)` added, after a failed open.
     func removeAbove(_ newCanvas: CanvasViewController) {
         precondition(newCanvas !== canvas, "Only a canvas above the shown one goes")
