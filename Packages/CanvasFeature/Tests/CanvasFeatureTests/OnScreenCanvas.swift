@@ -59,6 +59,12 @@ enum OnScreenCanvas {
         in host: UIViewController
     ) async throws -> OpenMeasurement {
         let clock = ContinuousClock()
+        // The test host shows a canvas of its own in the same process. Its drawables come and go
+        // with its frames, by 48 MB, so it leaves the window during the measure (D-93).
+        let hostViews = host.view.subviews
+        hostViews.forEach { $0.removeFromSuperview() }
+        defer { hostViews.forEach { host.view.addSubview($0) } }
+        try await waitForSteadyMemory()
         let available = os_proc_available_memory()
         var lowest = available
         let start = clock.now
@@ -91,8 +97,37 @@ enum OnScreenCanvas {
         )
     }
 
+    /// The time without a change of the free memory that counts as steady.
+    private static let steadyTime = Duration.milliseconds(1_500)
+    /// The longest wait for steady memory.
+    private static let steadyTimeout = Duration.seconds(10)
+    /// The change of the free memory that counts as a change: one page cluster of 1 MB.
+    private static let steadyTolerance = 1_048_576
+
+    /// Waits until the free memory of the process stays the same for `steadyTime`, so that the
+    /// drawables of a closed canvas are gone before a measure starts (D-93).
+    ///
+    /// - Throws: `OpenTimedOut` if the memory does not settle in `steadyTimeout`.
+    private static func waitForSteadyMemory() async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: steadyTimeout)
+        var reference = os_proc_available_memory()
+        var since = clock.now
+        while clock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+            let now = os_proc_available_memory()
+            if abs(now - reference) > steadyTolerance {
+                reference = now
+                since = clock.now
+            } else if since.duration(to: clock.now) >= steadyTime {
+                return
+            }
+        }
+        throw OpenTimedOut()
+    }
+
     /// Adds the canvas as `AppViewController.show(_:)` does.
-    private static func show(_ canvas: CanvasViewController, in host: UIViewController) {
+    static func show(_ canvas: CanvasViewController, in host: UIViewController) {
         host.addChild(canvas)
         canvas.view.frame = host.view.bounds
         host.view.addSubview(canvas.view)
@@ -101,7 +136,7 @@ enum OnScreenCanvas {
     }
 
     /// Removes the canvas as `AppViewController.show(_:)` removes the old one.
-    private static func close(_ canvas: CanvasViewController) {
+    static func close(_ canvas: CanvasViewController) {
         canvas.willMove(toParent: nil)
         canvas.view.removeFromSuperview()
         canvas.removeFromParent()

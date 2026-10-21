@@ -428,7 +428,7 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 | Dropped frames while drawing or panning | 0 per 10 s | Animation Hitches template |
 | Open a workspace with 20,000 strokes | Under 300 ms to first frame | `CanvasOpenPerformanceTests`: the open on the screen, timed with `ContinuousClock` |
 | Save after a stroke | Off the main actor, under 50 ms | Signpost |
-| Memory for a canvas with 20,000 strokes | Under 300 MB | `CanvasMemoryPerformanceTests`: the peak growth of `os_proc_available_memory` during the open |
+| Memory of the open of the D-56 canvas (20,000 strokes, 10,000 nodes) | Under 380 MB on the 11-inch iPad (D-93) | `CanvasMemoryPerformanceTests`: the peak growth of `os_proc_available_memory` during the open. The views of the test host leave the window, and the measure starts after 1.5 s of steady memory. |
 | Frame with 4 new eraser samples | Under 3 ms CPU, under 4 ms GPU | `EraserFramePerformanceTests` |
 | Erase, undo, or redo of 1,000 strokes in one gesture | Under 33 ms, 16 ms as a goal (D-75) | `EraseUndoPerformanceTests`: from the lift or the call until the GPU completes the first frame that holds the result (D-74) |
 

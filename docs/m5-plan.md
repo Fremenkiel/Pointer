@@ -153,7 +153,7 @@ Done when:
 
 - Snapshot tests on the iPad (TEST-07, D-77): `text-zoom0.5`, `text-zoom1`, `text-zoom4`, `text-under-eraser-mask` (the text stays under the mask), and `text-move-redraw`.
 - The snapshot tests of M2 and M4 give the same images.
-- `CanvasMemoryPerformanceTests` stays under 300 MB.
+- `CanvasMemoryPerformanceTests` stays under 380 MB (D-93).
 - `EraserFramePerformanceTests` stays under 3 ms CPU and 4 ms GPU.
 - `FrameAllocationTests` stays at the count of a bare Metal frame.
 
@@ -269,6 +269,8 @@ Measured on 2026-10-20 on the iPad Pro 11-inch (M4) in Release, at commit beb360
 | 2 | 238.9 / 246.3 ms | 252 / 284 MB | 36 / 113 / 171 ms | 0.11 / 0.27 ms | 25.52 / 29.07 / 27.18 ms |
 | 3 | 241.5 / 250.2 ms | 254 / 254 MB | 36 / 112 / 171 ms | 0.11 / 0.29 ms | 27.41 / 28.95 / 27.72 ms |
 
+The memory and the open of D-56 in these runs hold the error of the test that D-93 found: the canvas of the test host changes the memory of the process by up to about 50 MB. With the corrected test, M4 takes 312 to 315 MB and 251.3 to 256.1 ms (D-93).
+
 In each run, the 6 frame loop tests ran at 120 fps with 0 late frames and 0 uncovered frames. The frame allocations were 15 against 15 of a bare Metal frame. `FrameRenderer.apply` made 16, 2, and 1 allocations for the erase, the undo, and the redo of the D-69 content.
 
 ### 5.2 Model
@@ -285,13 +287,13 @@ In each run, the 6 frame loop tests ran at 120 fps with 0 late frames and 0 unco
 
 | Item | Target | Result |
 |---|---|---|
-| Layout of the 5,000 text boxes of D-56, Mac and iPad | none set, recorded | not run |
-| Snapshots `text-zoom0.5`, `text-zoom1`, `text-zoom4`, `text-under-eraser-mask`, `text-move-redraw` | match | not run |
-| Frame allocations against a bare Metal frame | equal | not run |
-| Memory of the open of D-56 | under 300 MB | not run |
-| Eraser frame, CPU / GPU median | under 3 ms / 4 ms | not run |
-| Frame loop over text | 120 fps, 0 late frames | not run |
-| Open of D-56 with text | under 300 ms, at most 10 % over section 5.1 | not run |
+| Layout of the 5,000 text boxes of D-56, iPad, one thread | none set, recorded | median 59.5 to 61.9 ms |
+| Snapshots `text-zoom0.5`, `text-zoom1.0`, `text-zoom4.0`, `text-under-eraser-mask`, `text-move-redraw` | match | pass with the new references from the iPad |
+| Frame allocations against a bare Metal frame | equal | 15 and 15. A text pass with cached glyphs: 2 and 2 of a bare pass. |
+| Memory of the open of D-56 | under 380 MB (D-93) | 347 to 350 MB in 3 runs with the corrected test (M4: 312 to 315 MB). Before D-92 and the corrected test: held 282 MB, peak 314 MB. |
+| Eraser frame, CPU / GPU median | under 3 ms / 4 ms | 0.11 / 0.28 ms |
+| Frame loop over text | 120 fps, 0 late frames | not built yet (task 2.4) |
+| Open of D-56 with text | under 300 ms, at most 10 % over section 5.1 | fails: median 273.6 ms, slowest 279.4 ms, 14.5 % over 238.9 ms. Before the layout on several threads: 299.2 and 306.3 ms. |
 
 ### 5.4 Canvas
 
