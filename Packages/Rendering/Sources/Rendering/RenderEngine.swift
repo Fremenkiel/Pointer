@@ -19,15 +19,22 @@ final class RenderEngine: Sendable {
 
     /// The GPU of the renderer.
     let device: any MTLDevice
-    private let core: Mutex<FrameRenderer>
-    private let inbox = Mutex(RenderInbox())
+    let core: Mutex<FrameRenderer>
+    let inbox = Mutex(RenderInbox())
     private let cameraArrived = DispatchSemaphore(value: 0)
+    /// The stored previews of the child canvases, or `nil` without previews (D-97).
+    let previewSource: (any PreviewSource)?
+    /// The waiting preview requests at most.
+    let previewRequestLimit: Int
+    /// The loader of the previews, made at the first request.
+    let previewLoader = Mutex<PreviewLoader?>(nil)
 
     /// Makes the engine on the system GPU.
     ///
     /// - Throws: `RenderingError` if the device has no GPU or a Metal object fails.
     init(
         configuration: RendererConfiguration,
+        previewSource: (any PreviewSource)? = nil,
         onCompleted: @escaping @Sendable (UInt64, Double) -> Void = { _, _ in },
         onPresented: @escaping @Sendable (UInt64) -> Void
     ) throws(RenderingError) {
@@ -38,6 +45,8 @@ final class RenderEngine: Sendable {
         )
         device = renderer.resources.device
         core = Mutex(renderer)
+        self.previewSource = previewSource
+        previewRequestLimit = configuration.previewRequestLimit
         assert(
             core.withLock { $0.resources.device === device },
             "The engine uses the GPU of its frames"
@@ -143,6 +152,7 @@ final class RenderEngine: Sendable {
                 box.spareEraserSamples = samples
             }
         }
+        requestPreviews()
         if let record = result.record { input.observer?.didRender(record) }
         return FrameOutcome(didDraw: result.didDraw, needsMore: result.needsMore)
     }
@@ -223,6 +233,7 @@ final class RenderEngine: Sendable {
         for edit in input.cardEdits {
             renderer.apply(edit)
         }
+        renderer.makePreviewAtlasIfNeeded()
         assert(renderer.cards.count <= Limits.maxNodesPerCanvas, "The cards keep the node limit")
     }
 
@@ -239,6 +250,7 @@ final class RenderEngine: Sendable {
         }
         applyText(input, to: renderer)
         applyCards(input, to: renderer)
+        renderer.takePreviews(input.decodedPreviews)
         if let ready = input.eraserReady {
             renderer.isEraserReady = ready
         }

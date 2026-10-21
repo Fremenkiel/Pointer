@@ -42,6 +42,12 @@ final class TextEncoder {
     var borderQuads: [GlyphInstance] = []
     /// The run of the border quads of the current pass in the glyph buffer, or `nil`.
     var borderRun: (first: Int, count: Int)?
+    /// The card previews, or `nil` before the first card (D-97).
+    var previews: PreviewAtlas?
+    /// The preview quads of the current pass, written as one run like `borderQuads`.
+    var previewQuads: [GlyphInstance] = []
+    /// The run of the preview quads of the current pass in the glyph buffer, or `nil`.
+    var previewRun: (first: Int, count: Int)?
     let atlas: GlyphAtlas
     let ring: GlyphRing
     /// The runs of the current pass, reused (PERF-01).
@@ -77,6 +83,7 @@ final class TextEncoder {
         runs.reserveCapacity(Self.initialRunCapacity)
         boxGlyphs.reserveCapacity(Limits.maxTextLength)
         borderQuads.reserveCapacity(Limits.maxNodesPerCanvas)
+        previewQuads.reserveCapacity(Limits.maxNodesPerCanvas)
     }
 
     /// Starts a frame. Call it after `InkEncoder.beginFrame`, which waits for a free buffer.
@@ -101,6 +108,8 @@ final class TextEncoder {
         runs.removeAll(keepingCapacity: true)
         borderQuads.removeAll(keepingCapacity: true)
         borderRun = nil
+        previewQuads.removeAll(keepingCapacity: true)
+        previewRun = nil
         var position = cursor
         let exponent = GlyphAtlas.exponent(pixelsPerCanvasPoint: target.pixelsPerCanvasPoint)
         for item in ids[cursor...] {
@@ -108,13 +117,13 @@ final class TextEncoder {
                 position += 1
                 continue
             }
-            guard needed + borderQuads.count <= ring.remaining else { break }
+            guard needed + borderQuads.count + previewQuads.count <= ring.remaining else { break }
             guard !Self.isPastDeadline(position - cursor, options.deadline) else { break }
             append(item, target: target, exponent: exponent, frame: context.frame)
             position += 1
         }
         flushBorders()
-        if !runs.isEmpty || borderRun != nil || options.clearsScissor {
+        if !runs.isEmpty || borderRun != nil || previewRun != nil || options.clearsScissor {
             encode(into: context.commandBuffer, target: target, options: options)
         }
         assert(position >= cursor, "A text pass never goes back")
@@ -172,7 +181,8 @@ final class TextEncoder {
         case .card(let id):
             guard let entry = cards.entries[id] else { return nil }
             assert((entry.layout == nil) == (entry.titleOrigin == nil), "A title has its place")
-            return 1 + (entry.layout?.glyphs.count ?? 0)
+            // A border quad, a preview quad, and the title glyphs.
+            return 2 + (entry.layout?.glyphs.count ?? 0)
         }
     }
 
@@ -184,7 +194,7 @@ final class TextEncoder {
             append(entry.layout, at: entry.origin, target: target, exponent: exponent, frame: frame)
         case .card(let id):
             guard let entry = cards.entries[id] else { return }
-            appendCard(entry, target: target, exponent: exponent, frame: frame)
+            appendCard(id, entry: entry, target: target, exponent: exponent, frame: frame)
         }
     }
 

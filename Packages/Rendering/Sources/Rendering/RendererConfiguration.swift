@@ -50,6 +50,13 @@ public struct RendererConfiguration: Sendable {
     /// The corner radius of a card in canvas points. The border of a small card takes at most
     /// half its shorter side.
     static let cardCornerRadius = 12.0
+    /// The byte budget of the preview atlas: one `.r8Unorm` texture, 2,048 pixels wide (D-97).
+    /// 8 MB hold 32 previews of 512, 128 of 256, or 512 of 128 pixels.
+    ///
+    /// - Precondition: A multiple of 1 MB, so that the blocks of 512 pixels fill whole rows.
+    public var previewAtlasByteBudget = 8 << 20
+    /// The preview requests that wait for the loader at most (m6-plan.md section 4, rule 5).
+    public var previewRequestLimit = 16
     /// The glyph quads per frame. A text box holds at most `Limits.maxTextLength` glyphs, so a
     /// frame holds several boxes.
     public var glyphCapacity: Int

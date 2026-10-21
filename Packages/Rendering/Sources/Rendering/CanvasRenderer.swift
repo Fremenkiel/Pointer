@@ -37,16 +37,19 @@ public final class CanvasRenderer {
         }
     }
 
-    /// Makes a renderer on the system GPU.
+    /// Makes a renderer on the system GPU. `previews` gives the stored previews of the child
+    /// canvases. Without it, the cards show their borders and titles only (D-97).
     ///
     /// - Precondition: The configuration values are positive.
     /// - Throws: `RenderingError` if the device has no GPU or a Metal object fails.
     public init(
-        configuration: RendererConfiguration = RendererConfiguration()
+        configuration: RendererConfiguration = RendererConfiguration(),
+        previews: (any PreviewSource)? = nil
     ) throws(RenderingError) {
         let relay = HandoffRelay()
         engine = try RenderEngine(
             configuration: configuration,
+            previewSource: previews,
             onCompleted: { handoff, time in
                 DispatchQueue.main.async {
                     MainActor.assumeIsolated {

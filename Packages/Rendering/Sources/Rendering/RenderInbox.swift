@@ -26,6 +26,8 @@ struct RenderInbox {
     var cardLoadsInFlight = 0
     /// The changes of the cards, in order.
     var cardEdits: [CardEdit] = []
+    /// The previews that the loader decoded and no frame took yet (D-97).
+    var decodedPreviews: [DecodedPreview] = []
     /// The edits of handoffs, erases, undo steps, and redo steps, in order.
     var edits: [RenderEdit] = []
     /// The number of the newest handoff in `edits`, or 0.
@@ -63,7 +65,7 @@ struct RenderInbox {
     var hasContentChange: Bool {
         viewport != nil || !loaded.isEmpty || !edits.isEmpty || eraserStart != nil
             || !laidOutText.isEmpty || !textEdits.isEmpty
-            || !laidOutCards.isEmpty || !cardEdits.isEmpty
+            || !laidOutCards.isEmpty || !cardEdits.isEmpty || !decodedPreviews.isEmpty
             || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
     }
 
@@ -81,6 +83,7 @@ struct RenderInbox {
             cardReserve: cardReserve,
             cardLoadsInFlight: cardLoadsInFlight,
             cardEdits: cardEdits,
+            decodedPreviews: decodedPreviews,
             edits: edits,
             editHandoff: editHandoff,
             editsWantCompletion: editsWantCompletion,
@@ -90,6 +93,13 @@ struct RenderInbox {
             eraserReady: eraserReady,
             observer: observer
         )
+        reset()
+        assert(!hasContentChange, "The inbox is empty after a take")
+        return input
+    }
+
+    /// Empties the changes that a frame took. The camera stays as the newest value.
+    private mutating func reset() {
         eraserStart = nil
         eraserSamples = spareEraserSamples
         spareEraserSamples = []
@@ -104,10 +114,9 @@ struct RenderInbox {
         laidOutCards = []
         cardReserve = nil
         cardEdits = []
+        decodedPreviews = []
         edits = []
         editHandoff = 0
         editsWantCompletion = false
-        assert(!hasContentChange, "The inbox is empty after a take")
-        return input
     }
 }

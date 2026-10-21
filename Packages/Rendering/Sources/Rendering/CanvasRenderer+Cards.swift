@@ -7,6 +7,9 @@ extension CanvasRenderer {
     /// frame (D-92). `needsMoreFrames` does not count it, so the first frame does not wait for it.
     public var isLoadingCards: Bool { engine.isLoadingCards }
 
+    /// `true` while a card preview waits, decodes, or waits for its upload (D-97).
+    public var isLoadingPreviews: Bool { engine.isLoadingPreviews }
+
     /// Adds the cards of a load without a callback. Their titles are laid out off the render
     /// thread in the chunks of the text load, so the first frame does not wait for them (D-92).
     /// An edit of a card during the layout wins over the loaded card.

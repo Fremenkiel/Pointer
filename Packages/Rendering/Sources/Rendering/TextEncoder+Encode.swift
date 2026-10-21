@@ -14,7 +14,7 @@ extension TextEncoder {
         options: Options
     ) {
         precondition(
-            !runs.isEmpty || borderRun != nil || options.clearsScissor,
+            !runs.isEmpty || borderRun != nil || previewRun != nil || options.clearsScissor,
             "A text pass draws or clears"
         )
         assert(runs.allSatisfy { $0.count > 0 }, "Each glyph run holds a glyph")
@@ -37,6 +37,7 @@ extension TextEncoder {
         let size = target.pixelSize
         let targetSize = SIMD2(Float(size.width), Float(size.height))
         encodeBorders(encoder, targetSize: targetSize)
+        encodePreviews(encoder, targetSize: targetSize)
         encodeGlyphRuns(encoder, targetSize: targetSize)
         encoder.endEncoding()
     }
@@ -45,6 +46,7 @@ extension TextEncoder {
     private func encodeGlyphRuns(_ encoder: any MTLRenderCommandEncoder, targetSize: SIMD2<Float>) {
         guard !runs.isEmpty else { return }
         assert(targetSize.x > 0 && targetSize.y > 0, "A target has pixels")
+        assert(runs.allSatisfy { $0.page >= 0 }, "Each glyph run names an atlas page")
         encoder.setRenderPipelineState(resources.glyphPipeline)
         for run in runs {
             guard let page = atlas.pages[run.page] else { continue }

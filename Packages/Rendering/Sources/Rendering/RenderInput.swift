@@ -23,6 +23,8 @@ struct RenderInput: Sendable {
     let cardLoadsInFlight: Int
     /// The changes of the cards, in order.
     let cardEdits: [CardEdit]
+    /// The previews that the loader decoded (D-97).
+    let decodedPreviews: [DecodedPreview]
     /// The edits, in order.
     let edits: [RenderEdit]
     /// The newest handoff of `edits`, or 0.
@@ -44,7 +46,7 @@ struct RenderInput: Sendable {
     var hasChange: Bool {
         camera != nil || viewport != nil || !loaded.isEmpty || !edits.isEmpty
             || !laidOutText.isEmpty || !textEdits.isEmpty
-            || !laidOutCards.isEmpty || !cardEdits.isEmpty
+            || !laidOutCards.isEmpty || !cardEdits.isEmpty || !decodedPreviews.isEmpty
             || eraserStart != nil || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
     }
 }

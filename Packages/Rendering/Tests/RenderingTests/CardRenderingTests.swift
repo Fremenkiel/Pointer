@@ -167,6 +167,29 @@ struct CardRenderingTests {
         Snapshot.assertMatches(image, named: "text-over-card-redraw")
     }
 
+    @Test("A card shows its preview inside its border at zoom 1 (D-97)")
+    func preview() throws {
+        let source = FakePreviews(data: try FakePreviews.png(width: 300, height: 150))
+        let renderer = try CanvasRenderer(previews: source)
+        let layer = makeLayer(renderer: renderer)
+        renderer.load([try CardStoreTests.card(1, frame: Self.frame, title: "Tree")])
+        // The preview loads off the render thread after the first frames.
+        for _ in 0..<2_000
+        where renderer.isLoadingCards || renderer.isLoadingPreviews || source.readCount == 0 {
+            _ = renderer.renderFrame(into: layer, deadline: nil)
+            Thread.sleep(forTimeInterval: 0.001)
+        }
+        drain(renderer, layer: layer)
+        let image = try capture(renderer, layer: layer)
+        #expect(source.readCount == 1)
+        // The cross of the preview crosses the center of the card: canvas (0, 5).
+        #expect(image.gray(x: 200, y: 130) > 200, "The preview shows")
+        #expect(
+            Self.borderGray.contains(image.gray(x: 80, y: 150)) || image.gray(x: 80, y: 150) > 200
+        )
+        Snapshot.assertMatches(image, named: "card-preview")
+    }
+
     @Test("A card change over a text box keeps the text, and a removed card leaves the screen")
     func cardOverTextRedraw() throws {
         let renderer = try CanvasRenderer()

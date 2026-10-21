@@ -10,6 +10,8 @@ struct AppFiles {
     let temporary: URL
     /// `Documents/Backups/`, which the Files app shows (STO-02).
     let backups: URL
+    /// `Library/Caches/Pointer/previews/`, the card previews (D-97). The first write makes it.
+    let previews: URL
 
     /// Finds the folders and makes `Application Support/Pointer/` if it is missing.
     ///
@@ -28,11 +30,18 @@ struct AppFiles {
             appropriateFor: nil,
             create: true
         )
+        let caches = try files.url(
+            for: .cachesDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
         return AppFiles(
             library: support.appending(path: "library.sqlite").path(percentEncoded: false),
             device: support.appending(path: "device.sqlite").path(percentEncoded: false),
             temporary: files.temporaryDirectory,
-            backups: documents.appending(path: "Backups", directoryHint: .isDirectory)
+            backups: documents.appending(path: "Backups", directoryHint: .isDirectory),
+            previews: caches.appending(path: "Pointer/previews", directoryHint: .isDirectory)
         )
     }
 }

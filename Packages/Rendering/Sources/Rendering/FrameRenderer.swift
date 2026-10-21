@@ -27,8 +27,10 @@ final class FrameRenderer {
     var textEditedDuringLoad: Set<TextBoxID> = []
     /// The cards with the layouts of their titles (D-96).
     let cards = CardStore()
+    /// The card previews on the GPU, made at the first card (D-97).
+    var previews: PreviewAtlas?
     private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
-    private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
+    let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     /// The committed layer, or `nil` before the first frame with a drawable size.
     private(set) var layer: CommittedLayer?
     /// The new strokes that the next frame draws into the front texture.
@@ -120,7 +122,7 @@ final class FrameRenderer {
         guard let layer, !needsNewLayer else { return viewSize.width > 0 && viewSize.height > 0 }
         return layer.isBuilding || layer.isSettling || layer.isRedrawing || !pendingSlots.isEmpty
             || waitingHandoff > 0 || dirtyArea != nil || eraserMask.hasNewSamples
-            || layer.isRedrawingText || dirtyTextArea != nil
+            || layer.isRedrawingText || dirtyTextArea != nil || !(previews?.pending.isEmpty ?? true)
     }
 
     /// Sets the size of the view and the display scale. A change rebuilds the committed layer.
@@ -228,6 +230,8 @@ final class FrameRenderer {
     }
 
     private func encodeContent(layer: CommittedLayer, context: FrameContext) {
+        // The previews go into the atlas before the passes that sample them.
+        uploadPreviews(context)
         // The draw list of the frame is free, so the glyph buffer of the frame is free too.
         textEncoder.beginFrame()
         if let area = dirtyArea {

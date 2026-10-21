@@ -30,6 +30,8 @@ final class AppComposition {
     var idleTimer: Timer?
     var isSnapshotRunning = false
     var backgroundTask = UIBackgroundTaskIdentifier.invalid
+    /// The card previews of the child canvases (D-97), or `nil` before the launch.
+    var previewStore: PreviewStore?
     /// The load of the canvas of the last switch, or `nil`.
     var loadTask: Task<Void, Never>?
     /// Runs with the canvas of each load that starts. Only the tests set it (F-13).
@@ -47,6 +49,7 @@ final class AppComposition {
     func start() async {
         do {
             let files = try AppFiles.make(FileManager.default)
+            previewStore = PreviewStore(folder: files.previews)
             let device = try await openDeviceState(files)
             let library = try await openLibrary(files, device: device.state.deviceID)
             makeClock(device: device.state.deviceID, last: library.lastTimestamp)
@@ -177,7 +180,8 @@ final class AppComposition {
             guard !Task.isCancelled, selector?.current?.id == workspace.id else { return }
             var dependencies = CanvasDependencies(
                 renderer: try CanvasRenderer(
-                    configuration: CanvasComposition.rendererConfiguration(defaults)
+                    configuration: CanvasComposition.rendererConfiguration(defaults),
+                    previews: previewStore.map(PreviewFiles.init)
                 ),
                 clock: clock,
                 content: content

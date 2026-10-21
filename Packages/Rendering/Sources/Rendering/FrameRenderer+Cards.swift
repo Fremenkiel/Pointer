@@ -27,6 +27,7 @@ extension FrameRenderer {
             cards.editedDuringLoad.formUnion(edit.added.map(\.id))
         }
         for id in edit.removed {
+            previews?.forget(id)
             guard let bounds = cards.remove(id) else { continue }
             dirtyTextArea = dirtyTextArea.map { Self.union($0, bounds) } ?? bounds
         }

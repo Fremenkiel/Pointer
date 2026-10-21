@@ -76,6 +76,7 @@ final class CardStore {
         )
         entries.reserveCapacity(count)
         grid.reserveCapacity(count)
+        assert(entries.capacity >= count, "The store holds room for \(count) cards")
     }
 
     /// Adds a card, or replaces the card with the same ID, and lays out its title. A card with

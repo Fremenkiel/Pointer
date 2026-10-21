@@ -124,7 +124,8 @@ extension FrameRenderer {
             cardStore.add(card)
         }
         assert(cardStore.count == Set(cards.map(\.id)).count, "Each card is in the store once")
-        let titles = cardStore.entries.values.reduce(0) { $0 + 1 + ($1.layout?.glyphs.count ?? 0) }
+        // A card writes a border quad, a preview quad, and its title glyphs.
+        let titles = cardStore.entries.values.reduce(0) { $0 + 2 + ($1.layout?.glyphs.count ?? 0) }
         let glyphs = store.entries.values.reduce(titles) { $0 + $1.layout.glyphs.count }
         let encoder = TextEncoder(
             resources: resources,
