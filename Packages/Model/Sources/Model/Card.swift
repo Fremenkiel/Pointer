@@ -67,7 +67,8 @@ public struct Card: Identifiable, Hashable, Sendable {
         return Card(self, meta: meta.changed(at: time), origin: newOrigin, title: title)
     }
 
-    /// Returns a copy with a new title and the change time `time`.
+    /// Returns a copy with a new title and the change time `time`. A title of 0 code points
+    /// becomes `nil`, so `RenameCard` stores no empty title (m6-plan.md task 1.2).
     ///
     /// - Throws: `ModelError.invalidTitle` for a title above `Limits.maxTitleLength` code points,
     ///   and `ModelError.nullCharacter` for a title with U+0000.
@@ -78,7 +79,8 @@ public struct Card: Identifiable, Hashable, Sendable {
         guard !(newTitle.map(TextLength.hasNull) ?? false) else { throw .nullCharacter }
         let length = newTitle.map(TextLength.of) ?? 0
         guard length <= Limits.maxTitleLength else { throw .invalidTitle(length: length) }
-        return Card(self, meta: meta.changed(at: time), origin: frame.origin, title: newTitle)
+        let stored = length == 0 ? nil : newTitle
+        return Card(self, meta: meta.changed(at: time), origin: frame.origin, title: stored)
     }
 
     /// Returns a copy with the tombstone flag `isDeleted` and the change time `time`.

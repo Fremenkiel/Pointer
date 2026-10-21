@@ -148,6 +148,8 @@ Done when: parameterized tests cover 0, 1, `Limits.maxNodesPerCanvas`, and the l
 
 Rules: TEST-02, TEST-06, ARCH-06, D-18, D-57, D-103.
 
+Status: done on 2026-10-21 in commit 8f1a097. The card changes of `CanvasContent` live in `CanvasContent+Cards.swift`, because `CanvasContent.swift` has 345 lines (SIZE-03). Thus `cards` has an internal setter. The helpers throw `CommandError.cardNotLive` and `cardAlreadyLive`, so these cases came with this task. The node limit tests cover 0, 1, the limit minus one, and the limit of existing nodes, with a mix of cards and text boxes, so the last case asks for the limit plus one.
+
 #### 1.2 Card commands and node commands
 
 1. Add `CanvasNode`, an enum with the cases `textBox(TextBox)` and `card(Card)`.
@@ -161,6 +163,8 @@ Rules: TEST-02, TEST-06, ARCH-06, D-18, D-57, D-103.
 Done when: each command passes the apply-then-revert test of TEST-09 with the live content (D-67). A test of each command makes sure that the returned rows match the content after apply, revert, and a redo. All M5 text tests pass without a change. The line coverage of `Model` stays at least 90 %, and its density at least 2.0.
 
 Rules: UNDO-03, TEST-02, TEST-09, CONTRACT-02, D-67, D-88, D-103.
+
+Status: done on 2026-10-21. `MoveNode` and `DeleteNode` hold a `CanvasNode` and keep their text box initializers, so the M5 tests and the canvas code need no change. `Card.retitling(_:at:)` turns a title of 0 code points into `nil`, and `RenameCard` has the precondition that the new title is not empty. 114 Model tests pass on the Mac. Line coverage of `Model` 91.11 %, density 2.08.
 
 #### 1.3 Navigation path
 

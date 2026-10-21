@@ -33,7 +33,7 @@ struct CardChangeTests {
     }
 
     @Test(
-        "A new title takes 0, 1, and the limit of code points and refuses the limit plus one",
+        "A title takes 0, 1, and the limit of code points, refuses one more, and 0 stores none",
         arguments: [0, 1, Limits.maxTitleLength, Limits.maxTitleLength + 1]
     )
     func retitleLength(length: Int) throws {
@@ -41,7 +41,7 @@ struct CardChangeTests {
         let title = String(repeating: "a", count: length)
         if length <= Limits.maxTitleLength {
             let retitled = try card.retitling(title, at: Self.later)
-            #expect(retitled.title == title)
+            #expect(retitled.title == (length == 0 ? nil : title))
             #expect(retitled.frame == card.frame)
             #expect(retitled.meta.modified == Self.later)
         } else {

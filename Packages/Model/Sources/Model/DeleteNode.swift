@@ -1,47 +1,72 @@
-/// Deletes a text box (architecture.md sections 7 and 8, D-86, D-89). Cards join in M6.
+/// Deletes a text box or a card (architecture.md sections 7 and 8, D-86, D-89, D-103).
 ///
-/// A delete leaves a tombstone, so the undo only clears the flag (data-model.md section 5).
+/// A delete leaves a tombstone, so the undo only clears the flag (data-model.md section 5). A
+/// delete of a card marks the card only, and its child content stays (D-18).
 public struct DeleteNode: CanvasCommand {
-    /// The text box before the delete.
-    public let textBox: TextBox
-    /// The code points of the text, counted as points of the history budget (D-88).
+    /// The node before the delete.
+    public let node: CanvasNode
+    /// The code points of the text or the title, counted as points of the history budget (D-88).
     public let heldPointCount: Int
 
-    /// Makes the command.
+    /// Makes the command for a text box.
     ///
     /// - Precondition: `textBox` is not a tombstone.
     public init(textBox: TextBox) {
-        precondition(!textBox.meta.isDeleted, "DeleteNode needs a live text box")
-        self.textBox = textBox
-        heldPointCount = TextLength.of(textBox.text)
+        self.init(node: .textBox(textBox))
+    }
+
+    /// Makes the command for a card.
+    ///
+    /// - Precondition: `card` is not a tombstone.
+    public init(card: Card) {
+        self.init(node: .card(card))
+    }
+
+    private init(node: CanvasNode) {
+        precondition(!node.isDeleted, "DeleteNode needs a live node")
+        self.node = node
+        heldPointCount = node.textLength
     }
 
     /// Holds no stroke.
     public func forEachHeldStroke(_ body: (StrokeID) -> Void) {}
 
-    /// Makes the box a tombstone.
+    /// Makes the node a tombstone.
     ///
-    /// - Throws: `CommandError.textBoxNotLive` if the box is not live.
+    /// - Throws: `CommandError.textBoxNotLive` or `CommandError.cardNotLive` if the node is not
+    ///   live.
     /// - Returns: The row of the tombstone.
     public func apply(
         to content: inout CanvasContent,
         clock: inout HybridClock
     ) throws(CommandError) -> [LibraryChange] {
-        let row = try content.bury(textBox.id, at: clock.now())
-        assert(content.textBoxes[textBox.id] == nil, "The box left the live content")
-        return [row]
+        let time = clock.now()
+        switch node {
+        case .textBox(let box):
+            let row = try content.bury(box.id, at: time)
+            assert(content.textBoxes[box.id] == nil, "The box left the live content")
+            return [row]
+        case .card(let card):
+            let row = try content.bury(card.id, at: time)
+            assert(content.cards[card.id] == nil, "The card left the live content")
+            return [row]
+        }
     }
 
-    /// Makes the box live again.
+    /// Makes the node live again.
     ///
-    /// - Throws: `CommandError.textBoxAlreadyLive` if the box is live, or
-    ///   `CommandError.nodeLimitReached` at the node limit.
-    /// - Returns: The row of the live box.
+    /// - Throws: `CommandError.textBoxAlreadyLive` or `CommandError.cardAlreadyLive` if the node
+    ///   is live, or `CommandError.nodeLimitReached` at the node limit.
+    /// - Returns: The row of the live node.
     public func revert(
         on content: inout CanvasContent,
         clock: inout HybridClock
     ) throws(CommandError) -> [LibraryChange] {
-        precondition(textBox.canvasID == content.canvasID, "The box belongs to the canvas")
-        return [try content.revive(textBox, at: clock.now())]
+        precondition(node.canvasID == content.canvasID, "The node belongs to the canvas")
+        let time = clock.now()
+        switch node {
+        case .textBox(let box): return [try content.revive(box, at: time)]
+        case .card(let card): return [try content.revive(card, at: time)]
+        }
     }
 }
