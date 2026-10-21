@@ -246,6 +246,8 @@ Done when: the test passes on the iPad, and the product owner reports a pass of 
 
 Rules: TOOL-05, D-77, D-90.
 
+Status: the device test `ScribbleConditionTests` passes. The manual test with the pencil waits for the product owner (section 5.6).
+
 #### 4.2 Acceptance 2: text lines up with the edit view
 
 1. Add a snapshot test in `CanvasFeatureSnapshotTests` (D-77). It shows a text box of 3 lines, one of them wrapped, at zoom 0.5, 1, and 4.
@@ -258,6 +260,8 @@ Rules: TOOL-05, D-77, D-90.
 Done when: the test passes on the iPad at each zoom, and no snapshot test skips.
 
 Rules: TEST-07, D-77, D-84, D-85, D-91.
+
+Status: done. Each line of each case is at most 1 pixel off in its bounds, its columns, and its rows. The test attaches the measures of each line. The references of the canvas image and the edit view image come from the iPad.
 
 ### Phase 5: close of M5
 
@@ -324,9 +328,9 @@ In each run, the 6 frame loop tests ran at 120 fps with 0 late frames and 0 unco
 
 | Item | Target | Result |
 |---|---|---|
-| Acceptance 1, device test of the Scribble conditions (D-90) | pass | not run |
-| Acceptance 1, manual test with the pencil | a pass, reported by the product owner | not run |
-| Acceptance 2 at zoom 0.5, 1, and 4 (D-91) | within 1 pixel | not run |
+| Acceptance 1, device test of the Scribble conditions (D-90) | pass | pass |
+| Acceptance 1, manual test with the pencil | a pass, reported by the product owner | waits for the product owner |
+| Acceptance 2 at zoom 0.5, 1, and 4 (D-91) | within 1 pixel | passes: each line at most 1 pixel in bounds, columns, and rows. The fallback case at zoom 1 passes too. |
 
 ### 5.6 Close
 
