@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day. It is open.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21.
 
 Status values: Open, Decided, Replaced.
 
@@ -99,7 +99,7 @@ Status values: Open, Decided, Replaced.
 | D-89 | Delete of a text box through a long-press menu | A long-press menu with "Delete", and a requirement in product-spec.md | Decided (2026-10-20) |
 | D-90 | The test of M5 acceptance 1 (Scribble) | A device test of the conditions of Scribble, and a manual test as the pass | Decided (2026-10-20) |
 | D-91 | The pass rule of M5 acceptance 2 | Lit-pixel bounds and profiles of each line match within 1 pixel | Decided (2026-10-20) |
-| D-92 | The open and the memory of the D-56 canvas with text pass their targets | Open | Open |
+| D-92 | The open and the memory of the D-56 canvas with text pass their targets | Remove the extra peak at the open, and lay out the text after the first frame | Decided (2026-10-21) |
 
 ## Details
 
@@ -915,7 +915,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-92 The open and the memory of the D-56 canvas with text
 
-- Open. Raised by task 2.3 of [m5-plan.md](m5-plan.md) on 2026-10-20.
+- Decided by the product owner on 2026-10-21: options (b) and (d). Raised by task 2.3 of [m5-plan.md](m5-plan.md) on 2026-10-20.
 - The D-56 canvas holds 5,000 text boxes of 200 characters. Before M5, nothing drew them. With the text of M5, two tests on the iPad Pro 11-inch (M4) in Release fail their targets:
 
 | Measure | Target | Baseline (section 5.1 of the plan) | M5 now |
