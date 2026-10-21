@@ -952,12 +952,25 @@ Status values: Open, Decided, Replaced.
 
 - The baseline had the extra peak in 2 of 3 full runs: held 252 to 254 MB, peak 254 to 284 MB. The held memory of one open varies by about 28 MB between runs.
 - The fallback of D-92 saves the 32 MB of the second channel. Then the held memory is about 255 to 270 MB, and the peak with the extra 31 MB is about 285 to 300 MB. The fallback can still fail the target of 300 MB in a run with the extra peak.
+- Research on 2026-10-21, on the iPad Pro 11-inch (M4) in Release:
+  - A canvas holds three drawables of 16.1 MB each. Core Animation releases them about 1 second after the last frame, and makes them again at the next frame.
+  - The test host app shows a canvas of its own in the same process. Its drawables come and go during a measure. A probe saw it release 50 MB in the 3 seconds before a load. Thus each memory and open measure of a canvas since M3 holds an error of up to about 50 MB, in either direction. The extra peak of D-92 is this error, not a cost of the D-56 canvas.
+  - With a corrected test, the views of the host app leave the window, and the measure starts after 1.5 seconds of steady memory. The results then repeat within 3 MB. Three alternating runs of each build:
+
+| Build | Memory of the open of D-56, held = peak | Open to the first frame, median |
+|---|---|---|
+| M4, commit beb3608 | 315, 312, 315 MB | 251.3, 251.7, 256.1 ms |
+| M5 now | 347, 350, 347 MB | 246.1, 257.3, 247.0 ms |
+
+  - The target of 300 MB thus fails also for M4. The passes of M3 and M4 (236 to 254 MB) come from the error of the test. M5 adds 32 to 35 MB: the second channel of D-82 (32.3 MB). The open of M5 is as fast as the open of M4.
+  - The parts of the open, from the sizes in the code: the control points in `Model` take 96 MB, and the point arena about 48 to 55 MB. The committed textures take 64.6 MB (32.3 MB in one channel), and the drawables 48.4 MB. The glyph buffers and draw lists take 9.4 MB, and the text layouts about 9 MB.
+  - On the 13-inch iPad, the textures and the drawables are larger by about 46 MB. The estimate there is about 395 MB for M5 and about 350 MB for M4. No 13-inch iPad was measured.
 - Options:
-  - (a) The fallback of D-92: text in the one channel, and a text pass during an eraser gesture. It takes one task or more, and the target stays close.
-  - (b) Keep the second channel, and raise the memory target of the open of D-56 to 330 MB. Architecture.md section 12 and the test change.
-  - (c) Keep the second channel, and keep the layouts of the text boxes near the camera only. The text data of D-56 then drops by up to about 10 MB, and the target stays close.
-  - (d) Keep the target, and look further for the cause of the extra peak. The time of this search is not known.
-- Recommendation: (b). The second channel keeps the eraser and the text apart, as D-82 decided. The measured worst case of 315 MB leaves a margin of 15 MB under 330 MB. The other options leave the target within a few MB of the measured peak.
+  - (a) The fallback of D-92: text in the one channel, and a text pass during an eraser gesture. It saves 32 MB, so the open takes about 315 MB, and the target of 300 MB still fails.
+  - (b) Keep the second channel. Correct the test as above, and set the target of the open of D-56 to 380 MB on the 11-inch iPad. That is the measured 350 MB plus about 8 %. Architecture.md section 12 and the test change.
+  - (c) Keep the target of 300 MB and save about 50 MB elsewhere. A texture margin of 1.5 instead of 2 saves about 28 MB, with twice the builds of D-47. Less memory per control point in `Model` (16 bytes now) saves the rest. Both change decided designs (D-47, D-26), and the second changes the data model.
+  - (d) Correct the test, and keep the target of 300 MB as a goal for a later milestone, as D-75 did for 16 ms. The test then fails until that milestone.
+- Recommendation: (b). The test error is fixed in every case. The target of 300 MB was set before the measure was correct, and M4 already needs 315 MB. The second channel costs 32 MB and keeps the eraser and the text apart (D-82). The 13-inch iPad needs its own measure before a target there.
 
 ## Points in the request that conflict or are not complete
 
