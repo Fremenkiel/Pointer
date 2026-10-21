@@ -954,10 +954,10 @@ Status values: Open, Decided, Replaced.
 - The fallback of D-92 saves the 32 MB of the second channel. Then the held memory is about 255 to 270 MB, and the peak with the extra 31 MB is about 285 to 300 MB. The fallback can still fail the target of 300 MB in a run with the extra peak.
 - Options:
   - (a) The fallback of D-92: text in the one channel, and a text pass during an eraser gesture. It takes one task or more, and the target stays close.
-  - (b) Keep the second channel, and raise the memory target of the open of D-56 to 330 MB in architecture.md section 12 and in the test.
+  - (b) Keep the second channel, and raise the memory target of the open of D-56 to 330 MB. Architecture.md section 12 and the test change.
   - (c) Keep the second channel, and keep the layouts of the text boxes near the camera only. The text data of D-56 then drops by up to about 10 MB, and the target stays close.
   - (d) Keep the target, and look further for the cause of the extra peak. The time of this search is not known.
-- Recommendation: (b). The second channel keeps the eraser and the text apart, as D-82 decided, and the measured worst case of 315 MB leaves a margin of 15 MB under 330 MB. The other options leave the target within a few MB of the measured peak.
+- Recommendation: (b). The second channel keeps the eraser and the text apart, as D-82 decided. The measured worst case of 315 MB leaves a margin of 15 MB under 330 MB. The other options leave the target within a few MB of the measured peak.
 
 ## Points in the request that conflict or are not complete
 
