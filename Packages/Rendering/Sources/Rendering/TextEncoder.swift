@@ -103,12 +103,24 @@ final class TextEncoder {
         return CACurrentMediaTime() > deadline
     }
 
-    /// Writes the glyph quads of one box into the buffer of the frame.
-    private func append(_ entry: TextStore.Entry, target: InkTarget, exponent: Int, frame: UInt64) {
-        precondition(entry.layout.glyphs.count <= ring.remaining, "The box fits the glyph buffer")
+    /// The map from the glyph points of one box to the pixels of a target.
+    private struct Mapping {
+        /// The baseline origin of the box in target pixels.
+        let base: SIMD2<Float>
+        /// The pixels per canvas point of the target.
+        let scale: Float
+        /// The target pixels per atlas pixel.
+        let ratio: Float
+    }
+
+    /// Returns the map of a box into a target at the atlas scale `exponent`.
+    private static func mapping(
+        of entry: TextStore.Entry,
+        target: InkTarget,
+        exponent: Int
+    ) -> Mapping {
         let pixels = target.pixelsPerCanvasPoint
-        assert(pixels > 0, "A target has pixels per canvas point")
-        let ratio = Float(pixels / GlyphAtlas.scale(of: exponent))
+        precondition(pixels > 0, "A target has pixels per canvas point, got \(pixels)")
         // The subtraction runs in Double before the conversion to Float (architecture.md 5.3).
         let delta = entry.origin - target.camera.center
         let size = target.pixelSize
@@ -116,13 +128,57 @@ final class TextEncoder {
             Float(size.width / 2 + delta.dx * pixels),
             Float(size.height / 2 + delta.dy * pixels)
         )
-        let fonts = entry.layout.fonts
-        let indices = entry.layout.fontIndices
+        assert(base.x.isFinite && base.y.isFinite, "A box maps to finite pixels")
+        return Mapping(
+            base: base,
+            scale: Float(pixels),
+            ratio: Float(pixels / GlyphAtlas.scale(of: exponent))
+        )
+    }
+
+    /// Writes the glyph quads of one box into the buffer of the frame.
+    private func append(_ entry: TextStore.Entry, target: InkTarget, exponent: Int, frame: UInt64) {
+        precondition(entry.layout.glyphs.count <= ring.remaining, "The box fits the glyph buffer")
+        precondition(
+            entry.layout.fontIndices.count == entry.layout.glyphs.count,
+            "Each of the \(entry.layout.glyphs.count) glyphs has a font index"
+        )
+        let mapping = Self.mapping(of: entry, target: target, exponent: exponent)
+        // The loop works on local values: each access to a stored property of a class costs a
+        // dynamic exclusivity check, and a glyph needs several. Local values took the pass from
+        // 29 to 17 ns per glyph (review of M5). The swap keeps the capacity of the reused list.
+        var quads = boxGlyphs
+        boxGlyphs = []
+        quads.removeAll(keepingCapacity: true)
+        let run = writeQuads(
+            of: entry.layout,
+            into: &quads,
+            mapping: mapping,
+            exponent: exponent,
+            frame: frame
+        )
+        flush(run)
+        ring.append(contentsOf: quads)
+        boxGlyphs = quads
+        assert(boxGlyphs.count <= entry.layout.glyphs.count, "One quad per glyph at most")
+    }
+
+    /// Appends the quads of the glyphs of a layout, and returns the open run of the last page.
+    private func writeQuads(
+        of layout: TextLayout,
+        into quads: inout [GlyphInstance],
+        mapping: Mapping,
+        exponent: Int,
+        frame: UInt64
+    ) -> Run? {
+        let fonts = layout.fonts
+        let indices = layout.fontIndices
         // The font of a glyph changes rarely, so its number is looked up once per change.
         var fontIndex = UInt8(0)
         var fontID = atlas.fontID(of: fonts[0])
-        boxGlyphs.removeAll(keepingCapacity: true)
-        for (index, glyph) in entry.layout.glyphs.enumerated() {
+        var run = runs.last
+        let first = ring.used
+        for (index, glyph) in layout.glyphs.enumerated() {
             if indices[index] != fontIndex {
                 fontIndex = indices[index]
                 fontID = atlas.fontID(of: fonts[Int(fontIndex)])
@@ -136,28 +192,38 @@ final class TextEncoder {
                     frame: frame
                 ), place.page >= 0
             else { continue }
-            let corner = base + glyph.position * Float(pixels) + place.bearing * ratio
-            let instance = GlyphInstance(
-                position: corner.rounded(.toNearestOrEven),
-                size: place.size * ratio,
-                atlasOrigin: place.origin,
-                atlasSize: place.size
+            if run?.page == place.page {
+                run?.count += 1
+            } else {
+                flush(run)
+                atlas.markUsed(page: place.page, frame: frame)
+                run = Run(page: place.page, first: first + quads.count, count: 1)
+            }
+            let corner =
+                mapping.base + glyph.position * mapping.scale + place.bearing * mapping.ratio
+            quads.append(
+                GlyphInstance(
+                    position: corner.rounded(.toNearestOrEven),
+                    size: place.size * mapping.ratio,
+                    atlasOrigin: place.origin,
+                    atlasSize: place.size
+                )
             )
-            addToRun(page: place.page, frame: frame)
-            boxGlyphs.append(instance)
         }
-        ring.append(contentsOf: boxGlyphs)
+        assert((run?.count ?? 1) > 0, "An open run holds a glyph")
+        return run
     }
 
-    /// Adds a glyph to the run of its page. A new run marks its page as used by the frame.
-    private func addToRun(page: Int, frame: UInt64) {
-        precondition(page >= 0, "Only a glyph with pixels joins a run")
-        if let last = runs.last, last.page == page {
-            runs[runs.count - 1].count += 1
+    /// Writes the open run of a box into the run list: it extends the last run or follows it.
+    private func flush(_ run: Run?) {
+        guard let run else { return }
+        precondition(run.page >= 0, "Only glyphs with pixels make a run")
+        if let last = runs.last, last.page == run.page, last.first == run.first {
+            runs[runs.count - 1] = run
         } else {
-            atlas.markUsed(page: page, frame: frame)
-            runs.append(Run(page: page, first: ring.used + boxGlyphs.count, count: 1))
+            runs.append(run)
         }
+        assert(runs.last?.count == run.count, "The run list ends with the run")
     }
 
     private func encode(
