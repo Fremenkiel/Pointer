@@ -252,6 +252,8 @@ Done when:
 
 Rules: TEST-07, CARD-02, D-16, D-82, D-96, D-106.
 
+Status: done on 2026-10-21 in commit 3840f48. Cards and text boxes share one list of green items (`GreenItem`), so a build and a redraw keep one cursor, one clear, and one glyph buffer. The border quads of a pass use the glyph buffer as one run, so they count against `glyphCapacity` and the build deadline as glyph quads do. The border is 1 view point wide with a corner radius of 12 canvas points, and `DesignSystem.Color.cardBorder` is a coverage of 0.5. The 7 new snapshots match their references from the iPad, and `make snapshots` gives the same images for M2, M4, and M5. A full run of `PointerDeviceTests` passed 232 tests. The open of D-56 now draws the 5,000 cards: 252.1 ms (median) and 357 MB. The zoom over the D-56 text had 2 late frames of 477, which D-94 accepts in a full run.
+
 #### 3.3 Preview atlas and decode
 
 1. Add the preview atlas of section 4, rule 2.
