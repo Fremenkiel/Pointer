@@ -33,6 +33,8 @@ final class InkResources {
     let freezePipeline: any MTLRenderPipelineState
     /// Draws a frame of an open or a leave into the drawable (D-98, D-108).
     let transitionPipeline: any MTLRenderPipelineState
+    /// Draws a frame of a pinch-out exit into the drawable (CARD-05, D-109).
+    let pinchPipeline: any MTLRenderPipelineState
     /// A texture of one pixel for a pass argument that a frame does not read.
     let placeholder: any MTLTexture
 
@@ -67,6 +69,11 @@ final class InkResources {
         (compositeMaskedPipeline, transitionPipeline) = try Self.makeCompositeVariants(
             device,
             library
+        )
+        pinchPipeline = try Self.makeCompositePipeline(
+            device: device,
+            library: library,
+            fragment: "pinchFragment"
         )
         eraserPipeline = try Self.makeInkPipeline(
             device: device,

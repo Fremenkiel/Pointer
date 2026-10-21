@@ -17,6 +17,10 @@ struct CameraController {
     static let springTolerance = 0.001
     /// The largest time step of one animation frame. A longer pause does not jump.
     static let maximumStep: TimeInterval = 0.05
+    /// The pinch-out exit leaves a card when the fingers lift at a raw zoom under this ratio of
+    /// the minimum zoom (CARD-05, D-104). The raw zoom has no rubber band, so the threshold
+    /// follows the fingers. Start value 0.6, to tune on the iPad (architecture.md 6.3).
+    static let exitZoomRatio = 0.6
     /// The time of the open and the leave of a card (architecture.md 6.2, D-98).
     static let flightDuration: TimeInterval = 0.35
     /// The stiffness of the flight, times its duration: a critically damped spring that
@@ -35,6 +39,8 @@ struct CameraController {
         let startCamera: Camera
         let startCentroid: Point
         var centroid: Point
+        /// The zoom of the fingers without the rubber band.
+        var rawZoom: Double
     }
 
     private enum Animation {
@@ -91,7 +97,12 @@ struct CameraController {
     /// Starts a pinch at the midpoint of the fingers.
     mutating func beginPinch(centroid: Point) {
         stopAnimation()
-        pinch = Pinch(startCamera: camera, startCentroid: centroid, centroid: centroid)
+        pinch = Pinch(
+            startCamera: camera,
+            startCentroid: centroid,
+            centroid: centroid,
+            rawZoom: camera.zoom
+        )
     }
 
     /// Zooms about the start midpoint by `scale` and pans by the movement of the midpoint.
@@ -101,21 +112,49 @@ struct CameraController {
         precondition(scale > 0 && scale.isFinite, "Pinch scale must be positive, got \(scale)")
         guard var current = pinch else { preconditionFailure("No pinch to update") }
         current.centroid = centroid
+        current.rawZoom = current.startCamera.zoom * scale
         pinch = current
-        let zoom = rubberBand(current.startCamera.zoom * scale)
+        let zoom = rubberBand(current.rawZoom)
         camera = current.startCamera
             .zoomed(to: zoom, anchor: current.startCentroid, viewSize: viewSize)
             .panned(byView: centroid - current.startCentroid)
     }
 
-    /// Ends a pinch. A zoom past a limit springs back to the limit (CARD-06).
-    mutating func endPinch() {
-        guard let current = pinch else { return }
+    /// The raw zoom under which a lift leaves a card (D-104).
+    var exitZoom: Double { zoomRange.lowerBound * Self.exitZoomRatio }
+
+    /// The progress of a pinch-out exit from 0 to 1: 0 at the minimum zoom and 1 where a lift
+    /// leaves the card, measured on the shown zoom (D-109).
+    var exitProgress: Double {
+        let low = rubberBand(exitZoom)
+        let span = zoomRange.lowerBound - low
+        guard camera.zoom < zoomRange.lowerBound, span > 0 else { return 0 }
+        return min(max((zoomRange.lowerBound - camera.zoom) / span, 0), 1)
+    }
+
+    /// The camera of a pinch-out exit at its end: the shown zoom where a lift leaves the card,
+    /// about the midpoint of the fingers.
+    var exitCamera: Camera {
+        let anchor = pinch?.centroid ?? Point(x: viewSize.width / 2, y: viewSize.height / 2)
+        return camera.zoomed(to: rubberBand(exitZoom), anchor: anchor, viewSize: viewSize)
+    }
+
+    /// Ends a pinch. Inside a card (`canLeave`), a lift at a raw zoom under the threshold leaves
+    /// the card, and the camera stays for the minimize animation (CARD-05, D-104). Otherwise, a
+    /// zoom past a limit springs back to the limit (CARD-06).
+    ///
+    /// - Returns: `true` if the lift leaves the card.
+    mutating func endPinch(canLeave: Bool = false) -> Bool {
+        guard let current = pinch else { return false }
         pinch = nil
+        if canLeave, current.rawZoom < exitZoom {
+            return true
+        }
         let target = min(max(camera.zoom, zoomRange.lowerBound), zoomRange.upperBound)
         if target != camera.zoom {
             animation = .spring(targetZoom: target, anchor: current.centroid)
         }
+        return false
     }
 
     /// Advances an animation to `time`.

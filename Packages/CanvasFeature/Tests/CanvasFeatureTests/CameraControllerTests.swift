@@ -1,4 +1,5 @@
 import Geometry
+import Model
 import Testing
 
 @testable import CanvasFeature
@@ -45,7 +46,7 @@ struct CameraControllerTests {
         subject.updatePinch(scale: 0.5, centroid: Point(x: 500, y: 400))
         #expect(subject.camera.zoom < 0.25)
         #expect(subject.camera.zoom > 0.125)
-        subject.endPinch()
+        _ = subject.endPinch()
         #expect(subject.isAnimating)
         var time = 0.0
         for _ in 0..<200 where subject.step(to: time) {
@@ -150,5 +151,65 @@ struct CameraFlightTests {
         let camera = CameraController.camera(of: half)
         #expect(camera.zoom > Self.start.zoom && camera.zoom < Self.cover.zoom)
         #expect(camera.center.x > Self.start.center.x && camera.center.x < Self.cover.center.x)
+    }
+}
+
+@Suite("Pinch-out exit")
+struct PinchExitTests {
+    private static let viewSize = Size(width: 400, height: 300)
+    private static let center = Point(x: 200, y: 150)
+
+    /// Pinches from `zoom` until the raw zoom is `factor` times the exit zoom, and lifts.
+    private static func lift(from zoom: Double, at factor: Double, canLeave: Bool) -> Bool {
+        var controller = CameraController(
+            camera: Camera(center: .zero, zoom: zoom),
+            viewSize: viewSize
+        )
+        controller.beginPinch(centroid: center)
+        let raw = controller.exitZoom * factor
+        controller.updatePinch(scale: raw / zoom, centroid: center)
+        return controller.endPinch(canLeave: canLeave)
+    }
+
+    @Test(
+        "A lift just under the threshold leaves the card, and just over it springs back (D-104)",
+        arguments: [Limits.minZoom, Limits.standardZoom]
+    )
+    func threshold(zoom: Double) {
+        #expect(Self.lift(from: zoom, at: 0.99, canLeave: true))
+        #expect(!Self.lift(from: zoom, at: 1.01, canLeave: true))
+    }
+
+    @Test("On the root canvas, a lift under the threshold springs back (CARD-06)")
+    func root() {
+        var controller = CameraController(
+            camera: Camera(center: .zero, zoom: Limits.minZoom),
+            viewSize: Self.viewSize
+        )
+        controller.beginPinch(centroid: Self.center)
+        controller.updatePinch(scale: 0.1, centroid: Self.center)
+        let leaves = controller.endPinch(canLeave: false)
+        #expect(!leaves)
+        #expect(controller.isAnimating)
+        var time = 1.0
+        for _ in 0..<1_000 where controller.step(to: time) { time += 1.0 / 120 }
+        #expect(controller.camera.zoom == Limits.minZoom)
+    }
+
+    @Test("The exit progress is 0 at the minimum zoom and 1 at the threshold")
+    func progress() {
+        var controller = CameraController(
+            camera: Camera(center: .zero, zoom: Limits.minZoom),
+            viewSize: Self.viewSize
+        )
+        #expect(controller.exitProgress == 0)
+        controller.beginPinch(centroid: Self.center)
+        controller.updatePinch(scale: CameraController.exitZoomRatio, centroid: Self.center)
+        #expect(abs(controller.exitProgress - 1) < 1e-9)
+        controller.updatePinch(scale: 0.8, centroid: Self.center)
+        #expect(controller.exitProgress > 0 && controller.exitProgress < 1)
+        #expect(
+            abs(controller.exitCamera.zoom - controller.rubberBand(controller.exitZoom)) < 1e-12
+        )
     }
 }

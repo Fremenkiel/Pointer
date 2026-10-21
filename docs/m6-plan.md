@@ -406,6 +406,8 @@ Done when: tests of `CameraController` cover a lift just under and just over the
 
 Rules: CARD-05, CARD-06, DOC-03, D-104.
 
+Status: items 1 to 4 done on 2026-10-21. Item 5, the tune with the product owner, waits for the manual session. `CameraController` keeps the raw zoom of the fingers, and `endPinch(canLeave:)` leaves a card at a lift under `exitZoomRatio` (0.6) times `minZoom`. Below `minZoom`, the progress of the exit comes from the shown zoom, and the child renderer draws one pinch pass: the frozen parent at the weight of the progress through a camera between the cover camera and the camera of CARD-04, and the child image inside its shrinking card. At the end of an open, the parent renderer hands its frozen copy to the child renderer (`RenderEngine+ParentImage+Unsafe.swift`, SAFE-09). Without a frozen copy or a known card, for example after a launch into a child, the card shrinks toward the screen center over the canvas color. A lift under the threshold flies the camera to the end of the exit, the parent loads below at the camera of CARD-04, and the child fades out over 0.1 s, which crossfades its image into the preview. The crossfade thus runs at the end of the shrink, not during it. The snapshot `pinch-exit-middle` matches its reference from the iPad. A full run of `PointerDeviceTests` passed 284 of 284 tests.
+
 #### 4.8 Preview write
 
 1. At each leave event of D-111, the canvas asks its renderer for the preview of task 3.4.

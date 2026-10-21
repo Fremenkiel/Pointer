@@ -68,6 +68,8 @@ public final class CanvasViewController: UIViewController {
     let onOpenCard: @MainActor (Card) -> Void
     /// The open or the leave of a card that runs on this canvas, or `nil` (D-98).
     var cardTransition: CardTransition?
+    /// The card of this canvas in its parent and the leave by a pinch (CARD-05).
+    let parentLink: ParentLink
 
     /// Makes the canvas screen.
     ///
@@ -93,6 +95,7 @@ public final class CanvasViewController: UIViewController {
         onMessage = dependencies.onMessage
         level = dependencies.level
         onOpenCard = dependencies.onOpenCard
+        parentLink = ParentLink(card: dependencies.parentCard, onLeave: dependencies.onPinchLeave)
         cameraController = CameraController(camera: renderer.camera, viewSize: .zero)
         let converter = PencilKitStrokeConverter(
             clock: dependencies.clock,
@@ -296,11 +299,12 @@ public final class CanvasViewController: UIViewController {
         case .changed where recognizer.numberOfTouches >= 2 && recognizer.scale > 0:
             cameraController.updatePinch(scale: recognizer.scale, centroid: centroid)
         case .ended, .cancelled, .failed:
-            cameraController.endPinch()
+            if cameraController.endPinch(canLeave: level > 0) { startPinchLeave() }
         default:
             return
         }
         applyCamera()
+        updatePinchExit()
         cameraMayRest()
     }
 
@@ -308,6 +312,7 @@ public final class CanvasViewController: UIViewController {
         let isAnimating = cameraController.step(to: time)
         applyCamera()
         stepCardTransition()
+        updatePinchExit()
         if !isAnimating { cameraMayRest() }
         return isAnimating
     }

@@ -25,6 +25,10 @@ public struct CanvasDependencies {
     public var onMessage: @MainActor (String) -> Void = { _ in }
     /// Opens a card after a double tap on it (CARD-03, D-09).
     public var onOpenCard: @MainActor (Card) -> Void = { _ in }
+    /// The card of this canvas in its parent, for the pinch-out exit, or `nil` (CARD-05).
+    public var parentCard: Card?
+    /// Leaves this canvas for its parent after a pinch-out exit (CARD-05).
+    public var onPinchLeave: @MainActor () -> Void = {}
     /// The level of the canvas in the card tree: 0 for the root canvas (D-95).
     ///
     /// - Precondition: From 0 to `Limits.maxDepth`.

@@ -12,6 +12,8 @@ struct CardTransition {
         case leave
         /// The child flies to the camera of its open before a leave. No weight changes.
         case settle
+        /// The child flies to the end of a pinch-out exit after the lift (CARD-05).
+        case exit
     }
 
     /// What the flight does.

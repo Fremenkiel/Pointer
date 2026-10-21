@@ -36,18 +36,27 @@ extension AppComposition {
             self?.finishOpen()
         }
         loadTask?.cancel()
-        loadTask = Task { await loadChild(of: opening, parent: parent) }
+        loadTask = Task { await loadChild(of: opening, card: card, parent: parent) }
     }
 
     /// Loads the child of an open above the parent at opacity 0 and waits for its first frame.
-    private func loadChild(of opening: CardOpening, parent: CanvasViewController) async {
+    private func loadChild(
+        of opening: CardOpening,
+        card: Card,
+        parent: CanvasViewController
+    ) async {
         guard let repository else { return }
         let target = opening.target
         do {
             onLoadStarted?(target.currentCanvas)
             let content = try await repository.content(of: target.currentCanvas)
             guard !Task.isCancelled,
-                let canvas = try makeCanvas(target, content: content, camera: content.openCamera)
+                let canvas = try makeCanvas(
+                    target,
+                    content: content,
+                    camera: content.openCamera,
+                    parentCard: card
+                )
             else { return }
             container.showAbove(canvas)
             try await CardOpening.waitForFirstFrame(of: canvas)
@@ -67,6 +76,8 @@ extension AppComposition {
     private func finishOpen() {
         guard let opening, opening.isFlightDone, let canvas = opening.canvas else { return }
         self.opening = nil
+        // The child keeps the frozen copy of the parent for its pinch-out exit (D-109).
+        container.canvas?.giveParentImage(to: canvas)
         let level = opening.target.level
         let showChrome: @MainActor () -> Void = { [weak self] in
             self?.container.showUpButton(level > 0 ? { [weak self] in self?.leave() } : nil)
@@ -96,8 +107,23 @@ extension AppComposition {
         loadTask = Task { await loadParent(of: leaving, card: card, child: child) }
     }
 
+    /// Leaves the current card after a pinch-out exit (CARD-05): the child already shrank into
+    /// its card, so the parent loads below it at the camera of CARD-04, and the child fades out,
+    /// which crossfades its image into the preview of the card.
+    func leaveByPinch() {
+        guard let path, let child = container.canvas, let card = path.cards.last, opening == nil
+        else { return }
+        let leaving = CardOpening(target: path.popping())
+        leaving.isFlightDone = true
+        leaving.isPinch = true
+        opening = leaving
+        loadTask?.cancel()
+        loadTask = Task { await loadParent(of: leaving, card: card, child: child) }
+    }
+
     /// Loads the parent of a leave below the child, at the camera where the card covers the
-    /// screen, with the parent at weight 0, and waits for its first frame.
+    /// screen with the parent at weight 0, or at the camera of CARD-04 after a pinch-out exit,
+    /// and waits for its first frame.
     private func loadParent(
         of leaving: CardOpening,
         card: CardID,
@@ -112,12 +138,15 @@ extension AppComposition {
                 content.cards[card]?.frame ?? Rect(origin: .zero, size: Size(width: 1, height: 1))
             let bounds = container.view.bounds
             let screen = Size(width: bounds.width, height: bounds.height)
-            let cover = CanvasViewController.coverCamera(of: frame, viewSize: screen)
+            let start =
+                leaving.isPinch
+                ? Camera(center: frame.center, zoom: Limits.standardZoom)
+                : CanvasViewController.coverCamera(of: frame, viewSize: screen)
             guard !Task.isCancelled,
-                let canvas = try makeCanvas(target, content: content, camera: cover),
+                let canvas = try makeCanvas(target, content: content, camera: start),
                 let parentCard = content.cards[card]
             else { return }
-            canvas.holdLeave(into: parentCard)
+            if !leaving.isPinch { canvas.holdLeave(into: parentCard) }
             leaving.card = parentCard
             container.showBelow(canvas)
             try await CardOpening.waitForFirstFrame(of: canvas)
@@ -140,9 +169,10 @@ extension AppComposition {
         else { return }
         opening = nil
         let level = leaving.target.level
+        let isPinch = leaving.isPinch
         let runLeave: @MainActor () -> Void = { [weak self] in
             self?.container.showUpButton(level > 0 ? { [weak self] in self?.leave() } : nil)
-            parent.runLeave(into: parentCard) {}
+            if !isPinch { parent.runLeave(into: parentCard) {} }
         }
         container.fadeOut(
             to: parent,
@@ -189,7 +219,8 @@ extension AppComposition {
     func makeCanvas(
         _ target: NavigationPath,
         content: CanvasContent,
-        camera: Camera?
+        camera: Camera?,
+        parentCard: Card? = nil
     ) throws -> CanvasViewController? {
         guard let repository, let clock else { return nil }
         precondition(content.canvasID == target.currentCanvas, "The content of the path")
@@ -217,6 +248,8 @@ extension AppComposition {
         dependencies.onMessage = { [weak self] text in self?.container.showMessage(text) }
         dependencies.level = target.level
         dependencies.onOpenCard = { [weak self] card in self?.openChild(card) }
+        dependencies.parentCard = parentCard
+        dependencies.onPinchLeave = { [weak self] in self?.leaveByPinch() }
         container.canvas?.endSession()
         let canvas = CanvasViewController(dependencies: dependencies)
         canvas.isEditingEnabled = !isReadOnly && !areSavesFailing

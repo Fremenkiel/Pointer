@@ -110,6 +110,39 @@ struct TransitionUniforms {
     var hasSource: Float
 }
 
+/// The values of one frame of a pinch-out exit (D-109). The layout matches `PinchUniforms` in
+/// Shaders.metal.
+struct PinchUniforms {
+    /// The canvas color in sRGB, with alpha 1 (D-106).
+    var background: SIMD4<Float>
+    /// The shrinking card: min x, min y, max x, max y, in drawable pixels.
+    var cardRect: SIMD4<Float>
+    /// The factor from a drawable pixel to a pixel of the frozen parent.
+    var parentScale: SIMD2<Float>
+    /// The offset from a drawable pixel to a pixel of the frozen parent.
+    var parentOffset: SIMD2<Float>
+    /// The size of the frozen parent, in pixels.
+    var parentSize: SIMD2<Float>
+    /// The factor from a child screen pixel to a pixel of its committed texture.
+    var childScale: SIMD2<Float>
+    /// The offset from a child screen pixel to a pixel of its committed texture.
+    var childOffset: SIMD2<Float>
+    /// The size of the committed texture, in pixels.
+    var childSize: SIMD2<Float>
+    /// The center of the drawable, in pixels.
+    var screenCenter: SIMD2<Float>
+    /// The weight of the parent image, from 0 to 1.
+    var parentWeight: Float
+    /// The coverage of the card border (D-96).
+    var borderCoverage: Float
+    /// Half the width of the border, in pixels.
+    var borderHalfWidth: Float
+    /// The corner radius of the card, in pixels.
+    var cornerRadius: Float
+    /// The width of the card over its width at the start of the exit.
+    var shrink: Float
+}
+
 /// One eraser stamp in mask pixels. The layout matches `EraserStamp` in Shaders.metal.
 struct EraserStamp {
     /// The pixel position of the earlier sample.

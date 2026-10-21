@@ -36,6 +36,10 @@ struct RenderInbox {
     var transitionWeight: Double?
     /// `true` after the end of a transition that no frame took yet.
     var endsTransition = false
+    /// The newest state of a pinch-out exit, or `nil` without a change (CARD-05).
+    var pinchExit: PinchExit?
+    /// `true` after the end of a pinch-out exit that no frame took yet.
+    var endsPinchExit = false
     /// The edits of handoffs, erases, undo steps, and redo steps, in order.
     var edits: [RenderEdit] = []
     /// The number of the newest handoff in `edits`, or 0.
@@ -75,7 +79,8 @@ struct RenderInbox {
             || !laidOutText.isEmpty || !textEdits.isEmpty
             || !laidOutCards.isEmpty || !cardEdits.isEmpty || !decodedPreviews.isEmpty
             || previewRender != nil || transitionStart != nil || transitionWeight != nil
-            || endsTransition || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
+            || endsTransition || pinchExit != nil || endsPinchExit || !eraserSamples.isEmpty
+            || endsEraser || eraserReady != nil
     }
 
     /// Moves the waiting changes out. The camera stays as the newest value.
@@ -97,6 +102,8 @@ struct RenderInbox {
             transitionStart: transitionStart,
             transitionWeight: transitionWeight,
             endsTransition: endsTransition,
+            pinchExit: pinchExit,
+            endsPinchExit: endsPinchExit,
             edits: edits,
             editHandoff: editHandoff,
             editsWantCompletion: editsWantCompletion,
@@ -132,6 +139,8 @@ struct RenderInbox {
         transitionStart = nil
         transitionWeight = nil
         endsTransition = false
+        pinchExit = nil
+        endsPinchExit = false
         edits = []
         editHandoff = 0
         editsWantCompletion = false

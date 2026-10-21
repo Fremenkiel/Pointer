@@ -14,6 +14,9 @@ final class CardOpening {
     let target: NavigationPath
     /// `true` after the flight of the shown screen ended.
     var isFlightDone = false
+    /// `true` for a leave after a pinch-out exit: the child already shrank into its card, so the
+    /// parent shows at the camera of CARD-04 at once (CARD-05).
+    var isPinch = false
     /// The card of a leave in the parent canvas, after the load of the parent.
     var card: Card?
     /// The new screen after its first frame, or `nil`.

@@ -63,6 +63,25 @@ struct TransitionUniforms {
     float hasSource;      // 1 if a parent image exists
 };
 
+// The values of one frame of a pinch-out exit (D-109). The layout matches `PinchUniforms` in
+// ShaderTypes.swift: two float4, seven float2, and five float, 112 bytes with the padding.
+struct PinchUniforms {
+    float4 background;    // canvas color in sRGB, alpha 1 (D-106)
+    float4 cardRect;      // the shrinking card: min x, min y, max x, max y, drawable pixels
+    float2 parentScale;   // drawable pixel to frozen parent pixel
+    float2 parentOffset;
+    float2 parentSize;    // frozen parent, pixels
+    float2 childScale;    // child screen pixel to committed texture pixel
+    float2 childOffset;
+    float2 childSize;     // committed texture, pixels
+    float2 screenCenter;  // drawable pixels
+    float parentWeight;   // the weight of the parent image, 0 to 1
+    float borderCoverage; // the gray of the card border
+    float borderHalfWidth;// pixels
+    float cornerRadius;   // pixels
+    float shrink;         // the card width over its width at the start of the exit
+};
+
 // One eraser stamp: a capsule from one sample to the next, in mask pixels (D-66). 32 bytes.
 struct EraserStamp {
     float2 start;
@@ -381,4 +400,31 @@ fragment float4 transitionFragment(CompositeVertexOut in [[stage_in]],
         card = max(card, atlas.sample(linearSampler, uv).r);
     }
     return float4(mix(u.background.rgb, float3(1.0), max(parent, card)), 1.0);
+}
+
+// A frame of a pinch-out exit: the frozen parent with its weight, and the child image inside the
+// shrinking card with its border (CARD-05, D-109). A one-pixel parent with weight 0 shows the
+// canvas color.
+fragment float4 pinchFragment(CompositeVertexOut in [[stage_in]],
+                              texture2d<float> parent [[texture(0)]],
+                              texture2d<float> child [[texture(1)]],
+                              constant PinchUniforms &u [[buffer(0)]]) {
+    constexpr sampler linearSampler(address::clamp_to_zero, filter::linear);
+    float2 p = in.position.xy;
+    float2 parentTexel = (p * u.parentScale + u.parentOffset) / u.parentSize;
+    float value = parent.sample(linearSampler, parentTexel).r * u.parentWeight;
+    float2 low = u.cardRect.xy;
+    float2 high = u.cardRect.zw;
+    float2 halfSize = (high - low) * 0.5;
+    float2 center = low + halfSize;
+    float radius = min(u.cornerRadius, min(halfSize.x, halfSize.y));
+    float2 q = abs(p - center) - (halfSize - radius);
+    float distance = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
+    if (distance < 0.0) {
+        float2 screen = u.screenCenter + (p - center) / max(u.shrink, 1e-4);
+        float2 coverage = child.sample(linearSampler, (screen * u.childScale + u.childOffset) / u.childSize).rg;
+        value = max(coverage.r, coverage.g);
+    }
+    float border = clamp(u.borderHalfWidth + 0.5 - abs(distance), 0.0, 1.0) * u.borderCoverage;
+    return float4(mix(u.background.rgb, float3(1.0), max(value, border)), 1.0);
 }

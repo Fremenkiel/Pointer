@@ -129,4 +129,32 @@ struct TransitionTests {
         #expect(Snapshot.differingPixels(end, after) <= Self.limit(), "The end is the parent")
         #expect(parentImage.gray(x: 20, y: 180) == after.gray(x: 20, y: 180), "The ink stays")
     }
+
+    @Test("A pinch-out exit shrinks the child into its card over the frozen parent (D-109)")
+    func pinchExit() async throws {
+        let parent = try await parent()
+        let (renderer, layer, card) = (parent.renderer, parent.layer, parent.card)
+        renderer.beginOpen(of: card.id)
+        _ = try capture(renderer, layer: layer)
+        let child = try CanvasRenderer()
+        let childLayer = makeLayer(renderer: child)
+        let line = (0...30).map { Point(x: -60 + Double($0) * 4, y: Double($0 % 5) * 8) }
+        child.load([StrokeBuilder.stroke(line, seed: 4)])
+        for _ in 0..<100 where child.renderFrame(into: childLayer, deadline: nil) {}
+        renderer.giveParentImage(to: child)
+        let hasImage = child.engine.withRenderer { ($0.parentImage?.texture.width ?? 0) > 0 }
+        #expect(hasImage, "The child keeps the frozen copy of the parent")
+        var exit = PinchExit(
+            card: Self.frame,
+            cover: Self.cover,
+            leave: Camera(center: Self.frame.center, zoom: 1)
+        )
+        exit.progress = 0.5
+        child.showPinchExit(exit)
+        let image = try capture(child, layer: childLayer)
+        Snapshot.assertMatches(image, named: "pinch-exit-middle")
+        child.endPinchExit()
+        let after = try capture(child, layer: childLayer)
+        #expect(after.gray(x: 20, y: 20) < 8, "The child shows alone after the exit ends")
+    }
 }

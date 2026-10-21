@@ -33,6 +33,10 @@ final class FrameRenderer {
     var previewRenderer: PreviewRenderer?
     /// The open or the leave of a card that runs, or `nil` (D-98).
     var transition: FrameTransition?
+    /// The frozen copy of the parent frame that a child keeps after its open (D-109).
+    var parentImage: InkTarget?
+    /// The pinch-out exit that runs, or `nil` (CARD-05).
+    var pinchExit: PinchExit?
     private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     /// The committed layer, or `nil` before the first frame with a drawable size.

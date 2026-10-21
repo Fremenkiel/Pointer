@@ -38,6 +38,30 @@ extension CanvasRenderer {
         engine.post { box in box.transitionWeight = weight }
     }
 
+    /// Shows or moves a pinch-out exit of this child canvas (CARD-05, D-109): the child shrinks
+    /// into its card frame over the frozen image of its parent, by the progress of `exit`.
+    public func showPinchExit(_ exit: PinchExit) {
+        precondition((0...1).contains(exit.progress), "A progress is from 0 to 1")
+        engine.post { box in
+            box.pinchExit = exit
+            box.endsPinchExit = false
+        }
+    }
+
+    /// Ends a pinch-out exit: the child shows as before.
+    public func endPinchExit() {
+        engine.post { box in
+            box.pinchExit = nil
+            box.endsPinchExit = true
+        }
+    }
+
+    /// Gives the frozen copy of this parent to the renderer of its child at the end of an open,
+    /// for the pinch-out exit of the child (D-109).
+    public func giveParentImage(to child: CanvasRenderer) {
+        engine.giveParentImage(to: child.engine)
+    }
+
     /// Ends the transition. A renderer whose committed textures went makes new ones.
     public func endTransition() {
         engine.post { box in box.endsTransition = true }

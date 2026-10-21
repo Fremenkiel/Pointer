@@ -19,6 +19,10 @@ extension FrameRenderer {
             encodeTransition(source: layer.shown, commandBuffer: commandBuffer, texture: texture)
             return
         }
+        if let exit = pinchExit {
+            encodePinch(exit, layer: layer, commandBuffer: commandBuffer, texture: texture)
+            return
+        }
         let pass = compositePass
         pass.colorAttachments[0].texture = texture
         let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass)

@@ -33,6 +33,10 @@ struct RenderInput: Sendable {
     let transitionWeight: Double?
     /// `true` if the transition ends.
     let endsTransition: Bool
+    /// The new state of a pinch-out exit, or `nil` (CARD-05).
+    let pinchExit: PinchExit?
+    /// `true` if the pinch-out exit ends.
+    let endsPinchExit: Bool
     /// The edits, in order.
     let edits: [RenderEdit]
     /// The newest handoff of `edits`, or 0.
@@ -56,7 +60,8 @@ struct RenderInput: Sendable {
             || !laidOutText.isEmpty || !textEdits.isEmpty
             || !laidOutCards.isEmpty || !cardEdits.isEmpty || !decodedPreviews.isEmpty
             || previewRender != nil || transitionStart != nil || transitionWeight != nil
-            || endsTransition || eraserStart != nil || !eraserSamples.isEmpty || endsEraser
+            || endsTransition || pinchExit != nil || endsPinchExit || eraserStart != nil
+            || !eraserSamples.isEmpty || endsEraser
             || eraserReady != nil
     }
 }

@@ -19,6 +19,8 @@ extension RenderEngine {
         if let weight = input.transitionWeight {
             renderer.transition?.parentWeight = weight
         }
+        if input.endsPinchExit { renderer.pinchExit = nil }
+        if let exit = input.pinchExit { renderer.pinchExit = exit }
         assert(
             renderer.transition.map { (0...1).contains($0.parentWeight) } ?? true,
             "A parent weight is from 0 to 1"
