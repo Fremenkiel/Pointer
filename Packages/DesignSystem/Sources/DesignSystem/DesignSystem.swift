@@ -5,9 +5,9 @@ import UIKit
 public enum DesignSystem {
     /// The color tokens.
     public enum Color {
-        /// The background of every canvas in sRGB, each channel from 0 to 1: RGB(41, 44, 51),
+        /// The background of every canvas in sRGB, each channel from 0 to 1: RGB(24, 24, 24),
         /// with no paper texture (CAN-01, PEN-06, D-106). The renderer takes these values.
-        public static let canvasBackgroundSRGB = SIMD3<Float>(41, 44, 51) / 255
+        public static let canvasBackgroundSRGB = SIMD3<Float>(repeating: 24) / 255
         /// The background of every canvas as a color for the views (CAN-01, D-106).
         public static let canvasBackground = UIColor(
             red: CGFloat(canvasBackgroundSRGB.x),
@@ -17,8 +17,8 @@ public enum DesignSystem {
         )
         /// The text and the icons of the controls on top of the canvas.
         public static let chromeForeground = SwiftUI.Color.white
-        /// The background of the controls on top of the canvas: a dark gray. It is darker than the
-        /// canvas color of D-106.
+        /// The background of the controls on top of the canvas: a dark gray, a little brighter than
+        /// the canvas color of D-106.
         public static let chromeBackground = SwiftUI.Color(white: 0.14)
         /// The background of the selected row in a list of the chrome.
         public static let chromeSelection = SwiftUI.Color(white: 0.26)

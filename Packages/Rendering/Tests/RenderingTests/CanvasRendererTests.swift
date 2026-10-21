@@ -141,7 +141,7 @@ struct CanvasRendererTests {
         #expect(uniforms.background == SIMD4(Self.background, 1))
     }
 
-    /// The canvas color of CAN-01 in sRGB (D-106).
+    /// A background with three different channels, so that a swapped channel shows (D-106).
     private static let background = SIMD3<Float>(41, 44, 51) / 255
 
     /// Returns a layer of 400 x 240 pixels with a complete, empty build for `camera`.

@@ -4,7 +4,7 @@ This file is the entry point for AI agents that work on Pointer. Read it before 
 
 ## Project summary
 
-Pointer is a native iPad app for developer notes and data-structure sketches. It has a dark gray canvas (RGB 41, 44, 51) with no edges, a white pen, text boxes, and an eraser. Cards on a canvas open into their own canvas, so the canvases form a tree. All data stays on the device.
+Pointer is a native iPad app for developer notes and data-structure sketches. It has a dark gray canvas (RGB 24, 24, 24) with no edges, a white pen, text boxes, and an eraser. Cards on a canvas open into their own canvas, so the canvases form a tree. All data stays on the device.
 
 ## Required reading
 

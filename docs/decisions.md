@@ -113,7 +113,7 @@ Status values: Open, Decided, Replaced.
 | D-103 | The card commands and the node commands | `AddCard`, `RenameCard`, and a node value in `MoveNode` and `DeleteNode` | Decided (2026-10-21) |
 | D-104 | Threshold of the pinch-out exit (CARD-05) | Test the threshold on the zoom of the fingers, start value 0.6 | Decided (2026-10-21) |
 | D-105 | When the GPU glyph buffers of D-94 come | After M6, in M10 | Decided (2026-10-21) |
-| D-106 | Color of the canvas | RGB(41, 44, 51), `#292C33`, instead of black | Decided (2026-10-21) |
+| D-106 | Color of the canvas | RGB(24, 24, 24), `#181818`, instead of black | Decided (2026-10-21) |
 
 ## Details
 
@@ -1128,11 +1128,11 @@ Status values: Open, Decided, Replaced.
 
 ### D-106 Color of the canvas
 
-- Decided by the product owner on 2026-10-21: the canvas background is RGB(41, 44, 51), `#292C33`, instead of black. CAN-01 changes.
+- Decided by the product owner on 2026-10-21: the canvas background is RGB(24, 24, 24), `#181818`, instead of black. CAN-01 changes. The first choice of the same day, RGB(41, 44, 51), was too bright on the iPad.
 - The ink and the text stay white. The PDF of EXP-03 stays white with black ink and text (D-13).
 - The composite pass mixes the background and white with the coverage as weight: `background + (1 - background) * coverage`. It mixes the sRGB values that the drawable stores, as Core Animation does when it puts the live `PKCanvasView` on top. Full coverage stays 255 in each channel (D-38).
 - `DesignSystem.Color.canvasBackground` holds the color. `RendererConfiguration.background` takes it from the app, so `Rendering` needs no `DesignSystem` import. The default of the configuration stays black, so the coverage tests and their reference images do not change. A pixel test covers the new background.
-- The chrome background is gray 0.14 (RGB 36, 36, 36), darker than the new canvas and close to it. The token comment said that it "stands out from the black canvas". This decision does not change the chrome.
+- The chrome background is gray 0.14 (RGB 36, 36, 36), a little brighter than the canvas. This decision does not change the chrome.
 
 ## Points in the request that conflict or are not complete
 

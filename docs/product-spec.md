@@ -28,7 +28,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 
 ### 3.1 Canvas
 
-- CAN-01: The canvas background is dark gray, RGB(41, 44, 51) (`#292C33`) (D-106).
+- CAN-01: The canvas background is dark gray, RGB(24, 24, 24) (`#181818`) (D-106).
 - CAN-02: The canvas has no edges. You can pan in every direction without a limit that you can feel.
 - CAN-03: You pan with one finger and zoom with two fingers. The pencil never pans.
 - CAN-04: The zoom has a minimum and a maximum. The start values are 0.25 and 8.0. The standard zoom is 1.0.

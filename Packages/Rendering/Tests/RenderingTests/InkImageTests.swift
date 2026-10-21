@@ -57,9 +57,10 @@ struct InkImageTests {
         #expect(Array(image.pixels[base..<base + 3]) == [255, 255, 255])
     }
 
-    @Test("Ink is white on the canvas color, and an edge mixes both by its coverage (D-106)")
+    @Test("Ink is white on the background, and an edge mixes both by its coverage (D-106)")
     func canvasColor() throws {
         var configuration = RendererConfiguration()
+        // Three different channels, so that a swapped channel shows.
         configuration.background = SIMD3<Float>(41, 44, 51) / 255
         let renderer = try CanvasRenderer(configuration: configuration)
         let line = StrokeBuilder.stroke([Point(x: 0, y: 0), Point(x: 40, y: 0)], width: 4)

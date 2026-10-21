@@ -8,10 +8,10 @@ import UIKit
 @MainActor
 @Suite("Canvas color")
 struct CanvasColorTests {
-    /// RGB(41, 44, 51) of CAN-01.
-    private static let expected = [41, 44, 51]
+    /// RGB(24, 24, 24) of CAN-01.
+    private static let expected = [24, 24, 24]
 
-    @Test("The renderer of the app and the root view use RGB(41, 44, 51)")
+    @Test("The renderer of the app and the root view use RGB(24, 24, 24)")
     func canvasColor() throws {
         let defaults = try #require(UserDefaults(suiteName: "CanvasColorTests-\(UUID())"))
         let background = CanvasComposition.rendererConfiguration(defaults).background
