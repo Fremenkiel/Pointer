@@ -272,6 +272,8 @@ Done when:
 
 Rules: PERF-01, PERF-02, TEST-07, D-97, D-107.
 
+Status: items 1 to 5 done on 2026-10-21 in commit 458879b. Item 6 needs the offscreen render of task 3.4 and follows it. Until then, a card without a valid file shows its border and title only. The atlas is 2,048 by 4,096 pixels. A preview quad samples its slot with the glyph pipeline, so it counts against the glyph buffer, as the border does. `Rendering` reaches the files through the protocol `PreviewSource`, which the app implements with `PreviewStore`. The loader is one long-lived task per renderer, and the upload is one blit per frame from a reused staging buffer of 256 KB. A card pass with 10 cached previews made 2 allocations against 2 of a bare pass with the same draws. The snapshot `card-preview` matches its reference from the iPad. The preview fills the frame of the card, so its square corners pass a little outside the rounded border. A full run of `PointerDeviceTests` passed 239 tests: the open of D-56 took 253.0 ms (median) and 351 MB. The zoom over the D-56 text had 2 late frames of 477 (D-94).
+
 #### 3.4 Preview render at a leave
 
 1. Add `CanvasRenderer.renderPreview(camera:cardAspect:size:completion:)`. It draws the child region of the open camera, cut to the aspect of the card (D-98), into the target of section 4, rule 6. Cards of the child show as frames and titles without their previews (architecture.md section 5.5).
