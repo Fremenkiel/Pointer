@@ -11,7 +11,7 @@ public struct CanvasContent: Sendable {
     /// The erase records of the current session by stroke ID.
     public private(set) var erased: [StrokeID: EraseRecord] = [:]
     /// The live cards by ID.
-    public private(set) var cards: [CardID: Card] = [:]
+    public internal(set) var cards: [CardID: Card] = [:]
     /// The live text boxes by ID.
     public private(set) var textBoxes: [TextBoxID: TextBox] = [:]
 

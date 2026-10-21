@@ -12,6 +12,10 @@ public enum CommandError: Error, Equatable, Sendable {
     case textBoxNotLive(TextBoxID)
     /// The command adds a text box that the content already holds as a live box.
     case textBoxAlreadyLive(TextBoxID)
-    /// The command adds a text box to a canvas that holds `Limits.maxNodesPerCanvas` nodes.
+    /// The command needs a live card that the content does not hold.
+    case cardNotLive(CardID)
+    /// The command adds a card that the content already holds as a live card.
+    case cardAlreadyLive(CardID)
+    /// The command adds a node to a canvas that holds `Limits.maxNodesPerCanvas` nodes.
     case nodeLimitReached
 }
