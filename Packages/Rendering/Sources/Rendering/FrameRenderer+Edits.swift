@@ -33,6 +33,54 @@ extension FrameRenderer {
         }
     }
 
+    /// Adds the laid-out boxes of a load and redraws the text of their area (D-92). A box that an
+    /// edit changed during the load keeps the edit.
+    func insert(_ loaded: [TextStore.LaidOut]) {
+        precondition(loaded.count <= Limits.maxNodesPerCanvas, "Too many text boxes")
+        for item in loaded where !textEditedDuringLoad.contains(item.box.id) {
+            texts.insert(item.box, layout: item.layout)
+            guard let bounds = texts.entries[item.box.id]?.bounds else { continue }
+            dirtyTextArea = dirtyTextArea.map { Self.union($0, bounds) } ?? bounds
+        }
+        assert(texts.count <= Limits.maxNodesPerCanvas, "The store holds at most the node limit")
+    }
+
+    /// Applies one text edit: it changes the text store and notes the old and the new bounds
+    /// for a text redraw in the next frame (D-82).
+    func apply(_ edit: TextEdit) {
+        precondition(
+            edit.removed.count + edit.added.count <= Limits.maxNodesPerCanvas,
+            "Too many text boxes in one edit"
+        )
+        if textLoadsInFlight > 0 {
+            textEditedDuringLoad.formUnion(edit.removed)
+            textEditedDuringLoad.formUnion(edit.added.map(\.id))
+        }
+        for id in edit.removed {
+            guard let bounds = texts.remove(id) else { continue }
+            dirtyTextArea = dirtyTextArea.map { Self.union($0, bounds) } ?? bounds
+        }
+        for box in edit.added {
+            let earlier = texts.add(box)
+            guard let bounds = texts.entries[box.id]?.bounds else { continue }
+            let area = earlier.map { Self.union($0, bounds) } ?? bounds
+            dirtyTextArea = dirtyTextArea.map { Self.union($0, area) } ?? area
+        }
+        assert(edit.added.allSatisfy { texts.entries[$0.id] != nil }, "Each added box is held")
+    }
+
+    /// Starts the redraw of the text that changed since the last frame, and goes on with a
+    /// running text redraw (D-82).
+    func encodeTextChange(layer: CommittedLayer, context: FrameContext) {
+        precondition(layer.front == nil || layer.drawableWidth > 0, "A layer has a drawable size")
+        if let area = dirtyTextArea {
+            layer.textChanged(area, texts: texts)
+            dirtyTextArea = nil
+        }
+        layer.continueTextRedraw(text: textEncoder, context: context)
+        assert(dirtyTextArea == nil, "The change of the frame is taken")
+    }
+
     /// Applies the eraser input of a frame: a start, new samples in view space, and an end, in
     /// this order. The camera of the frame converts the samples to canvas space.
     func applyEraser(start radius: Double?, samples: [Point], ends: Bool) {

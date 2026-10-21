@@ -14,6 +14,12 @@ public struct RendererConfiguration: Sendable {
     /// The main-thread time in seconds that one frame can spend on a build. The device test of
     /// 2026-10-17 showed late frames at 120 Hz without this limit.
     public var buildTimeBudget: Double
+    /// The byte budget of the glyph atlas: a start value (task 2.2 of docs/m5-plan.md). Tune it
+    /// on a device.
+    public var glyphAtlasByteBudget: Int
+    /// The glyph quads per frame. A text box holds at most `Limits.maxTextLength` glyphs, so a
+    /// frame holds several boxes.
+    public var glyphCapacity: Int
 
     /// Makes a configuration.
     public init(
@@ -21,12 +27,16 @@ public struct RendererConfiguration: Sendable {
         initialArenaSlabs: Int = 64,
         instanceBudgetPerFrame: Int = 125_000,
         drawListCapacity: Int = 32_768,
-        buildTimeBudget: Double = 0.002
+        buildTimeBudget: Double = 0.002,
+        glyphAtlasByteBudget: Int = 16 << 20,
+        glyphCapacity: Int = 65_536
     ) {
         self.arenaByteBudget = arenaByteBudget
         self.initialArenaSlabs = initialArenaSlabs
         self.instanceBudgetPerFrame = instanceBudgetPerFrame
         self.drawListCapacity = drawListCapacity
         self.buildTimeBudget = buildTimeBudget
+        self.glyphAtlasByteBudget = glyphAtlasByteBudget
+        self.glyphCapacity = glyphCapacity
     }
 }

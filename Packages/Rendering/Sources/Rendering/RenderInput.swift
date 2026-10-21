@@ -9,6 +9,12 @@ struct RenderInput: Sendable {
     let viewport: (size: Size, scale: Double)?
     /// Strokes to load.
     let loaded: [Stroke]
+    /// The text boxes of a load with their layouts (D-92).
+    let laidOutText: [TextStore.LaidOut]
+    /// The loads whose layouts still run off the render thread.
+    let textLoadsInFlight: Int
+    /// The changes of the text boxes, in order.
+    let textEdits: [TextEdit]
     /// The edits, in order.
     let edits: [RenderEdit]
     /// The newest handoff of `edits`, or 0.
@@ -29,6 +35,7 @@ struct RenderInput: Sendable {
     /// `true` if the frame has a change to draw.
     var hasChange: Bool {
         camera != nil || viewport != nil || !loaded.isEmpty || !edits.isEmpty
+            || !laidOutText.isEmpty || !textEdits.isEmpty
             || eraserStart != nil || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
     }
 }

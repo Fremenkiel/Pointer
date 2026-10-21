@@ -55,7 +55,7 @@ struct EraserMaskTests {
             deadline: nil,
             drawable: .drawable(drawable)
         )
-        let pixels = try read(drawable.texture, renderer: renderer)
+        let pixels = try DrawableCapture.read(drawable.texture, renderer: renderer)
         let center = (120 * 400 + 200) * 4
         let ink = (120 * 400 + 200 + 2 * 40) * 4
         #expect(pixels[center] < 8, "The ink under the eraser is hidden")
@@ -64,36 +64,6 @@ struct EraserMaskTests {
             RenderedImage(width: 400, height: 240, pixels: pixels),
             named: "eraser-mask"
         )
-    }
-
-    /// Copies a drawable texture on the queue of the renderer, after its frame, and reads it.
-    private func read(_ texture: any MTLTexture, renderer: CanvasRenderer) throws -> [UInt8] {
-        let queue = renderer.engine.withRenderer { $0.resources.queue }
-        let descriptor = MTLTextureDescriptor.texture2DDescriptor(
-            pixelFormat: .bgra8Unorm,
-            width: texture.width,
-            height: texture.height,
-            mipmapped: false
-        )
-        descriptor.storageMode = .shared
-        let copy = try #require(queue.device.makeTexture(descriptor: descriptor))
-        let commandBuffer = try #require(queue.makeCommandBuffer())
-        let blit = try #require(commandBuffer.makeBlitCommandEncoder())
-        blit.copy(from: texture, to: copy)
-        blit.endEncoding()
-        commandBuffer.commit()
-        commandBuffer.waitUntilCompleted()
-        var pixels = [UInt8](repeating: 0, count: copy.width * copy.height * 4)
-        pixels.withUnsafeMutableBytes { bytes in
-            guard let base = bytes.baseAddress else { return }
-            copy.getBytes(
-                base,
-                bytesPerRow: copy.width * 4,
-                from: MTLRegionMake2D(0, 0, copy.width, copy.height),
-                mipmapLevel: 0
-            )
-        }
-        return pixels
     }
 
     @Test("The mask stops at the end of the gesture, and the frame loop can sleep again")

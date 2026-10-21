@@ -39,14 +39,36 @@ final class FrameLoopTests: XCTestCase {
         try run(.zoom, content: content, name: "handwriting 200k zoom")
     }
 
-    private func run(_ motion: FrameLoopMotion, content: [Stroke], name: String) throws {
+    func testPanText() throws {
+        let content = PerformanceContent.dense(count: 20_000, points: 300)
+        let text = try PerformanceContent.textBoxes(count: 5_000)
+        try run(.pan, content: content, text: text, name: "D-56 text pan")
+    }
+
+    func testZoomText() throws {
+        let content = PerformanceContent.dense(count: 20_000, points: 300)
+        let text = try PerformanceContent.textBoxes(count: 5_000)
+        try run(.zoom, content: content, text: text, name: "D-56 text zoom")
+    }
+
+    private func run(
+        _ motion: FrameLoopMotion,
+        content: [Stroke],
+        text: [TextBox] = [],
+        name: String
+    ) throws {
         let window = try hostWindow()
         let view = FrameLoopView(frame: window.bounds)
         window.addSubview(view)
         defer { view.removeFromSuperview() }
         let renderer = try CanvasRenderer()
         renderer.load(content)
+        renderer.load(text)
         try setUp(renderer, view: view)
+        // The text layout runs off the render thread (D-92). The measure starts after it.
+        for _ in 0..<5_000 where renderer.isLoadingText {
+            RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.001))
+        }
         let start = Camera(center: .zero, zoom: Limits.minZoom)
         renderer.camera = start
         let probe = FrameLoopProbe(renderer: renderer, view: view, motion: motion, start: start)

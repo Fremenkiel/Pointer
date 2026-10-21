@@ -14,6 +14,17 @@ final class FrameRenderer {
     let configuration: RendererConfiguration
     let store: StrokeStore
     let encoder: InkEncoder
+    /// The text boxes with their layouts (D-84).
+    let texts = TextStore()
+    /// The text pass with the glyph atlas (D-29).
+    let textEncoder: TextEncoder
+    /// The canvas area of the text boxes changed since the last frame, or `nil` (D-82).
+    var dirtyTextArea: Rect?
+    /// The loads whose layouts run off the render thread (D-92).
+    var textLoadsInFlight = 0
+    /// The boxes that an edit changed while a load ran. The load skips them, because the edit is
+    /// newer.
+    var textEditedDuringLoad: Set<TextBoxID> = []
     private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     /// The committed layer, or `nil` before the first frame with a drawable size.
@@ -87,6 +98,12 @@ final class FrameRenderer {
         store = StrokeStore(arena: arena)
         let ring = try DrawListRing(device: device, capacity: configuration.drawListCapacity)
         encoder = InkEncoder(resources: resources, store: store, ring: ring)
+        textEncoder = TextEncoder(
+            resources: resources,
+            store: texts,
+            atlas: GlyphAtlas(device: device, byteBudget: configuration.glyphAtlasByteBudget),
+            ring: try GlyphRing(device: device, capacity: configuration.glyphCapacity)
+        )
         pendingSlots.reserveCapacity(Self.pendingCapacity)
     }
 
@@ -98,6 +115,7 @@ final class FrameRenderer {
         guard let layer, !needsNewLayer else { return viewSize.width > 0 && viewSize.height > 0 }
         return layer.isBuilding || layer.isSettling || layer.isRedrawing || !pendingSlots.isEmpty
             || waitingHandoff > 0 || dirtyArea != nil || eraserMask.hasNewSamples
+            || layer.isRedrawingText || dirtyTextArea != nil
     }
 
     /// Sets the size of the view and the display scale. A change rebuilds the committed layer.
@@ -205,6 +223,8 @@ final class FrameRenderer {
     }
 
     private func encodeContent(layer: CommittedLayer, context: FrameContext) {
+        // The draw list of the frame is free, so the glyph buffer of the frame is free too.
+        textEncoder.beginFrame()
         if let area = dirtyArea {
             layer.redraw(area, store: store, encoder: encoder, context: context)
             dirtyArea = nil
@@ -215,12 +235,19 @@ final class FrameRenderer {
         // that do not fit into the draw list wait for the next frame (F-05).
         let drawn = layer.addStrokes(pendingSlots, encoder: encoder, context: context)
         pendingSlots.removeFirst(drawn)
-        _ = layer.startBuildIfNeeded(camera: camera, displayScale: displayScale, store: store)
+        encodeTextChange(layer: layer, context: context)
+        _ = layer.startBuildIfNeeded(
+            camera: camera,
+            displayScale: displayScale,
+            store: store,
+            texts: texts
+        )
         layer.continueBuild(
             encoder: encoder,
             context: context,
             budget: configuration.instanceBudgetPerFrame,
-            deadline: CACurrentMediaTime() + configuration.buildTimeBudget
+            deadline: CACurrentMediaTime() + configuration.buildTimeBudget,
+            text: textEncoder
         )
         assert(layer.front != nil || layer.isBuilding, "The layer has a front texture or a build")
     }

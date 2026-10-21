@@ -3,14 +3,15 @@ import Metal
 import Model
 
 extension FrameRenderer {
-    /// Renders strokes into an image with the same pipelines as the screen. Only the tests use
-    /// it.
+    /// Renders strokes and text boxes into an image with the same pipelines as the screen. Only
+    /// the tests use it.
     ///
     /// - Precondition: The view size times the scale gives at least one pixel.
     /// - Throws: `RenderingError` if a Metal object fails.
-    /// - Returns: The image of the view, black with white ink.
+    /// - Returns: The image of the view, black with white ink and text.
     func renderImage(
         of strokes: [Stroke],
+        textBoxes: [TextBox] = [],
         camera: Camera,
         viewSize: Size,
         displayScale: Double
@@ -34,10 +35,11 @@ extension FrameRenderer {
         }
         let target = InkTarget(texture: coverage, camera: camera, displayScale: displayScale)
         let encoder = try encodeStrokes(strokes, target: target, commandBuffer: commandBuffer)
+        let text = try encodeText(textBoxes, target: target, commandBuffer: commandBuffer)
         encodeCopy(coverage: coverage, output: output, commandBuffer: commandBuffer)
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
-        withExtendedLifetime(encoder) {}
+        withExtendedLifetime((encoder, text)) {}
         return RenderedImage(width: width, height: height, pixels: readPixels(of: output))
     }
 
@@ -75,6 +77,44 @@ extension FrameRenderer {
         )
         guard cursor == slots.count else {
             throw .resourceUnavailable("draw list for \(slots.count) strokes")
+        }
+        return encoder
+    }
+
+    /// Draws all text boxes in one pass with a store, an atlas, and a glyph buffer of their own.
+    /// The encoder must live until the GPU completes, because it owns the buffer.
+    private func encodeText(
+        _ boxes: [TextBox],
+        target: InkTarget,
+        commandBuffer: any MTLCommandBuffer
+    ) throws(RenderingError) -> TextEncoder {
+        precondition(boxes.count <= Limits.maxNodesPerCanvas, "Too many text boxes")
+        let store = TextStore()
+        for box in boxes {
+            store.add(box)
+        }
+        let glyphs = store.entries.values.reduce(0) { $0 + $1.layout.glyphs.count }
+        let encoder = TextEncoder(
+            resources: resources,
+            store: store,
+            atlas: GlyphAtlas(
+                device: resources.device,
+                byteBudget: configuration.glyphAtlasByteBudget
+            ),
+            ring: try GlyphRing(device: resources.device, capacity: max(1, glyphs))
+        )
+        encoder.beginFrame()
+        let ids = boxes.map(\.id)
+        let context = FrameContext(commandBuffer: commandBuffer, frame: 1)
+        let cursor = encoder.encodePass(
+            context,
+            target: target,
+            ids: ids,
+            cursor: 0,
+            options: TextEncoder.Options()
+        )
+        guard cursor == ids.count else {
+            throw .resourceUnavailable("glyph buffer for \(ids.count) text boxes")
         }
         return encoder
     }

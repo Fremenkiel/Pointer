@@ -2,9 +2,12 @@ import Metal
 
 /// The Metal objects that every ink pass shares: device, queue, and pipelines.
 final class InkResources {
-    /// The pixel format of the committed textures: one coverage channel. Ink, text, and cards
-    /// are gray values, so one channel holds them at a quarter of the memory of BGRA.
-    static let committedFormat = MTLPixelFormat.r8Unorm
+    /// The pixel format of the committed textures: the ink coverage in red and the text
+    /// coverage in green (D-82). Both are gray values, so two channels hold them at half the
+    /// memory of BGRA. The eraser mask hides the red channel only.
+    static let committedFormat = MTLPixelFormat.rg8Unorm
+    /// The pixel format of the eraser mask: one coverage channel (D-66).
+    static let maskFormat = MTLPixelFormat.r8Unorm
     /// The pixel format of the drawable (decision D-38).
     static let drawableFormat = MTLPixelFormat.bgra8Unorm
 
@@ -16,8 +19,12 @@ final class InkResources {
     let compositeMaskedPipeline: any MTLRenderPipelineState
     /// Stamps eraser capsules into the mask with `max` blending.
     let eraserPipeline: any MTLRenderPipelineState
-    /// Writes zero coverage, without blending. The redraw of an area uses it with a scissor.
+    /// Writes zero ink coverage, without blending. The redraw of an area uses it with a scissor.
     let clearPipeline: any MTLRenderPipelineState
+    /// Writes zero text coverage. The redraw of a text change uses it with a scissor.
+    let clearTextPipeline: any MTLRenderPipelineState
+    /// Draws glyph quads from the atlas into the text channel with `max` blending (D-29, D-82).
+    let glyphPipeline: any MTLRenderPipelineState
 
     /// Makes the resources on a device.
     ///
@@ -36,7 +43,18 @@ final class InkResources {
         self.queue = queue
         inkPipeline = try Self.makeInkPipeline(device: device, library: library)
         compositePipeline = try Self.makeCompositePipeline(device: device, library: library)
-        clearPipeline = try Self.makeClearPipeline(device: device, library: library)
+        clearPipeline = try Self.makeClearPipeline(device: device, library: library, mask: .red)
+        clearTextPipeline = try Self.makeClearPipeline(
+            device: device,
+            library: library,
+            mask: .green
+        )
+        glyphPipeline = try Self.makeInkPipeline(
+            device: device,
+            library: library,
+            functions: ("glyphVertex", "glyphFragment"),
+            channel: .green
+        )
         compositeMaskedPipeline = try Self.makeCompositePipeline(
             device: device,
             library: library,
@@ -45,17 +63,22 @@ final class InkResources {
         eraserPipeline = try Self.makeInkPipeline(
             device: device,
             library: library,
-            functions: ("eraserVertex", "eraserFragment")
+            functions: ("eraserVertex", "eraserFragment"),
+            channel: .all,
+            format: Self.maskFormat
         )
     }
 
     /// The ink pipeline blends with `max` (D-38, review A-06). The result of a pixel is the
     /// larger of the old and the new coverage, so overlaps do not get brighter, edges cut no
-    /// notches, and the draw order does not matter.
+    /// notches, and the draw order does not matter. The ink writes the red channel and the text
+    /// writes the green channel of the committed texture (D-82).
     private static func makeInkPipeline(
         device: any MTLDevice,
         library: any MTLLibrary,
-        functions: (vertex: String, fragment: String) = ("inkVertex", "inkFragment")
+        functions: (vertex: String, fragment: String) = ("inkVertex", "inkFragment"),
+        channel: MTLColorWriteMask = .red,
+        format: MTLPixelFormat = committedFormat
     ) throws(RenderingError) -> any MTLRenderPipelineState {
         let descriptor = MTLRenderPipelineDescriptor()
         descriptor.label = functions.vertex
@@ -64,7 +87,8 @@ final class InkResources {
         guard let attachment = descriptor.colorAttachments[0] else {
             throw .pipelineFailed("ink color attachment")
         }
-        attachment.pixelFormat = committedFormat
+        attachment.pixelFormat = format
+        attachment.writeMask = channel
         attachment.isBlendingEnabled = true
         attachment.rgbBlendOperation = .max
         attachment.alphaBlendOperation = .max
@@ -95,16 +119,18 @@ final class InkResources {
 
     private static func makeClearPipeline(
         device: any MTLDevice,
-        library: any MTLLibrary
+        library: any MTLLibrary,
+        mask: MTLColorWriteMask
     ) throws(RenderingError) -> any MTLRenderPipelineState {
         let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.label = "Clear"
+        descriptor.label = mask == .red ? "Clear ink" : "Clear text"
         descriptor.vertexFunction = library.makeFunction(name: "compositeVertex")
         descriptor.fragmentFunction = library.makeFunction(name: "clearFragment")
         guard let attachment = descriptor.colorAttachments[0] else {
             throw .pipelineFailed("clear color attachment")
         }
         attachment.pixelFormat = committedFormat
+        attachment.writeMask = mask
         assert(!attachment.isBlendingEnabled, "The clear replaces the coverage")
         return try makePipeline(device: device, descriptor: descriptor)
     }

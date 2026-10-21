@@ -94,3 +94,23 @@ struct EraserStamp {
     /// Half the width of the anti-aliased edge, in pixels.
     var edge: Float
 }
+
+/// One glyph quad of the text pass. The layout matches `GlyphInstance` in Shaders.metal.
+struct GlyphInstance {
+    /// The top-left corner in the target, in pixels.
+    var position: SIMD2<Float>
+    /// The size in the target, in pixels.
+    var size: SIMD2<Float>
+    /// The top-left corner in the atlas page, in pixels.
+    var atlasOrigin: SIMD2<Float>
+    /// The size in the atlas page, in pixels.
+    var atlasSize: SIMD2<Float>
+}
+
+/// The values of one glyph draw. The layout matches `GlyphUniforms` in Shaders.metal.
+struct GlyphUniforms {
+    /// The size of the target texture, in pixels.
+    var targetSize: SIMD2<Float>
+    /// The size of the atlas page, in pixels.
+    var atlasSize: SIMD2<Float>
+}

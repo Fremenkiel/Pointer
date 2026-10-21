@@ -57,7 +57,7 @@ final class LevelOfDetailPerformanceTests: XCTestCase {
             let texture = try rig.resources.makeTarget(
                 width: Self.textureWidth,
                 height: Self.textureHeight,
-                format: .r8Unorm,
+                format: InkResources.committedFormat,
                 isReadable: true
             )
             let target = InkTarget(texture: texture, camera: camera, displayScale: 2)

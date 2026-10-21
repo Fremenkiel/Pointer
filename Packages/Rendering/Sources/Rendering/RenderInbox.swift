@@ -12,6 +12,12 @@ struct RenderInbox {
     var viewport: (size: Size, scale: Double)?
     /// Strokes to load without a handoff.
     var loaded: [Stroke] = []
+    /// The text boxes of a load with their layouts, made off the render thread (D-92).
+    var laidOutText: [TextStore.LaidOut] = []
+    /// The loads whose layouts run off the render thread.
+    var textLoadsInFlight = 0
+    /// The changes of the text boxes, in order.
+    var textEdits: [TextEdit] = []
     /// The edits of handoffs, erases, undo steps, and redo steps, in order.
     var edits: [RenderEdit] = []
     /// The number of the newest handoff in `edits`, or 0.
@@ -48,6 +54,7 @@ struct RenderInbox {
     /// `true` if a change waits that needs a frame, other than a camera change.
     var hasContentChange: Bool {
         viewport != nil || !loaded.isEmpty || !edits.isEmpty || eraserStart != nil
+            || !laidOutText.isEmpty || !textEdits.isEmpty
             || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
     }
 
@@ -58,6 +65,9 @@ struct RenderInbox {
             camera: hasNewCamera ? camera : nil,
             viewport: viewport,
             loaded: loaded,
+            laidOutText: laidOutText,
+            textLoadsInFlight: textLoadsInFlight,
+            textEdits: textEdits,
             edits: edits,
             editHandoff: editHandoff,
             editsWantCompletion: editsWantCompletion,
@@ -76,6 +86,8 @@ struct RenderInbox {
         hasNewCamera = false
         viewport = nil
         loaded = []
+        laidOutText = []
+        textEdits = []
         edits = []
         editHandoff = 0
         editsWantCompletion = false

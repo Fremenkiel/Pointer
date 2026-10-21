@@ -69,4 +69,29 @@ enum PerformanceContent {
             return StrokeBuilder.stroke(path, seed: index)
         }
     }
+
+    /// The text boxes of D-56: boxes of 200 characters on a grid of 120 by 90 canvas points, 100
+    /// boxes per row, around the origin.
+    static func textBoxes(count: Int) throws -> [TextBox] {
+        precondition(count > 0 && count <= Limits.maxNodesPerCanvas, "Text box count \(count)")
+        let device = DeviceID(rawValue: UUID())
+        let canvas = CanvasID(rawValue: UUID())
+        let meta = RecordMeta(created: HybridTimestamp(wallMillis: 1, counter: 0, device: device))
+        let text = String(repeating: "node ", count: 40)
+        let key = try FractionalIndex(rawValue: "V")
+        let rows = (count + 99) / 100
+        return try (0..<count).map { index in
+            try TextBox(
+                id: TextBoxID(rawValue: UUID()),
+                meta: meta,
+                canvasID: canvas,
+                origin: Point(
+                    x: Double(index % 100) * 120 - 6_000,
+                    y: Double(index / 100) * 90 - Double(rows) * 45
+                ),
+                text: text,
+                sortKey: key
+            )
+        }
+    }
 }

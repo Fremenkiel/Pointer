@@ -1,5 +1,6 @@
 import Geometry
 import Metal
+import Model
 import os
 
 /// The committed layer: a texture with all finished ink around the viewport (architecture.md
@@ -14,6 +15,10 @@ final class CommittedLayer {
         let target: InkTarget
         var cursor = 0
         var hasCleared = false
+        /// The position in `buildTextIDs`. The text part runs after the ink part (D-82).
+        var textCursor = 0
+        /// `true` if the text part starts again after it drew, so it clears the text first.
+        var clearsText = false
     }
 
     /// The first capacity of the build list. It grows once to the largest canvas.
@@ -44,13 +49,21 @@ final class CommittedLayer {
     let drawableHeight: Int
     private var frontIndex = 1
     /// The running build, or `nil`.
-    private(set) var build: Build?
+    var build: Build?
     private var isStale = false
     /// The camera of the last frame, and the frames in a row with that camera.
     private var lastCamera: Camera?
     private var stillFrames = 0
     /// The strokes of the build, in drawing order. Reused, so a build allocates nothing.
     private var buildSlots: [Int] = []
+    /// The text boxes of the build, in drawing order. Reused like `buildSlots`.
+    var buildTextIDs: [TextBoxID] = []
+    /// The text boxes of the text redraw of the front texture. Reused like `buildSlots`.
+    var textRedrawIDs: [TextBoxID] = []
+    /// The text redraw of the front texture that is not done.
+    var textRedraw: TextRedraw?
+    /// The area of the running text redraw. A new area joins it, and the redraw starts again.
+    var textRedrawArea: Rect?
     /// The strokes of the redraw of the front texture. Reused like `buildSlots`.
     var redrawSlots: [Int] = []
     /// The strokes of the redraw of the build texture. Reused like `buildSlots`.
@@ -104,7 +117,7 @@ final class CommittedLayer {
             mask = try resources.makeTarget(
                 width: texture.width,
                 height: texture.height,
-                format: InkResources.committedFormat
+                format: InkResources.maskFormat
             )
         } catch {
             Self.logger.error("The eraser mask failed: \(String(describing: error))")
@@ -134,7 +147,12 @@ final class CommittedLayer {
     ///
     /// - Precondition: `displayScale` is positive.
     /// - Returns: `true` if a build started.
-    func startBuildIfNeeded(camera: Camera, displayScale: Double, store: StrokeStore) -> Bool {
+    func startBuildIfNeeded(
+        camera: Camera,
+        displayScale: Double,
+        store: StrokeStore,
+        texts: TextStore? = nil
+    ) -> Bool {
         precondition(displayScale > 0, "Display scale must be positive, got \(displayScale)")
         RenderSignpost.begin("StartBuildIfNeeded")
         defer { RenderSignpost.end("StartBuildIfNeeded") }
@@ -148,6 +166,7 @@ final class CommittedLayer {
         let target = InkTarget(texture: texture, camera: camera, displayScale: displayScale)
         buildSlots.removeAll(keepingCapacity: true)
         store.grid.forEachItem(touching: target.canvasRect) { buildSlots.append($0) }
+        listText(of: target, from: texts)
         build = Build(target: target)
         assert(front?.texture !== texture, "A build never draws into the front texture")
         return true
@@ -253,7 +272,8 @@ final class CommittedLayer {
         encoder: InkEncoder,
         context: FrameContext,
         budget: Int,
-        deadline: TimeInterval = .infinity
+        deadline: TimeInterval = .infinity,
+        text: TextEncoder? = nil
     ) {
         precondition(budget > 0, "Build budget must be positive, got \(budget)")
         guard var current = build else { return }
@@ -272,7 +292,9 @@ final class CommittedLayer {
             options: options
         )
         current.hasCleared = true
-        guard current.cursor >= buildSlots.count else {
+        guard current.cursor >= buildSlots.count,
+            continueText(of: &current, text, context, deadline: deadline)
+        else {
             build = current
             return
         }

@@ -69,6 +69,10 @@ public final class CanvasRenderer {
     /// The number of strokes that the renderer held after its last frame.
     public var strokeCount: Int { engine.strokeCount }
 
+    /// `true` while the text of a load is laid out off the render thread or waits for a frame
+    /// (D-92). `needsMoreFrames` does not count it, so the first frame does not wait for it.
+    public var isLoadingText: Bool { engine.isLoadingText }
+
     /// `true` if the renderer has work for more frames: a change, a build, or a stroke that
     /// waits.
     public var needsMoreFrames: Bool { engine.needsMoreFrames }
@@ -109,6 +113,39 @@ public final class CanvasRenderer {
             box.loaded += strokes
             assert(box.loaded.count <= Limits.maxStrokesAfterErase, "Too many strokes wait")
         }
+    }
+
+    /// Adds text boxes without a callback, at load time. Their layout runs off the render
+    /// thread, so the first frame with the strokes does not wait for it, and the text shows a few
+    /// frames later (D-92). An edit of a box during the layout wins over the loaded box.
+    ///
+    /// - Precondition: The canvas holds at most `Limits.maxNodesPerCanvas` boxes.
+    public func load(_ textBoxes: [TextBox]) {
+        precondition(textBoxes.count <= Limits.maxNodesPerCanvas, "Too many text boxes")
+        guard !textBoxes.isEmpty else { return }
+        let engine = engine
+        engine.post { $0.textLoadsInFlight += 1 }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let laidOut = TextStore.layOut(textBoxes)
+            engine.post { box in
+                box.laidOutText += laidOut
+                box.textLoadsInFlight -= 1
+                assert(box.textLoadsInFlight >= 0, "A load ends once")
+            }
+        }
+    }
+
+    /// Removes text boxes and adds text boxes in one change: an add, an edit, a move, a delete,
+    /// or the hide of a box under the edit view and its show at the end of the edit. An added
+    /// box takes the place of the box with the same ID. The renderer clears the text of the old
+    /// and the new bounds and draws the text boxes there again (architecture.md 5.4, D-82).
+    ///
+    /// - Precondition: The change holds at most `Limits.maxNodesPerCanvas` boxes.
+    public func changeTextBoxes(removing removed: [TextBoxID], adding added: [TextBox]) {
+        precondition(removed.count + added.count <= Limits.maxNodesPerCanvas, "Too many boxes")
+        precondition(added.allSatisfy { $0.origin.isFinite }, "A text box origin is not finite")
+        let edit = TextEdit(removed: removed, added: added)
+        engine.post { box in box.textEdits.append(edit) }
     }
 
     /// Adds finished strokes. `onPresented` runs after the first frame that shows them.
@@ -211,14 +248,15 @@ public final class CanvasRenderer {
         ).needsMore
     }
 
-    /// Renders strokes into an image with the same pipelines as the screen. Only the tests use
-    /// it.
+    /// Renders strokes and text boxes into an image with the same pipelines as the screen. Only
+    /// the tests use it.
     ///
     /// - Precondition: The view size times the scale gives at least one pixel.
     /// - Throws: `RenderingError` if a Metal object fails.
     /// - Returns: The image of the view, black with white ink.
     public func renderImage(
         of strokes: [Stroke],
+        textBoxes: [TextBox] = [],
         camera: Camera,
         viewSize: Size,
         displayScale: Double
@@ -227,6 +265,7 @@ public final class CanvasRenderer {
         return try engine.withRenderer { renderer throws(RenderingError) -> RenderedImage in
             try renderer.renderImage(
                 of: strokes,
+                textBoxes: textBoxes,
                 camera: camera,
                 viewSize: viewSize,
                 displayScale: displayScale

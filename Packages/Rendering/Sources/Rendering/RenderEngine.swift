@@ -51,6 +51,11 @@ final class RenderEngine: Sendable {
     /// The number of strokes in the renderer after its last frame.
     var strokeCount: Int { inbox.withLock { $0.strokeCount } }
 
+    /// `true` while a text layout of a load runs or waits for a frame (D-92).
+    var isLoadingText: Bool {
+        inbox.withLock { $0.textLoadsInFlight > 0 || !$0.laidOutText.isEmpty }
+    }
+
     /// Applies a change to the inbox and wakes the frame loop if it sleeps.
     func post(_ change: (inout RenderInbox) -> Void) {
         let (wake, signalsCamera) = inbox.withLock { box -> ((@Sendable () -> Void)?, Bool) in
@@ -185,6 +190,20 @@ final class RenderEngine: Sendable {
         try core.withLock { renderer throws(Failure) -> Result in try body(&renderer) }
     }
 
+    /// Applies the loaded text boxes and the text edits of a frame (D-82).
+    private static func applyText(_ input: RenderInput, to renderer: FrameRenderer) {
+        // The load comes first, because each edit is newer than the loaded rows.
+        if !input.laidOutText.isEmpty {
+            renderer.insert(input.laidOutText)
+        }
+        // An edit counts against a load that is still in flight after this frame.
+        renderer.textLoadsInFlight = input.textLoadsInFlight
+        if input.textLoadsInFlight == 0 { renderer.textEditedDuringLoad.removeAll() }
+        for edit in input.textEdits {
+            renderer.apply(edit)
+        }
+    }
+
     private static func apply(_ input: RenderInput, to renderer: FrameRenderer) {
         assert(input.edits.isEmpty || input.editHandoff > 0, "Edits need a handoff number")
         if let viewport = input.viewport {
@@ -196,6 +215,7 @@ final class RenderEngine: Sendable {
         if !input.loaded.isEmpty {
             renderer.load(input.loaded)
         }
+        applyText(input, to: renderer)
         if let ready = input.eraserReady {
             renderer.isEraserReady = ready
         }

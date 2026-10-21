@@ -55,6 +55,24 @@ struct EraserStamp {
     float edge;           // half width of the edge ramp, pixels
 };
 
+// One glyph quad of the text pass, in target pixels and atlas pixels (D-29). 32 bytes.
+struct GlyphInstance {
+    float2 position;      // top-left corner in the target, pixels
+    float2 size;          // size in the target, pixels
+    float2 atlasOrigin;   // top-left corner in the atlas page, pixels
+    float2 atlasSize;     // size in the atlas page, pixels
+};
+
+struct GlyphUniforms {
+    float2 targetSize;    // pixels
+    float2 atlasSize;     // pixels of the atlas page
+};
+
+struct GlyphVertexOut {
+    float4 position [[position]];
+    float2 atlasPoint;    // atlas pixels
+};
+
 struct InkVertexOut {
     float4 position [[position]];
     float2 start [[flat]];
@@ -175,13 +193,14 @@ vertex CompositeVertexOut compositeVertex(uint vertexID [[vertex_id]]) {
     return out;
 }
 
-// White ink on black: the coverage of the committed texture becomes the gray value.
+// White ink and text on black: the larger coverage of the two channels becomes the gray value.
 fragment float4 compositeFragment(CompositeVertexOut in [[stage_in]],
                                   texture2d<float> committed [[texture(0)]],
                                   constant CompositeUniforms &uniforms [[buffer(0)]]) {
     constexpr sampler linearSampler(address::clamp_to_zero, filter::linear);
     float2 texel = in.position.xy * uniforms.scale + uniforms.offset;
-    float value = committed.sample(linearSampler, texel / uniforms.textureSize).r;
+    float2 coverage = committed.sample(linearSampler, texel / uniforms.textureSize).rg;
+    float value = max(coverage.r, coverage.g);
     return float4(value, value, value, 1.0);
 }
 
@@ -222,6 +241,7 @@ fragment half4 eraserFragment(InkVertexOut in [[stage_in]], constant EraserStamp
 }
 
 // The composite pass while the eraser moves: the mask hides the ink under the stamps (D-66).
+// The text channel stays, because the eraser removes ink only (D-82).
 // The mask has the size and the mapping of the committed texture.
 fragment float4 compositeMaskedFragment(CompositeVertexOut in [[stage_in]],
                                         texture2d<float> committed [[texture(0)]],
@@ -229,6 +249,31 @@ fragment float4 compositeMaskedFragment(CompositeVertexOut in [[stage_in]],
                                         constant CompositeUniforms &uniforms [[buffer(0)]]) {
     constexpr sampler linearSampler(address::clamp_to_zero, filter::linear);
     float2 texel = (in.position.xy * uniforms.scale + uniforms.offset) / uniforms.textureSize;
-    float value = committed.sample(linearSampler, texel).r * (1.0 - mask.sample(linearSampler, texel).r);
+    float2 coverage = committed.sample(linearSampler, texel).rg;
+    float ink = coverage.r * (1.0 - mask.sample(linearSampler, texel).r);
+    float value = max(ink, coverage.g);
     return float4(value, value, value, 1.0);
+}
+
+// One glyph of the text pass: a quad that shows its bitmap from the atlas page.
+vertex GlyphVertexOut glyphVertex(uint vertexID [[vertex_id]], uint instanceID [[instance_id]],
+                                  constant GlyphInstance *glyphs [[buffer(0)]],
+                                  constant GlyphUniforms &uniforms [[buffer(1)]]) {
+    GlyphInstance glyph = glyphs[instanceID];
+    float2 corner = float2((vertexID & 1) ? 1.0 : 0.0, (vertexID & 2) ? 1.0 : 0.0);
+    float2 pixel = glyph.position + corner * glyph.size;
+    GlyphVertexOut out;
+    out.position = float4(pixel.x / uniforms.targetSize.x * 2.0 - 1.0,
+                          1.0 - pixel.y / uniforms.targetSize.y * 2.0, 0.0, 1.0);
+    out.atlasPoint = glyph.atlasOrigin + corner * glyph.atlasSize;
+    return out;
+}
+
+// The coverage of a glyph from the atlas. The pipeline writes it into the text channel.
+fragment half4 glyphFragment(GlyphVertexOut in [[stage_in]],
+                             texture2d<float> atlas [[texture(0)]],
+                             constant GlyphUniforms &uniforms [[buffer(1)]]) {
+    constexpr sampler linearSampler(address::clamp_to_zero, filter::linear);
+    float coverage = atlas.sample(linearSampler, in.atlasPoint / uniforms.atlasSize).r;
+    return half4(coverage);
 }
