@@ -175,7 +175,7 @@ A `UIHoverGestureRecognizer` with `allowedTouchTypes = [.pencil]` shows a small 
 | One-finger pan | Canvas | Pan the camera. Deceleration after release. |
 | Two-finger pinch | Canvas | Zoom about the midpoint of the two fingers. Pan at the same time. |
 | Tap | Text box | Start editing (TOOL-06). |
-| Double tap | Card | Open the card (decision D-09). |
+| Double tap | Card | Open the card (decision D-09). The double tap begins only on a card that no text box covers. A single tap waits for it only on such a card, so a tap on a text box starts its edit at once (D-100). |
 | Long press | Card or text box | Context menu: rename (card), delete. |
 | Long press, then drag | Card or text box | Move it (decision D-10). |
 
@@ -222,13 +222,13 @@ The live pen stroke does not use this frame loop (section 4.2). The eraser of M4
 
 Each frame draws these passes:
 
-1. The committed layer: all finished strokes, text, and cards that are visible. This layer is a texture with the size of the drawable. The renderer reuses it while the camera and the content do not change.
+1. The committed layer: all finished strokes, text, and cards that are visible. Cards share the green channel with the text (D-96). This layer is a texture with the size of the drawable. The renderer reuses it while the camera and the content do not change.
 2. The eraser mask, while an eraser gesture runs. The renderer makes the mask texture when the eraser becomes the tool and drops it when another tool becomes the tool, after the last gesture ends (D-78). A `.r8Unorm` texture of the size of the committed texture holds the eraser circles of the gesture. The composite pass hides the ink under them. At the pencil lift, the renderer redraws the area of the change in the committed texture and clears the mask (D-66). The mask uses the mapping of the front texture. If the front texture changes during a gesture, the next frame stamps all samples again.
 3. Overlays: the hover dot and the selection outline.
 
 The live pen stroke is not a pass of the renderer. The `PKCanvasView` on top draws it (section 4.2). While you draw, the renderer draws a frame only at the handoff of a stroke.
 
-The committed texture covers the viewport plus a margin of half a screen on each side (review A-04). It has the format `.rg8Unorm`: the ink coverage in red and the text coverage in green (D-82). A texture has twice the drawable size in each direction: 3,336 by 4,840 pixels (32.3 MB) on the 11-inch iPad and 4,128 by 5,504 pixels (45.4 MB) on the 13-inch iPad. Thus the two committed textures take about 65 MB and 91 MB. The eraser mask has one channel of the same size and exists only while the eraser is the tool (D-78). With it, the textures take about 81 MB and 114 MB. The ink passes write red only, and the text passes write green only. The composite pass turns the coverage into white on black in the `.bgra8Unorm` drawable. At the end of a stroke, the renderer draws only the new stroke into the committed texture. It never redraws all content at a pencil lift.
+The committed texture covers the viewport plus a margin of half a screen on each side (review A-04). It has the format `.rg8Unorm`: the ink coverage in red, and the coverage of the text and the cards in green (D-82, D-96). A texture has twice the drawable size in each direction: 3,336 by 4,840 pixels (32.3 MB) on the 11-inch iPad and 4,128 by 5,504 pixels (45.4 MB) on the 13-inch iPad. Thus the two committed textures take about 65 MB and 91 MB. The eraser mask has one channel of the same size and exists only while the eraser is the tool (D-78). With it, the textures take about 81 MB and 114 MB. The ink passes write red only, and the text passes write green only. The composite pass mixes the canvas color and white in the `.bgra8Unorm` drawable, with the larger coverage of the two channels as weight (D-106). `RendererConfiguration.background` holds the canvas color. At the end of a stroke, the renderer draws only the new stroke into the committed texture. It never redraws all content at a pencil lift.
 
 While the camera moves, the renderer shows the committed texture, translated and scaled (decision D-28). It draws a new committed texture (a build) only in one of these cases:
 
@@ -246,7 +246,7 @@ While the camera moves, the ink can look a little soft until the new texture is 
 
 ### 5.3 Stroke geometry on the GPU
 
-Ink is white on black. The ink pipeline blends with `MTLBlendOperation.max` and the blend factors `one` and `one` (decision D-38, review A-06). The result of a pixel is the larger of the old value and the new value. Thus overlapping capsules do not get brighter, the anti-aliased edge of one capsule does not cut a notch into another capsule, and the draw order of strokes does not matter. A snapshot test draws a tight zigzag stroke and compares it with a reference image.
+Ink is white on the canvas color (CAN-01, D-106). The ink pipeline blends with `MTLBlendOperation.max` and the blend factors `one` and `one` (decision D-38, review A-06). The result of a pixel is the larger of the old value and the new value. Thus overlapping capsules do not get brighter, the anti-aliased edge of one capsule does not cut a notch into another capsule, and the draw order of strokes does not matter. A snapshot test draws a tight zigzag stroke and compares it with a reference image.
 
 The GPU memory follows decision D-28.
 
@@ -291,13 +291,17 @@ The text font is SF Mono, 17 points at zoom 1.0 (decision D-15).
 
 A card on its parent canvas has these parts:
 
-- A rounded rectangle with a 1-point border in gray (`DesignSystem.Color.cardBorder`).
+- A rounded rectangle with a 1-point border in gray. The border is a coverage value below 1 (`DesignSystem.Color.cardBorder`). It has no fill.
 - The optional title, above the top-left corner.
 - A preview of the child canvas inside the frame.
 
-The preview uses the same renderer. It draws the content of the child canvas into a texture with the size of the card on the screen, then caches the texture. If the content of the child canvas changes, the renderer draws the preview again. The preview shows content one level deep. Deeper cards show as empty frames. This limits the work and the recursion.
+The renderer draws cards into the green channel of the committed textures, with the text (D-96). A build and a redraw draw them as they draw text, inside the same time budget. A card adds about 10 quads: the frame, the preview, and the glyphs of the title. The eraser mask hides the red channel only, so it never hides a card.
 
-Layer order on a canvas, from bottom to top: cards, ink, text boxes (decision D-16).
+Layer order on a canvas, from bottom to top: cards, ink, text boxes (decision D-16). The composite takes the larger coverage of the two channels, and a card has no fill. Thus the screen shows the same image as cards drawn below the ink.
+
+The preview is a gray 8-bit PNG per child canvas in `Caches/Pointer/previews/<canvas-id>.png` (D-97). The app writes it when you leave the child canvas, because a canvas changes only while it is on the screen (STO-01). The preview shows the region of the child that the open camera of section 6.2 shows, cut to the aspect of the card (D-98). It shows content one level deep. Deeper cards show as empty frames. The renderer reads the files of the visible cards off the main actor, after the first frame, as it lays out the text (D-92). A cache with a byte budget holds the decoded previews, 8 MB as a start value. The size comes in steps of 128, 256, and 512 pixels, from the size of the card on the screen. If a file is missing, the app loads that child canvas alone off the main actor and draws its preview. A restore (M9) clears the folder.
+
+A new card is a quarter of the screen width wide, with the aspect of the screen, centered on the point of the long press, and has no title (D-101). At a high zoom, the minimum size of data-model.md section 7.2 sets the size. "Rename" opens an alert with a text field, as the workspace rename does. Version 1 has no resize of a card (D-102).
 
 ### 5.6 Spatial index
 
@@ -318,29 +322,30 @@ struct Camera: Equatable, Sendable {
 
 The limits are `Limits.minZoom = 0.25`, `Limits.maxZoom = 8.0`, and `Limits.standardZoom = 1.0`. `CameraController` turns pan and pinch input into camera changes. It also applies deceleration and the rubber band below the minimum zoom.
 
-The camera of each canvas is stored in the device state, not in the library (see [storage.md](storage.md)).
+The camera of each canvas is stored in the device state, not in the library (see [storage.md](storage.md)). The app reads it only at launch and at a workspace switch, for the deepest canvas of the stored path (WS-04). An open by a double tap, the up button, or a pinch-out uses the cameras of sections 6.2 and 6.3 (D-99).
 
 ### 6.2 Open a card
 
 1. The user opens a card (decision D-09).
-2. The controller animates the camera of the parent so that the card frame fills the screen. The animation takes 0.35 s with a spring curve.
-3. At the end of the animation, the controller swaps the parent canvas for the child canvas. The child camera starts at the standard zoom, centered on the content bounds of the child. If the child is empty, the camera centers on the origin.
-4. The swap has no visible jump. The preview texture of the card and the first frame of the child show the same content at the same size.
+2. The controller animates the camera of the parent until the card frame covers the screen (D-98). The animation takes 0.35 s with a spring curve. During it, the ink and the text of the parent fade out, because they lie on top of the card (D-16).
+3. The child canvas loads during the animation. Its camera starts at the standard zoom, centered on the content bounds of the child. If the child is empty, the camera centers on the origin.
+4. When the animation ends and the first frame of the child is ready, the child replaces the preview with a crossfade of 0.1 s.
+5. The swap has no visible jump. The child shows W by H view points at zoom 1. A card of w by h parent points covers the screen at the scale k = max(W / w, H / h). The preview shows the child region of w × k by h × k points around the center of the open camera, so the preview and the first frame of the child show the same content at the same size.
 
 ### 6.3 Leave a card
 
 There are two ways to leave a card:
 
-- Up button. The controller shows the parent canvas with the camera on the card center at the standard zoom. Then it plays the open animation in reverse: the child shrinks into the card frame.
-- Pinch out. Below `minZoom`, the zoom does not stop. It continues with resistance (rubber band). While below `minZoom`, the controller shows the child as a shrinking card over a faded image of the parent. If the fingers lift when `zoom < minZoom * 0.7`, the controller plays the minimize animation and shows the parent at the standard zoom. Otherwise, the camera springs back to `minZoom`.
+- Up button. The controller first moves the child camera to the camera of the open (section 6.2). Then it shows the parent canvas with the camera on the card center at the standard zoom, and plays the open animation in reverse: the child shrinks into the card frame.
+- Pinch out. Below `minZoom`, the zoom does not stop. It continues with resistance (rubber band). While below `minZoom`, the controller shows the child as a shrinking card over a faded image of the parent. If the fingers lift when the zoom of the fingers, without the rubber band, is under `minZoom * 0.6`, the controller plays the minimize animation and shows the parent at the standard zoom (D-104). During it, the child image crossfades to the preview while the card shrinks. Otherwise, the camera springs back to `minZoom`.
 
 On the root canvas, the rubber band springs back. No transition happens (CARD-06).
 
-The threshold `0.7` is a start value. Tune it on a device.
+The threshold `0.6` is a start value. Tune it on a device. The shown zoom is a poor measure: with the rubber band exponent of 0.35, a threshold of 0.7 on the shown zoom needs the fingers to close to 36 % of their start distance at zoom 0.25 (D-104).
 
 ### 6.4 Navigation state
 
-`NavigationState` holds the path from the root canvas to the current canvas as a list of card IDs. The list has a limit of `Limits.maxDepth = 32`. If the list is not empty, the up button shows.
+`NavigationState` holds the path from the root canvas to the current canvas as a list of card IDs. The list has a limit of `Limits.maxDepth = 32`. The root canvas is level 0, so a list of 32 cards reaches level 32, and "New card" there is refused with a message (D-95). If the list is not empty, the up button shows.
 
 ## 7. Text boxes
 
@@ -359,7 +364,7 @@ Undo uses the `History` type from `Model`. It does not use `UndoManager` for can
 - Each user action becomes one `CanvasCommand`. Each command has an `apply` function and a `revert` function on the canvas content. Both functions are pure.
 - Commands hold the `Stroke` values that they add or remove (D-68). A copy of a stroke copies one reference to its points, so the history holds no second copy of the points.
 - `AddStroke` adds a stroke. Its revert removes the stroke from the content and writes an erase record for it. A redo sets `isDeleted` on that record.
-- Commands: `AddStroke`, `EraseStrokes` (removed strokes plus added parts), `AddTextBox`, `EditText`, `MoveNode`, `AddCard`, `DeleteNode`, `RenameCard`. A text box has no resize, because its size comes from its text (D-83).
+- Commands: `AddStroke`, `EraseStrokes` (removed strokes plus added parts), `AddTextBox`, `EditText`, `MoveNode`, `AddCard`, `DeleteNode`, `RenameCard`. `MoveNode` and `DeleteNode` hold a node: a text box or a card (D-103). A text box has no resize, because its size comes from its text (D-83). A card has no resize in version 1 (D-102). A move of a card to another parent is not in version 1.
 - A delete is a tombstone, not a removal (see [data-model.md](data-model.md)). Thus an undo of a delete only clears the tombstone.
 - The history has a limit of `Limits.maxHistoryDepth = 500` steps per canvas. The oldest step is dropped first.
 - The history of one canvas holds at most `Limits.maxHistoryPointsPerCanvas` (4,000,000) control points, and the histories of all sessions hold at most `Limits.maxHistoryPointsInSessions` (16,000,000) (D-76). A step counts the points of the strokes that it holds, and one point for each code point of the texts that it holds (D-88). Past the canvas budget, the oldest steps go, also a new step that alone passes the budget. Past the session budget, the oldest steps of the least recently used session go first. The session erase records of the strokes in dropped steps go with them, unless a kept step holds the stroke too.

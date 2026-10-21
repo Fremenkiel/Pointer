@@ -125,7 +125,7 @@ Acceptance:
 Acceptance:
 
 1. Open and leave a card with no visible jump (screen recording, frame by frame).
-2. A tree of 32 levels works. Level 33 is refused with a message.
+2. A tree of 32 levels below the root canvas works. A card on a canvas of level 32 is refused with a message (D-95).
 3. A finger lift above the threshold cancels the pinch-out exit.
 
 ## M7: Apple Pencil interactions
@@ -163,6 +163,7 @@ Acceptance:
 - Limits: each limit in [architecture.md](architecture.md) section 10 has a test at the limit and at the limit plus one.
 - UI tests for the main flows.
 - Performance baselines for all budgets.
+- Glyph quads of each text box in a GPU buffer that a build reuses (option (b) of D-94, D-105).
 - Accessibility: VoiceOver labels for every button, Dynamic Type in the chrome.
 
 Acceptance:

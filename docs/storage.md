@@ -33,7 +33,7 @@ The costs:
       library.sqlite                   the live database (with -wal and -shm files)
       device.sqlite                    device state (not part of the library, section 10)
     Caches/Pointer/
-      previews/<canvas-id>.png         card previews, rebuilt on demand
+      previews/<canvas-id>.png         card previews, written when you leave the canvas (D-97)
   Documents/                           visible in Files as "On My iPad > Pointer"
     Backups/
       Pointer-2026-10-17-220000.sqlite snapshots, newest first
@@ -191,7 +191,7 @@ If a transaction fails, the repository rolls it back and keeps the rows in the p
 3. If it is older, run the migrations (section 6).
 4. Read all workspaces for the selector.
 5. To open a canvas, first write the pending rows, so that the load holds them. If that write fails, the open fails with `storageFailed` and loads nothing (F-01 of [m4-fix-plan.md](m4-fix-plan.md)). Then read the live rows with its `canvas_id`: cards and text boxes with `is_deleted = 0`, and strokes without a live erase record (`LEFT JOIN stroke_erase ... ON ... AND stroke_erase.is_deleted = 0 WHERE stroke_erase.stroke_id IS NULL`). Do not load erase records or erased strokes (review A-07). The renderer builds the `SpatialGrid` of the strokes in memory.
-6. For the previews of visible cards, read their canvases one level deep.
+6. For the previews of visible cards, read the files in `Caches/Pointer/previews/` off the main actor (D-97). Read a child canvas only if its file is missing. Reading all children at each open cost about 72 MB for 300 typical children on the iPad.
 
 The repository loads one canvas at a time. It never loads the whole library into memory.
 
@@ -305,7 +305,7 @@ CREATE INDEX camera_used ON camera (used);
 
 Rules:
 
-- At launch, the store reads the `device` rows and the camera of the last workspace only. A canvas reads its camera when it opens.
+- At launch, the store reads the `device` rows and the camera of the deepest canvas of the stored path only. A canvas reads its camera at a workspace switch. An open of a card, the up button, and a pinch-out use the cameras of architecture.md section 6 instead (D-99).
 - The store writes at three events: the camera comes to rest, the workspace changes, and the app moves to the background. A camera write changes one row.
 - `used` is a counter, not a clock value, so a change of the system time does not change the order.
 - After a camera write, the store keeps the 1,000 rows with the largest `used` and deletes the others in the same transaction.

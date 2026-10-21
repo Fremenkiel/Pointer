@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21. They are open.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day.
 
 Status values: Open, Decided, Replaced.
 
@@ -102,17 +102,18 @@ Status values: Open, Decided, Replaced.
 | D-92 | The open and the memory of the D-56 canvas with text pass their targets | Remove the extra peak at the open, and lay out the text after the first frame | Decided (2026-10-21) |
 | D-93 | The memory of the open with text after D-92 | Correct the test, keep the second channel, target 380 MB on the 11-inch iPad | Decided (2026-10-21) |
 | D-94 | Late frames of the zoom over the D-56 text in full device runs | Accept at most 2 late frames in a full run for M5. Glyph buffers on the GPU in a later milestone. | Decided (2026-10-21) |
-| D-95 | What a level of the card tree is (CARD-09) | Open. Recommendation: the root canvas is level 0, a path holds at most 32 cards | Open |
-| D-96 | Where the renderer draws cards | Open. Recommendation: in the green channel of the committed textures, with the text | Open |
-| D-97 | Source of the card previews | Open. Recommendation: a gray PNG per child canvas in `Caches`, written when you leave the child | Open |
-| D-98 | Open and leave a card without a visible jump | Open. Recommendation: the card covers the screen, the parent layers fade, and the child replaces the preview with a crossfade | Open |
-| D-99 | Camera of a canvas: standard zoom or the stored camera | Open. Recommendation: standard zoom at an open by tap or up button, stored camera at launch and at a workspace switch | Open |
-| D-100 | Double tap on a card and the single tap on a text box | Open. Recommendation: the single tap waits for the double tap only on a card | Open |
-| D-101 | Size, place, and title of a new card | Open. Recommendation: a quarter of the screen width, the aspect of the screen, centered on the press, no title | Open |
-| D-102 | "Resize" in UNDO-03 | Open. Recommendation: no card resize in version 1 | Open |
-| D-103 | The card commands and the node commands | Open. Recommendation: `AddCard`, `RenameCard`, and a node value in `MoveNode` and `DeleteNode` | Open |
-| D-104 | Threshold of the pinch-out exit (CARD-05) | Open. Recommendation: test the threshold on the zoom of the fingers, start value 0.6 | Open |
-| D-105 | When the GPU glyph buffers of D-94 come | Open. Recommendation: after M6, in M10 | Open |
+| D-95 | What a level of the card tree is (CARD-09) | The root canvas is level 0, a path holds at most 32 cards | Decided (2026-10-21) |
+| D-96 | Where the renderer draws cards | In the green channel of the committed textures, with the text | Decided (2026-10-21) |
+| D-97 | Source of the card previews | A gray PNG per child canvas in `Caches`, written when you leave the child | Decided (2026-10-21) |
+| D-98 | Open and leave a card without a visible jump | The card covers the screen, the parent layers fade, and the child replaces the preview with a crossfade | Decided (2026-10-21) |
+| D-99 | Camera of a canvas: standard zoom or the stored camera | Standard zoom at an open by tap or up button, stored camera at launch and at a workspace switch | Decided (2026-10-21) |
+| D-100 | Double tap on a card and the single tap on a text box | The single tap waits for the double tap only on a card | Decided (2026-10-21) |
+| D-101 | Size, place, and title of a new card | A quarter of the screen width, the aspect of the screen, centered on the press, no title | Decided (2026-10-21) |
+| D-102 | "Resize" in UNDO-03 | No card resize in version 1 | Decided (2026-10-21) |
+| D-103 | The card commands and the node commands | `AddCard`, `RenameCard`, and a node value in `MoveNode` and `DeleteNode` | Decided (2026-10-21) |
+| D-104 | Threshold of the pinch-out exit (CARD-05) | Test the threshold on the zoom of the fingers, start value 0.6 | Decided (2026-10-21) |
+| D-105 | When the GPU glyph buffers of D-94 come | After M6, in M10 | Decided (2026-10-21) |
+| D-106 | Color of the canvas | RGB(41, 44, 51), `#292C33`, instead of black | Decided (2026-10-21) |
 
 ## Details
 
@@ -1000,7 +1001,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-95 What a level of the card tree is
 
-- Open. Raised by the review of M5 on 2026-10-21, for M6.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the review of M5 on the same day, for M6.
 - CARD-09 gives a limit of 32 levels. M6 acceptance 2 says: "A tree of 32 levels works. Level 33 is refused." No document says if the root canvas is level 0 or level 1.
 - The code counts cards, not canvases. `DeviceState` takes a navigation path of at most 32 card IDs (`DeviceState.swift`, line 20). The 30-day purge walks 32 card levels below a workspace (`LibraryMaintenance.swift`, line 110). Thus the code allows the root canvas and 32 card canvases below it, 33 canvases in all.
 - Options:
@@ -1010,7 +1011,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-96 Where the renderer draws cards
 
-- Open. Raised by the review of M5 on 2026-10-21, for M6.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the review of M5 on the same day, for M6.
 - architecture.md section 5.2 puts cards in the committed layer. Since D-82, the committed textures are `.rg8Unorm`: ink in red, text in green. The composite shows `max(red, green)` as white on black. Section 5.5 gives a card a gray border, a title, and a preview. D-16 puts cards below the ink.
 - The memory of the D-56 open is 342 to 350 MB, against the target of 380 MB (D-93). The headroom is 30 to 38 MB.
 - Measured on 2026-10-21 on the iPad Pro 11-inch (M4): a glyph quad of the text pass costs 17 ns of CPU. At zoom 0.25, the D-56 grid shows about 3,000 nodes. A card needs about 10 quads: the frame, the preview, and about 8 title glyphs. That is about 30,000 quads, or 0.5 ms of CPU.
@@ -1023,7 +1024,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-97 Source of the card previews
 
-- Open. Raised by the review of M5 on 2026-10-21, for M6.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the review of M5 on the same day, for M6.
 - The documents give two designs. architecture.md section 5.5 and storage.md section 5, step 6 read the child canvases one level deep at the open and draw each preview. storage.md section 2 has a file cache, `Caches/Pointer/previews/<canvas-id>.png`, "rebuilt on demand".
 - Measured on 2026-10-21 on the iPad Pro 11-inch (M4) in Release, with a temporary benchmark:
 
@@ -1044,7 +1045,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-98 Open and leave a card without a visible jump
 
-- Open. Raised by the review of M5 on 2026-10-21, for M6.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the review of M5 on the same day, for M6.
 - M6 acceptance 1 checks the open and the leave of a card frame by frame. architecture.md section 6.2 animates the camera "so that the card frame fills the screen" and then swaps in the child canvas.
 - Three jumps can show at the swap:
   1. The aspect ratio of a card differs from the screen. If the card fits the screen, the parent canvas shows beside it, and the child replaces that part at the swap.
@@ -1061,7 +1062,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-99 Camera of a canvas: standard zoom or the stored camera
 
-- Open. Raised by the review of M5 on 2026-10-21, for M6.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the review of M5 on the same day, for M6.
 - CARD-03 opens a card at the standard zoom. architecture.md section 6.2 centers it on the content bounds of the child. CARD-04 shows the parent at the standard zoom, centered on the card. WS-04 opens the last workspace at the last camera.
 - storage.md section 10 says: "A canvas reads its camera when it opens." D-53 stores a camera for each canvas. This conflicts with CARD-03 and CARD-04.
 - Options:
@@ -1071,7 +1072,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-100 Double tap on a card and the single tap on a text box
 
-- Open. Raised by the review of M5 on 2026-10-21, for M6.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the review of M5 on the same day, for M6.
 - A finger tap on a text box starts its edit (TOOL-06). A finger double tap on a card opens it (D-09). A tap beside a box ends an edit.
 - If a single-tap recognizer waits for a double-tap recognizer to fail, each single tap waits for the double-tap interval of the system. This review did not measure that interval on the iPad.
 - `UIGestureRecognizerDelegate.gestureRecognizer(_:shouldRequireFailureOf:)` lets the app set the wait for each recognition, not once for all taps.
@@ -1083,7 +1084,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-101 Size, place, and title of a new card
 
-- Open. Raised by the review of M5 on 2026-10-21, for M6.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the review of M5 on the same day, for M6.
 - CARD-01 makes a card with a long press on empty canvas and "New card". No document gives its size, its place, or its title. A card is at least 64 by 48 canvas points (data-model.md section 7.2). CARD-02 makes the title optional. The workspace selector renames with an alert that holds a text field (`WorkspaceSelectorView.swift`, line 40).
 - Options for the size:
   - (a) A fixed size in canvas points, for example 320 by 224. It looks tiny at zoom 0.25 and fills the screen at zoom 4.
@@ -1092,7 +1093,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-102 "Resize" in UNDO-03
 
-- Open. Raised by the review of M5 on 2026-10-21, for M6.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the review of M5 on the same day, for M6.
 - UNDO-03 lists "resize" as an undoable action. D-83 took it away from text boxes. No CARD requirement and no gesture in architecture.md section 4.7 resize a card.
 - The `card` table stores the whole frame, so a later resize needs no schema change (GIT-04).
 - Options: (a) no card resize in version 1, and "resize" leaves UNDO-03. (b) a resize handle and a `ResizeCard` command in M6.
@@ -1100,7 +1101,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-103 The card commands and the node commands
 
-- Open. Raised by the review of M5 on 2026-10-21, for M6.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the review of M5 on the same day, for M6.
 - architecture.md section 8 lists `AddCard`, `MoveNode`, `DeleteNode`, and `RenameCard`. UNDO-03 says "create card". In M5, `MoveNode` and `DeleteNode` hold a `TextBox` only, and `CanvasContent` has the changes of text boxes only.
 - Options:
   - (a) `AddCard` and `RenameCard` as new commands. `MoveNode` and `DeleteNode` hold a node value: a text box or a card. `CommandError` gets the card cases.
@@ -1109,7 +1110,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-104 Threshold of the pinch-out exit
 
-- Open. Raised by the review of M5 on 2026-10-21, for M6.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the review of M5 on the same day, for M6.
 - architecture.md section 6.3 leaves a card when the fingers lift at a zoom under `minZoom * 0.7`. The camera shows the zoom with the rubber band `minZoom * (raw / minZoom)^0.35` (`CameraController.swift`, lines 13 and 141 to 146).
 - Arithmetic: the shown zoom reaches 0.7 × `minZoom` at a raw zoom of 0.7^(1 / 0.35) ≈ 0.36 × `minZoom`. From zoom 0.25, the fingers must close to 36 % of their start distance. From zoom 1, they must close to 9 %.
 - Options:
@@ -1119,11 +1120,19 @@ Status values: Open, Decided, Replaced.
 
 ### D-105 When the GPU glyph buffers of D-94 come
 
-- Open. Raised by the review of M5 on 2026-10-21, for M6.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the review of M5 on the same day, for M6.
 - D-94 moved the glyph buffers on the GPU to a later milestone. After the review of M5, the text of D-56 at zoom 0.25 takes 9.3 to 10.2 ms of CPU per build, about 5 frames of the build budget of 2 ms. Thus the pan over that text still shows uncovered screen.
 - With D-96 (c), cards add about 0.5 ms to the same build, about 5 %.
 - Options: (a) in M6, before the cards. (b) after M6, in M10 with the other performance baselines.
 - Recommendation: (b). Cards change the build cost by little, and M6 already has a large scope. M10 measures all budgets again.
+
+### D-106 Color of the canvas
+
+- Decided by the product owner on 2026-10-21: the canvas background is RGB(41, 44, 51), `#292C33`, instead of black. CAN-01 changes.
+- The ink and the text stay white. The PDF of EXP-03 stays white with black ink and text (D-13).
+- The composite pass mixes the background and white with the coverage as weight: `background + (1 - background) * coverage`. It mixes the sRGB values that the drawable stores, as Core Animation does when it puts the live `PKCanvasView` on top. Full coverage stays 255 in each channel (D-38).
+- `DesignSystem.Color.canvasBackground` holds the color. `RendererConfiguration.background` takes it from the app, so `Rendering` needs no `DesignSystem` import. The default of the configuration stays black, so the coverage tests and their reference images do not change. A pixel test covers the new background.
+- The chrome background is gray 0.14 (RGB 36, 36, 36), darker than the new canvas and close to it. The token comment said that it "stands out from the black canvas". This decision does not change the chrome.
 
 ## Points in the request that conflict or are not complete
 

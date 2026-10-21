@@ -28,7 +28,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 
 ### 3.1 Canvas
 
-- CAN-01: The canvas background is black (`#000000`).
+- CAN-01: The canvas background is dark gray, RGB(41, 44, 51) (`#292C33`) (D-106).
 - CAN-02: The canvas has no edges. You can pan in every direction without a limit that you can feel.
 - CAN-03: You pan with one finger and zoom with two fingers. The pencil never pans.
 - CAN-04: The zoom has a minimum and a maximum. The start values are 0.25 and 8.0. The standard zoom is 1.0.
@@ -71,7 +71,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 - CARD-06: On the root canvas, a pinch past the minimum zoom springs back. Nothing else happens.
 - CARD-07: You can move a card and a text box with a finger (long press, then drag). Ink cannot move. Version 1 has no lasso (D-10).
 - CARD-08: You can delete and rename a card through a context menu (long press without a drag).
-- CARD-09: The tree depth has a limit of 32 levels.
+- CARD-09: The tree depth has a limit of 32 levels. The root canvas is level 0, and a card on a canvas of level n opens a canvas of level n + 1. "New card" on a canvas of level 32 is refused with a message (D-95).
 
 ### 3.6 Workspaces
 
@@ -84,7 +84,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 
 - UNDO-01: Undo and redo buttons are in the top right corner.
 - UNDO-02: Undo and redo work on the current canvas. Each canvas keeps its own history while the app runs (D-12).
-- UNDO-03: Undoable actions: add stroke, erase, add text box, edit text, delete text box, move, resize, create card, delete card, rename card. A text box has no resize (D-83).
+- UNDO-03: Undoable actions: add stroke, erase, add text box, edit text, delete text box, move, create card, delete card, rename card. Version 1 has no resize: a text box takes its size from its text (D-83), and a card keeps the size of its creation (D-102).
 - UNDO-04: Navigation and camera changes are not undoable.
 - EXP-01: An export button is in the top right corner, next to undo and redo.
 - EXP-02: Export makes a vector PDF of the current canvas. Ink is vector paths. Text is real text that you can select and search.
@@ -105,7 +105,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 
 These features are not part of Pointer. A pull request that adds one of them will be rejected:
 
-- Colors other than white ink on black.
+- Colors other than white ink and text on the canvas color of CAN-01.
 - Images, files, PDFs, links, audio, and video on the canvas.
 - Highlighters, shapes, rulers, and stickers.
 - Accounts, sharing, collaboration, and sync.
