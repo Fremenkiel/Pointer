@@ -23,6 +23,8 @@ public struct CanvasDependencies {
     public var onCameraRest: @MainActor (Camera) -> Void = { _ in }
     /// Shows a short message, for example at a limit (architecture.md section 10).
     public var onMessage: @MainActor (String) -> Void = { _ in }
+    /// Opens a card after a double tap on it (CARD-03, D-09).
+    public var onOpenCard: @MainActor (Card) -> Void = { _ in }
     /// The level of the canvas in the card tree: 0 for the root canvas (D-95).
     ///
     /// - Precondition: From 0 to `Limits.maxDepth`.

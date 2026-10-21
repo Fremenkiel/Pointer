@@ -64,6 +64,8 @@ public final class CanvasViewController: UIViewController {
     let onMessage: @MainActor (String) -> Void
     /// The level of the canvas in the card tree. "New card" is refused at `Limits.maxDepth`.
     let level: Int
+    /// Opens a card after a double tap on it (CARD-03).
+    let onOpenCard: @MainActor (Card) -> Void
 
     /// Makes the canvas screen.
     ///
@@ -85,15 +87,10 @@ public final class CanvasViewController: UIViewController {
         repository = dependencies.repository
         rowChannel = dependencies.repository.map { RowChannel(repository: $0) }
         sessions = dependencies.sessions
-        if let session = dependencies.sessions?.take(for: dependencies.canvasID) {
-            history = session.history
-            // The content is new, so it holds no erase record yet.
-            let skipped = content.adoptSessionRecords(session.erased)
-            assert(skipped == 0, "\(skipped) erase records of the session do not fit the load")
-        }
         onCameraRest = dependencies.onCameraRest
         onMessage = dependencies.onMessage
         level = dependencies.level
+        onOpenCard = dependencies.onOpenCard
         cameraController = CameraController(camera: renderer.camera, viewSize: .zero)
         let converter = PencilKitStrokeConverter(
             clock: dependencies.clock,
@@ -105,6 +102,7 @@ public final class CanvasViewController: UIViewController {
             converter: converter
         )
         super.init(nibName: nil, bundle: nil)
+        takeSession()
         // The fill content stays in memory and is never saved (D-55).
         add(dependencies.transientStrokes)
         loadRenderer()

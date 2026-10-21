@@ -169,6 +169,16 @@ extension CanvasViewController {
         return { [weak self] time in self?.onStepDrawn?(time) }
     }
 
+    /// Takes the history and the erase records of an earlier visit of the canvas from the
+    /// sessions of the app, so that an undo reaches the steps of that visit (D-12).
+    func takeSession() {
+        guard let session = sessions?.take(for: content.canvasID) else { return }
+        history = session.history
+        // The content is new, so it holds no erase record yet.
+        let skipped = content.adoptSessionRecords(session.erased)
+        assert(skipped == 0, "\(skipped) erase records of the session do not fit the load")
+    }
+
     /// Keeps the session of this visit in the sessions of the app (D-12). The app calls it
     /// before it makes the next canvas screen, so that a screen of the same canvas finds the
     /// steps of this visit (F-02). A second call does nothing.

@@ -352,6 +352,8 @@ Done when: tests cover a double tap on a card, on a text box over a card, and on
 
 Rules: CARD-03, TOOL-06, D-09, D-100.
 
+Status: done on 2026-10-21, except the measure of item 5. The double tap calls `CanvasDependencies.onOpenCard`, which task 4.4 connects. The finger tap is a `LiftTimedTap` that notes the time of the finger lift, and the canvas logs "Tap wait N ms, on a card: true" at each finger tap. The measure needs real fingers, so it runs in the manual session of task 4.7 with a capture of the log. The pencil tap keeps its M5 rule: with the text tool, it makes a text box on the parent canvas, also on a card. `takeSession()` moved out of the initializer of the canvas (SIZE-01). On the iPad, the 5 new tests pass with the tests of tasks 4.1 and 4.2, `TextEditTests`, and `ScribbleConditionTests`.
+
 #### 4.4 Navigation and the canvas of a card
 
 1. `AppComposition` opens a canvas by `NavigationPath`, not by workspace. A workspace switch opens the deepest canvas of the stored path (D-99, D-112).

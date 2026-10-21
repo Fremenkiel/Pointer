@@ -16,6 +16,7 @@ extension CanvasViewController: UIGestureRecognizerDelegate {
             gestureRecognizer === textEditing.pencilTap
             || gestureRecognizer === textEditing.fingerTap
             || gestureRecognizer === textEditing.longPress
+            || gestureRecognizer === textEditing.doubleTap
         if isTextRecognizer, !(touch.view.map(canvasView.isSurface) ?? false) { return false }
         if gestureRecognizer === textEditing.pencilTap { return touch.type == .pencil }
         guard touch.type == .direct else { return false }
@@ -31,10 +32,26 @@ extension CanvasViewController: UIGestureRecognizerDelegate {
         return isAllowed
     }
 
-    /// A long press begins only on a text box (CARD-07, D-89).
+    /// A long press begins while editing is on (CARD-01, CARD-07). A double tap begins only on
+    /// a card that no text box covers (D-100).
     public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        if gestureRecognizer === textEditing.doubleTap {
+            return openableCard(at: canvasPoint(of: gestureRecognizer)) != nil
+        }
         guard gestureRecognizer === textEditing.longPress else { return true }
         return longPressCanBegin(gestureRecognizer)
+    }
+
+    /// The finger tap waits for the double tap only on a card that no text box covers, so a tap
+    /// on a text box starts its edit at once (D-100).
+    public func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRequireFailureOf otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        guard gestureRecognizer === textEditing.fingerTap,
+            otherGestureRecognizer === textEditing.doubleTap
+        else { return false }
+        return fingerTapWaits(at: canvasPoint(of: gestureRecognizer))
     }
 
     /// Pan and pinch run together, so a second finger can join a pan.
@@ -71,6 +88,7 @@ extension CanvasViewController: UIGestureRecognizerDelegate {
         let isOwn =
             gestureRecognizer === textEditing.fingerTap
             || gestureRecognizer === textEditing.longPress
+            || gestureRecognizer === textEditing.doubleTap
         guard isOwn, let view = otherGestureRecognizer.view,
             view.isDescendant(of: canvasView.liveCanvas)
         else { return false }

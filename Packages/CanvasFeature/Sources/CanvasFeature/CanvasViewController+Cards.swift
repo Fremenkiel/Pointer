@@ -227,4 +227,39 @@ extension CanvasViewController {
             preconditionFailure("The empty list has a midpoint: \(error)")
         }
     }
+
+    /// Returns the card that a double tap at a canvas point opens: a card that no text box
+    /// covers there (D-100), or `nil`.
+    func openableCard(at point: Point) -> Card? {
+        guard point.isFinite, textBox(at: point) == nil else { return nil }
+        return card(at: point)
+    }
+
+    /// Opens the card under a finger double tap (CARD-03, D-09). A running edit ends first.
+    @objc func handleDoubleTap(_ recognizer: UITapGestureRecognizer) {
+        guard recognizer.state == .ended else { return }
+        openCard(at: canvasPoint(of: recognizer))
+    }
+
+    /// Opens the card at a canvas point that no text box covers. A running edit ends first.
+    func openCard(at point: Point) {
+        guard let card = openableCard(at: point) else { return }
+        endTextEdit()
+        onOpenCard(card)
+    }
+
+    /// `true` if a finger tap at a canvas point waits for the double tap: only on a card that no
+    /// text box covers (D-100).
+    func fingerTapWaits(at point: Point) -> Bool {
+        openableCard(at: point) != nil
+    }
+
+    /// Logs the wait of a single tap from the finger lift, for the measure of the delay of a
+    /// tap on a card (m6-plan.md task 4.3). The log holds a number only, no content.
+    func logTapWait() {
+        guard let lift = textEditing.fingerTap.liftTime else { return }
+        let wait = (CACurrentMediaTime() - lift) * 1_000
+        let onCard = openableCard(at: canvasPoint(of: textEditing.fingerTap)) != nil
+        logger.info("Tap wait \(wait, format: .fixed(precision: 1)) ms, on a card: \(onCard)")
+    }
 }
