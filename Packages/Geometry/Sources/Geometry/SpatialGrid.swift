@@ -43,6 +43,15 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     /// The number of cells that hold at least one item.
     public var occupiedCellCount: Int { cells.count }
 
+    /// Reserves room for `count` items, so that a load grows the item table once (PERF-01).
+    ///
+    /// - Precondition: `count` is not negative.
+    public mutating func reserveCapacity(_ count: Int) {
+        precondition(count >= 0, "A grid reserves no negative count, got \(count)")
+        boundsByID.reserveCapacity(count)
+        assert(boundsByID.capacity >= count, "The grid holds room for \(count) items")
+    }
+
     /// Returns the bounds of an item, or `nil` if the grid does not hold it.
     public func bounds(of id: ID) -> Rect? { boundsByID[id] }
 

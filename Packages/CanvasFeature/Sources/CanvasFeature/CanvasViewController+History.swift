@@ -67,10 +67,15 @@ extension CanvasViewController {
         if !texts.removed.isEmpty || !texts.added.isEmpty {
             renderer.changeTextBoxes(removing: texts.removed, adding: texts.added)
         }
+        let cards = Self.cardDelta(of: rows)
+        if !cards.removed.isEmpty || !cards.added.isEmpty {
+            renderer.changeCards(removing: cards.removed, adding: cards.added)
+        }
         let (removed, added) =
             Self.renderDelta(of: command, isUndo: isUndo) ?? renderDelta(of: rows)
-        let isTextOnly = texts.added.count + texts.removed.count == rows.count
-        if !removed.isEmpty || !added.isEmpty || !isTextOnly {
+        let textRows = texts.added.count + texts.removed.count
+        let nodeRows = textRows + cards.added.count + cards.removed.count
+        if !removed.isEmpty || !added.isEmpty || nodeRows != rows.count {
             renderer.change(
                 removing: removed,
                 adding: added,
@@ -138,6 +143,22 @@ extension CanvasViewController {
             }
         }
         assert(removed.count + added.count <= rows.count, "Each text row gives one change")
+        return (removed, added)
+    }
+
+    /// Returns the cards that the rows of a step remove from the screen and add to it: a
+    /// tombstone removes a card, and a live card takes its place.
+    static func cardDelta(of rows: [LibraryChange]) -> (removed: [CardID], added: [Card]) {
+        var removed: [CardID] = []
+        var added: [Card] = []
+        for case .card(let card) in rows {
+            if card.meta.isDeleted {
+                removed.append(card.id)
+            } else {
+                added.append(card)
+            }
+        }
+        assert(removed.count + added.count <= rows.count, "Each card row gives one change")
         return (removed, added)
     }
 

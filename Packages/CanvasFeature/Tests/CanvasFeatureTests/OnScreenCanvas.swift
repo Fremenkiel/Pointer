@@ -87,6 +87,12 @@ enum OnScreenCanvas {
         }
         let end = clock.now
         let held = os_proc_available_memory()
+        // The layouts of the text and the card titles run after the first frame (D-92). They end
+        // before the close, so that no work of this open runs into the next (m6-plan.md 3.7).
+        while renderer.isLoadingText || renderer.isLoadingCards {
+            guard clock.now < deadline else { throw OpenTimedOut() }
+            try await Task.sleep(for: pollInterval)
+        }
         close(canvas)
         try await Task.sleep(for: settleTime)
         return OpenMeasurement(

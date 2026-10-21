@@ -47,21 +47,36 @@ final class TextStore {
     /// - Precondition: The boxes are at most `Limits.maxNodesPerCanvas`.
     static func layOut(_ boxes: [TextBox]) -> [LaidOut] {
         precondition(boxes.count <= Limits.maxNodesPerCanvas, "Too many text boxes")
-        let chunkCount = min(max(boxes.count / minimumChunk, 1), maxChunks)
-        let chunkSize = (boxes.count + chunkCount - 1) / chunkCount
-        assert(chunkCount * chunkSize >= boxes.count, "The chunks cover each box")
+        let layouts = inChunks(boxes) { TextLayout(text: $0.text) }
+        assert(layouts.count == boxes.count, "Each box has its layout")
+        return zip(boxes, layouts).map { LaidOut(box: $0, layout: $1) }
+    }
+
+    /// Runs `transform` on each item in up to `maxChunks` chunks on several threads, and returns
+    /// the results in the order of the items. The text boxes and the card titles of a load use
+    /// it (D-92).
+    ///
+    /// - Precondition: The items are at most `Limits.maxNodesPerCanvas`.
+    static func inChunks<Item: Sendable, Result: Sendable>(
+        _ items: [Item],
+        _ transform: @Sendable (Item) -> Result
+    ) -> [Result] {
+        precondition(items.count <= Limits.maxNodesPerCanvas, "Too many items in one load")
+        let chunkCount = min(max(items.count / minimumChunk, 1), maxChunks)
+        let chunkSize = (items.count + chunkCount - 1) / chunkCount
+        assert(chunkCount * chunkSize >= items.count, "The chunks cover each item")
         let results = OSAllocatedUnfairLock(
-            initialState: [[TextLayout]](repeating: [], count: chunkCount)
+            initialState: [[Result]](repeating: [], count: chunkCount)
         )
         DispatchQueue.concurrentPerform(iterations: chunkCount) { chunk in
             let range =
-                min(chunk * chunkSize, boxes.count)..<min((chunk + 1) * chunkSize, boxes.count)
-            let local = boxes[range].map { TextLayout(text: $0.text) }
+                min(chunk * chunkSize, items.count)..<min((chunk + 1) * chunkSize, items.count)
+            let local = items[range].map(transform)
             results.withLock { $0[chunk] = local }
         }
-        let layouts = results.withLock { $0 }.flatMap { $0 }
-        assert(layouts.count == boxes.count, "Each box has its layout")
-        return zip(boxes, layouts).map { LaidOut(box: $0, layout: $1) }
+        let all = results.withLock { $0 }.flatMap { $0 }
+        assert(all.count == items.count, "Each item has its result")
+        return all
     }
 
     /// Adds a text box, or replaces the box with the same ID, and lays out its text. A box with

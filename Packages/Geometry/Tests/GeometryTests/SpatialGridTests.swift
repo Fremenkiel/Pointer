@@ -64,3 +64,17 @@ struct SpatialGridTests {
         )
     }
 }
+
+@Suite("Spatial grid reserve")
+struct SpatialGridReserveTests {
+    @Test("A reserve keeps the grid empty and lets the items in", arguments: [0, 1, 5_000])
+    func reserve(count: Int) {
+        var grid = SpatialGrid<Int>(cellSize: 512)
+        grid.reserveCapacity(count)
+        #expect(grid.count == 0)
+        for id in 0..<count {
+            grid.insert(id, bounds: Rect(origin: Point(x: Double(id), y: 0), size: .zero))
+        }
+        #expect(grid.count == count)
+    }
+}

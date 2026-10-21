@@ -25,6 +25,8 @@ final class FrameRenderer {
     /// The boxes that an edit changed while a load ran. The load skips them, because the edit is
     /// newer.
     var textEditedDuringLoad: Set<TextBoxID> = []
+    /// The cards with the layouts of their titles (D-96).
+    let cards = CardStore()
     private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     /// The committed layer, or `nil` before the first frame with a drawable size.
@@ -47,7 +49,7 @@ final class FrameRenderer {
     /// `true` after a new viewport until the next frame makes a new committed layer.
     private var needsNewLayer = false
     private(set) var viewSize = Size.zero
-    private var displayScale = 1.0
+    private(set) var displayScale = 1.0
     /// Runs on any thread after the first frame that shows the strokes of a handoff, with the
     /// number of the newest handoff in that frame.
     private let onPresented: @Sendable (UInt64) -> Void
@@ -62,7 +64,7 @@ final class FrameRenderer {
     var onCommit: ((any MTLCommandBuffer, any CAMetalDrawable) -> Void)?
 
     /// The composite pass of each frame, made once (PERF-01, docs/m2-fix-plan.md, phase 5).
-    private let compositePass: MTLRenderPassDescriptor = {
+    let compositePass: MTLRenderPassDescriptor = {
         let pass = MTLRenderPassDescriptor()
         pass.colorAttachments[0].loadAction = .clear
         pass.colorAttachments[0].storeAction = .store
@@ -251,54 +253,6 @@ final class FrameRenderer {
             text: textEncoder
         )
         assert(layer.front != nil || layer.isBuilding, "The layer has a front texture or a build")
-    }
-
-    private func encodeComposite(
-        layer: CommittedLayer,
-        commandBuffer: any MTLCommandBuffer,
-        texture: any MTLTexture
-    ) {
-        precondition(
-            texture.pixelFormat == InkResources.drawableFormat,
-            "Drawable format is not BGRA"
-        )
-        let pass = compositePass
-        pass.colorAttachments[0].texture = texture
-        let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass)
-        // The descriptor lives on, so it must not hold the drawable after the frame.
-        pass.colorAttachments[0].texture = nil
-        guard let encoder else {
-            assertionFailure("Metal gave no render encoder for the composite pass")
-            return
-        }
-        #if DEBUG
-            // A label costs two allocations per frame and helps only in a GPU capture.
-            encoder.label = "Composite"
-        #endif
-        if let front = layer.shown {
-            let size = Size(width: Double(texture.width), height: Double(texture.height))
-            // The mask uses the mapping of the front texture, so a fallback shows no mask.
-            let mask =
-                eraserMask.hasStamps && front.texture === layer.front?.texture ? layer.mask : nil
-            encoder.setRenderPipelineState(
-                mask == nil ? resources.compositePipeline : resources.compositeMaskedPipeline
-            )
-            encoder.setFragmentTexture(front.texture, index: 0)
-            if let mask {
-                encoder.setFragmentTexture(mask, index: 1)
-            }
-            encoder.setFragmentValue(
-                layer.compositeUniforms(
-                    camera: camera,
-                    displayScale: displayScale,
-                    drawableSize: size,
-                    background: configuration.background
-                ),
-                index: 0
-            )
-            encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
-        }
-        encoder.endEncoding()
     }
 
     /// A new stroke is on the screen when a front texture exists and the frame drew the last

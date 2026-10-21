@@ -104,7 +104,7 @@ public final class CanvasViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
         // The fill content stays in memory and is never saved (D-55).
         add(dependencies.transientStrokes)
-        renderer.load(Array(content.strokes.values))
+        loadRenderer()
         assert(
             content.strokes.count
                 == dependencies.content.strokes.count + dependencies.transientStrokes.count,

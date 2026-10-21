@@ -66,7 +66,7 @@ final class FrameLoopTests: XCTestCase {
         renderer.load(text)
         try setUp(renderer, view: view)
         // The text layout runs off the render thread (D-92). The measure starts after it.
-        for _ in 0..<5_000 where renderer.isLoadingText {
+        for _ in 0..<5_000 where renderer.isLoadingText || renderer.isLoadingCards {
             RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.001))
         }
         let start = Camera(center: .zero, zoom: Limits.minZoom)

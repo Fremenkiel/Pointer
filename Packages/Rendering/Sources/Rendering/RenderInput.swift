@@ -15,6 +15,14 @@ struct RenderInput: Sendable {
     let textLoadsInFlight: Int
     /// The changes of the text boxes, in order.
     let textEdits: [TextEdit]
+    /// The cards of a load with their title layouts (D-92).
+    let laidOutCards: [CardStore.LaidOut]
+    /// The number of cards that a card load reserves room for, or `nil`.
+    let cardReserve: Int?
+    /// The loads whose title layouts still run off the render thread.
+    let cardLoadsInFlight: Int
+    /// The changes of the cards, in order.
+    let cardEdits: [CardEdit]
     /// The edits, in order.
     let edits: [RenderEdit]
     /// The newest handoff of `edits`, or 0.
@@ -36,6 +44,7 @@ struct RenderInput: Sendable {
     var hasChange: Bool {
         camera != nil || viewport != nil || !loaded.isEmpty || !edits.isEmpty
             || !laidOutText.isEmpty || !textEdits.isEmpty
+            || !laidOutCards.isEmpty || !cardEdits.isEmpty
             || eraserStart != nil || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
     }
 }

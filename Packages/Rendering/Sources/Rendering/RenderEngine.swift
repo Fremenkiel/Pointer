@@ -56,6 +56,11 @@ final class RenderEngine: Sendable {
         inbox.withLock { $0.textLoadsInFlight > 0 || !$0.laidOutText.isEmpty }
     }
 
+    /// `true` while a title layout of a card load runs or waits for a frame (D-92).
+    var isLoadingCards: Bool {
+        inbox.withLock { $0.cardLoadsInFlight > 0 || !$0.laidOutCards.isEmpty }
+    }
+
     /// Applies a change to the inbox and wakes the frame loop if it sleeps.
     func post(_ change: (inout RenderInbox) -> Void) {
         let (wake, signalsCamera) = inbox.withLock { box -> ((@Sendable () -> Void)?, Bool) in
@@ -204,6 +209,23 @@ final class RenderEngine: Sendable {
         }
     }
 
+    /// Applies the loaded cards and the card edits of a frame, as `applyText` does.
+    private static func applyCards(_ input: RenderInput, to renderer: FrameRenderer) {
+        assert(input.cardLoadsInFlight >= 0, "Card loads in flight \(input.cardLoadsInFlight)")
+        if let reserve = input.cardReserve {
+            renderer.cards.reserveCapacity(reserve)
+        }
+        if !input.laidOutCards.isEmpty {
+            renderer.insert(input.laidOutCards)
+        }
+        renderer.cards.loadsInFlight = input.cardLoadsInFlight
+        if input.cardLoadsInFlight == 0 { renderer.cards.editedDuringLoad.removeAll() }
+        for edit in input.cardEdits {
+            renderer.apply(edit)
+        }
+        assert(renderer.cards.count <= Limits.maxNodesPerCanvas, "The cards keep the node limit")
+    }
+
     private static func apply(_ input: RenderInput, to renderer: FrameRenderer) {
         assert(input.edits.isEmpty || input.editHandoff > 0, "Edits need a handoff number")
         if let viewport = input.viewport {
@@ -216,6 +238,7 @@ final class RenderEngine: Sendable {
             renderer.load(input.loaded)
         }
         applyText(input, to: renderer)
+        applyCards(input, to: renderer)
         if let ready = input.eraserReady {
             renderer.isEraserReady = ready
         }

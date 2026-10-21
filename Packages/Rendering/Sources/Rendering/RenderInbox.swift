@@ -18,6 +18,14 @@ struct RenderInbox {
     var textLoadsInFlight = 0
     /// The changes of the text boxes, in order.
     var textEdits: [TextEdit] = []
+    /// The cards of a load with their title layouts, made off the render thread (D-92).
+    var laidOutCards: [CardStore.LaidOut] = []
+    /// The number of cards that the waiting card load reserves room for, or `nil`.
+    var cardReserve: Int?
+    /// The loads whose title layouts run off the render thread.
+    var cardLoadsInFlight = 0
+    /// The changes of the cards, in order.
+    var cardEdits: [CardEdit] = []
     /// The edits of handoffs, erases, undo steps, and redo steps, in order.
     var edits: [RenderEdit] = []
     /// The number of the newest handoff in `edits`, or 0.
@@ -55,6 +63,7 @@ struct RenderInbox {
     var hasContentChange: Bool {
         viewport != nil || !loaded.isEmpty || !edits.isEmpty || eraserStart != nil
             || !laidOutText.isEmpty || !textEdits.isEmpty
+            || !laidOutCards.isEmpty || !cardEdits.isEmpty
             || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
     }
 
@@ -68,6 +77,10 @@ struct RenderInbox {
             laidOutText: laidOutText,
             textLoadsInFlight: textLoadsInFlight,
             textEdits: textEdits,
+            laidOutCards: laidOutCards,
+            cardReserve: cardReserve,
+            cardLoadsInFlight: cardLoadsInFlight,
+            cardEdits: cardEdits,
             edits: edits,
             editHandoff: editHandoff,
             editsWantCompletion: editsWantCompletion,
@@ -88,6 +101,9 @@ struct RenderInbox {
         loaded = []
         laidOutText = []
         textEdits = []
+        laidOutCards = []
+        cardReserve = nil
+        cardEdits = []
         edits = []
         editHandoff = 0
         editsWantCompletion = false
