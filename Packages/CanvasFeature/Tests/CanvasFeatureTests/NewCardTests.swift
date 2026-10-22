@@ -55,11 +55,7 @@ struct NewCardTests {
         let controller = try makeController()
         controller.showPendingCard()
         let card = try #require(controller.textEditing.pendingCard)
-        let frame = Card.defaultFrame(
-            at: Self.leftEdge,
-            camera: Camera(center: .zero, zoom: 1),
-            viewSize: Self.viewSize
-        )
+        let frame = Card.defaultFrame(at: Self.leftEdge)
         #expect(card.frame == frame)
         #expect(card.frame.center == Self.leftEdge)
         #expect(controller.content.cards.isEmpty)

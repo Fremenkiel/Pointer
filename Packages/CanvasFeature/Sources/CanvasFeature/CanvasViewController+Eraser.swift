@@ -66,7 +66,7 @@ extension CanvasViewController {
         precondition(!samples.isEmpty, "An eraser path needs a sample")
         CanvasSignpost.begin("EraseSplit")
         defer { CanvasSignpost.end("EraseSplit") }
-        let camera = cameraController.camera
+        let camera = cameraController.shownCamera
         let path = EraserPath(
             samples: samples.map { camera.canvasPoint(fromView: $0, viewSize: viewSize) },
             radius: EraserTool.canvasRadius(zoom: camera.zoom)

@@ -52,10 +52,11 @@ struct PinchCancelTests {
         return (tree, composition)
     }
 
-    /// Pinches the shown canvas from zoom 1 to a raw zoom of `factor` times the exit zoom.
+    /// Pinches the shown canvas from zoom 1 to a raw zoom of `factor` times the exit zoom. Inside
+    /// a card, the exit zoom is `exitZoomRatio` times zoom 1 (D-119).
     private static func pinch(_ canvas: CanvasViewController, to factor: Double) {
         let pinch = ScriptedPinch()
-        let raw = Limits.minZoom * CameraController.exitZoomRatio * factor
+        let raw = Limits.standardZoom * CameraController.exitZoomRatio * factor
         pinch.send(.began, scale: 1, to: canvas)
         for step in 1...20 {
             let scale = 1 + (raw - 1) * Double(step) / 20
@@ -64,7 +65,7 @@ struct PinchCancelTests {
         pinch.send(.ended, scale: raw, to: canvas)
     }
 
-    @Test("A lift above the threshold keeps the child, and the camera springs back to minZoom")
+    @Test("A lift above the threshold keeps the child at zoom 1 (D-119)")
     func liftAbove() async throws {
         let (tree, composition) = try await Self.child()
         defer {
@@ -73,16 +74,21 @@ struct PinchCancelTests {
         }
         let child = try #require(composition.container.canvas)
         #expect(child.camera.zoom == Limits.standardZoom)
+        let start = child.camera
         Self.pinch(child, to: 1.05)
+        // Inside a card, the screen shows no zoom (D-119).
+        #expect(child.renderer.camera == start)
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: NavigationTests.timeout)
-        while child.camera.zoom != Limits.minZoom {
+        while child.cameraController.isAnimating {
             guard clock.now < deadline else {
-                Issue.record("The camera stopped at zoom \(child.camera.zoom)")
+                Issue.record("The spring did not end at zoom \(child.cameraController.camera.zoom)")
                 throw OpenTimedOut()
             }
             try await Task.sleep(for: .milliseconds(10))
         }
+        #expect(child.cameraController.camera == start)
+        #expect(child.renderer.camera == start)
         #expect(composition.container.canvas === child)
         #expect(composition.path?.level == 1)
         #expect(composition.opening == nil, "No leave started")

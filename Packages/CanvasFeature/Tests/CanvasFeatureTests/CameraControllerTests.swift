@@ -213,3 +213,66 @@ struct PinchExitTests {
         )
     }
 }
+
+@Suite("Fixed zoom inside a card")
+struct FixedZoomTests {
+    private static let viewSize = Size(width: 400, height: 300)
+    private static let start = Camera(center: Point(x: 30, y: -20), zoom: 1)
+
+    private static func controller() -> CameraController {
+        CameraController(
+            camera: start,
+            viewSize: viewSize,
+            zoomRange: Limits.standardZoom...Limits.standardZoom
+        )
+    }
+
+    @Test("A pinch inside a card shows no zoom and no pan, and drives the exit (D-119)")
+    func pinchShowsNoZoom() {
+        var subject = Self.controller()
+        subject.beginPinch(centroid: Point(x: 50, y: 60))
+        subject.updatePinch(scale: 0.85, centroid: Point(x: 90, y: 100))
+        #expect(subject.shownCamera == Self.start)
+        #expect(subject.camera.center == Self.start.center)
+        #expect(subject.exitProgress > 0 && subject.exitProgress < 1)
+        subject.updatePinch(scale: CameraController.exitZoomRatio, centroid: Point(x: 90, y: 100))
+        #expect(abs(subject.exitProgress - 1) < 1e-9)
+        #expect(subject.exitCamera.center == Self.start.center)
+    }
+
+    @Test("A lift above the threshold springs back to zoom 1 at the same center")
+    func springBack() {
+        var subject = Self.controller()
+        subject.beginPinch(centroid: Point(x: 50, y: 60))
+        subject.updatePinch(scale: CameraController.exitZoomRatio * 1.05, centroid: .zero)
+        let leaves = subject.endPinch(canLeave: true)
+        #expect(!leaves)
+        var time = 1.0
+        for _ in 0..<1_000 where subject.step(to: time) { time += 1.0 / 120 }
+        #expect(subject.camera == Self.start)
+        #expect(subject.exitProgress == 0)
+    }
+
+    @Test("A lift under the threshold leaves, and a pinch-in shows nothing")
+    func leaveAndPinchIn() {
+        var subject = Self.controller()
+        subject.beginPinch(centroid: Point(x: 50, y: 60))
+        subject.updatePinch(scale: CameraController.exitZoomRatio * 0.95, centroid: .zero)
+        let leaves = subject.endPinch(canLeave: true)
+        #expect(leaves)
+        var inside = Self.controller()
+        inside.beginPinch(centroid: Point(x: 50, y: 60))
+        inside.updatePinch(scale: 3, centroid: Point(x: 70, y: 60))
+        #expect(inside.shownCamera == Self.start)
+        #expect(inside.exitProgress == 0)
+        let insideLeaves = inside.endPinch(canLeave: true)
+        #expect(!insideLeaves)
+    }
+
+    @Test("A pan inside a card moves the camera at zoom 1")
+    func pan() {
+        var subject = Self.controller()
+        subject.pan(byView: Vector(dx: 100, dy: 0))
+        #expect(subject.shownCamera == Camera(center: Point(x: -70, y: -20), zoom: 1))
+    }
+}

@@ -30,8 +30,8 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 
 - CAN-01: The canvas background is dark gray, RGB(24, 24, 24) (`#181818`) (D-106).
 - CAN-02: The canvas has no edges. You can pan in every direction without a limit that you can feel.
-- CAN-03: You pan with one finger and zoom with two fingers. The pencil never pans.
-- CAN-04: The zoom has a minimum and a maximum. The start values are 0.25 and 8.0. The standard zoom is 1.0.
+- CAN-03: You pan with one finger and zoom with two fingers. The pencil never pans. A canvas inside a card does not zoom. It always shows at the standard zoom (D-119).
+- CAN-04: The zoom of the root canvas has a minimum and a maximum. The start values are 0.25 and 8.0. The standard zoom is 1.0.
 - CAN-05: Pan and zoom run at the display refresh rate (120 Hz on ProMotion iPads) without dropped frames.
 
 ### 3.2 Tools
@@ -67,7 +67,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 - CARD-02: A card shows a frame with a light gray body, an optional title, and a scaled preview of its content (D-116).
 - CARD-03: You open a card with a finger tap on the card (D-115). The app zooms into the card and shows its canvas at the standard zoom.
 - CARD-04: An up button leaves the current card. The app shows the parent canvas at the standard zoom, centered on the card.
-- CARD-05: If you pinch past the minimum zoom inside a card, the card shrinks toward its frame in the parent. When you release past a threshold, a minimize animation takes you to the parent canvas at the standard zoom. If you release before the threshold, the camera springs back to the minimum zoom.
+- CARD-05: If you pinch out inside a card, the card shrinks toward its frame in the parent. The content of the card does not zoom (D-119). When you release past a threshold, a minimize animation takes you to the parent canvas at the standard zoom. If you release before the threshold, the card springs back to full screen.
 - CARD-06: On the root canvas, a pinch past the minimum zoom springs back. Nothing else happens.
 - CARD-07: You can move a card and a text box with a finger (long press, then drag). Ink cannot move. Version 1 has no lasso (D-10).
 - CARD-08: You can delete and rename a card through a context menu (long press without a drag).

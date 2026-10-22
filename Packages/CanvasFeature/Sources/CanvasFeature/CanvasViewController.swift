@@ -83,7 +83,9 @@ public final class CanvasViewController: UIViewController {
             "The canvas holds at most \(Limits.maxStrokesAfterErase) strokes"
         )
         renderer = dependencies.renderer
-        if let camera = dependencies.camera { renderer.camera = camera }
+        let camera = dependencies.camera ?? renderer.camera
+        cameraController = CameraController(camera, dependencies.level)
+        renderer.camera = cameraController.camera
         canvasView = CanvasView(renderer: renderer)
         // `applyCamera` sets the width only when the zoom changes, so a stored zoom needs it here.
         canvasView.liveCanvas.tool = PenTool.inkingTool(zoom: renderer.camera.zoom)
@@ -97,7 +99,6 @@ public final class CanvasViewController: UIViewController {
         level = dependencies.level
         onOpenCard = dependencies.onOpenCard
         parentLink = ParentLink(card: dependencies.parentCard, onLeave: dependencies.onPinchLeave)
-        cameraController = CameraController(camera: renderer.camera, viewSize: .zero)
         let converter = PencilKitStrokeConverter(
             clock: dependencies.clock,
             canvasID: dependencies.canvasID
@@ -123,7 +124,7 @@ public final class CanvasViewController: UIViewController {
     public var canvasID: CanvasID { content.canvasID }
 
     /// The camera that the canvas shows now.
-    public var camera: Camera { cameraController.camera }
+    public var camera: Camera { cameraController.shownCamera }
 
     /// False while the library cannot save. The pencil then draws and erases nothing (storage.md
     /// 4, D-70).
@@ -245,7 +246,7 @@ public final class CanvasViewController: UIViewController {
         isCameraMoving = false
         // A flight of a card or a pinch-out exit leaves the camera outside the zoom range, and
         // the device state stores cameras of the range only (D-53).
-        let camera = cameraController.camera
+        let camera = cameraController.shownCamera
         guard cardTransition == nil, parentLink.exit == nil, Limits.zoomRange.contains(camera.zoom)
         else { return }
         onCameraRest(camera)
@@ -326,7 +327,7 @@ public final class CanvasViewController: UIViewController {
 
     /// Sends the camera to the renderer and the matching pen width to the live canvas.
     private func applyCamera() {
-        let camera = cameraController.camera
+        let camera = cameraController.shownCamera
         if camera != renderer.camera { isCameraMoving = true }
         if camera.zoom != renderer.camera.zoom {
             canvasView.liveCanvas.tool = PenTool.inkingTool(zoom: camera.zoom)
@@ -343,7 +344,7 @@ extension CanvasViewController: PKCanvasViewDelegate {
     /// Hands off each finished stroke.
     public func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
         guard viewSize.width > 0, viewSize.height > 0 else { return }
-        handoff.drawingDidChange(camera: cameraController.camera, viewSize: viewSize)
+        handoff.drawingDidChange(camera: cameraController.shownCamera, viewSize: viewSize)
     }
 
     /// The pencil starts a live stroke. The removal of handed-off strokes waits.

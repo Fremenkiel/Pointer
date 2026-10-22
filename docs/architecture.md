@@ -302,7 +302,7 @@ Layer order on a canvas, from bottom to top: cards, ink, text boxes (decision D-
 
 The preview is a gray 8-bit PNG per child canvas in `Caches/Pointer/previews/<canvas-id>.png` (D-97). The app writes it when you leave the child canvas, because a canvas changes only while it is on the screen (STO-01). A leave is the up button, the pinch-out, a workspace switch, or the move to the background (D-111). iOS refuses work on the GPU in the background, so the render for the background starts when the scene resigns active. The child stays on the screen until its render ends, because the render runs on its frames. At a leave, the parent shows the new image at once, without a read of the file. `Rendering` encodes and decodes the PNG with ImageIO, and `PreviewStore` in `Persistence` reads and writes the file as `Data` (D-107). The preview shows the region of the child that the open camera of section 6.2 shows, cut to the aspect of the card (D-98). It shows content one level deep. Deeper cards show as empty frames. The renderer reads the files of the visible cards off the main actor, after the first frame, as it lays out the text (D-92). A cache with a byte budget holds the decoded previews, 8 MB as a start value. The size comes in steps of 128, 256, and 512 pixels, from the size of the card on the screen. If a file is missing, the app loads that child canvas alone off the main actor and draws its preview. A restore (M9) clears the folder.
 
-A new card is a quarter of the screen width wide, with the aspect of the screen, centered on the point of the long press, and has no title (D-101). At a high zoom, the minimum size of data-model.md section 7.2 sets the size. "Rename" opens an alert with a text field, as the workspace rename does. Version 1 has no resize of a card (D-102).
+A new card is 320 by 224 canvas points at each zoom (D-118). It comes from the card button, centered on the left edge of the screen, and has no title (D-101, D-117). "Rename" opens an alert with a text field, as the workspace rename does. Version 1 has no resize of a card (D-102).
 
 ### 5.6 Spatial index
 
@@ -321,7 +321,7 @@ struct Camera: Equatable, Sendable {
 }
 ```
 
-The limits are `Limits.minZoom = 0.25`, `Limits.maxZoom = 8.0`, and `Limits.standardZoom = 1.0`. `CameraController` turns pan and pinch input into camera changes. It also applies deceleration and the rubber band below the minimum zoom.
+The limits are `Limits.minZoom = 0.25`, `Limits.maxZoom = 8.0`, and `Limits.standardZoom = 1.0`. They apply to the root canvas. A canvas inside a card has the zoom range 1...1 (D-119). `CameraController` turns pan and pinch input into camera changes. It also applies deceleration and the rubber band below the minimum zoom.
 
 The camera of each canvas is stored in the device state, not in the library (see [storage.md](storage.md)). The app reads it only at launch and at a workspace switch, for the deepest canvas of the stored path (WS-04). An open by a double tap, the up button, or a pinch-out uses the cameras of sections 6.2 and 6.3 (D-99).
 
@@ -338,11 +338,11 @@ The camera of each canvas is stored in the device state, not in the library (see
 There are two ways to leave a card:
 
 - Up button. The tap starts the load of the parent. In the same time, the controller moves the child camera to the camera of the open (section 6.2). When both are done, the animation starts (D-109). Then it shows the parent canvas with the camera on the card center at the standard zoom, and plays the open animation in reverse: the child shrinks into the card frame.
-- Pinch out. Below `minZoom`, the zoom does not stop. It continues with resistance (rubber band). While below `minZoom`, the controller shows the child as a shrinking card over a faded image of the parent. The image is the frozen copy of the open (section 6.2). It exists only for the direct parent of an open in this run of the app. Without it, the pinch below `minZoom` starts the load of the parent. It shows the canvas color until the first frame of the parent (D-109). If the fingers lift when the zoom of the fingers, without the rubber band, is under `minZoom * 0.7`, the controller plays the minimize animation and shows the parent at the standard zoom (D-104). During it, the child image crossfades to the preview while the card shrinks. Otherwise, the camera springs back to `minZoom`.
+- Pinch out. A canvas inside a card has the zoom range 1...1, so the screen shows no zoom (D-119). The zoom of the fingers continues below 1 with resistance (rubber band), and it drives only the exit. The controller shows the child at zoom 1 as a shrinking card over a faded image of the parent. The image is the frozen copy of the open (section 6.2). It exists only for the direct parent of an open in this run of the app. Without it, the pinch below `minZoom` starts the load of the parent. It shows the canvas color until the first frame of the parent (D-109). If the fingers lift when the zoom of the fingers, without the rubber band, is under `0.7` times zoom 1, the controller plays the minimize animation and shows the parent at the standard zoom (D-104). At the end, the child image crossfades to the preview. Both show the child at zoom 1. Otherwise, the card springs back to full screen.
 
 On the root canvas, the rubber band springs back. No transition happens (CARD-06).
 
-The threshold is `0.7`. The start value was `0.6`, and the product owner asked for an earlier leave on the iPad on 2026-10-22. The shown zoom is a poor measure: with the rubber band exponent of 0.35, a threshold of 0.7 on the shown zoom needs the fingers to close to 36 % of their start distance at zoom 0.25 (D-104).
+The threshold is `0.7`. The start value was `0.6`, and the product owner asked for an earlier leave on the iPad on 2026-10-22. The shown zoom is a poor measure: with the rubber band exponent of 0.35, a threshold of 0.7 on the shown zoom needs the fingers to close to 36 % of their start distance (D-104).
 
 ### 6.4 Navigation state
 

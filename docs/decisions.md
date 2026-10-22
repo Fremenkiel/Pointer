@@ -1099,6 +1099,7 @@ Status values: Open, Decided, Replaced.
 - Decided by the product owner on 2026-10-21: the recommendation. Raised by the review of M5 on the same day, for M6.
 - CARD-01 makes a card with a long press on empty canvas and "New card". No document gives its size, its place, or its title. A card is at least 64 by 48 canvas points (data-model.md section 7.2). CARD-02 makes the title optional. The workspace selector renames with an alert that holds a text field (`WorkspaceSelectorView.swift`, line 40).
 - Changed by D-117 on 2026-10-22: the size and the title stay. The card button places the new card with its center on the left edge of the screen, and a drag moves it into place.
+- Changed by D-118 on 2026-10-22: a new card has the fixed size of 320 by 224 canvas points at each zoom.
 - Options for the size:
   - (a) A fixed size in canvas points, for example 320 by 224. It looks tiny at zoom 0.25 and fills the screen at zoom 4.
   - (b) A quarter of the screen width at the current zoom, with the aspect of the screen. On the 11-inch iPad in landscape at zoom 1, that is about 299 by 209 points. At zoom 8, the minimum size of 64 by 48 sets the size.
@@ -1124,6 +1125,7 @@ Status values: Open, Decided, Replaced.
 ### D-104 Threshold of the pinch-out exit
 
 - Decided by the product owner on 2026-10-21: the recommendation. Raised by the review of M5 on the same day, for M6.
+- Changed by D-119 on 2026-10-22: a canvas inside a card shows only zoom 1, so the threshold is `exitZoomRatio` times zoom 1, and the pinch shows no zoom.
 - architecture.md section 6.3 leaves a card when the fingers lift at a zoom under `minZoom * 0.7`. The camera shows the zoom with the rubber band `minZoom * (raw / minZoom)^0.35` (`CameraController.swift`, lines 13 and 141 to 146).
 - Arithmetic: the shown zoom reaches 0.7 × `minZoom` at a raw zoom of 0.7^(1 / 0.35) ≈ 0.36 × `minZoom`. From zoom 0.25, the fingers must close to 36 % of their start distance. From zoom 1, they must close to 9 %.
 - Options:
@@ -1243,7 +1245,21 @@ Status values: Open, Decided, Replaced.
   2. What happens after the tap: (a) the card appears half outside the left edge, and a drag places it, as in the video; until the drag, it is not part of the canvas; or (b) the card appears at the left edge as a full card on the canvas, with one undo step, and a drag moves it later.
   3. Does the long press on empty canvas with "New card" go, or stay as a second way?
 - Recommendation: 1 (b), a card button next to the tool button, because the palette holds the tools of the pencil. 2 (a), as in the video. 3: it goes.
-- Design: the card button lies right of the tool button, and the up button lies right of the card button. A tap shows a pending card with the size of D-101. Its center lies on the left edge of the screen, at half the screen height. A one-finger pan that starts on the pending card drags it, and the camera stays. At the lift, the card joins the canvas with one `AddCard` step. A cancelled drag, or a drag without a move, leaves it pending at its place. A second tap on the button puts it back at the left edge. A tap on the pending card does not open it. At level 32 and at the node limit, the button shows the message of the limit and shows no card (D-95).
+- Design: the card button lies right of the tool button, and the up button lies right of the card button. A tap shows a pending card with the size of D-118. Its center lies on the left edge of the screen, at half the screen height. A one-finger pan that starts on the pending card drags it, and the camera stays. At the lift, the card joins the canvas with one `AddCard` step. A cancelled drag, or a drag without a move, leaves it pending at its place. A second tap on the button puts it back at the left edge. A tap on the pending card does not open it. At level 32 and at the node limit, the button shows the message of the limit and shows no card (D-95).
+
+### D-118 The size of a new card
+
+- Decided by the product owner on 2026-10-22: 320 by 224 canvas points. Raised by the product owner on the same day after the manual test of D-117: "the size of the card is currently not fixed resulting in larger cards when zoomed out, than at normal scale. Cards should have a fixed size." It replaces the size of D-101.
+- Options: (a) 320 by 224, the example of D-101. (b) 300 by 210, about the old size at zoom 1 on the 11-inch iPad in landscape. (c) 240 by 168.
+- Recommendation: (a).
+
+### D-119 No zoom inside a card
+
+- Decided by the product owner on 2026-10-22: the recommendation for each question. Raised by the product owner on the same day after the manual test of task 5.1: "the switch between the view of the card on the way out, and the rendered pic is bad. The card in the video is first shown as a small box, and then rendered at rest. Allume gets around this by not having zoom inside cards, which I would rather prefer. It will also make the exit pinch more easy to trigger as there would not be any initial zoom out in the canvas."
+- Cause of the jump: during the pinch-out, the child zoomed out to about 0.18 with the rubber band, so the shrinking card showed the child content small. The preview shows the child at zoom 1. The two images did not match.
+- Questions and answers: (1) Zoom goes away only inside cards. The root canvas of a workspace keeps the zoom range of CAN-04. (2) Inside a card, a pinch-out only drives the exit. It shrinks the child into its card from the first movement. A pinch-in does nothing. (3) The one-finger pan stays inside a card, so a child canvas stays unbounded.
+- Design: a canvas inside a card has the zoom range 1...1. A pinch there keeps the shown camera. The raw zoom of the fingers drives the exit progress, as in D-104, with the threshold `exitZoomRatio` times zoom 1. A stored camera of a child with another zoom opens at zoom 1 with the same center.
+- Open point: if you pan a child away from the camera of the open, the shrinking card shows another region than the preview. The up button flies the camera back first (D-109), but the pinch-out does not.
 
 ## Points in the request that conflict or are not complete
 

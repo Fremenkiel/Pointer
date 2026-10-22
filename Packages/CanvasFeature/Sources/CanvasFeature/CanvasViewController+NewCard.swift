@@ -6,7 +6,7 @@ import UIKit
 /// card half outside the left edge of the screen. A finger drags it into place, and at the lift
 /// it joins the canvas with one undo step.
 extension CanvasViewController {
-    /// Shows the pending card with the frame of D-101, centered on the left edge of the view. A
+    /// Shows the pending card with the size of D-118, centered on the left edge of the view. A
     /// second tap puts it back there. At level 32 and at the node limit, it shows a message and
     /// shows no card (CARD-09, D-95). A running edit ends first.
     func showPendingCard() {
@@ -24,7 +24,7 @@ extension CanvasViewController {
                 id: textEditing.pendingCard?.id ?? clock.makeIdentifier(CardID.self),
                 meta: RecordMeta(created: clock.now()),
                 canvasID: content.canvasID,
-                frame: Card.defaultFrame(at: edge, camera: renderer.camera, viewSize: size),
+                frame: Card.defaultFrame(at: edge),
                 title: nil,
                 sortKey: nextCardSortKey()
             )

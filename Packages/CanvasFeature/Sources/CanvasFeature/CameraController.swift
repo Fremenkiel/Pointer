@@ -71,6 +71,40 @@ struct CameraController {
         self.zoomRange = zoomRange
     }
 
+    /// The zoom range of a canvas: the root canvas zooms, and a canvas inside a card shows only
+    /// zoom 1 (D-119).
+    static func zoomRange(level: Int) -> ClosedRange<Double> {
+        precondition(level >= 0, "Level \(level)")
+        return level == 0 ? Limits.zoomRange : Limits.standardZoom...Limits.standardZoom
+    }
+
+    /// Makes the controller of a canvas at `level`, before its view has a size. A canvas inside a
+    /// card shows only zoom 1, also from a camera of an older version (D-119), so the zoom of
+    /// `camera` moves into the range. The center stays.
+    init(_ camera: Camera, _ level: Int) {
+        let range = Self.zoomRange(level: level)
+        let zoom = min(max(camera.zoom, range.lowerBound), range.upperBound)
+        self.init(
+            camera: Camera(center: camera.center, zoom: zoom),
+            viewSize: .zero,
+            zoomRange: range
+        )
+    }
+
+    /// `true` inside a card: the range holds one zoom, so a pinch shows no zoom and only drives
+    /// the pinch-out exit (D-119).
+    var isZoomFixed: Bool { zoomRange.lowerBound == zoomRange.upperBound }
+
+    /// The camera that the screen shows. Inside a card, the zoom of a pinch does not show: the
+    /// zoom stays at the one zoom of the range (D-119).
+    var shownCamera: Camera {
+        guard isZoomFixed else { return camera }
+        return Camera(center: camera.center, zoom: zoomRange.lowerBound)
+    }
+
+    /// The center of the view, the anchor of a pinch inside a card.
+    private var viewCenter: Point { Point(x: viewSize.width / 2, y: viewSize.height / 2) }
+
     /// `true` while a deceleration or a spring runs.
     var isAnimating: Bool {
         if case .none = animation { return false }
@@ -116,6 +150,12 @@ struct CameraController {
         current.rawZoom = current.startCamera.zoom * scale
         pinch = current
         let zoom = rubberBand(current.rawZoom)
+        // Inside a card, the zoom about the view center keeps the center, and the midpoint does
+        // not pan (D-119).
+        guard !isZoomFixed else {
+            camera = current.startCamera.zoomed(to: zoom, anchor: viewCenter, viewSize: viewSize)
+            return
+        }
         camera = current.startCamera
             .zoomed(to: zoom, anchor: current.startCentroid, viewSize: viewSize)
             .panned(byView: centroid - current.startCentroid)
@@ -136,7 +176,7 @@ struct CameraController {
     /// The camera of a pinch-out exit at its end: the shown zoom where a lift leaves the card,
     /// about the midpoint of the fingers.
     var exitCamera: Camera {
-        let anchor = pinch?.centroid ?? Point(x: viewSize.width / 2, y: viewSize.height / 2)
+        let anchor = isZoomFixed ? viewCenter : pinch?.centroid ?? viewCenter
         return camera.zoomed(to: rubberBand(exitZoom), anchor: anchor, viewSize: viewSize)
     }
 
@@ -153,7 +193,8 @@ struct CameraController {
         }
         let target = min(max(camera.zoom, zoomRange.lowerBound), zoomRange.upperBound)
         if target != camera.zoom {
-            animation = .spring(targetZoom: target, anchor: current.centroid)
+            let anchor = isZoomFixed ? viewCenter : current.centroid
+            animation = .spring(targetZoom: target, anchor: anchor)
         }
         return false
     }
