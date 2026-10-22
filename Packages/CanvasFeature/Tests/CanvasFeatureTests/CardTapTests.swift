@@ -7,11 +7,11 @@ import UIKit
 
 @testable import CanvasFeature
 
-/// The finger double tap on a card and the single tap beside it (CARD-03, TOOL-06, D-100).
+/// The finger tap on a card and on a text box over it (CARD-03, TOOL-06, D-100, D-115).
 @MainActor
-@Suite("Double tap on a card")
-struct DoubleTapTests {
-    /// The cards that a double tap opened.
+@Suite("Tap on a card")
+struct CardTapTests {
+    /// The cards that a tap opened.
     final class Opened {
         var cards: [CardID] = []
     }
@@ -43,54 +43,44 @@ struct DoubleTapTests {
         return controller
     }
 
-    @Test("A double tap on a card opens it, and the single tap there waits for it")
+    @Test("A single tap on a card opens it (D-115)")
     func onCard() throws {
         let opened = Opened()
         let controller = try makeController(opened: opened)
-        #expect(controller.fingerTapWaits(at: .zero))
-        controller.openCard(at: .zero)
+        controller.tap(at: .zero)
         #expect(opened.cards.count == 1)
     }
 
-    @Test("A double tap on a text box over a card opens nothing, and its tap does not wait")
+    @Test("A tap on a text box over a card starts its edit and opens nothing")
     func onTextOverCard() throws {
         let box = try TextEditTests.box("node", at: Point(x: -20, y: -10))
         let opened = Opened()
         let controller = try makeController(boxes: [box], opened: opened)
-        let point = Point(x: -10, y: -5)
-        #expect(!controller.fingerTapWaits(at: point))
-        controller.openCard(at: point)
+        controller.tap(at: Point(x: -10, y: -5))
         #expect(opened.cards.isEmpty)
-        // The card beside the box still opens.
-        #expect(controller.fingerTapWaits(at: Point(x: 30, y: 30)))
+        #expect(controller.textEditing.edit?.id == box.id)
+        // The card beside the box still opens after the edit ends.
+        controller.tap(at: Point(x: 30, y: 30))
+        #expect(opened.cards.isEmpty)
+        controller.tap(at: Point(x: 30, y: 30))
+        #expect(opened.cards.count == 1)
     }
 
-    @Test("A double tap on empty canvas opens nothing, and its tap does not wait")
+    @Test("A tap on empty canvas opens nothing")
     func onEmpty() throws {
         let opened = Opened()
         let controller = try makeController(opened: opened)
-        #expect(!controller.fingerTapWaits(at: Point(x: 150, y: 0)))
-        controller.openCard(at: Point(x: 150, y: 0))
+        controller.tap(at: Point(x: 150, y: 0))
         #expect(opened.cards.isEmpty)
     }
 
-    @Test("A double tap ends a running edit before the open")
+    @Test("A tap on a card during an edit ends the edit and opens nothing")
     func endsEdit() throws {
         let opened = Opened()
         let controller = try makeController(opened: opened)
         controller.startNewTextBox(at: Point(x: 150, y: 100))
-        controller.openCard(at: .zero)
+        controller.tap(at: .zero)
         #expect(!controller.textEditing.isEditing)
-        #expect(opened.cards.count == 1)
-    }
-
-    @Test("The double tap takes two finger taps on the canvas surface")
-    func recognizer() throws {
-        let controller = try makeController()
-        let doubleTap = controller.textEditing.doubleTap
-        #expect(doubleTap.numberOfTapsRequired == 2)
-        #expect(doubleTap.allowedTouchTypes == [NSNumber(value: UITouch.TouchType.direct.rawValue)])
-        #expect(doubleTap.view === controller.canvasView)
-        #expect(doubleTap.delegate === controller)
+        #expect(opened.cards.isEmpty)
     }
 }

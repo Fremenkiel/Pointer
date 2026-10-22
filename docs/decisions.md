@@ -122,6 +122,9 @@ Status values: Open, Decided, Replaced.
 | D-112 | A path that names a deleted card | Cut the path before the first card that is not valid | Decided (2026-10-21) |
 | D-113 | What "an empty part of the canvas" is | No card and no text box under the finger. Ink does not count. | Decided (2026-10-21) |
 | D-114 | Snapshot tests of the card menu and the rename alert | Open | Open |
+| D-115 | How a card opens | A single finger tap. Replaces the double tap of D-09 and D-100. | Decided (2026-10-22) |
+| D-116 | The body of a card | A light gray fill, as in Allume. Changes "no fill" of D-96. | Decided (2026-10-22) |
+| D-117 | How a new card comes | Open | Open |
 
 ## Details
 
@@ -1213,6 +1216,30 @@ Status values: Open, Decided, Replaced.
   - (b) Present the menu and the alert in the window of the test host and capture the window with `drawHierarchy(in:afterScreenUpdates:)` after their animations. The reference images change with each iPadOS release.
   - (c) Replace the system menu and alert with views of our own, and snapshot those. This is new UI that no requirement asks for (AGENT-02).
 - Recommendation: (a). It tests what Pointer controls and matches M3 and M5.
+
+### D-115 How a card opens
+
+- Decided by the product owner on 2026-10-22 after the manual test of task 4.7: "A single tap on the card should open it, it currently takes two taps." It replaces the double tap of D-09 and the rules of D-100.
+- A finger tap on a card that no text box covers opens the card. A tap on a text box starts its edit at once, as in M5 (TOOL-06). A tap while an edit runs only ends the edit, so a tap beside a box during typing does not open a card. The single tap needs no wait, so the double-tap recognizer and the measure of item 5 of task 4.3 go.
+- CARD-03 and architecture.md section 4.7 change.
+
+### D-116 The body of a card
+
+- Decided by the product owner on 2026-10-22: "The body of the card should be a lighter gray like in Allume." It changes "no fill" of D-96 and architecture.md section 5.5.
+- The video of Allume shows the canvas at RGB 20, the card body at RGB 35, and the border at RGB 67. On the canvas of RGB 24 (D-106), the same step of the body is a coverage of 0.065, about RGB 39 (`DesignSystem.Color.cardFill`).
+- The fill is a coverage in the green channel, so it joins with the ink and the text by `max`. White ink and text show over it, so the order of D-16 holds.
+- The border of Pointer stays at a coverage of 0.5, about RGB 140, much brighter than the border of Allume. The product owner did not ask to change it.
+
+### D-117 How a new card comes
+
+- Open. Raised by the product owner on 2026-10-22 after the manual test of task 4.7: "I do not like the hold and pick New card, it should be like the handling of Allume instead, where the card is selected from the tool bar, and then appears in the left hand side." It replaces CARD-01, D-08, D-101, and D-113.
+- The video of Allume shows a bar of tools at the bottom of the screen. A tap on its card tool makes a card half outside the left edge of the screen. A finger then drags the card into its place on the canvas, where it stays.
+- Pointer has no bar of tools at the bottom. Its tools are in the palette of the tool button in the top left corner (TOOL-07, D-64).
+- Questions:
+  1. Where is the card tool: (a) a new entry "Card" in the tool palette, next to pen, eraser, and text; (b) a button of its own in the chrome, next to the tool button; or (c) a bar of tools at the bottom, as in Allume.
+  2. What happens after the tap: (a) the card appears half outside the left edge, and a drag places it, as in the video; until the drag, it is not part of the canvas; or (b) the card appears at the left edge as a full card on the canvas, with one undo step, and a drag moves it later.
+  3. Does the long press on empty canvas with "New card" go, or stay as a second way?
+- Recommendation: 1 (b), a card button next to the tool button, because the palette holds the tools of the pencil. 2 (a), as in the video. 3: it goes.
 
 ## Points in the request that conflict or are not complete
 

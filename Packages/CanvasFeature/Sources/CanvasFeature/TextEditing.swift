@@ -60,10 +60,8 @@ final class TextEditing {
     private var sizes: [TextBoxID: (text: String, size: Size)] = [:]
     /// Recognizes a pencil tap for the text tool (TOOL-05).
     let pencilTap = UITapGestureRecognizer()
-    /// Recognizes a finger tap on a box (TOOL-06).
-    let fingerTap = LiftTimedTap()
-    /// Recognizes a finger double tap on a card that no text box covers (CARD-03, D-100).
-    let doubleTap = UITapGestureRecognizer()
+    /// Recognizes a finger tap on a box (TOOL-06) or on a card (CARD-03, D-115).
+    let fingerTap = UITapGestureRecognizer()
     /// Recognizes a finger long press on a box, for a move or the menu (CARD-07, TOOL-08).
     let longPress = UILongPressGestureRecognizer()
 

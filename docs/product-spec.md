@@ -64,8 +64,8 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 ### 3.5 Cards and navigation
 
 - CARD-01: You can create a card on a canvas. You long press on an empty part of the canvas, then pick "New card" (D-08). An empty part has no card and no text box under the finger. Ink does not count (D-113).
-- CARD-02: A card shows a frame, an optional title, and a scaled preview of its content.
-- CARD-03: You open a card with a finger double tap on the card (D-09). The app zooms into the card and shows its canvas at the standard zoom.
+- CARD-02: A card shows a frame with a light gray body, an optional title, and a scaled preview of its content (D-116).
+- CARD-03: You open a card with a finger tap on the card (D-115). The app zooms into the card and shows its canvas at the standard zoom.
 - CARD-04: An up button leaves the current card. The app shows the parent canvas at the standard zoom, centered on the card.
 - CARD-05: If you pinch past the minimum zoom inside a card, the card shrinks toward its frame in the parent. When you release past a threshold, a minimize animation takes you to the parent canvas at the standard zoom. If you release before the threshold, the camera springs back to the minimum zoom.
 - CARD-06: On the root canvas, a pinch past the minimum zoom springs back. Nothing else happens.

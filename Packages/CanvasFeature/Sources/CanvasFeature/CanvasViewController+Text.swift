@@ -13,14 +13,11 @@ extension CanvasViewController: UITextViewDelegate {
         editing.pencilTap.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.pencil.rawValue)]
         editing.fingerTap.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
         editing.longPress.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
-        editing.doubleTap.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
-        editing.doubleTap.numberOfTapsRequired = 2
-        editing.doubleTap.addTarget(self, action: #selector(handleDoubleTap(_:)))
         editing.pencilTap.addTarget(self, action: #selector(handlePencilTap(_:)))
         editing.fingerTap.addTarget(self, action: #selector(handleFingerTap(_:)))
         editing.longPress.addTarget(self, action: #selector(handleLongPress(_:)))
         let recognizers: [UIGestureRecognizer] = [
-            editing.pencilTap, editing.fingerTap, editing.longPress, editing.doubleTap,
+            editing.pencilTap, editing.fingerTap, editing.longPress,
         ]
         for recognizer in recognizers {
             recognizer.delegate = self
@@ -80,12 +77,20 @@ extension CanvasViewController: UITextViewDelegate {
     /// (TOOL-06).
     @objc private func handleFingerTap(_ recognizer: UITapGestureRecognizer) {
         guard recognizer.state == .ended else { return }
-        logTapWait()
-        let hit = textBox(at: canvasPoint(of: recognizer))
+        tap(at: canvasPoint(of: recognizer))
+    }
+
+    /// A finger tap: on a box, it starts its edit at once (TOOL-06). Beside the boxes, it ends a
+    /// running edit, or else opens the card under the finger (CARD-03, D-115).
+    func tap(at point: Point) {
+        let hit = textBox(at: point)
         guard hit?.id != textEditing.edit?.id || hit == nil else { return }
+        let wasEditing = textEditing.isEditing
         endTextEdit()
         if let hit, isEditingEnabled {
             startTextEdit(of: hit)
+        } else if !wasEditing {
+            openCard(at: point)
         }
     }
 
