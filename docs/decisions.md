@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-114 to D-119 on 2026-10-22. D-115 replaced D-09 and D-100, and D-117 replaced D-08. The M6 fix plan raised D-120 to D-122 on 2026-10-22, and the product owner decided them on the same day, then D-123 and D-124.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-114 to D-119 on 2026-10-22. D-115 replaced D-09 and D-100, and D-117 replaced D-08. The M6 fix plan raised D-120 to D-122 on 2026-10-22, and the product owner decided them on the same day, then D-123 and D-124. The review before M7 raised D-125 to D-131 on 2026-10-22, and the product owner decided them on the same day. D-130 replaced the rule of D-07.
 
 Status values: Open, Decided, Replaced.
 
@@ -14,7 +14,7 @@ Status values: Open, Decided, Replaced.
 | D-04 | Third-party development tools | Allowed: linters, formatters, rule checkers. The app links none. | Decided (2026-10-17) |
 | D-05 | Pressure changes the line width | No, fixed width | Decided (2026-10-17) |
 | D-06 | Partial eraser or whole-stroke eraser | Partial | Decided (2026-10-17) |
-| D-07 | Double tap and the system setting | Follow "Ignore", else toggle pen and eraser | Decided (2026-10-17) |
+| D-07 | Double tap and the system setting | Replaced by D-130 | Replaced (2026-10-22) |
 | D-08 | How to create a card | Replaced by D-117 | Replaced (2026-10-22) |
 | D-09 | How to open a card | Replaced by D-115 | Replaced (2026-10-22) |
 | D-10 | Move content and lasso selection | Move cards and text boxes in version 1, lasso later | Decided (2026-10-17) |
@@ -132,6 +132,13 @@ Status values: Open, Decided, Replaced.
 | D-122 | The renderer gets the change of a step before the model step | Yes, for `EraseStrokes` and `AddStroke`, with the reverse change if the model step throws | Decided (2026-10-22) |
 | D-123 | A pending card at a leave | It joins the canvas where it shows, with one undo step | Decided (2026-10-22) |
 | D-124 | The card menu snapshots as an XCTest class | Accepted exception to TEST-01 | Decided (2026-10-22) |
+| D-125 | The accepted late frame of the empty card in `make check` | An expected failure that is not strict on that one check. A trace with Instruments in M10. | Decided (2026-10-22) |
+| D-126 | Where the hover dot draws | A `CAShapeLayer` above the live `PKCanvasView`, not a Metal pass | Decided (2026-10-22) |
+| D-127 | The hover shadow of PencilKit | A check on the device at the start of M7. If the shadow shows, accept it and keep the dot. | Decided (2026-10-22) |
+| D-128 | The shape of the hover dot and when it shows | A gray dot for the pen and the text tool, the eraser circle for the eraser, hidden when "Show Hover Preview" is off | Decided (2026-10-22) |
+| D-129 | The pencils of the M7 tests | Apple Pencil Pro only. Acceptance 3 runs with double tap and squeeze set to "Ignore". | Decided (2026-10-22) |
+| D-130 | The double-tap settings that switch the tool | "Switch to eraser" and "Switch to previous tool" only. Replaces the rule of D-07. | Decided (2026-10-22) |
+| D-131 | The findings of the review before M7 | Three fixes in phase 0 of M7, one in M7, the rest in M10 | Decided (2026-10-22) |
 
 ## Details
 
@@ -181,6 +188,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-07 Double tap and the system setting
 
+- Replaced by D-130 on 2026-10-22: only "Switch to eraser" and "Switch to previous tool" switch the tool.
 - Decided by the product owner on 2026-10-17: the recommendation.
 - The request says that double tap switches between pen and eraser. Apple's guidelines say that apps must honor the user's choice in Settings.
 - Recommendation: if the setting is "Ignore", do nothing. For every other value, switch between pen and eraser.
@@ -1313,6 +1321,50 @@ Status values: Open, Decided, Replaced.
 - Decided by the product owner on 2026-10-22: the exception is accepted. Raised by the fix of the card menu snapshot after the close of [m6-fix-plan.md](m6-fix-plan.md) (section 6.6).
 - TEST-01 asks for Swift Testing in new unit tests and allows XCTest for UI tests and performance tests. The Swift Testing suites of a full run run at the same time, and a suite beside the menu snapshot made the system skip the menu. The XCTest classes run alone before them.
 - Decision: `CardMenuSnapshotTests` is an XCTest class. A test that needs the key window or a system presentation alone can be an XCTest class for the same reason.
+
+### D-125 The accepted late frame of the empty card in `make check`
+
+- Decided by the product owner on 2026-10-22: (b) now, and (c) in M10. Raised by the review before M7.
+- Facts: `OpenAnimationTests.testOpenAndLeaveOfEmptyCardHaveNoLateFrame` had 1 late frame at place 0 of the flight in 2 of 3 full runs of `PointerDeviceTests` on 2026-10-22. It never failed alone. The product owner accepted this late frame in [m6-fix-plan.md](m6-fix-plan.md) section 6.6. With it, `make check` fails in full runs, so the checklist of AGENT-05 cannot pass, and a new failure can hide behind it.
+- Options: (a) keep the failure. (b) Mark the check of the late frames of that open as an expected failure that is not strict (`XCTExpectFailure` with `isStrict = false`), with a comment that names this decision. (c) Find the cause with a trace of the render thread in Instruments.
+- Decision: (b). The check of the leave and of every other open stays strict. Task: a trace of the render thread during the open of an empty card in M10, then the removal of the expected failure.
+
+### D-126 Where the hover dot draws
+
+- Decided by the product owner on 2026-10-22: the recommendation. Raised by the review before M7. It changes architecture.md section 5.2.
+- Facts: architecture.md section 5.2 put the dot in an overlay pass of the renderer, which does not exist. The display link of the render thread pauses after 12 frames without work (`RenderThread.idleFramesBeforeSleep`). A dot in Metal wakes the render thread at each hover sample and draws a full composite each time. A layer of Core Animation moves without a frame of the renderer.
+- Decision: a `CAShapeLayer` in `CanvasView`, above the live `PKCanvasView`, with implicit animations off. A hover sample moves the layer and makes no allocation (PERF-01). The dot hides at pencil down, at the end of the hover, and during a card flight.
+
+### D-127 The hover shadow of PencilKit
+
+- Decided by the product owner on 2026-10-22: the recommendation. Raised by the review before M7.
+- Facts: at WWDC24 (session 10214), Apple says that hovering with Apple Pencil Pro shows a shadow below the pencil for the PencilKit tools, and that a `PKCanvasView` gets it with the marker and the fountain pen. The live canvas of Pointer uses the monoline pen. No public API to turn the shadow off was found on 2026-10-22.
+- Decision: task 0.1 of [m7-plan.md](m7-plan.md) checks on the device whether a shadow shows with the monoline pen. If it shows, Pointer accepts it as behavior of the system, as D-23 does for haptics, and keeps its dot (PEN-04).
+
+### D-128 The shape of the hover dot and when it shows
+
+- Decided by the product owner on 2026-10-22: the recommendation. Raised by the review before M7.
+- Facts: architecture.md section 4.6 gave the gray dot, the eraser circle, and the gate on `UIPencilInteraction.prefersHoverToolPreview`, but no decision held these rules. Apple describes that property as the preference of the user for a preview of the current drawing tool when the pencil is close to the screen.
+- Decision: the pen and the text tool show a small gray dot at the tip. The eraser shows a gray circle with the eraser radius of 8 view points (`EraserTool.radius`). No dot shows while "Show Hover Preview" is off in Settings.
+
+### D-129 The pencils of the M7 tests
+
+- Decided by the product owner on 2026-10-22: the test pencil is an Apple Pencil Pro. Raised by the review before M7.
+- Facts: the iPad Pro 11-inch (M4) takes Apple Pencil Pro and Apple Pencil (USB-C) only. Apple Pencil (USB-C) hovers on this iPad, but it has no double tap, no squeeze, and no pressure. The monoline pen ignores pressure (D-05).
+- Decision: acceptance 1, 2, and 4 of M7 run with the Apple Pencil Pro. Acceptance 3 runs with the Apple Pencil Pro, with double tap and squeeze set to "Ignore" in Settings, which gives the input of an Apple Pencil (USB-C).
+
+### D-130 The double-tap settings that switch the tool
+
+- Decided by the product owner on 2026-10-22: "use 'Switch to eraser' and 'Switch to previous' when double tap". Raised by the review before M7. It replaces the rule of D-07 and changes PEN-02 and architecture.md section 4.5.
+- Facts: Apple's guidance says to do the preferred action of the user when possible. Apple's sample switches tools only for "Switch to eraser" and "Switch to previous tool".
+- Decision: for `.switchEraser` and `.switchPrevious`, a double tap switches between pen and eraser, as D-07 did. If the tool is text, it switches to the pen. Every other value does nothing.
+
+### D-131 The findings of the review before M7
+
+- Decided by the product owner on 2026-10-22: the recommendation. Raised by the review before M7.
+- Phase 0 of [m7-plan.md](m7-plan.md) fixes three faults in the navigation, each with a test that fails before the fix (TEST-03): a failed open loses the undo history of the parent, a leave whose parent card is missing refuses each later open and leave, and a preview render on a render thread that stops never calls its completion.
+- M7 sets the tool of the live canvas only when it is needed, not at each frame of a zoom (PERF-01), after a measure.
+- M10 takes the rest (plan.md section M10).
 
 ## Points in the request that conflict or are not complete
 

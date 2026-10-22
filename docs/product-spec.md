@@ -48,7 +48,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 ### 3.3 Apple Pencil
 
 - PEN-01: A double tap on the pencil switches between pen and eraser.
-- PEN-02: The app reads the system setting for double tap (`UIPencilInteraction.preferredTapAction`). If the setting is "Ignore", the app does nothing. For every other value, a double tap switches between pen and eraser (D-07).
+- PEN-02: The app reads the system setting for double tap (`UIPencilInteraction.preferredTapAction`). If the setting is "Switch to eraser" or "Switch to previous tool", a double tap switches between pen and eraser. For every other value, the app does nothing (D-130).
 - PEN-03: A squeeze (Apple Pencil Pro) opens a small tool palette at the pencil tip. The palette holds pen, eraser, text, undo, and redo.
 - PEN-04: When the pencil hovers (on iPads that support hover), a small dot shows where the tip will touch.
 - PEN-05: The app works with every Apple Pencil model. It never needs pressure, because Apple Pencil (USB-C) has no pressure sensor.

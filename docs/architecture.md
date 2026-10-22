@@ -148,9 +148,8 @@ Double tap (`pencilInteraction(_:didReceiveTap:)`):
 
 | `preferredTapAction` | Action |
 |---|---|
-| `.ignore` | Nothing. |
-| `.runSystemShortcut` | Nothing. The system handles it. |
-| `.switchEraser`, `.switchPrevious`, and all other values | Switch between pen and eraser. If the current tool is text, switch to pen. |
+| `.switchEraser`, `.switchPrevious` | Switch between pen and eraser. If the current tool is text, switch to pen. |
+| All other values | Nothing (D-130). |
 
 Squeeze (`pencilInteraction(_:didReceiveSqueeze:)`): act on phase `.ended` only.
 
@@ -162,11 +161,11 @@ Squeeze (`pencilInteraction(_:didReceiveSqueeze:)`): act on phase `.ended` only.
 
 The palette is the tool bar of TOOL-07 (D-63). It holds pen, eraser, text, undo, and redo. The text tool has the SF Symbol `character.cursor.ibeam` (D-87). A button in the top left corner shows the current tool. A finger tap on it opens the same palette under the button (D-64). Thus every pencil and every squeeze setting can reach each tool. The palette is a popover. A tap on a tool picks it and closes the palette. Undo and redo keep it open. The canvas gives the button to `PointerApp`, which places it to the right of the workspace selector.
 
-The mapping of user preferences to actions is decision D-07.
+The mapping of user preferences to actions is decision D-130 for double tap and D-63 for squeeze. During a card flight, double tap and squeeze do nothing.
 
 ### 4.6 Hover
 
-A `UIHoverGestureRecognizer` with `allowedTouchTypes = [.pencil]` shows a small gray dot at the tip. If `UIPencilInteraction.prefersHoverToolPreview` is `false`, the dot does not show. For the eraser, the dot is a circle with the eraser radius.
+A `UIHoverGestureRecognizer` with `allowedTouchTypes = [.pencil]` shows a small gray dot at the tip for the pen and the text tool. For the eraser, the dot is a circle with the eraser radius. If `UIPencilInteraction.prefersHoverToolPreview` is `false`, the dot does not show (D-128). The dot is a `CAShapeLayer` in `CanvasView` above the live `PKCanvasView`, with implicit animations off, so a hover sample wakes no frame of the renderer (D-126). It hides at pencil down, at the end of the hover, and during a card flight. A shadow of PencilKit below the pencil can show beside it, and Pointer accepts it (D-127).
 
 ### 4.7 Finger gestures
 
@@ -227,7 +226,7 @@ Each frame draws these passes:
 
 1. The committed layer: all finished strokes, text, and cards that are visible. Cards share the green channel with the text (D-96). This layer is a texture with the size of the drawable. The renderer reuses it while the camera and the content do not change.
 2. The eraser mask, while an eraser gesture runs. The renderer makes the mask texture when the eraser becomes the tool and drops it when another tool becomes the tool, after the last gesture ends (D-78). A `.r8Unorm` texture of the size of the committed texture holds the eraser circles of the gesture. The composite pass hides the ink under them. At the pencil lift, the renderer redraws the area of the change in the committed texture and clears the mask (D-66). The mask uses the mapping of the front texture. If the front texture changes during a gesture, the next frame stamps all samples again.
-3. Overlays: the hover dot and the selection outline.
+3. Overlays: the selection outline. The hover dot is a layer of Core Animation, not a pass of the renderer (section 4.6, D-126).
 
 The live pen stroke is not a pass of the renderer. The `PKCanvasView` on top draws it (section 4.2). While you draw, the renderer draws a frame only at the handoff of a stroke.
 

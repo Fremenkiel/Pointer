@@ -140,11 +140,13 @@ Review before M7, 2026-10-22: new device tests prove that each canvas screen and
 
 - Double tap and hover dot. The squeeze palette comes in M4 (D-63).
 
+The tasks are in [m7-plan.md](m7-plan.md). The product owner decided D-125 to D-131 on 2026-10-22.
+
 Acceptance:
 
-1. Double tap follows D-07 for each value of `preferredTapAction`.
+1. Double tap follows D-130 for each value of `preferredTapAction`.
 2. Squeeze opens the palette at the pencil tip on Apple Pencil Pro.
-3. With an Apple Pencil (USB-C), every feature that does not need tap or squeeze works.
+3. With an Apple Pencil (USB-C), every feature that does not need tap or squeeze works. The test uses an Apple Pencil Pro with double tap and squeeze set to "Ignore" (D-129).
 4. No app action plays a haptic event in Apple Pencil Pro (PEN-06). Drawing plays no haptic event. A system haptic on squeeze is accepted (D-23).
 
 ## M8: PDF export
@@ -173,6 +175,13 @@ Acceptance:
 - Performance baselines for all budgets.
 - Glyph quads of each text box in a GPU buffer that a build reuses (option (b) of D-94, D-105).
 - Accessibility: VoiceOver labels for every button, Dynamic Type in the chrome.
+- From the review before M7 (D-125, D-131):
+  - Trace the late frame at place 0 of the open of an empty card on the render thread with Instruments. Fix it, and remove the expected failure of D-125.
+  - Delete the preview file of each canvas that the 30-day purge removes. `PreviewStore.remove(_:)` has no caller.
+  - Measure the sets that the release preconditions of `Eraser.command` and `EraseStrokes.init` build at each erase, and move them to `assert` if the cost shows.
+  - Read `isLoadingText`, `isLoadingCards`, and `isLoadingPreviews` of `RenderEngine` under one lock, or count the items in transit, so that no wait ends early.
+  - Call the completions of a card load and a preview render after their lock, not under it, so that a completion cannot deadlock.
+  - Read the contract checks of each Tier A and Tier B package by hand. Each package has an average of exactly 2.00 (CONTRACT-02), so remove checks that test nothing.
 
 Acceptance:
 
