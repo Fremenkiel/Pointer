@@ -85,37 +85,39 @@ extension FrameRenderer {
         pass.colorAttachments[0].texture = renderer.resolved
         pass.colorAttachments[0].loadAction = .dontCare
         pass.colorAttachments[0].storeAction = .store
-        guard let resolve = commandBuffer.makeRenderCommandEncoder(descriptor: pass),
+        let width = job.image.size.width
+        let height = job.image.size.height
+        // A buffer of its own for each preview, so that no later preview writes it during the read.
+        guard
+            let readback = renderer.resources.device.makeBuffer(
+                length: width * height,
+                options: .storageModeShared
+            ),
+            let resolve = commandBuffer.makeRenderCommandEncoder(descriptor: pass),
             let blit = Self.resolve(resolve, renderer: renderer, commandBuffer: commandBuffer)
         else {
             job.request.completion(nil)
             return
         }
-        let width = job.image.size.width
-        let height = job.image.size.height
-        assert(width * height <= renderer.readback.length, "The image fits the readback buffer")
         blit.copy(
             from: renderer.resolved,
             sourceSlice: 0,
             sourceLevel: 0,
             sourceOrigin: job.image.origin,
             sourceSize: job.image.size,
-            to: renderer.readback,
+            to: readback,
             destinationOffset: 0,
             destinationBytesPerRow: width,
             destinationBytesPerImage: width * height
         )
         blit.endEncoding()
-        let completion = job.request.completion
-        commandBuffer.addCompletedHandler { [renderer] buffer in
-            // In the background, iOS refuses work on the GPU, and the buffer ends with an error.
-            guard buffer.status == .completed else {
-                DispatchQueue.global(qos: .utility).async { completion(nil) }
-                return
-            }
-            let image = renderer.readImage(width: width, height: height)
-            DispatchQueue.global(qos: .utility).async { completion(image) }
-        }
+        PreviewRenderer.readOnCompletion(
+            of: commandBuffer,
+            from: readback,
+            width: width,
+            height: height,
+            completion: job.request.completion
+        )
     }
 
     /// Encodes the resolve pass into `encoder` and returns a blit encoder after it.
