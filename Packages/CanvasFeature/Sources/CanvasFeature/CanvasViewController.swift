@@ -242,7 +242,12 @@ public final class CanvasViewController: UIViewController {
         }
         guard isCameraMoving, !isGestureActive, !cameraController.isAnimating else { return }
         isCameraMoving = false
-        onCameraRest(cameraController.camera)
+        // A flight of a card or a pinch-out exit leaves the camera outside the zoom range, and
+        // the device state stores cameras of the range only (D-53).
+        let camera = cameraController.camera
+        guard cardTransition == nil, parentLink.exit == nil, Limits.zoomRange.contains(camera.zoom)
+        else { return }
+        onCameraRest(camera)
     }
 
     /// The camera stops, and running finger gestures end (D-36). The selected tool becomes the
