@@ -34,8 +34,10 @@ extension CanvasViewController {
         hoverMoved(to: location)
     }
 
-    /// Moves the dot to a hover sample, or hides it (D-128). It allocates nothing (PERF-01).
+    /// Moves the dot to a hover sample, or hides it (D-128). It allocates nothing in Pointer code
+    /// (PERF-01), and the interval "Hover" times it (PERF-03).
     func hoverMoved(to location: CGPoint) {
+        CanvasSignpost.begin("Hover")
         let mark = HoverDot.mark(
             tool: tool,
             isPreviewOn: canvasView.hoverDot.isPreviewOn,
@@ -44,6 +46,7 @@ extension CanvasViewController {
             isInFlight: !takesPencilActions
         )
         canvasView.hoverDot.show(mark)
+        CanvasSignpost.end("Hover")
     }
 
     /// Hides the dot: at the end of a hover, at a pencil down, and at the start of a card flight.
