@@ -235,6 +235,14 @@ Done when: the model step of the D-69 erase takes under 2 ms on the iPad, or sec
 
 Rules: PERF-01, TEST-09, CONTRACT-02.
 
+Status (2026-10-22): done without a code change. The model step cannot reliably take under 2 ms in the app, because of the state of the CPU, not because of its code (section 6.3). With a busy CPU, the step takes 0.50 to 0.94 ms per apply and 0.55 to 1.11 ms per revert on the iPad. After a wait of 30 ms, the same step took up to 3.63 and 4.34 ms. The options of item 1 change only the dictionary work, so each one saves a part of under 1 ms:
+
+- No dictionary grows during a step. The capacity of the strokes is 24,576 for 22,012 strokes, so a reserve saves nothing.
+- A log of IDs saves one copy of a `Stroke` value per stroke.
+- Rows made later move work off the main thread, but the rows are cheap.
+
+Since task 3.2, the render thread does not wait for the model step, so its time no longer adds to the time of a step on the screen.
+
 ### Phase 4: close
 
 1. Run `make check` with the iPad, and the coverage target of D-120.
