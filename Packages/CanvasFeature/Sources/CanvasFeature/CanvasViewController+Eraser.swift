@@ -44,19 +44,23 @@ extension CanvasViewController {
             renderer.endErase()
             return
         }
+        // The renderer gets the change before the model step, so the frame starts earlier
+        // (D-122).
+        let removed = command.removed.map(\.id)
+        renderer.change(
+            removing: removed,
+            adding: command.parts,
+            area: command.area,
+            onCompleted: stepDrawnCallback(),
+            onPresented: {}
+        )
         do {
             let rows = try perform(command)
-            renderer.change(
-                removing: command.removed.map(\.id),
-                adding: command.parts,
-                area: command.area,
-                onCompleted: stepDrawnCallback(),
-                onPresented: {}
-            )
             // The send schedules the save of the rows (P-09).
             send(rows)
         } catch {
             logger.error("An erase did not apply: \(String(describing: error))")
+            restoreRenderer(after: (removed, command.parts))
         }
         renderer.endErase()
     }

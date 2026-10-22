@@ -48,45 +48,66 @@ extension CanvasViewController {
     }
 
     /// Runs an undo or a redo of `command`, then sends the change to the renderer and the rows to
-    /// the library, and asks for a save.
+    /// the library, and asks for a save. An erase and an add give their change to the renderer
+    /// before the model step, so the frame starts earlier (D-122).
     private func runStep(
         _ command: (any CanvasCommand)?,
         isUndo: Bool,
         _ step: (inout History, inout CanvasContent, inout HybridClock) throws(CommandError) ->
             [LibraryChange]
     ) {
+        let early = Self.renderDelta(of: command, isUndo: isUndo)
+        if let early { showStep(early, of: command) }
         let rows: [LibraryChange]
         do {
             rows = try step(&history, &content, &clock.factory.clock)
         } catch {
             logger.error("An undo or a redo did not apply: \(String(describing: error))")
+            if let early { restoreRenderer(after: early) }
             return
         }
         guard !rows.isEmpty else { return }
-        let texts = textDelta(of: rows)
-        if !texts.removed.isEmpty || !texts.added.isEmpty {
-            renderer.changeTextBoxes(removing: texts.removed, adding: texts.added)
+        let nodes = Self.nodeDelta(of: rows)
+        if !nodes.removedTexts.isEmpty || !nodes.addedTexts.isEmpty {
+            renderer.changeTextBoxes(removing: nodes.removedTexts, adding: nodes.addedTexts)
         }
-        let cards = Self.cardDelta(of: rows)
-        if !cards.removed.isEmpty || !cards.added.isEmpty {
-            renderer.changeCards(removing: cards.removed, adding: cards.added)
+        if !nodes.removedCards.isEmpty || !nodes.addedCards.isEmpty {
+            renderer.changeCards(removing: nodes.removedCards, adding: nodes.addedCards)
         }
-        let (removed, added) =
-            Self.renderDelta(of: command, isUndo: isUndo) ?? renderDelta(of: rows)
-        let textRows = texts.added.count + texts.removed.count
-        let nodeRows = textRows + cards.added.count + cards.removed.count
-        if !removed.isEmpty || !added.isEmpty || nodeRows != rows.count {
-            renderer.change(
-                removing: removed,
-                adding: added,
-                area: (command as? EraseStrokes)?.area,
-                onCompleted: stepDrawnCallback(),
-                onPresented: {}
-            )
+        if early == nil {
+            let late = renderDelta(of: rows)
+            if !late.removed.isEmpty || !late.added.isEmpty || nodes.rowCount != rows.count {
+                showStep(late, of: command)
+            }
         }
         // The send schedules the save of the rows (P-09).
         send(rows)
         historyDidChange()
+    }
+
+    /// Gives the strokes of a step to the renderer, with the area of an erase.
+    private func showStep(
+        _ delta: (removed: [StrokeID], added: [Stroke]),
+        of command: (any CanvasCommand)?
+    ) {
+        renderer.change(
+            removing: delta.removed,
+            adding: delta.added,
+            area: (command as? EraseStrokes)?.area,
+            onCompleted: stepDrawnCallback(),
+            onPresented: {}
+        )
+    }
+
+    /// Takes back a change that the renderer got before a model step that then failed (D-122).
+    /// The renderer then shows the strokes of the change as the model holds them: an added
+    /// stroke that is not live goes, and a removed stroke that is live comes back.
+    func restoreRenderer(after delta: (removed: [StrokeID], added: [Stroke])) {
+        let stale = delta.added.map(\.id).filter { content.strokes[$0] == nil }
+        let back = delta.removed.compactMap { content.strokes[$0] }
+        assert(stale.count <= delta.added.count, "Only added strokes go")
+        guard !stale.isEmpty || !back.isEmpty else { return }
+        renderer.change(removing: stale, adding: back, area: nil, onPresented: {})
     }
 
     /// Returns the strokes that a step of an erase or an add removes from the screen and adds to
@@ -130,36 +151,35 @@ extension CanvasViewController {
         return (removed, added)
     }
 
-    /// Returns the text boxes that the rows of a step remove from the screen and add to it: a
-    /// tombstone removes a box, and a live box takes its place.
-    private func textDelta(of rows: [LibraryChange]) -> (removed: [TextBoxID], added: [TextBox]) {
-        var removed: [TextBoxID] = []
-        var added: [TextBox] = []
-        for case .textBox(let box) in rows {
-            if box.meta.isDeleted {
-                removed.append(box.id)
-            } else {
-                added.append(box)
-            }
+    /// The text boxes and the cards that the rows of a step remove from the screen and add to
+    /// it.
+    struct NodeDelta {
+        var removedTexts: [TextBoxID] = []
+        var addedTexts: [TextBox] = []
+        var removedCards: [CardID] = []
+        var addedCards: [Card] = []
+
+        /// The rows of text boxes and cards.
+        var rowCount: Int {
+            removedTexts.count + addedTexts.count + removedCards.count + addedCards.count
         }
-        assert(removed.count + added.count <= rows.count, "Each text row gives one change")
-        return (removed, added)
     }
 
-    /// Returns the cards that the rows of a step remove from the screen and add to it: a
-    /// tombstone removes a card, and a live card takes its place.
-    static func cardDelta(of rows: [LibraryChange]) -> (removed: [CardID], added: [Card]) {
-        var removed: [CardID] = []
-        var added: [Card] = []
-        for case .card(let card) in rows {
-            if card.meta.isDeleted {
-                removed.append(card.id)
-            } else {
-                added.append(card)
+    /// Returns the text boxes and the cards of the rows of a step, in one pass: a tombstone
+    /// removes a box or a card, and a live one takes its place.
+    static func nodeDelta(of rows: [LibraryChange]) -> NodeDelta {
+        var delta = NodeDelta()
+        for row in rows {
+            switch row {
+            case .textBox(let box) where box.meta.isDeleted: delta.removedTexts.append(box.id)
+            case .textBox(let box): delta.addedTexts.append(box)
+            case .card(let card) where card.meta.isDeleted: delta.removedCards.append(card.id)
+            case .card(let card): delta.addedCards.append(card)
+            case .stroke, .erase: continue
             }
         }
-        assert(removed.count + added.count <= rows.count, "Each card row gives one change")
-        return (removed, added)
+        assert(delta.rowCount <= rows.count, "Each node row gives one change")
+        return delta
     }
 
     /// Returns the callback of the GPU end of a step for `onStepDrawn`, or `nil` without it, so

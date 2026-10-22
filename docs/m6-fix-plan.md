@@ -213,6 +213,16 @@ Done when: in alternating runs against the commit before this task, the median a
 
 Rules: UNDO-01, D-69, D-74, D-122, PERF-01, TEST-03.
 
+Status (2026-10-22): done, D-122 (a). Alternating runs, base 80fc47a, new, base, new, each with 3 iterations, give 6 runs of 5 steps per build. Each measure is lower:
+
+| Step | Median of medians, base / new | Median of the slowest, base / new | Largest, base / new |
+|---|---|---|---|
+| Erase | 25.41 / 20.98 ms | 27.81 / 25.44 ms | 29.53 / 28.74 ms |
+| Undo | 26.31 / 17.75 ms | 28.99 / 20.24 ms | 29.85 / 20.94 ms |
+| Redo | 22.18 / 20.99 ms | 29.25 / 23.45 ms | 29.87 / 25.90 ms |
+
+The recovery after a failed step removes each added stroke that the model does not hold, and adds back each removed stroke that the model holds. A plain reverse change would put back a stroke that the model no longer holds. `CanvasHistoryTests` has a test for this. `nodeDelta(of:)` reads the rows of text boxes and cards in one pass.
+
 #### 3.3 A faster model step
 
 1. From the profile of task 3.1, change the costly part. Options to measure:

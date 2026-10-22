@@ -12,7 +12,7 @@ import UIKit
 @Suite("Undo and redo of the canvas")
 struct CanvasHistoryTests {
     /// A view of 400 x 300 points at the standard camera, so view (200, 150) is canvas (0, 0).
-    private func makeController(
+    func makeController(
         content: CanvasContent,
         sessions: CanvasSessions,
         clock: AppClock
@@ -30,7 +30,7 @@ struct CanvasHistoryTests {
     }
 
     /// A horizontal pen stroke through the canvas origin.
-    private static func line() -> Stroke {
+    static func line() -> Stroke {
         Stroke(
             id: StrokeID(rawValue: UUID()),
             canvasID: Fixtures.canvas,
@@ -41,7 +41,7 @@ struct CanvasHistoryTests {
         )
     }
 
-    private func erase(_ controller: CanvasViewController) {
+    func erase(_ controller: CanvasViewController) {
         controller.select(.eraser)
         controller.pencilBegan()
         for step in 0...10 {
