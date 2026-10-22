@@ -33,6 +33,9 @@ public enum DesignSystem {
         public static let chromeSecondary = SwiftUI.Color(white: 0.65)
         /// The icon of a control that is off, for example undo with an empty history.
         public static let chromeDisabled = SwiftUI.Color(white: 0.4)
+        /// The hover dot of the pencil and the eraser circle: the gray of a secondary line of the
+        /// chrome (D-128). A start value that the product owner tunes on the device.
+        public static let hoverDot = UIColor(chromeSecondary)
     }
 
     /// The spacing tokens, in points.
@@ -58,6 +61,12 @@ public enum DesignSystem {
         public static let selectorTitleWidth: CGFloat = 260
         /// The highest workspace list before it scrolls.
         public static let selectorListHeight: CGFloat = 480
+        /// The radius of the hover dot of the pen and the text tool, in view points (D-128). A
+        /// start value that the product owner tunes on the device.
+        public static let hoverDotRadius: CGFloat = 2
+        /// The line width of the eraser circle of the hover dot, in view points (D-133). A start
+        /// value that the product owner tunes on the device.
+        public static let hoverRingWidth: CGFloat = 1
     }
 
     /// The font tokens.

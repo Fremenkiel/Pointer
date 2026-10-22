@@ -140,6 +140,7 @@ Status values: Open, Decided, Replaced.
 | D-130 | The double-tap settings that switch the tool | "Switch to eraser" and "Switch to previous tool" only. Replaces the rule of D-07. | Decided (2026-10-22) |
 | D-131 | The findings of the review before M7 | Three fixes in phase 0 of M7, one in M7, the rest in M10 | Decided (2026-10-22) |
 | D-132 | Warnings that `-warnings-as-errors` does not stop | Recommendation: `make build` fails on any warning line in the build output | Open |
+| D-133 | The eraser circle of the hover dot: an outline or a filled disc | An outline ring with a line width token | Decided (2026-10-22) |
 
 ## Details
 
@@ -1376,6 +1377,13 @@ Status values: Open, Decided, Replaced.
   - (b) Option (a), but on the incremental build of `make check`, plus a clean build only in `make coverage`.
   - (c) No change. Review finds such warnings.
 - Recommendation: (a). It costs one full build in each check, and it enforces BUILD-02 as written.
+
+### D-133 The eraser circle of the hover dot
+
+- Decided by the product owner on 2026-10-22: (a). Raised by task 2.1 of [m7-plan.md](m7-plan.md).
+- Facts: D-128 and architecture.md section 4.6 say that the eraser shows a gray circle with the eraser radius of 8 view points. They do not say whether the circle is an outline or a filled disc. A filled disc of 16 points covers the ink that the user wants to erase.
+- Options: (a) an outline ring, with its line width as a `DesignSystem` token. (b) A filled disc, in the style of the dot of the pen.
+- Decision: (a). The start width is 1 view point. The product owner tunes it in task 2.5 with the other tokens of the dot.
 
 ## Points in the request that conflict or are not complete
 
