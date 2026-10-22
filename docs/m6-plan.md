@@ -495,7 +495,7 @@ Other numbers of the same runs, for later tasks: the layout of the 5,000 text bo
 | Item | Target | Result |
 |---|---|---|
 | Line coverage of Geometry, Model, InkEngine, Persistence (TEST-02) | at least 90 % | 91.06, 90.88, 92.73, and 91.23 %. The Persistence number leaves out `PersistenceCrashHelper`, an executable that the crash test starts as a separate process (D-54), so in-process coverage cannot count it. With it, the package has 89.31 %. |
-| Line coverage of Rendering, Tier B (TEST-02) | at least 70 % | not measured: Xcode does not instrument the local packages in a device run, also with `-enableCodeCoverage YES` and the Swift profile flags on the command line. The rule waits for the product owner. |
+| Line coverage of Rendering, Tier B (TEST-02) | at least 70 % | pass: 86.69 % (5,821 of 6,715 lines). CanvasFeature has 77.80 % and WorkspaceFeature 78.37 %. Method: run `PointerDeviceTests` on the iPad with `-enableCodeCoverage YES` and `OTHER_SWIFT_FLAGS='$(inherited) -profile-generate -profile-coverage-mapping'`, then run `xcrun llvm-cov export` on the binary of `Pointer.app/Frameworks/Rendering_*_PackageProduct.framework` with `Build/ProfileData/<UDID>/Coverage.profdata`, and count the lines of the files under `Sources/`. Each package is a framework of its own, so the report of `xccov` lists the packages with 0 files. Coverage slows the code, so the performance tests of such a run do not count. |
 | Assertion density (CONTRACT-02) | at least 2.00 | Geometry 2.00, Model 2.08, InkEngine 2.00, Persistence 2.00, Rendering 2.00 |
 | Launch read of the device state with 1,000 cameras | recorded | median 1.30 to 1.34 ms in the close runs |
 
