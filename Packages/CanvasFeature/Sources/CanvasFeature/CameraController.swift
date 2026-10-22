@@ -19,8 +19,9 @@ struct CameraController {
     static let maximumStep: TimeInterval = 0.05
     /// The pinch-out exit leaves a card when the fingers lift at a raw zoom under this ratio of
     /// the minimum zoom (CARD-05, D-104). The raw zoom has no rubber band, so the threshold
-    /// follows the fingers. Start value 0.6, to tune on the iPad (architecture.md 6.3).
-    static let exitZoomRatio = 0.6
+    /// follows the fingers. The start value was 0.6. The product owner asked for an earlier
+    /// leave on the iPad on 2026-10-22, so the value is 0.7 (architecture.md 6.3).
+    static let exitZoomRatio = 0.7
     /// The time of the open and the leave of a card (architecture.md 6.2, D-98).
     static let flightDuration: TimeInterval = 0.35
     /// The stiffness of the flight, times its duration: a critically damped spring that

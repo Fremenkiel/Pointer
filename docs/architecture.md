@@ -338,11 +338,11 @@ The camera of each canvas is stored in the device state, not in the library (see
 There are two ways to leave a card:
 
 - Up button. The tap starts the load of the parent. In the same time, the controller moves the child camera to the camera of the open (section 6.2). When both are done, the animation starts (D-109). Then it shows the parent canvas with the camera on the card center at the standard zoom, and plays the open animation in reverse: the child shrinks into the card frame.
-- Pinch out. Below `minZoom`, the zoom does not stop. It continues with resistance (rubber band). While below `minZoom`, the controller shows the child as a shrinking card over a faded image of the parent. The image is the frozen copy of the open (section 6.2). It exists only for the direct parent of an open in this run of the app. Without it, the pinch below `minZoom` starts the load of the parent. It shows the canvas color until the first frame of the parent (D-109). If the fingers lift when the zoom of the fingers, without the rubber band, is under `minZoom * 0.6`, the controller plays the minimize animation and shows the parent at the standard zoom (D-104). During it, the child image crossfades to the preview while the card shrinks. Otherwise, the camera springs back to `minZoom`.
+- Pinch out. Below `minZoom`, the zoom does not stop. It continues with resistance (rubber band). While below `minZoom`, the controller shows the child as a shrinking card over a faded image of the parent. The image is the frozen copy of the open (section 6.2). It exists only for the direct parent of an open in this run of the app. Without it, the pinch below `minZoom` starts the load of the parent. It shows the canvas color until the first frame of the parent (D-109). If the fingers lift when the zoom of the fingers, without the rubber band, is under `minZoom * 0.7`, the controller plays the minimize animation and shows the parent at the standard zoom (D-104). During it, the child image crossfades to the preview while the card shrinks. Otherwise, the camera springs back to `minZoom`.
 
 On the root canvas, the rubber band springs back. No transition happens (CARD-06).
 
-The threshold `0.6` is a start value. Tune it on a device. The shown zoom is a poor measure: with the rubber band exponent of 0.35, a threshold of 0.7 on the shown zoom needs the fingers to close to 36 % of their start distance at zoom 0.25 (D-104).
+The threshold is `0.7`. The start value was `0.6`, and the product owner asked for an earlier leave on the iPad on 2026-10-22. The shown zoom is a poor measure: with the rubber band exponent of 0.35, a threshold of 0.7 on the shown zoom needs the fingers to close to 36 % of their start distance at zoom 0.25 (D-104).
 
 ### 6.4 Navigation state
 
