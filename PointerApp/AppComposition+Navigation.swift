@@ -46,19 +46,21 @@ extension AppComposition {
         card: Card,
         parent: CanvasViewController
     ) async {
-        guard let repository else { return }
+        // A return that is not a cancel ends the open, so that the next open can start (D-131).
+        guard let repository else { return fail(opening, on: parent) }
         let target = opening.target
         do {
             onLoadStarted?(target.currentCanvas)
             let content = try await repository.content(of: target.currentCanvas)
-            guard !Task.isCancelled,
+            guard !Task.isCancelled else { return }
+            guard
                 let canvas = try makeCanvas(
                     target,
                     content: content,
                     camera: content.openCamera,
                     parentCard: card
                 )
-            else { return }
+            else { return fail(opening, on: parent) }
             container.showAbove(canvas)
             opening.added = canvas
             try await CardOpening.waitForFirstFrame(of: canvas)
@@ -124,23 +126,24 @@ extension AppComposition {
         card: CardID,
         child: CanvasViewController
     ) async {
-        guard let repository else { return }
+        // A return that is not a cancel ends the leave, so that the next open can start (D-131).
+        guard let repository else { return fail(leaving, on: child) }
         let target = leaving.target
         do {
             onLoadStarted?(target.currentCanvas)
             let content = try await repository.content(of: target.currentCanvas)
-            let frame =
-                content.cards[card]?.frame ?? Rect(origin: .zero, size: Size(width: 1, height: 1))
+            guard !Task.isCancelled else { return }
+            guard let parentCard = content.cards[card] else { return fail(leaving, on: child) }
+            let frame = parentCard.frame
             let bounds = container.view.bounds
             let screen = Size(width: bounds.width, height: bounds.height)
             let start =
                 leaving.isPinch
                 ? Camera(center: frame.center, zoom: Limits.standardZoom)
                 : CanvasViewController.coverCamera(of: frame, viewSize: screen)
-            guard !Task.isCancelled,
-                let canvas = try makeCanvas(target, content: content, camera: start),
-                let parentCard = content.cards[card]
-            else { return }
+            guard let canvas = try makeCanvas(target, content: content, camera: start) else {
+                return fail(leaving, on: child)
+            }
             if !leaving.isPinch { canvas.holdLeave(into: parentCard) }
             leaving.card = parentCard
             renderPreview(of: child, for: parentCard, in: leaving)
