@@ -124,7 +124,7 @@ struct NavigationTests {
                 repository: tree.repository,
                 makeTimestamp: { clock.now() },
                 makeWorkspaceID: { clock.makeIdentifier() },
-                onSwitch: { composition.open($0) }
+                onSwitch: { [weak composition] in composition?.open($0) }
             )
         )
         return composition

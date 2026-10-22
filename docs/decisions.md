@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-114 to D-119 on 2026-10-22. D-115 replaced D-09 and D-100, and D-117 replaced D-08. The M6 fix plan raised D-120 to D-122 on 2026-10-22, and the product owner decided them on the same day, then D-123 and D-124.
 
 Status values: Open, Decided, Replaced.
 
@@ -15,8 +15,8 @@ Status values: Open, Decided, Replaced.
 | D-05 | Pressure changes the line width | No, fixed width | Decided (2026-10-17) |
 | D-06 | Partial eraser or whole-stroke eraser | Partial | Decided (2026-10-17) |
 | D-07 | Double tap and the system setting | Follow "Ignore", else toggle pen and eraser | Decided (2026-10-17) |
-| D-08 | How to create a card | Long press on empty canvas, then "New card" | Decided (2026-10-17) |
-| D-09 | How to open a card | Finger double tap on the card | Decided (2026-10-17) |
+| D-08 | How to create a card | Replaced by D-117 | Replaced (2026-10-22) |
+| D-09 | How to open a card | Replaced by D-115 | Replaced (2026-10-22) |
 | D-10 | Move content and lasso selection | Move cards and text boxes in version 1, lasso later | Decided (2026-10-17) |
 | D-11 | Delete a workspace | Yes, with a confirmation | Decided (2026-10-17) |
 | D-12 | Scope and life of undo history | Per canvas, in memory | Decided (2026-10-17) |
@@ -107,8 +107,8 @@ Status values: Open, Decided, Replaced.
 | D-97 | Source of the card previews | A gray PNG per child canvas in `Caches`, written when you leave the child | Decided (2026-10-21) |
 | D-98 | Open and leave a card without a visible jump | The card covers the screen, the parent layers fade, and the child replaces the preview with a crossfade | Decided (2026-10-21) |
 | D-99 | Camera of a canvas: standard zoom or the stored camera | Standard zoom at an open by tap or up button, stored camera at launch and at a workspace switch | Decided (2026-10-21) |
-| D-100 | Double tap on a card and the single tap on a text box | The single tap waits for the double tap only on a card | Decided (2026-10-21) |
-| D-101 | Size, place, and title of a new card | A quarter of the screen width, the aspect of the screen, centered on the press, no title | Decided (2026-10-21) |
+| D-100 | Double tap on a card and the single tap on a text box | Replaced by D-115 | Replaced (2026-10-22) |
+| D-101 | Size, place, and title of a new card | Replaced by D-117 (place) and D-118 (size). No title stays. | Replaced (2026-10-22) |
 | D-102 | "Resize" in UNDO-03 | No card resize in version 1 | Decided (2026-10-21) |
 | D-103 | The card commands and the node commands | `AddCard`, `RenameCard`, and a node value in `MoveNode` and `DeleteNode` | Decided (2026-10-21) |
 | D-104 | Threshold of the pinch-out exit (CARD-05) | Test the threshold on the zoom of the fingers, start value 0.6 | Decided (2026-10-21) |
@@ -121,10 +121,12 @@ Status values: Open, Decided, Replaced.
 | D-111 | The events that write a preview | Up button, pinch-out, workspace switch, and the move to the background | Decided (2026-10-21) |
 | D-112 | A path that names a deleted card | Cut the path before the first card that is not valid | Decided (2026-10-21) |
 | D-113 | What "an empty part of the canvas" is | No card and no text box under the finger. Ink does not count. | Decided (2026-10-21) |
-| D-114 | Snapshot tests of the card menu and the rename alert | Open | Open |
+| D-114 | Snapshot tests of the card menu and the rename alert | Test the content, and compare pixel snapshots of the menu and the alert too | Decided (2026-10-22) |
 | D-115 | How a card opens | A single finger tap. Replaces the double tap of D-09 and D-100. | Decided (2026-10-22) |
 | D-116 | The body of a card | A light gray fill, as in Allume. Changes "no fill" of D-96. | Decided (2026-10-22) |
-| D-117 | How a new card comes | Open | Open |
+| D-117 | How a new card comes | A card button next to the tool button. A drag places the pending card. The long press goes. | Decided (2026-10-22) |
+| D-118 | The size of a new card | 320 by 224 canvas points | Decided (2026-10-22) |
+| D-119 | No zoom inside a card | A canvas inside a card has the zoom range 1...1. A pinch-out there only drives the exit. | Decided (2026-10-22) |
 | D-120 | Where the coverage check of TEST-02 runs | A separate target `make coverage`, named in the pull request checklist | Decided (2026-10-22) |
 | D-121 | The render thread computes the camera of a card flight | Yes, from the closed form of the spring. The main thread keeps its camera for the logic. | Decided (2026-10-22) |
 | D-122 | The renderer gets the change of a step before the model step | Yes, for `EraseStrokes` and `AddStroke`, with the reverse change if the model step throws | Decided (2026-10-22) |

@@ -34,7 +34,6 @@ final class PreviewAllocationTests: XCTestCase {
         let cards = CardStore()
         let atlas = try PreviewAtlas(resources: resources, byteBudget: 8 << 20, requestLimit: 16)
         var ids: [GreenItem] = []
-        var evicted: [CardID] = []
         for card in try Self.cards() {
             cards.add(card)
             ids.append(.card(card.id))
@@ -45,7 +44,7 @@ final class PreviewAllocationTests: XCTestCase {
                 height: 96,
                 outcome: .pixels([UInt8](repeating: 200, count: 128 * 96))
             )
-            _ = atlas.store(preview, frame: 1, evictedCards: &evicted)
+            _ = atlas.store(preview, frame: 1)
         }
         let encoder = TextEncoder(
             resources: resources,

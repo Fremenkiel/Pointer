@@ -74,7 +74,9 @@ final class RenderThread: NSObject, CAMetalDisplayLinkDelegate, @unchecked Senda
 
     /// Resumes the display link after a sleep. Any thread can call it.
     func wake() {
-        perform { [self] in link?.isPaused = false }
+        // A wake can come after the stop, and a run loop that ended keeps its blocks. A strong
+        // capture there kept the thread and its engine for the rest of the run.
+        perform { [weak self] in self?.link?.isPaused = false }
     }
 
     /// Sets the drawable size on the render thread, so it never changes during a frame.

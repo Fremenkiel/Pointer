@@ -43,13 +43,12 @@ extension FrameRenderer {
         previews.uploads.beginFrame()
         var blit: (any MTLBlitCommandEncoder)?
         var taken = 0
-        var evicted: [CardID] = []
         for preview in previews.pending {
             if case .pixels(let pixels) = preview.outcome {
                 guard previews.uploads.used + pixels.count <= PreviewUploads.capacity else { break }
             }
             taken += 1
-            let entry = previews.store(preview, frame: context.frame, evictedCards: &evicted)
+            let entry = previews.store(preview, frame: context.frame)
             guard let bounds = cards.entries[preview.card]?.bounds else {
                 // The card left the canvas while its preview was on the way.
                 previews.forget(preview.card)

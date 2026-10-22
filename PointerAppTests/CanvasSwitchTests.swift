@@ -36,7 +36,7 @@ struct CanvasSwitchTests {
                 repository: library.repository,
                 makeTimestamp: { clock.now() },
                 makeWorkspaceID: { clock.makeIdentifier() },
-                onSwitch: { composition.open($0) }
+                onSwitch: { [weak composition] in composition?.open($0) }
             )
         )
         composition.selector = selector
@@ -72,8 +72,8 @@ struct CanvasSwitchTests {
                 repository: library.repository,
                 makeTimestamp: { clock.now() },
                 makeWorkspaceID: { clock.makeIdentifier() },
-                onSwitch: { composition.open($0) },
-                onDelete: { composition.forgetSession(of: $0) }
+                onSwitch: { [weak composition] in composition?.open($0) },
+                onDelete: { [weak composition] in composition?.forgetSession(of: $0) }
             )
         )
         composition.selector = selector

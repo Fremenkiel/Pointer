@@ -99,8 +99,7 @@ final class PreviewAtlas {
     /// of an earlier preview of the card goes.
     ///
     /// - Returns: The entry to fill with the pixels, or `nil` if no slot is free in this frame.
-    ///   `evictedCards` gets the cards whose previews went.
-    func store(_ preview: DecodedPreview, frame: UInt64, evictedCards: inout [CardID]) -> Entry? {
+    func store(_ preview: DecodedPreview, frame: UInt64) -> Entry? {
         precondition(Self.steps.contains(preview.step), "Step \(preview.step) is no preview size")
         requested.remove(preview.card)
         switch preview.outcome {
@@ -111,7 +110,7 @@ final class PreviewAtlas {
             return nil
         case .pixels(let pixels):
             precondition(pixels.count == preview.width * preview.height, "Pixels of the size")
-            return place(preview, frame: frame, evictedCards: &evictedCards)
+            return place(preview, frame: frame)
         }
     }
 
@@ -129,11 +128,7 @@ final class PreviewAtlas {
         assert(entries[card] == nil, "The card left the atlas")
     }
 
-    private func place(
-        _ preview: DecodedPreview,
-        frame: UInt64,
-        evictedCards: inout [CardID]
-    ) -> Entry? {
+    private func place(_ preview: DecodedPreview, frame: UInt64) -> Entry? {
         precondition(preview.width <= preview.step && preview.height <= preview.step, "Size")
         if let earlier = entries.removeValue(forKey: preview.card) {
             slots.free(earlier.slot)
@@ -145,7 +140,6 @@ final class PreviewAtlas {
         let slot = slots.allocate(level: level, for: preview.card, frame: frame, evicted: &evicted)
         for card in evicted {
             entries.removeValue(forKey: card)
-            evictedCards.append(card)
         }
         guard let slot else { return nil }
         let origin = slots.origin(of: slot)

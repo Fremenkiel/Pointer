@@ -28,11 +28,12 @@ extension RenderEngine {
     /// Returns the loader, made at the first request.
     private func loader(for source: any PreviewSource) -> PreviewLoader {
         assert(previewRequestLimit > 0, "A request limit is positive")
-        let deliver: @Sendable (DecodedPreview) -> Void = { [weak self] preview in
-            self?.post { $0.decodedPreviews.append(preview) }
-        }
         return previewLoader.withLock { current in
             if let current { return current }
+            // Made here only, so a frame with a loader makes no closure (PERF-01).
+            let deliver: @Sendable (DecodedPreview) -> Void = { [weak self] preview in
+                self?.post { $0.decodedPreviews.append(preview) }
+            }
             let made = PreviewLoader(source: source, limit: previewRequestLimit, deliver: deliver)
             current = made
             return made

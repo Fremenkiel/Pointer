@@ -22,6 +22,9 @@ final class CardOpening {
     var card: Card?
     /// The new screen after its first frame, or `nil`.
     var canvas: CanvasViewController?
+    /// The new screen from the moment it joins the container, so that a cancel or a failure
+    /// can remove it, or `nil`.
+    var added: CanvasViewController?
     /// `false` while the preview of the child of a leave renders (D-111).
     var isPreviewDone = true
     /// The new preview of the child of a leave, or `nil`.

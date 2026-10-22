@@ -60,15 +60,15 @@ extension AppComposition {
                 )
             else { return }
             container.showAbove(canvas)
+            opening.added = canvas
             try await CardOpening.waitForFirstFrame(of: canvas)
             opening.canvas = canvas
             finishOpen()
+        } catch is CancellationError {
+            // A workspace switch cancelled the open, and `cancelNavigation()` cleaned up.
         } catch {
             logger.error("The canvas of a card did not open: \(error)")
-            self.opening = nil
-            opening.canvas.map(container.removeAbove)
-            parent.cancelCardTransition()
-            container.showMessage(AppStrings.canvasFailed)
+            fail(opening, on: parent)
         }
     }
 
@@ -145,16 +145,36 @@ extension AppComposition {
             leaving.card = parentCard
             renderPreview(of: child, for: parentCard, in: leaving)
             container.showBelow(canvas)
+            leaving.added = canvas
             try await CardOpening.waitForFirstFrame(of: canvas)
             leaving.canvas = canvas
             finishLeave(into: card)
+        } catch is CancellationError {
+            // A workspace switch cancelled the leave, and `cancelNavigation()` cleaned up.
         } catch {
             logger.error("The parent of a card did not open: \(error)")
-            opening = nil
-            leaving.canvas.map(container.removeAbove)
-            child.cancelCardTransition()
-            container.showMessage(AppStrings.canvasFailed)
+            fail(leaving, on: child)
         }
+    }
+
+    /// Ends an open or a leave that failed: the screen that it added goes, the shown screen
+    /// takes input again, and a message shows.
+    private func fail(_ failed: CardOpening, on shown: CanvasViewController) {
+        guard opening === failed else { return }
+        opening = nil
+        failed.added.map(container.removeAbove)
+        shown.cancelCardTransition()
+        container.showMessage(AppStrings.canvasFailed)
+    }
+
+    /// Ends a running open or leave before a workspace switch: the screen that it added goes,
+    /// so that no hidden screen keeps its renderer, and the next open or leave can start
+    /// (WS-02). The switch then replaces the shown screen.
+    func cancelNavigation() {
+        guard let cancelled = opening else { return }
+        opening = nil
+        cancelled.added.map(container.removeAbove)
+        container.canvas?.cancelCardTransition()
     }
 
     /// Fades the child out when its flight and the first frame of the parent are both done,

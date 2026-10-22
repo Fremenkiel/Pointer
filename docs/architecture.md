@@ -325,11 +325,11 @@ struct Camera: Equatable, Sendable {
 
 The limits are `Limits.minZoom = 0.25`, `Limits.maxZoom = 8.0`, and `Limits.standardZoom = 1.0`. They apply to the root canvas. A canvas inside a card has the zoom range 1...1 (D-119). `CameraController` turns pan and pinch input into camera changes. It also applies deceleration and the rubber band below the minimum zoom.
 
-The camera of each canvas is stored in the device state, not in the library (see [storage.md](storage.md)). The app reads it only at launch and at a workspace switch, for the deepest canvas of the stored path (WS-04). An open by a double tap, the up button, or a pinch-out uses the cameras of sections 6.2 and 6.3 (D-99).
+The camera of each canvas is stored in the device state, not in the library (see [storage.md](storage.md)). The app reads it only at launch and at a workspace switch, for the deepest canvas of the stored path (WS-04). An open by a tap, the up button, or a pinch-out uses the cameras of sections 6.2 and 6.3 (D-99, D-115).
 
 ### 6.2 Open a card
 
-1. The user opens a card (decision D-09).
+1. The user opens a card with a finger tap (decision D-115).
 2. The controller animates the camera of the parent until the card frame covers the screen (D-98). The animation takes 0.35 s with a spring curve. During it, the parent fades out, because its ink and its text lie on top of the card (D-16). Text and cards share the green channel, so the whole parent composite fades. A card pass draws the opened card on top at full weight (D-108). At the start of the animation, the parent copies its frame into one `.r8Unorm` texture of the drawable size. Then it frees its committed textures and the eraser mask. The animation draws this frozen copy (D-110). The render thread computes the camera and the parent weight of each frame from the flight, `1 - progress` for an open, so the load of the child on the main thread does not stop the animation (D-121, section 5.1).
 3. The child canvas loads during the animation. Its camera starts at the standard zoom, centered on the content bounds of the child. If the child is empty, the camera centers on the origin.
 4. When the animation ends and the first frame of the child is ready, the child replaces the preview with a crossfade of 0.1 s.
@@ -343,6 +343,8 @@ There are two ways to leave a card:
 - Pinch out. A canvas inside a card has the zoom range 1...1, so the screen shows no zoom (D-119). The zoom of the fingers continues below 1 with resistance (rubber band), and it drives only the exit. The controller shows the child at zoom 1 as a shrinking card over a faded image of the parent. The image is the frozen copy of the open (section 6.2). It exists only for the direct parent of an open in this run of the app. Without it, the pinch below `minZoom` starts the load of the parent. It shows the canvas color until the first frame of the parent (D-109). If the fingers lift when the zoom of the fingers, without the rubber band, is under `0.7` times zoom 1, the controller plays the minimize animation and shows the parent at the standard zoom (D-104). The animation also moves the child camera to the camera of the open, as the up button does, so that the shrinking child ends at the region of the preview (D-109). The render thread computes the exit progress of this animation from the zoom of the flight, with the formula of the pinch (D-121). At the end, the child image crossfades to the preview. Both show the child at zoom 1. Otherwise, the card springs back to full screen.
 
 On the root canvas, the rubber band springs back. No transition happens (CARD-06).
+
+A workspace switch during an open or a leave ends it. The screen that the open or the leave added leaves the container with its renderer, and the switch shows the canvas of the new workspace (WS-02). A failed load of the new screen, or a first frame later than 5 s, also removes the added screen and shows a message.
 
 The threshold is `0.7`. The start value was `0.6`, and the product owner asked for an earlier leave on the iPad on 2026-10-22. The shown zoom is a poor measure: with the rubber band exponent of 0.35, a threshold of 0.7 on the shown zoom needs the fingers to close to 36 % of their start distance (D-104).
 

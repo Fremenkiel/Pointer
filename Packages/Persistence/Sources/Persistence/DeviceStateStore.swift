@@ -194,7 +194,9 @@ public actor DeviceStateStore {
         }
         let pathData = try value(Self.navigationPathKey, statements) ?? Data()
         let size = ValueCodec.identifierByteCount
-        guard pathData.count % size == 0 else {
+        // The bound comes before the loop, so a damaged value of any length reads no further
+        // than a path of `Limits.maxDepth` cards (FLOW-03).
+        guard pathData.count % size == 0, pathData.count <= Limits.maxDepth * size else {
             throw .corruptValue(reason: "navigation path of \(pathData.count) bytes")
         }
         var path: [CardID] = []

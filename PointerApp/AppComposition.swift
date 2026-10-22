@@ -176,7 +176,8 @@ final class AppComposition {
                 logger.error("The last workspace was not saved: \(error)")
             }
         }
-        // A newer switch makes the older load useless (F-13).
+        // A newer switch makes the older load useless (F-13), also the load of an open.
+        cancelNavigation()
         loadTask?.cancel()
         loadTask = Task { await openCanvas(of: workspace) }
     }

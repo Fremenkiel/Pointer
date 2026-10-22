@@ -276,7 +276,7 @@ enum OnScreenCanvas {
     /// drawables of a closed canvas are gone before a measure starts (D-93).
     ///
     /// - Throws: `OpenTimedOut` if the memory does not settle in `steadyTimeout`.
-    private static func waitForSteadyMemory() async throws {
+    static func waitForSteadyMemory() async throws {
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: steadyTimeout)
         var reference = os_proc_available_memory()
