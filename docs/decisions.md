@@ -125,9 +125,9 @@ Status values: Open, Decided, Replaced.
 | D-115 | How a card opens | A single finger tap. Replaces the double tap of D-09 and D-100. | Decided (2026-10-22) |
 | D-116 | The body of a card | A light gray fill, as in Allume. Changes "no fill" of D-96. | Decided (2026-10-22) |
 | D-117 | How a new card comes | Open | Open |
-| D-120 | Where the coverage check of TEST-02 runs | Open | Open |
-| D-121 | The render thread computes the camera of a card flight | Open | Open |
-| D-122 | The renderer gets the change of a step before the model step | Open | Open |
+| D-120 | Where the coverage check of TEST-02 runs | A separate target `make coverage`, named in the pull request checklist | Decided (2026-10-22) |
+| D-121 | The render thread computes the camera of a card flight | Yes, from the closed form of the spring. The main thread keeps its camera for the logic. | Decided (2026-10-22) |
+| D-122 | The renderer gets the change of a step before the model step | Yes, for `EraseStrokes` and `AddStroke`, with the reverse change if the model step throws | Decided (2026-10-22) |
 
 ## Details
 
@@ -1267,7 +1267,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-120 Where the coverage check of TEST-02 runs
 
-- Raised by task 1.1 of [m6-fix-plan.md](m6-fix-plan.md) on 2026-10-22.
+- Decided by the product owner on 2026-10-22: the recommendation, (a). Raised by task 1.1 of [m6-fix-plan.md](m6-fix-plan.md) on the same day.
 - TEST-02 asks for 90 % line coverage in each Tier A package and 70 % in Rendering. The M6 close measured it by hand. The Tier A numbers come from `swift test --enable-code-coverage` on the Mac. The Rendering number needs one more full run of `PointerDeviceTests` on the iPad with the instrumented build of section 2.1 of the fix plan.
 - The instrumented code is slower, so the performance tests of a coverage run fail or do not count.
 - Options:
@@ -1278,7 +1278,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-121 The render thread computes the camera of a card flight
 
-- Raised by task 2.2 of [m6-fix-plan.md](m6-fix-plan.md) on 2026-10-22.
+- Decided by the product owner on 2026-10-22: the recommendation, (a). Raised by task 2.2 of [m6-fix-plan.md](m6-fix-plan.md) on the same day.
 - The open of an empty card had 1 late frame in 2 of 5 close runs of D-79. The main thread steps the camera of the flight in `InkView.onFrame`. The render thread waits at most 3 ms for a new camera, and without one it presents no frame. The load of the child screen blocks the main thread for 4 to 14 ms, so the animation stops for one or two frames. The leave has the same gap at the start of the parent flight. Section 2.2 of the fix plan has the research.
 - Options:
   - (a) The render thread computes the camera and the parent weight of a flight from the closed form of the spring, at the target time of each frame. The main thread still steps its own camera for the logic: the end callbacks, the input lock, and `isInCardTransition`. Architecture.md section 6.2 changes: the main thread no longer drives the frames of a flight.
@@ -1288,7 +1288,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-122 The renderer gets the change of a step before the model step
 
-- Raised by task 3.2 of [m6-fix-plan.md](m6-fix-plan.md) on 2026-10-22.
+- Decided by the product owner on 2026-10-22: the recommendation, (a). Raised by task 3.2 of [m6-fix-plan.md](m6-fix-plan.md) on the same day.
 - An undo, a redo, and an erase first run the model step on the main thread, 4 to 8 ms for the D-69 content, and only then give the change to the renderer. The change of `EraseStrokes` and `AddStroke` comes from the command alone (`renderDelta(of:isUndo:)`), so the renderer can start about 5 ms earlier.
 - Risk: if the model step then throws, the renderer already has the change. The code then gives the renderer the reverse change and logs the error. For one frame, the screen can show ink that the model does not hold.
 - Options:
