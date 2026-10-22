@@ -263,10 +263,79 @@ Fill in this section during the work.
 
 ### 6.1 The hover shadow of PencilKit (task 0.1)
 
+Not done yet. The task needs the product owner and the Apple Pencil Pro.
+
 ### 6.2 Baseline (task 0.5)
+
+Measured on 2026-10-22 on the iPad Pro 11-inch (M4) in Release, with the code of commit 7607388. The run is one full run of `PointerDeviceTests` with the result bundle `.build/Runs/T05-baseline.xcresult`. It took 302 s, and all 314 tests passed. The open of the empty card had 0 late frames in this run, so the expected failure of D-125 did not show.
+
+| Step | Median | Slowest | Steps |
+|---|---|---|---|
+| Erase | 25.62 ms | 26.32 ms | 5 |
+| Undo | 17.69 ms | 20.52 ms | 5 |
+| Redo | 22.88 ms | 24.32 ms | 5 |
+
+The main-thread calls of `EraseUndoPerformanceTests` took 5.0 to 13.3 ms.
+
+The open of the D-56 canvas (`CanvasOpenPerformanceTests`) took a median of 256.3 ms and at most 262.4 ms over 10 opens, from the tap to the first frame. The load part took 70.4 to 84.2 ms. The memory of the open canvas was 339 MB held and 352 MB at the peak. The transition between two D-56 canvases (`TransitionMemoryPerformanceTests`) held 223 MB for the parent, 352 MB at the peak of the open, 296 MB after the open, and 433 MB at the peak of the leave, and it freed the parent.
+
+| Card flight | Time | Frames | Late | Held |
+|---|---|---|---|---|
+| Open of the D-56 card | 468 ms to the child | 56 | 0 | 0 |
+| Leave of the D-56 card | 592 ms | 2 child, 43 parent | 0 | 0 |
+| Open of the empty card | 478 ms to the child | 57 | 0 | 0 |
+| Leave of the empty card | 487 ms | 2 child, 43 parent | 0 | 0 |
+| Open, main thread blocked | 468 ms to the child | 56 | 0 | 0 |
+| Leave, main thread blocked | 492 ms | 2 child, 43 parent | 0 | 0 |
+
+Each frame loop of `FrameLoopTests` ran at 120.0 fps with 0 late frames of 479. The main-thread time is the time per frame on the main thread.
+
+| Frame loop | Main ms, mean / p99 / max | Render ms, p50 / max | GPU ms, p50 / max | Allocations, p50 / p99 / max | Uncovered |
+|---|---|---|---|---|---|
+| few pan | 0.00 / 0.02 / 0.04 | 0.16 / 0.26 | 0.34 / 1.59 | 17 / 29 / 43 | 0 / 480 |
+| dense 20k pan | 0.01 / 0.03 / 0.06 | 0.20 / 2.88 | 0.37 / 2.60 | 17 / 2,413 / 2,640 | 0 / 480 |
+| dense 20k fast pan | 0.00 / 0.03 / 0.03 | 0.20 / 2.85 | 0.35 / 2.55 | 17 / 2,325 / 2,737 | 0 / 480 |
+| dense 20k zoom | 0.01 / 0.03 / 0.06 | 0.19 / 2.79 | 0.38 / 2.99 | 17 / 2,100 / 2,255 | 0 / 480 |
+| handwriting 200k pan | 0.00 / 0.03 / 0.03 | 0.20 / 2.20 | 0.38 / 5.04 | 17 / 2,168 / 2,181 | 0 / 480 |
+| handwriting 200k zoom | 0.01 / 0.03 / 0.04 | 0.18 / 2.13 | 0.35 / 5.02 | 17 / 2,161 / 2,181 | 0 / 480 |
+| D-56 text pan | 0.00 / 0.02 / 0.05 | 2.18 / 3.49 | 0.81 / 2.92 | 50 / 2,224 / 3,025 | 137 / 480 |
+| D-56 text zoom | 0.01 / 0.01 / 0.07 | 2.20 / 3.57 | 0.84 / 3.49 | 50 / 2,119 / 3,024 | 0 / 480 |
+| D-56 cards pan | 0.00 / 0.01 / 0.01 | 0.44 / 2.26 | 0.68 / 4.99 | 238 / 9,527 / 9,533 | 0 / 480 |
+| D-56 cards pan at zoom 1 | 0.00 / 0.01 / 0.03 | 0.13 / 2.54 | 0.67 / 6.97 | 88 / 2,613 / 2,621 | 0 / 480 |
+| D-56 cards zoom | 0.00 / 0.00 / 0.01 | 0.38 / 3.17 | 0.70 / 4.96 | 220 / 5,900 / 8,509 | 0 / 480 |
+
+The preview render of D-56 took 30.9 ms. The eraser frame took 0.12 ms on the CPU and 0.30 ms on the GPU at the median, and at most 0.21 and 0.60 ms.
+
+| Allocation test | Count |
+|---|---|
+| `FrameAllocationTests` | frame p50 15, bare Metal frame p50 15 |
+| `TransitionAllocationTests`, flight frame | p50 15, bare frame p50 15 |
+| `TransitionAllocationTests`, open frame | p50 15, bare frame p50 15 |
+| `PreviewAllocationTests` | card pass p50 2, bare pass p50 2 |
+| `TextPassAllocationTests` | text pass p50 2, bare pass p50 2 |
+| `TextMoveAllocationTests`, move step | median 6 |
+| `EditAllocationTests` | `FrameRenderer.apply`: erase 14, undo 2, redo 1 |
+| `EraserSampleAllocationTests`, canvas samples and mask samples | 0, the test fails above 0 |
+| `GridAllocationTests`, 1,000 removals | 0, the test fails above 0 |
+
+`TextMoveAllocationTests.testEditedTextGetsANewLayout` checks the layout, not a count.
 
 ### 6.3 Measures of the pen tool (task 3.1)
 
 ### 6.4 Manual tests (tasks 2.5 and 4.1)
 
 ### 6.5 Close (phase 5)
+
+### 6.6 Navigation faults (tasks 0.2 to 0.4)
+
+Measured on 2026-10-22 on the iPad in Release. Each test ran first on the code before its fix and failed, then on the fixed code and passed. The tests are in `PointerAppTests/NavigationFailureTests.swift` and `PointerAppTests/PreviewStopTests.swift`.
+
+Task 0.2, commit 27e09ba. The test `failedOpenKeepsSession` takes the app off the window during an open, so the child with one stroke never draws, and the open fails after `makeCanvas` with `FirstFrameTimedOut`. Without the stroke, the open of the empty child did not fail without a window. The test then draws a stroke on the parent, switches the workspace, and switches back. Before the fix, the parent had 0 undo steps after the switch back ("shown.history.undoSteps.count → 0"), and the undo left the stroke. The fix is the smaller of the two changes of the task: `cancelCardTransition` calls the new `resumeSession()`. It takes the saved copy out of the sessions and clears `hasEndedSession`, so that the screen owns its history alone again. A session that `discardSession()` dropped stays dropped (M-03). `makeCanvas` still ends the session before the new screen reads the sessions (F-02). After the fix, the test passed, and `NavigationTests`, `DeepTreeTests`, `CanvasSwitchTests`, and `NavigationCancelTests` passed.
+
+Task 0.3, commit 19f0904. The test `leaveWithoutParentCard` deletes the card of the child in the repository, then leaves, then opens a card inside the child. The test `openWithoutScreen` sets the clock of the composition to `nil`, so `makeCanvas` gives `nil`, then opens the card again with the clock. Before the fix, both failed with "Expectation failed: hasEnded: The failed navigation still runs" after 15 s, because `opening` stayed set. Now each return in `loadChild` and `loadParent` that is not a cancel calls `fail(_:on:)`, and both tests see the message `AppStrings.canvasFailed`. `loadParent` checks the card before `makeCanvas`, so it makes no screen without the card. After the fix, both tests passed with the tests of task 0.2, `NavigationTests`, `DeepTreeTests`, `CanvasSwitchTests`, `NavigationCancelTests`, and `PinchCancelTests`.
+
+Task 0.4, commit 7607388. The fault exists. The test `stoppedRenderThread` starts the preview render of a leave and takes the child view out of the window at once, so the render thread stops. Before the fix, the completion did not run in 3 s ("Expectation failed: isDone: The completion of the preview render did not run"). The test does not show whether the request still waited in the inbox or ran as a job, so the fix ends both. Now the stop block of `RenderThread` calls `RenderEngine.endPreviewRender()` after the link stops. It takes the waiting request and the running job out under their locks, and calls their completions with `nil` after the locks. After the fix, the test passed, and `PreviewWriteTests`, `PreviewRenderTests`, `CanvasLifetimeTests`, and `NavigationFailureTests` passed.
+
+Close of phase 0, 2026-10-22, with the code of commit 7607388. `make check` passed with the iPad: `build`, `analyze` with 0 findings, `test` with the Tier A tests and all of `PointerDeviceTests`, `snapshots`, `format`, `lint`, `layers` with 0 findings, `density`, `self-test`, and `plist`. `make coverage` passed: Geometry 90.80 % (474 of 522 lines), Model 90.80 % (1,293 of 1,424), InkEngine 92.73 % (625 of 674), Persistence 91.15 % (2,163 of 2,373), and Rendering 86.87 % (5,957 of 6,857). In the instrumented run of `make coverage`, `EraseUndoPerformanceTests` failed, and the target ignores that failure by design (D-120).
+
+A full build of the `Rendering` package prints one warning: `FrameRenderer+PreviewRender.swift:116:25: warning: capture of 'renderer' with non-Sendable type 'PreviewRenderer' in a '@Sendable' closure [#SendableClosureCaptures]`. The build of the code before task 0.4 prints the same warning, and `make build` exits with 0. The build of `make check` was incremental, so it did not compile that file again. Item 1 of the checklist of code-of-code.md section 5 asks for zero warnings, so this warning waits for the product owner.
