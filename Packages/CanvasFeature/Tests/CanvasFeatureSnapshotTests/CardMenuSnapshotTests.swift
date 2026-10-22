@@ -4,15 +4,19 @@ import Model
 import Rendering
 import Testing
 import UIKit
+import XCTest
 
 @testable import CanvasFeature
 
 /// Pixel snapshots of the card menu and the rename alert, presented in a window of the test host
 /// without animations (D-114, TEST-07). The content tests of `CardMenuTests` stay. The reference
 /// images can change with an iPadOS release.
+///
+/// It is an XCTest class, because the XCTest classes of a run run alone, before the Swift
+/// Testing suites, which run at the same time. In a full run, a suite beside it made the system
+/// skip the menu, and all three presentations captured a black image.
 @MainActor
-@Suite("Card menu snapshots", .serialized)
-struct CardMenuSnapshotTests {
+final class CardMenuSnapshotTests: XCTestCase {
     /// The size of the window, in points.
     private static let windowSize = CGSize(width: 600, height: 400)
     /// The time for the system to lay out and draw the menu or the alert.
@@ -23,7 +27,7 @@ struct CardMenuSnapshotTests {
         // Only UIApplication reaches the scene of the test host, as in `ViewSnapshot` (D-59).
         // swiftlint:disable:next arch_05_singletons
         let scenes = UIApplication.shared.connectedScenes
-        let scene = try #require(scenes.compactMap { $0 as? UIWindowScene }.first)
+        let scene = try XCTUnwrap(scenes.compactMap { $0 as? UIWindowScene }.first)
         let window = UIWindow(windowScene: scene)
         window.frame = CGRect(origin: .zero, size: windowSize)
         window.overrideUserInterfaceStyle = .dark
@@ -69,7 +73,7 @@ struct CardMenuSnapshotTests {
     /// Draws `rect` of the windows of the scene, the lowest window first, so that a menu in a
     /// window of the system shows on top of the window of the test.
     private static func capture(_ window: UIWindow, in rect: CGRect) throws -> UIImage {
-        let scene = try #require(window.windowScene)
+        let scene = try XCTUnwrap(window.windowScene)
         let windows = scene.windows.filter { !$0.isHidden }.sorted {
             $0.windowLevel < $1.windowLevel
         }
@@ -92,13 +96,13 @@ struct CardMenuSnapshotTests {
         }
     }
 
-    @Test("The card menu shows Rename and Delete in the style of the system")
-    func menu() async throws {
+    /// The card menu shows Rename and Delete in the style of the system.
+    func testMenu() async throws {
         let previous = Self.keyWindow()
         let window = try Self.makeWindow()
         defer { Self.close(window, previous: previous) }
         let (controller, card) = try Self.makeController()
-        let root = try #require(window.rootViewController)
+        let root = try XCTUnwrap(window.rootViewController)
         let anchor = UIView(frame: root.view.bounds)
         root.view.addSubview(anchor)
         let interaction = UIEditMenuInteraction(delegate: controller)
@@ -127,18 +131,18 @@ struct CardMenuSnapshotTests {
 
     /// `true` if each pixel of the image is black, so no menu shows.
     private static func isBlack(_ image: UIImage) throws -> Bool {
-        let cgImage = try #require(image.cgImage)
-        let data = try #require(cgImage.dataProvider?.data as Data?)
+        let cgImage = try XCTUnwrap(image.cgImage)
+        let data = try XCTUnwrap(cgImage.dataProvider?.data as Data?)
         return !data.contains { $0 > 16 && $0 < 255 }
     }
 
-    @Test("The rename alert shows the title in a text field with Cancel and Rename")
-    func renameAlert() async throws {
+    /// The rename alert shows the title in a text field with Cancel and Rename.
+    func testRenameAlert() async throws {
         let previous = Self.keyWindow()
         let window = try Self.makeWindow()
         defer { Self.close(window, previous: previous) }
         let (controller, card) = try Self.makeController()
-        let root = try #require(window.rootViewController)
+        let root = try XCTUnwrap(window.rootViewController)
         let alert = controller.renameAlert(for: card.id)
         root.present(alert, animated: false)
         try await Task.sleep(for: Self.settle)
