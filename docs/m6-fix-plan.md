@@ -360,7 +360,7 @@ Against m6-plan.md section 6.1, the open, the memory, the content passes, and th
 
 The product owner chose to fix the snapshot of the card menu on 2026-10-22. The cause is the run order, not one test before it. The Swift Testing suites of a full run run at the same time, and in 5 of 8 full runs, a suite beside the menu test made the system skip the menu. The window of the test stayed key in each diagnosed run. The XCTest classes of a run run alone, before the Swift Testing suites, so `CardMenuSnapshotTests` is now an XCTest class. It passed in 2 full runs after the change. A failed comparison still fails the test.
 
-The same day, the product owner reported a lost card: a tap on the card button, a leave, and a new open dropped the pending card (D-123). A pending card now joins the canvas where it shows at a leave, a workspace switch, the open of a card, and the move to the background.
+The same day, the product owner reported a lost card: a tap on the card button, a leave, and a new open dropped the pending card (D-123). A pending card now joins the canvas where it shows at a leave, a workspace switch, the open of a card, and the move to the background. The product owner tested it on the iPad on the same day and reported: "It works."
 
 In the 5 full runs after these changes, the open of the empty card had 1 late frame each, at places 16 to 29 of the flight, with 0 held frames. In the close runs of section 6.4, it had 1 in 5 runs. Alone, with 5 iterations twice, the code of commit 0cf8c68 and the new code both had 0 late frames in 20 opens and 20 leaves of the empty card. The late frame thus depends on the full run, and it stays the open item of phase 2.
 
