@@ -129,6 +129,7 @@ Status values: Open, Decided, Replaced.
 | D-121 | The render thread computes the camera of a card flight | Yes, from the closed form of the spring. The main thread keeps its camera for the logic. | Decided (2026-10-22) |
 | D-122 | The renderer gets the change of a step before the model step | Yes, for `EraseStrokes` and `AddStroke`, with the reverse change if the model step throws | Decided (2026-10-22) |
 | D-123 | A pending card at a leave | It joins the canvas where it shows, with one undo step | Decided (2026-10-22) |
+| D-124 | The card menu snapshots as an XCTest class | Accepted exception to TEST-01 | Decided (2026-10-22) |
 
 ## Details
 
@@ -1304,6 +1305,12 @@ Status values: Open, Decided, Replaced.
 - Options: (a) a leave, a workspace switch, or the move to the background places the pending card where it shows, with one undo step. (b) The tap places a full card at the left edge at once, as option 2 (b) of D-117. (c) Keep D-117.
 - Recommendation: (a). Nothing that the screen shows is lost, and the drag of D-117 stays.
 - Design: `CanvasViewController.placePendingCard()` adds the pending card with `AddCard` at its shown frame. `endSession()` calls it, so a leave, a workspace switch, and the open of a card place the card before the next screen comes. `enterBackground()` calls it before the final save.
+
+### D-124 The card menu snapshots as an XCTest class
+
+- Decided by the product owner on 2026-10-22: the exception is accepted. Raised by the fix of the card menu snapshot after the close of [m6-fix-plan.md](m6-fix-plan.md) (section 6.6).
+- TEST-01 asks for Swift Testing in new unit tests and allows XCTest for UI tests and performance tests. The Swift Testing suites of a full run run at the same time, and a suite beside the menu snapshot made the system skip the menu. The XCTest classes run alone before them.
+- Decision: `CardMenuSnapshotTests` is an XCTest class. A test that needs the key window or a system presentation alone can be an XCTest class for the same reason.
 
 ## Points in the request that conflict or are not complete
 

@@ -364,3 +364,5 @@ The same day, the product owner reported a lost card: a tap on the card button, 
 
 In the 5 full runs after these changes, the open of the empty card had 1 late frame each, at places 16 to 29 of the flight, with 0 held frames. In the close runs of section 6.4, it had 1 in 5 runs. Alone, with 5 iterations twice, the code of commit 0cf8c68 and the new code both had 0 late frames in 20 opens and 20 leaves of the empty card. The late frame thus depends on the full run, and it stays the open item of phase 2.
 
+On 2026-10-22, the product owner ran the 6 manual tests of section 6.5 on the iPad, and all pass. The product owner accepted the card menu snapshots as an XCTest class (D-124). The late frame of the empty card in full runs stays an accepted open item for a later milestone.
+
