@@ -185,6 +185,7 @@ Status values: Open, Decided, Replaced.
 - The tool list is pen, eraser, and text only. A card needs a way in.
 - Options: (a) long press on empty canvas, then "New card" in a menu. (b) a fourth tool. (c) draw a rectangle with the pencil and convert it.
 - Recommendation: (a). It keeps the tool list at three.
+- Replaced by D-117 on 2026-10-22: a card button in the chrome makes a card. The tool list stays at three.
 - Doubt: (c) feels more natural with a pencil but needs shape recognition, which the product rules out.
 
 ### D-09 How to open a card
@@ -1097,6 +1098,7 @@ Status values: Open, Decided, Replaced.
 
 - Decided by the product owner on 2026-10-21: the recommendation. Raised by the review of M5 on the same day, for M6.
 - CARD-01 makes a card with a long press on empty canvas and "New card". No document gives its size, its place, or its title. A card is at least 64 by 48 canvas points (data-model.md section 7.2). CARD-02 makes the title optional. The workspace selector renames with an alert that holds a text field (`WorkspaceSelectorView.swift`, line 40).
+- Changed by D-117 on 2026-10-22: the size and the title stay. The card button places the new card with its center on the left edge of the screen, and a drag moves it into place.
 - Options for the size:
   - (a) A fixed size in canvas points, for example 320 by 224. It looks tiny at zoom 0.25 and fills the screen at zoom 4.
   - (b) A quarter of the screen width at the current zoom, with the aspect of the screen. On the 11-inch iPad in landscape at zoom 1, that is about 299 by 209 points. At zoom 8, the minimum size of 64 by 48 sets the size.
@@ -1203,6 +1205,7 @@ Status values: Open, Decided, Replaced.
 
 - Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
 - CARD-01 makes a card with a long press "on an empty part of the canvas". Ink cannot be selected (CARD-07), and cards lie under the ink (D-16).
+- Replaced by D-117 on 2026-10-22: no long press makes a card, so the term has no use.
 - Options: (a) Empty means no card and no text box under the finger. Ink does not count. (b) Ink counts too, so a long press on ink does nothing.
 - Recommendation: (a). A hit test of ink costs a pass over the strokes, and ink has no menu.
 
@@ -1232,7 +1235,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-117 How a new card comes
 
-- Open. Raised by the product owner on 2026-10-22 after the manual test of task 4.7: "I do not like the hold and pick New card, it should be like the handling of Allume instead, where the card is selected from the tool bar, and then appears in the left hand side." It replaces CARD-01, D-08, D-101, and D-113.
+- Decided by the product owner on 2026-10-22: the recommendation, 1 (b), 2 (a), and 3: the long press goes. Raised by the product owner on the same day after the manual test of task 4.7: "I do not like the hold and pick New card, it should be like the handling of Allume instead, where the card is selected from the tool bar, and then appears in the left hand side." It replaces CARD-01, D-08, D-101, and D-113.
 - The video of Allume shows a bar of tools at the bottom of the screen. A tap on its card tool makes a card half outside the left edge of the screen. A finger then drags the card into its place on the canvas, where it stays.
 - Pointer has no bar of tools at the bottom. Its tools are in the palette of the tool button in the top left corner (TOOL-07, D-64).
 - Questions:
@@ -1240,6 +1243,7 @@ Status values: Open, Decided, Replaced.
   2. What happens after the tap: (a) the card appears half outside the left edge, and a drag places it, as in the video; until the drag, it is not part of the canvas; or (b) the card appears at the left edge as a full card on the canvas, with one undo step, and a drag moves it later.
   3. Does the long press on empty canvas with "New card" go, or stay as a second way?
 - Recommendation: 1 (b), a card button next to the tool button, because the palette holds the tools of the pencil. 2 (a), as in the video. 3: it goes.
+- Design: the card button lies right of the tool button, and the up button lies right of the card button. A tap shows a pending card with the size of D-101. Its center lies on the left edge of the screen, at half the screen height. A one-finger pan that starts on the pending card drags it, and the camera stays. At the lift, the card joins the canvas with one `AddCard` step. A cancelled drag, or a drag without a move, leaves it pending at its place. A second tap on the button puts it back at the left edge. A tap on the pending card does not open it. At level 32 and at the node limit, the button shows the message of the limit and shows no card (D-95).
 
 ## Points in the request that conflict or are not complete
 

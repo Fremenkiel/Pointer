@@ -3,7 +3,8 @@ import Testing
 
 @testable import CanvasFeature
 
-/// The tool palette and the current-tool button for each tool (TOOL-07, TEST-07).
+/// The tool palette, the current-tool button for each tool, and the card button (TOOL-07,
+/// D-117, TEST-07).
 @MainActor
 @Suite("Tool control snapshots")
 struct ToolControlsSnapshotTests {
@@ -29,5 +30,10 @@ struct ToolControlsSnapshotTests {
             CurrentToolButton(controls: tools(tool)),
             named: "tool-button-\(tool)"
         )
+    }
+
+    @Test("The chrome shows the card button right of the tool button (D-117)")
+    func chrome() throws {
+        try ViewSnapshot.assertMatches(ToolChrome(controls: tools(.pen)), named: "tool-chrome")
     }
 }

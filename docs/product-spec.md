@@ -63,7 +63,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 
 ### 3.5 Cards and navigation
 
-- CARD-01: You can create a card on a canvas. You long press on an empty part of the canvas, then pick "New card" (D-08). An empty part has no card and no text box under the finger. Ink does not count (D-113).
+- CARD-01: You can create a card on a canvas. You tap the card button next to the tool button. A card shows half outside the left edge of the screen. You drag it into place with a finger, and it joins the canvas at the lift (D-117).
 - CARD-02: A card shows a frame with a light gray body, an optional title, and a scaled preview of its content (D-116).
 - CARD-03: You open a card with a finger tap on the card (D-115). The app zooms into the card and shows its canvas at the standard zoom.
 - CARD-04: An up button leaves the current card. The app shows the parent canvas at the standard zoom, centered on the card.
@@ -71,7 +71,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 - CARD-06: On the root canvas, a pinch past the minimum zoom springs back. Nothing else happens.
 - CARD-07: You can move a card and a text box with a finger (long press, then drag). Ink cannot move. Version 1 has no lasso (D-10).
 - CARD-08: You can delete and rename a card through a context menu (long press without a drag).
-- CARD-09: The tree depth has a limit of 32 levels. The root canvas is level 0, and a card on a canvas of level n opens a canvas of level n + 1. "New card" on a canvas of level 32 is refused with a message (D-95).
+- CARD-09: The tree depth has a limit of 32 levels. The root canvas is level 0, and a card on a canvas of level n opens a canvas of level n + 1. The card button on a canvas of level 32 is refused with a message (D-95).
 
 ### 3.6 Workspaces
 

@@ -12,6 +12,8 @@ final class ToolControls {
     @ObservationIgnored var select: (Tool) -> Void = { _ in }
     /// Opens the palette under the button.
     @ObservationIgnored var openPalette: () -> Void = {}
+    /// Shows a new card at the left edge of the screen (CARD-01, D-117).
+    @ObservationIgnored var newCard: () -> Void = {}
 }
 
 extension Tool {

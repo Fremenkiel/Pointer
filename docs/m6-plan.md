@@ -326,6 +326,8 @@ Rules: CARD-01, CARD-09, UNDO-03, STYLE-05, D-08, D-95, D-101, D-113.
 
 Status: done on 2026-10-21. The long press can begin anywhere while editing is on: on a text box it moves the box as in M5, and on empty canvas its menu holds "New card". `CanvasDependencies.level` gives the level of the canvas (D-95). The node limit message now reads "This canvas holds no more cards or text boxes.", because cards and text boxes share the limit. `installGestures()` moved to `CanvasViewController+Gestures.swift`, so the class body of the canvas has room for the cards (SIZE-03). The 6 new tests and the 16 text tests of M5 pass on the iPad.
 
+Status: changed on 2026-10-22 by D-117. The long press on empty canvas no longer makes a card. The card button right of the tool button shows a pending card, centered on the left edge of the screen. A one-finger pan that starts on it drags it, and the lift adds it with one `AddCard` step. The pending card is in the renderer only, so a tap does not open it. The refusals at level 32 and at the node limit come at the tap on the button. `NewCardTests` covers the button, the drag, a cancelled drag, a second tap, and the refusals. The snapshot `tool-chrome` shows the two buttons.
+
 #### 4.2 Card menu and move
 
 1. A long press on a card without a drag opens a menu with "Rename" and "Delete" (CARD-08).
@@ -507,8 +509,8 @@ Not measured yet.
 
 ### 6.6 Manual tests for the product owner
 
-1. Hold a finger on empty canvas. Pick "New card". A card shows at the finger.
-2. Double tap the card with a finger. The card grows to cover the screen, and its canvas shows without a jump (acceptance 1).
+1. Tap the card button right of the tool button. A card shows half outside the left edge. Drag it into place and lift the finger. The card stays there (D-117).
+2. Tap the card with a finger. The card grows to cover the screen, and its canvas shows without a jump (acceptance 1).
 3. Draw in the card, then tap the up button. The parent shows at zoom 1, centered on the card. The preview shows the new ink.
 4. Open the card again, and pinch out past the minimum zoom. Lift the fingers early: the camera springs back (acceptance 3). Pinch further and lift: the parent shows.
 5. On the root canvas, pinch out past the minimum zoom. The camera springs back, and nothing else happens.

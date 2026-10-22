@@ -101,7 +101,6 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
 
     private func showTextMenu(for box: TextBox, at location: CGPoint) {
         textEditing.menuBox = box
-        textEditing.menuPoint = nil
         textEditing.menuCard = nil
         textEditing.menu?.presentEditMenu(
             with: UIEditMenuConfiguration(identifier: nil, sourcePoint: location)
@@ -121,14 +120,13 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
         assert(content.textBoxes[id] == nil, "The deleted box left the content")
     }
 
-    /// The menu of a long press without a drag holds "Delete" on a box (TOOL-08) and "New card"
-    /// on empty canvas (CARD-01).
+    /// The menu of a long press without a drag holds "Delete" on a box (TOOL-08), and "Rename"
+    /// and "Delete" on a card (CARD-08).
     public func editMenuInteraction(
         _ interaction: UIEditMenuInteraction,
         menuFor configuration: UIEditMenuConfiguration,
         suggestedActions: [UIMenuElement]
     ) -> UIMenu? {
-        if let point = textEditing.menuPoint { return newCardMenu(at: point) }
         if let card = textEditing.menuCard { return cardMenu(for: card) }
         guard let box = textEditing.menuBox else { return nil }
         let handler: UIActionHandler = { [weak self] _ in self?.deleteTextBox(box.id) }

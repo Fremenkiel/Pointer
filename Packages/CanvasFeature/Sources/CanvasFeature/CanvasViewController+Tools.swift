@@ -9,6 +9,7 @@ extension CanvasViewController: UIPencilInteractionDelegate {
     func installToolControls() {
         toolControls.select = { [weak self] tool in self?.pick(tool) }
         toolControls.openPalette = { [weak self] in self?.showPaletteUnderButton() }
+        toolControls.newCard = { [weak self] in self?.showPendingCard() }
         let interaction = UIPencilInteraction(delegate: self)
         view.addInteraction(interaction)
         toolButtonHost.view.backgroundColor = .clear
@@ -21,10 +22,18 @@ extension CanvasViewController: UIPencilInteractionDelegate {
         presentedViewController?.dismiss(animated: true)
     }
 
-    /// Opens the palette under the current-tool button (D-64).
+    /// Opens the palette under the current-tool button (D-64). The button is the first square
+    /// of the chrome, left of the card button.
     private func showPaletteUnderButton() {
         let source = toolButtonHost.viewIfLoaded ?? view
-        showPalette(from: source, rect: source?.bounds ?? .zero, arrow: .up)
+        let bounds = source?.bounds ?? .zero
+        let button = CGRect(
+            x: bounds.minX,
+            y: bounds.minY,
+            width: min(bounds.width, DesignSystem.Size.tapTarget),
+            height: bounds.height
+        )
+        showPalette(from: source, rect: button, arrow: .up)
     }
 
     /// Opens the palette at a point of the canvas, for a squeeze (D-63).

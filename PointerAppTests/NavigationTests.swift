@@ -221,7 +221,9 @@ struct NavigationTests {
         let card = try #require(composition.container.canvas?.content.cards[tree.chain[0]])
         composition.openChild(card)
         try await Self.waitForCanvas(CanvasID(tree.chain[0]), in: composition)
-        composition.container.canvas?.addCard(at: Point(x: 10, y: 10))
+        composition.container.canvas?.addCard(
+            frame: Rect(origin: Point(x: 10, y: 10), size: Size(width: 64, height: 48))
+        )
         #expect(composition.container.canvas?.history.undoSteps.count == 1)
         composition.leave()
         try await Self.waitForCanvas(tree.workspace.canvasID, in: composition)

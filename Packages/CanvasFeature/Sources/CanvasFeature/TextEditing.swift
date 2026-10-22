@@ -51,9 +51,11 @@ final class TextEditing {
     var cardMove: CardMove?
     /// The card of the open long-press menu, or `nil` (CARD-08).
     var menuCard: Card?
-    /// The canvas point of a long press on empty canvas, whose menu holds "New card" (CARD-01,
-    /// D-113), or `nil`.
-    var menuPoint: Point?
+    /// The card of the card button that waits for a drag onto the canvas, or `nil`. It is not
+    /// part of the content until the drag ends (CARD-01, D-117).
+    var pendingCard: Card?
+    /// The running drag of the pending card, or `nil`.
+    var pendingDrag: CardMove?
     /// The menu of a long press without a drag (TOOL-08).
     var menu: UIEditMenuInteraction?
     /// The sizes of the boxes in canvas points, laid out at their first hit test.

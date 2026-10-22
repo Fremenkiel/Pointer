@@ -176,8 +176,8 @@ A `UIHoverGestureRecognizer` with `allowedTouchTypes = [.pencil]` shows a small 
 | Two-finger pinch | Canvas | Zoom about the midpoint of the two fingers. Pan at the same time. |
 | Tap | Text box | Start editing (TOOL-06). |
 | Tap | Card | Open the card (D-115), if no text box covers the card there. A tap while an edit runs only ends the edit. |
-| Long press | Empty canvas | Menu with "New card" (D-08). Empty means no card and no text box under the finger. Ink does not count (D-113). |
-| Long press | Card or text box | Context menu: rename (card), delete. |
+| One-finger pan | Pending card | Drag the card of the card button. At the lift, it joins the canvas with one undo step (D-117). The camera stays. |
+| Long press | Card or text box | Context menu: rename (card), delete. A long press on empty canvas does nothing (D-117). |
 | Long press, then drag | Card or text box | Move it (decision D-10). |
 
 ## 5. Rendering

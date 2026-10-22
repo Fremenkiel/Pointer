@@ -24,11 +24,12 @@ public final class CanvasViewController: UIViewController {
     let historyControls = HistoryControls()
     /// The state of the current-tool button and the palette.
     let toolControls = ToolControls()
-    /// The host of the current-tool button.
+    /// The host of the current-tool button and the card button.
     private(set) lazy var toolButtonHost = UIHostingController(
-        rootView: CurrentToolButton(controls: toolControls)
+        rootView: ToolChrome(controls: toolControls)
     )
-    /// The current-tool button. The app places it next to the workspace selector (D-64).
+    /// The current-tool button and the card button right of it. The app places them next to the
+    /// workspace selector (D-64, D-117).
     public var toolButton: UIViewController { toolButtonHost }
     /// Runs when the GPU completes the first frame that holds an erase, an undo, or a redo, with
     /// the `gpuEndTime` of that frame. The acceptance test of M4 times the steps with it (D-69,
@@ -62,9 +63,9 @@ public final class CanvasViewController: UIViewController {
     let textEditing = TextEditing()
     /// Shows a short message, for example at a limit.
     let onMessage: @MainActor (String) -> Void
-    /// The level of the canvas in the card tree. "New card" is refused at `Limits.maxDepth`.
+    /// The level of the canvas in the card tree. A new card is refused at `Limits.maxDepth`.
     let level: Int
-    /// Opens a card after a double tap on it (CARD-03).
+    /// Opens a card after a tap on it (CARD-03, D-115).
     let onOpenCard: @MainActor (Card) -> Void
     /// The open or the leave of a card that runs on this canvas, or `nil` (D-98).
     var cardTransition: CardTransition?
@@ -283,6 +284,7 @@ public final class CanvasViewController: UIViewController {
     }
 
     @objc func handlePan(_ recognizer: UIPanGestureRecognizer) {
+        if dragsPendingCard(recognizer) { return }
         let translation = recognizer.translation(in: canvasView)
         recognizer.setTranslation(.zero, in: canvasView)
         guard pinchRecognizer.state == .possible || pinchRecognizer.state == .failed else { return }
