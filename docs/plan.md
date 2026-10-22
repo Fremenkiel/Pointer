@@ -142,7 +142,7 @@ Review before M7, 2026-10-22: new device tests prove that each canvas screen and
 
 The tasks are in [m7-plan.md](m7-plan.md). The product owner decided D-125 to D-131 on 2026-10-22.
 
-Status of phase 0 on 2026-10-22: tasks 0.2, 0.3, 0.4, and 0.5 are done on branch `m7`. A failed open keeps the undo history of the parent. An open or a leave that cannot load its screen ends with a message. A preview render ends when its render thread stops. Each fix has a device test that failed before it. The baseline of task 0.5 is in section 6.2 of the M7 plan: all 314 tests of `PointerDeviceTests` passed. `make check` with the iPad and `make coverage` pass. One build warning in `Rendering`, older than M7, waits for the product owner. Task 0.1 waits for the product owner and the Apple Pencil Pro.
+Status of phase 0 on 2026-10-22: tasks 0.2, 0.3, 0.4, and 0.5 are done on branch `m7`. A failed open keeps the undo history of the parent. An open or a leave that cannot load its screen ends with a message. A preview render ends when its render thread stops. Each fix has a device test that failed before it. The baseline of task 0.5 is in section 6.2 of the M7 plan: all 314 tests of `PointerDeviceTests` passed. `make check` with the iPad and `make coverage` pass. A build warning in `Rendering`, older than M7, is fixed after a benchmark of three solutions, and D-132 asks how the build can stop such warnings. Task 0.1 is done: PencilKit shows its hover indicator for all three tools (D-127).
 
 Acceptance:
 

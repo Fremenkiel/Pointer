@@ -139,6 +139,7 @@ Status values: Open, Decided, Replaced.
 | D-129 | The pencils of the M7 tests | Apple Pencil Pro only. Acceptance 3 runs with double tap and squeeze set to "Ignore". | Decided (2026-10-22) |
 | D-130 | The double-tap settings that switch the tool | "Switch to eraser" and "Switch to previous tool" only. Replaces the rule of D-07. | Decided (2026-10-22) |
 | D-131 | The findings of the review before M7 | Three fixes in phase 0 of M7, one in M7, the rest in M10 | Decided (2026-10-22) |
+| D-132 | Warnings that `-warnings-as-errors` does not stop | Recommendation: `make build` fails on any warning line in the build output | Open |
 
 ## Details
 
@@ -1365,6 +1366,16 @@ Status values: Open, Decided, Replaced.
 - Phase 0 of [m7-plan.md](m7-plan.md) fixes three faults in the navigation, each with a test that fails before the fix (TEST-03): a failed open loses the undo history of the parent, a leave whose parent card is missing refuses each later open and leave, and a preview render on a render thread that stops never calls its completion.
 - M7 sets the tool of the live canvas only when it is needed, not at each frame of a zoom (PERF-01), after a measure.
 - M10 takes the rest (plan.md section M10).
+
+### D-132 Warnings that `-warnings-as-errors` does not stop
+
+- Open. Raised on 2026-10-22 by the fix of the build warning after phase 0 of [m7-plan.md](m7-plan.md) (section 6.7).
+- Facts: `Rendering` built with `-warnings-as-errors` and `-swift-version 6`, but the capture of a non-Sendable value in the completion handler of a Metal command buffer stayed a warning, and the build passed. A probe on 2026-10-22 showed that the same capture in a Swift `@Sendable` closure is an error. The Metal header marks the handler type `NS_SWIFT_SENDABLE`, and Swift 6 reports a capture in such an imported handler only as a warning, which `-warnings-as-errors` does not raise. BUILD-02 therefore has a gap, and `make check` cannot see a new warning of this kind. An incremental build also prints no warning for a file that it does not compile again.
+- Options:
+  - (a) `make build` builds from a clean state and fails if its output holds a line with `warning:`.
+  - (b) Option (a), but on the incremental build of `make check`, plus a clean build only in `make coverage`.
+  - (c) No change. Review finds such warnings.
+- Recommendation: (a). It costs one full build in each check, and it enforces BUILD-02 as written.
 
 ## Points in the request that conflict or are not complete
 

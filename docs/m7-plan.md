@@ -263,7 +263,7 @@ Fill in this section during the work.
 
 ### 6.1 The hover shadow of PencilKit (task 0.1)
 
-Not done yet. The task needs the product owner and the Apple Pencil Pro.
+The product owner held the Apple Pencil Pro above a canvas on the iPad on 2026-10-22 and reported: "All tree tools have a hover indicator." PencilKit thus shows its hover indicator for the pen, the eraser, and the text tool. Under D-127, Pointer accepts it as behavior of the system and keeps its own dot (PEN-04).
 
 ### 6.2 Baseline (task 0.5)
 
@@ -338,4 +338,30 @@ Task 0.4, commit 7607388. The fault exists. The test `stoppedRenderThread` start
 
 Close of phase 0, 2026-10-22, with the code of commit 7607388. `make check` passed with the iPad: `build`, `analyze` with 0 findings, `test` with the Tier A tests and all of `PointerDeviceTests`, `snapshots`, `format`, `lint`, `layers` with 0 findings, `density`, `self-test`, and `plist`. `make coverage` passed: Geometry 90.80 % (474 of 522 lines), Model 90.80 % (1,293 of 1,424), InkEngine 92.73 % (625 of 674), Persistence 91.15 % (2,163 of 2,373), and Rendering 86.87 % (5,957 of 6,857). In the instrumented run of `make coverage`, `EraseUndoPerformanceTests` failed, and the target ignores that failure by design (D-120).
 
-A full build of the `Rendering` package prints one warning: `FrameRenderer+PreviewRender.swift:116:25: warning: capture of 'renderer' with non-Sendable type 'PreviewRenderer' in a '@Sendable' closure [#SendableClosureCaptures]`. The build of the code before task 0.4 prints the same warning, and `make build` exits with 0. The build of `make check` was incremental, so it did not compile that file again. Item 1 of the checklist of code-of-code.md section 5 asks for zero warnings, so this warning waits for the product owner.
+A full build of the `Rendering` package prints one warning: `FrameRenderer+PreviewRender.swift:116:25: warning: capture of 'renderer' with non-Sendable type 'PreviewRenderer' in a '@Sendable' closure [#SendableClosureCaptures]`. The build of the code before task 0.4 prints the same warning, and `make build` exits with 0. The build of `make check` was incremental, so it did not compile that file again. Item 1 of the checklist of code-of-code.md section 5 asks for zero warnings. Section 6.7 gives its fix.
+
+### 6.7 The build warning of the preview readback
+
+The product owner asked on 2026-10-22 to fix the warning of section 6.6, to research it first, and to benchmark the solutions.
+
+Research. `FrameRenderer.finishPreview` captured the `PreviewRenderer` in the completion handler of the command buffer, to read the shared readback buffer on a thread of Metal. `PreviewRenderer` is not Sendable. The compiler of `Rendering` got `-warnings-as-errors` and `-swift-version 6`, but the build passed with the warning. A probe with the same flags showed that the same capture in a Swift `@Sendable` closure is an error, and in the Metal handler, which the header marks `NS_SWIFT_SENDABLE`, it is a warning only. `any MTLBuffer` is not Sendable either, so a capture of the buffer alone gives the same kind of diagnostic. The shared buffer had a second risk: no rule stopped the blit of a later preview from writing the buffer while the handler of the earlier one still read it. No test showed this race. D-132 asks how the build can stop such warnings.
+
+Three solutions, each in a worktree of commit 573a872:
+
+- A: the shared buffer in a private `@unchecked Sendable` box in `PreviewRenderer+Unsafe.swift` (SAFE-09), with a semaphore, so that the render thread blits into the buffer only after the read.
+- B: no handler. The render thread checks the status of the command buffer at each frame and reads the image itself.
+- C: a new shared buffer of `width * height` bytes for each preview, which the handler owns alone, in a private box.
+
+Benchmark: `FrameLoopTests/testPreviewRenderOfD56` with `-test-iterations 10`, in the order base, A, B, C, base, A, B, C, so 20 previews each, from the request to the image. The times fall at about 30, 39, and 48 ms, the frames of the display, so the quartiles count more than the median.
+
+| Build | Median | Quartiles | Range | Slowest frame on the render thread | Late frames |
+|---|---|---|---|---|---|
+| Base | 38.0 ms | 30.4 to 39.0 ms | 28.8 to 47.8 ms | 2.36 ms | 0 |
+| A | 38.1 ms | 30.1 to 39.2 ms | 29.5 to 48.1 ms | 2.38 ms | 0 |
+| B | 41.8 ms | 41.7 to 41.9 ms | 33.4 to 50.2 ms | 2.36 ms | 0 |
+| C | 34.5 ms | 30.1 to 39.2 ms | 29.2 to 47.9 ms | 2.31 ms | 0 |
+
+The largest allocation count of a frame was 1,247 to 1,256 in each build. Each variant passed `PreviewRenderTests`, `PreviewStopTests`, `PreviewWriteTests`, and `OpenAnimationTests`, 10 of 10 tests. Each variant built with 0 warnings. B needed one more frame for each preview and broke the function body limit. A and C cost nothing that the benchmark shows.
+
+Decision of the agent on the request of the product owner: C. It holds no new state and no skip path, and its safety does not depend on timing: the handler is the only owner of its buffer, so no later preview writes it. The offscreen preview of `FrameRenderer+Image.swift` keeps the shared buffer of its own `PreviewRenderer`, because it waits for the GPU on its own thread.
+
