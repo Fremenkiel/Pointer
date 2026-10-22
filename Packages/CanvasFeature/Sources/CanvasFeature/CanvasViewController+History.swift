@@ -201,9 +201,11 @@ extension CanvasViewController {
 
     /// Keeps the session of this visit in the sessions of the app (D-12). The app calls it
     /// before it makes the next canvas screen, so that a screen of the same canvas finds the
-    /// steps of this visit (F-02). A second call does nothing.
+    /// steps of this visit (F-02). A pending card joins the canvas first (D-123). A second call
+    /// does nothing.
     public func endSession() {
         endTextEdit()
+        placePendingCard()
         guard !hasEndedSession else { return }
         hasEndedSession = true
         saveSession()

@@ -82,6 +82,20 @@ extension CanvasViewController {
         }
     }
 
+    /// Places the pending card where it shows, with one undo step, before the canvas leaves the
+    /// screen or the app moves to the background, so nothing that the screen shows is lost
+    /// (D-123). A running drag ends at the place of the finger.
+    public func placePendingCard() {
+        guard let card = textEditing.pendingCard else { return }
+        textEditing.pendingDrag = nil
+        textEditing.pendingCard = nil
+        addCard(id: card.id, frame: card.frame)
+        if content.cards[card.id] == nil {
+            renderer.changeCards(removing: [card.id], adding: [])
+        }
+        assert(textEditing.pendingCard == nil, "No card stays pending")
+    }
+
     /// Takes a one-finger pan that starts on the pending card. Returns `true` while the pan
     /// drags the card, so the camera stays.
     func dragsPendingCard(_ recognizer: UIPanGestureRecognizer) -> Bool {

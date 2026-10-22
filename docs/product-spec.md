@@ -63,7 +63,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 
 ### 3.5 Cards and navigation
 
-- CARD-01: You can create a card on a canvas. You tap the card button next to the tool button. A card shows half outside the left edge of the screen. You drag it into place with a finger, and it joins the canvas at the lift (D-117).
+- CARD-01: You can create a card on a canvas. You tap the card button next to the tool button. A card shows half outside the left edge of the screen. You drag it into place with a finger, and it joins the canvas at the lift (D-117). If you leave the canvas or the app before the drag, the card joins the canvas where it shows (D-123).
 - CARD-02: A card shows a frame with a light gray body, an optional title, and a scaled preview of its content (D-116).
 - CARD-03: You open a card with a finger tap on the card (D-115). The app zooms into the card and shows its canvas at the standard zoom.
 - CARD-04: An up button leaves the current card. The app shows the parent canvas at the standard zoom, centered on the card.

@@ -128,6 +128,7 @@ Status values: Open, Decided, Replaced.
 | D-120 | Where the coverage check of TEST-02 runs | A separate target `make coverage`, named in the pull request checklist | Decided (2026-10-22) |
 | D-121 | The render thread computes the camera of a card flight | Yes, from the closed form of the spring. The main thread keeps its camera for the logic. | Decided (2026-10-22) |
 | D-122 | The renderer gets the change of a step before the model step | Yes, for `EraseStrokes` and `AddStroke`, with the reverse change if the model step throws | Decided (2026-10-22) |
+| D-123 | A pending card at a leave | It joins the canvas where it shows, with one undo step | Decided (2026-10-22) |
 
 ## Details
 
@@ -1295,6 +1296,14 @@ Status values: Open, Decided, Replaced.
   - (a) Give the change to the renderer before the model step for `EraseStrokes` and `AddStroke`, and undo it in the renderer if the model step throws. The other commands keep the order of today.
   - (b) Keep the order, and make only the model step faster (task 3.3 of the fix plan).
 - Recommendation: (a), together with task 3.3.
+
+### D-123 A pending card at a leave
+
+- Decided by the product owner on 2026-10-22: the recommendation. Raised by the product owner on the same day: "If I open a card, click the new card button, exits the card and enters again, then the newly created card is gone." It changes D-117, where the card is not part of the canvas until the drag.
+- Cause: the tap of the card button shows a pending card. Only a drag places it (D-117). A leave without a drag dropped the pending card, although the screen showed it.
+- Options: (a) a leave, a workspace switch, or the move to the background places the pending card where it shows, with one undo step. (b) The tap places a full card at the left edge at once, as option 2 (b) of D-117. (c) Keep D-117.
+- Recommendation: (a). Nothing that the screen shows is lost, and the drag of D-117 stays.
+- Design: `CanvasViewController.placePendingCard()` adds the pending card with `AddCard` at its shown frame. `endSession()` calls it, so a leave, a workspace switch, and the open of a card place the card before the next screen comes. `enterBackground()` calls it before the final save.
 
 ## Points in the request that conflict or are not complete
 

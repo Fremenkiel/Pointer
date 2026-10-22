@@ -42,6 +42,8 @@ extension AppComposition {
     func enterBackground() {
         // A running text edit records its step now, so that its rows join the save (D-86).
         container.canvas?.finishTextEdit()
+        // A pending card joins the canvas, so that its row joins the save too (D-123).
+        container.canvas?.placePendingCard()
         stopIdleTimer()
         endBackgroundTask()
         let expire: @Sendable () -> Void = { [weak self] in
