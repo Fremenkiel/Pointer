@@ -365,3 +365,26 @@ The largest allocation count of a frame was 1,247 to 1,256 in each build. Each v
 
 Decision of the agent on the request of the product owner: C. It holds no new state and no skip path, and its safety does not depend on timing: the handler is the only owner of its buffer, so no later preview writes it. The offscreen preview of `FrameRenderer+Image.swift` keeps the shared buffer of its own `PreviewRenderer`, because it waits for the GPU on its own thread.
 
+### 6.8 Double tap (tasks 1.1 to 1.3)
+
+Measured on 2026-10-22 on the iPad in Release.
+
+Task 1.1, commit 9d9bc65. `ToolSwitch.tool(after:action:)` follows D-130. Each value that D-130 does not name gives `nil`, also through `@unknown default`. `ToolSwitchTests` covers the 7 values of the SDK with each tool, and the raw values 7, 8, and 99 of a later SDK. 5 tests with 29 runs passed.
+
+Task 1.2, commit e8655b7. `pencilInteraction(_:didReceiveTap:)` reads `preferredTapAction` at each tap and calls `doubleTap(action:)`, which calls `select(_:)`. `DoubleTapTests` checks the tool, the button, the drawing gesture, the end of a text edit (D-87), and a tap during a pencil touch (D-70). 29 tests with 53 runs passed, with `TextEditTests`, `ToolPaletteTests`, and `ToolStateTests`.
+
+Task 1.3, commit 75945ba. During an open, the child waits above the parent at opacity 0, in the window, with interaction on. A check of `view.window` and `isUserInteractionEnabled` thus does not stop it, so the smaller change that works is a flag. `CanvasViewController.isShownCanvas` is `true` only for the canvas of `AppViewController`, and a tap and a squeeze act only on the shown canvas outside a flight. The test `PencilFlightTests` failed before the gate: both screens switched to the eraser ("screen.tool → .eraser"), and the palette opened ("The palette opened"). With the gate, it passed, with `DoubleTapTests`, `ToolPaletteTests`, `TransitionTests`, `PinchCancelTests`, and `NavigationTests`: 23 of 23 tests.
+
+### 6.9 Hover dot (tasks 2.1 to 2.4)
+
+Measured on 2026-10-22 on the iPad in Release.
+
+Task 2.1, commit 87f8a47. The product owner decided D-133: the eraser circle is an outline ring. `HoverDot.mark` gives a filled dot for the pen and the text tool, and a ring with `EraserTool.radius` for the eraser. The start tokens are `DesignSystem.Color.hoverDot` (the gray of `chromeSecondary`), `Size.hoverDotRadius` of 2 view points, and `Size.hoverRingWidth` of 1 view point. `HoverDotTests` passed: 6 tests with 15 runs.
+
+Task 2.2, commit 9eeafd9. `HoverDotLayer` is a `CAShapeLayer` above the live canvas, with both paths made once. Its actions hold `NSNull` for each changed key, because an empty dictionary leaves the default animations on. The canvas view also holds the hover recognizer of `UIPencilInteraction`, so the new `UIHoverGestureRecognizer` recognizes together with every recognizer. A test cannot make a hover event, so task 2.5 checks on the device that the dot and the squeeze palette both work. `HoverTests` passed with `TextEditTests`, `CameraControllerTests`, `PalmGuardTests`, `CardTapTests`, `DoubleTapTests`, `PencilFlightTests`, `CanvasViewControllerTests`, and `ScribbleConditionTests`: 53 of 53 tests.
+
+Task 2.3, commit 592ed42. `HoverSampleAllocationTests` counts 1,023 hover samples of the pen and of the eraser on the main thread, with a commit of Core Animation after each 16 samples. Both counted 0 allocations, and the bare layer move counted 0. With a probe that kept a string at each sample, the tests failed with 1,918 and 1,919 allocations, so the counter sees the code. The signpost interval "Hover" of `CanvasSignpost` times each sample.
+
+Task 2.4, commit 989150a. `HoverDotSnapshotTests` renders the canvas view with the dot of the pen and with the eraser circle. The iPad made the references `hover-dot-pen.png` and `hover-dot-eraser.png`. The second run passed 2 of 2. The `snapshots` target of the `Makefile` runs the class.
+
+Close of tasks 1.1 to 2.4, with the code of commit 989150a. After a touch of the 18 changed Swift files, `make build` printed 0 lines with `warning:` (D-132). `make check` passed with the iPad: `build`, `analyze` with 0 findings, `test` with the Tier A tests and 345 of 345 tests of `PointerDeviceTests` in 325 s, `snapshots` with 48 of 48, `format`, `lint`, `layers` with 0 findings, `density` with Rendering at 2.00, `self-test`, and `plist`. The open of the empty card had no late frame in this run. `make coverage` passed: Geometry 90.80 %, Model 90.80 %, InkEngine 92.73 %, Persistence 91.15 %, and Rendering 87.04 % (5,983 of 6,874 lines). In its instrumented run, only `EraseUndoPerformanceTests` failed, which the target ignores (D-120). The full run of `make check` gave erase 21.01 ms, undo 17.09 ms, and redo 21.64 ms at the median, against 25.62, 17.69, and 22.88 ms in the baseline of section 6.2. Phase 5 compares all measures over 5 runs.
