@@ -211,6 +211,17 @@ extension CanvasViewController {
         saveSession()
     }
 
+    /// Takes back the session that `endSession()` kept, because the screen stays after an open
+    /// or a leave that did not finish (D-131). The steps after that then go into the session
+    /// again. A session that `discardSession()` dropped stays dropped (M-03).
+    func resumeSession() {
+        guard hasEndedSession, let sessions, sessions.hasSession(for: canvasID) else { return }
+        // The screen holds the newest history, so the saved copy goes, and the screen is again
+        // the only owner of its history.
+        _ = sessions.take(for: canvasID)
+        hasEndedSession = false
+    }
+
     /// Drops the session of this visit, because the workspace of the canvas is deleted (M-03).
     /// The canvas then keeps no session when it leaves.
     public func discardSession() {

@@ -22,10 +22,12 @@ extension CanvasViewController {
     }
 
     /// Ends an open or a leave that cannot finish, for example when the child does not load:
-    /// the parent shows again at its camera before the flight, and input is on again.
+    /// the parent shows again at its camera before the flight, input is on again, and the screen
+    /// takes back its session (D-131).
     public func cancelCardTransition() {
         let start = cardTransition?.start
         cardTransition = nil
+        resumeSession()
         renderer.endTransition()
         if let start { fly(to: start, effect: .none) }
         canvasView.isUserInteractionEnabled = true
