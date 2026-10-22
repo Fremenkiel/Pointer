@@ -59,7 +59,7 @@ pointer/
       Tests/WorkspaceFeatureSnapshotTests/  view snapshots, part of PointerDeviceTests only (D-77)
         References/        reference PNGs of the snapshot tests, made on the iPad (TEST-07)
     BackupFeature/         Layer 2: backup command and restore, no Tests/ yet
-  Scripts/                 check-layers.swift, assertion-density.swift, self-test.sh
+  Scripts/                 check-layers.swift, assertion-density.swift, coverage.swift, self-test.sh
     Fixtures/              small trees that the self-test runs the check scripts on
 ```
 
@@ -79,6 +79,7 @@ make density     # Scripts/assertion-density.swift
 make self-test   # runs the check scripts on Scripts/Fixtures
 make plist       # the Files app keys of PointerApp/Info.plist are true
 make check       # all of the above, the full check
+make coverage    # line coverage of TEST-02, a separate device run (D-120)
 ```
 
 `make test` and `make snapshots` use the connected iPad Pro 11-inch (M4) in Release. To use another iPad, set `DEVICE` to its UDID, for example `make test DEVICE=00008132-000018993E8B801C`. Before a device run, make sure that the iPad is unlocked: `xcrun devicectl device info lockState --device <UDID>` must print `passcodeRequired: false`.

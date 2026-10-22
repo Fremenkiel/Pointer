@@ -236,7 +236,7 @@ A pull request is ready only with each item true:
 
 1. The build has zero warnings and zero analyzer findings.
 2. `swift format lint`, `swiftlint --strict`, `Scripts/check-layers.swift`, and `Scripts/assertion-density.swift` pass.
-3. All tests pass. Coverage meets `TEST-02`.
+3. All tests pass. Coverage meets `TEST-02`: `make coverage` passes (D-120).
 4. New behavior has tests. A bug fix has a regression test.
 5. Each new function that is not private has a documentation comment with its contract.
 6. No new number literal outside `Limits`, `DesignSystem`, or a named constant with a source comment.

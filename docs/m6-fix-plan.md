@@ -145,6 +145,8 @@ Done when: the target prints the coverage of Geometry, Model, InkEngine, Persist
 
 Rules: TEST-02, AGENT-05, AGENT-07, BUILD-03 (no new dependency).
 
+Status (2026-10-22): done, D-120 (a). `make coverage` passed on the iPad: Geometry 91.06 % (438 of 481 lines), Model 90.17 % (1,275 of 1,414), InkEngine 92.73 % (625 of 674), Persistence 91.23 % (2,163 of 2,371), Rendering 86.66 % (5,819 of 6,715). The instrumented run passed 301 of 303 device tests. `EraseUndoPerformanceTests` failed, as item 6 of section 2.1 expects, with a slowest erase of 49.60 ms. The snapshot of the card menu failed with 28,664 pixels of difference. Phase 4 runs the snapshots again in Release. The self-test runs the script on three fixtures.
+
 ### Phase 2: the camera of a flight on the render thread (item 2)
 
 #### 2.1 A test that stalls the main thread

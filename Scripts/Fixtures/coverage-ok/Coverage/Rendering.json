@@ -1,0 +1,37 @@
+{
+ "data": [
+  {
+   "files": [
+    {
+     "filename": "/repo/Packages/Rendering/Sources/Rendering/A.swift",
+     "summary": {
+      "lines": {
+       "count": 100,
+       "covered": 70
+      }
+     }
+    },
+    {
+     "filename": "/repo/Packages/Rendering/Tests/RenderingTests/ATests.swift",
+     "summary": {
+      "lines": {
+       "count": 100,
+       "covered": 0
+      }
+     }
+    },
+    {
+     "filename": "/repo/.build/Rendering.build/DerivedSources/test_entry_point.swift",
+     "summary": {
+      "lines": {
+       "count": 10,
+       "covered": 0
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "type": "llvm.coverage.json.export",
+ "version": "3.0.1"
+}

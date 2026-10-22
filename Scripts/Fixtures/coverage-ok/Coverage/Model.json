@@ -1,0 +1,37 @@
+{
+ "data": [
+  {
+   "files": [
+    {
+     "filename": "/repo/Packages/Model/Sources/Model/A.swift",
+     "summary": {
+      "lines": {
+       "count": 200,
+       "covered": 190
+      }
+     }
+    },
+    {
+     "filename": "/repo/Packages/Model/Tests/ModelTests/ATests.swift",
+     "summary": {
+      "lines": {
+       "count": 100,
+       "covered": 0
+      }
+     }
+    },
+    {
+     "filename": "/repo/.build/Model.build/DerivedSources/test_entry_point.swift",
+     "summary": {
+      "lines": {
+       "count": 10,
+       "covered": 0
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "type": "llvm.coverage.json.export",
+ "version": "3.0.1"
+}

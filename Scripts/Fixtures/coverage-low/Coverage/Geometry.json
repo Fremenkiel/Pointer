@@ -1,0 +1,37 @@
+{
+ "data": [
+  {
+   "files": [
+    {
+     "filename": "/repo/Packages/Geometry/Sources/Geometry/A.swift",
+     "summary": {
+      "lines": {
+       "count": 100,
+       "covered": 89
+      }
+     }
+    },
+    {
+     "filename": "/repo/Packages/Geometry/Tests/GeometryTests/ATests.swift",
+     "summary": {
+      "lines": {
+       "count": 100,
+       "covered": 0
+      }
+     }
+    },
+    {
+     "filename": "/repo/.build/Geometry.build/DerivedSources/test_entry_point.swift",
+     "summary": {
+      "lines": {
+       "count": 10,
+       "covered": 0
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "type": "llvm.coverage.json.export",
+ "version": "3.0.1"
+}

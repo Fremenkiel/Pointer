@@ -14,7 +14,7 @@ DEVICE_TEST := xcodebuild test -project $(PROJECT) -scheme $(SCHEME) -configurat
 	-destination 'id=$(DEVICE)' -derivedDataPath $(DEVICE_DATA) -allowProvisioningUpdates \
 	ENABLE_TESTABILITY=YES
 
-.PHONY: check build analyze test snapshots format lint layers density self-test plist
+.PHONY: check build analyze test snapshots coverage format lint layers density self-test plist
 
 check: build analyze test snapshots format lint layers density self-test plist
 	@echo "All checks passed."
@@ -61,6 +61,32 @@ snapshots:
 		-only-testing:PointerDeviceTests/UpButtonSnapshotTests \
 		-only-testing:PointerDeviceTests/CardMenuSnapshotTests
 	@echo "snapshots: done"
+
+# TEST-02, D-120: the line coverage of the Tier A packages and of Rendering. The device run builds
+# with coverage flags into a derived data folder of its own, so the Release build of `make test`
+# stays. The instrumented code is slower, so the target ignores the test failures of that run, and
+# its measures do not count. `make test` runs the tests. Keep the iPad unlocked during the run.
+COVERAGE_DATA := .build/CoverageData
+COVERAGE_REPORTS := .build/Coverage
+COVERAGE_FRAMEWORKS := $(COVERAGE_DATA)/Build/Products/Release-iphoneos/Pointer.app/Frameworks
+coverage:
+	@rm -rf $(COVERAGE_REPORTS) $(COVERAGE_DATA)/Build/ProfileData
+	@mkdir -p $(COVERAGE_REPORTS)
+	@for package in $(TIER_A); do \
+		swift test --package-path Packages/$$package --enable-code-coverage || exit 1; \
+		cp "$$(swift test --package-path Packages/$$package --show-codecov-path)" \
+			$(COVERAGE_REPORTS)/$$package.json || exit 1; \
+	done
+	-xcodebuild test -project $(PROJECT) -scheme $(SCHEME) -configuration Release \
+		-destination 'id=$(DEVICE)' -derivedDataPath $(COVERAGE_DATA) -allowProvisioningUpdates \
+		ENABLE_TESTABILITY=YES -enableCodeCoverage YES \
+		OTHER_SWIFT_FLAGS='$$(inherited) -profile-generate -profile-coverage-mapping' \
+		-quiet -only-testing:PointerDeviceTests
+	@framework=$$(ls -d $(COVERAGE_FRAMEWORKS)/Rendering_*_PackageProduct.framework) && \
+		xcrun llvm-cov export "$$framework/$$(basename "$$framework" .framework)" -summary-only \
+			-instr-profile $(COVERAGE_DATA)/Build/ProfileData/$(DEVICE)/Coverage.profdata \
+			> $(COVERAGE_REPORTS)/Rendering.json
+	swift Scripts/coverage.swift --root .build
 
 # STYLE-04. The fixtures hold deliberate violations, so the formatter skips them.
 format:
