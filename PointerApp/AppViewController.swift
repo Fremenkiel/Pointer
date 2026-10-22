@@ -8,6 +8,8 @@ import WorkspaceFeature
 /// on top in the top left corner (WS-01).
 final class AppViewController: UIViewController {
     private(set) var canvas: CanvasViewController?
+    /// `true` while a swap or a fade between two canvases runs. No open or leave starts then.
+    private(set) var isSwapping = false
     private var selector: UIViewController?
     /// The current-tool button of the shown canvas, next to the selector (D-64).
     private var toolButton: UIViewController?
@@ -70,22 +72,28 @@ final class AppViewController: UIViewController {
         completion: @escaping @MainActor () -> Void
     ) {
         let old = canvas
+        // The canvas below takes the touches during the fade, so it is the canvas from the start.
+        canvas = newCanvas
+        isSwapping = true
+        showToolButton(newCanvas.toolButton)
         UIView.animate(
             withDuration: duration,
             animations: { old?.view.alpha = 0 },
             completion: { [weak self] _ in
                 MainActor.assumeIsolated {
-                    if let old {
-                        old.willMove(toParent: nil)
-                        old.view.removeFromSuperview()
-                        old.removeFromParent()
-                    }
-                    self?.canvas = newCanvas
-                    self?.showToolButton(newCanvas.toolButton)
+                    old.map(Self.remove)
+                    self?.isSwapping = false
                     completion()
                 }
             }
         )
+    }
+
+    /// Removes a canvas screen from the container.
+    private static func remove(_ old: CanvasViewController) {
+        old.willMove(toParent: nil)
+        old.view.removeFromSuperview()
+        old.removeFromParent()
     }
 
     /// Removes a canvas that `showAbove(_:)` added, after a failed open.
@@ -104,18 +112,17 @@ final class AppViewController: UIViewController {
         completion: @escaping @MainActor () -> Void
     ) {
         let old = canvas
+        // The new canvas is the canvas from the start, because it takes the touches already.
+        canvas = newCanvas
+        isSwapping = true
+        showToolButton(newCanvas.toolButton)
         UIView.animate(
             withDuration: duration,
             animations: { newCanvas.view.alpha = 1 },
             completion: { [weak self] _ in
                 MainActor.assumeIsolated {
-                    if let old {
-                        old.willMove(toParent: nil)
-                        old.view.removeFromSuperview()
-                        old.removeFromParent()
-                    }
-                    self?.canvas = newCanvas
-                    self?.showToolButton(newCanvas.toolButton)
+                    old.map(Self.remove)
+                    self?.isSwapping = false
                     completion()
                 }
             }

@@ -238,7 +238,11 @@ final class OpenAnimationTests: XCTestCase {
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: timeout)
         while clock.now < deadline {
-            if let shown = composition.container.canvas, shown.canvasID == canvas { return shown }
+            // A swap runs on after the container names the new canvas, and it refuses a leave.
+            let isShown = !composition.container.isSwapping
+            if isShown, let shown = composition.container.canvas, shown.canvasID == canvas {
+                return shown
+            }
             try await Task.sleep(for: .milliseconds(5))
         }
         throw OpenTimedOut()

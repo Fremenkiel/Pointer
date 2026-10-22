@@ -19,8 +19,9 @@ extension AppComposition {
     /// card covers the screen, the child loads at the camera of CARD-03 in the same time, and
     /// the child fades in when both are done (architecture.md 6.2, D-99).
     func openChild(_ card: Card) {
-        guard let path, let parent = container.canvas, opening == nil,
-            !parent.isInCardTransition
+        guard let path, let parent = container.canvas, opening == nil, !container.isSwapping,
+            !parent.isInCardTransition, parent.canvasID == path.currentCanvas,
+            card.canvasID == path.currentCanvas
         else { return }
         let child: NavigationPath
         do {
@@ -78,15 +79,8 @@ extension AppComposition {
         self.opening = nil
         // The child keeps the frozen copy of the parent for its pinch-out exit (D-109).
         container.canvas?.giveParentImage(to: canvas)
-        let level = opening.target.level
-        let showChrome: @MainActor () -> Void = { [weak self] in
-            self?.container.showUpButton(level > 0 ? { [weak self] in self?.leave() } : nil)
-        }
-        container.completeSwap(
-            to: canvas,
-            duration: CanvasRenderer.crossfadeDuration,
-            completion: showChrome
-        )
+        container.completeSwap(to: canvas, duration: CanvasRenderer.crossfadeDuration) {}
+        showUpButton(level: opening.target.level)
         remember(opening.target)
     }
 
@@ -95,7 +89,8 @@ extension AppComposition {
     /// card alone. Then the child fades out, and the parent flies to the camera of CARD-04.
     func leave() {
         guard let path, let child = container.canvas, let card = path.cards.last, opening == nil,
-            !child.isInCardTransition
+            !container.isSwapping, !child.isInCardTransition,
+            child.canvasID == path.currentCanvas
         else { return }
         let leaving = CardOpening(target: path.popping())
         opening = leaving
@@ -170,8 +165,7 @@ extension AppComposition {
         opening = nil
         let level = leaving.target.level
         let isPinch = leaving.isPinch
-        let runLeave: @MainActor () -> Void = { [weak self] in
-            self?.container.showUpButton(level > 0 ? { [weak self] in self?.leave() } : nil)
+        let runLeave: @MainActor () -> Void = {
             if !isPinch { parent.runLeave(into: parentCard) {} }
         }
         container.fadeOut(
@@ -179,7 +173,13 @@ extension AppComposition {
             duration: CanvasRenderer.crossfadeDuration,
             completion: runLeave
         )
+        showUpButton(level: level)
         remember(leaving.target)
+    }
+
+    /// Shows the up button inside a card, with the chrome of the shown canvas.
+    private func showUpButton(level: Int) {
+        container.showUpButton(level > 0 ? { [weak self] in self?.leave() } : nil)
     }
 
     /// Loads the canvas of `target` and shows it at the camera that `camera` gives for its
@@ -207,7 +207,7 @@ extension AppComposition {
     func show(_ target: NavigationPath, content: CanvasContent, camera: Camera?) throws {
         guard let canvas = try makeCanvas(target, content: content, camera: camera) else { return }
         container.show(canvas)
-        container.showUpButton(target.level > 0 ? { [weak self] in self?.leave() } : nil)
+        showUpButton(level: target.level)
         remember(target)
     }
 

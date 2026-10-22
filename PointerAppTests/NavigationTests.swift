@@ -138,7 +138,8 @@ struct NavigationTests {
     ) async throws {
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: timeout)
-        while composition.container.canvas?.canvasID != canvas {
+        // A swap runs on after the container names the new canvas, and it refuses a navigation.
+        while composition.container.canvas?.canvasID != canvas || composition.container.isSwapping {
             guard clock.now < deadline else { throw OpenTimedOut() }
             try await Task.sleep(for: .milliseconds(10))
         }
@@ -157,7 +158,7 @@ struct NavigationTests {
         }
     }
 
-    @Test("A double tap opens a card at the camera of CARD-03, and up leaves at CARD-04")
+    @Test("A tap opens a card at the camera of CARD-03, and up leaves at CARD-04")
     func openAndLeave() async throws {
         let tree = try await Self.makeTree(depth: 1)
         defer { tree.remove() }
@@ -231,5 +232,32 @@ struct NavigationTests {
         try await Self.waitForCanvas(CanvasID(tree.chain[0]), in: composition)
         #expect(composition.container.canvas?.history.undoSteps.count == 1)
         #expect(composition.container.canvas?.content.cards.count == 1)
+    }
+
+    @Test("A tap on a card during the fade of a leave does not block later opens")
+    func tapDuringLeaveFade() async throws {
+        let tree = try await Self.makeTree(depth: 1)
+        defer { tree.remove() }
+        let composition = try Self.composition(for: tree)
+        defer { composition.container.view.removeFromSuperview() }
+        await composition.selector?.start(lastWorkspace: tree.workspace.id)
+        try await Self.waitForCanvas(tree.workspace.canvasID, in: composition)
+        let card = try #require(composition.container.canvas?.content.cards[tree.chain[0]])
+        composition.openChild(card)
+        try await Self.waitForCanvas(CanvasID(tree.chain[0]), in: composition)
+        composition.leave()
+        // The path names the parent as soon as the fade of the child starts.
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: Self.timeout)
+        while composition.path?.level != 0, clock.now < deadline {
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        composition.openChild(card)
+        try await Self.waitForCanvas(tree.workspace.canvasID, in: composition)
+        try await Self.waitForCamera(Camera(center: Self.frame.center, zoom: 1), in: composition)
+        try await Task.sleep(for: .milliseconds(500))
+        let shown = try #require(composition.container.canvas?.content.cards[tree.chain[0]])
+        composition.openChild(shown)
+        try await Self.waitForCanvas(CanvasID(tree.chain[0]), in: composition)
     }
 }
