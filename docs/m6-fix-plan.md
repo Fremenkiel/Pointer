@@ -186,6 +186,7 @@ Status (2026-10-22): the code is in, D-121 (a). One target fails, and the produc
 - Pass: the tests of task 2.1 pass. `TransitionTests`, `PinchCancelTests`, `DeepTreeTests`, `NavigationTests`, and `PreviewWriteTests` pass, with the transition snapshots. A frame of a flight makes 15 allocations against 15 of a bare Metal frame (`TransitionAllocationTests`). architecture.md sections 5.1, 6.2, and 6.3 describe the new flow.
 - Pass: the times stay within 10 % of the baseline. The open of the D-56 card has a median of 464.5 to 466.0 ms (baseline 457.5 ms), and the open of the empty card 467.5 to 469.0 ms (baseline 467.5 ms).
 - Fail: `OpenAnimationTests` with 10 iterations still has late frames in the empty card, in 3 runs. The D-56 card had none in 60 events.
+- Decided by the product owner on 2026-10-22: (a). Phase 2 stays as it is, and the late frame at the start of the flight of an empty card is an open item. Its cause is on the render thread, not the main thread. A trace of the render thread during an open with Instruments is the next step.
 
 ### Phase 3: the step speed (item 3)
 
