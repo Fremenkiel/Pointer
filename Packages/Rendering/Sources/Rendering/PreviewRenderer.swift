@@ -112,6 +112,12 @@ final class PreviewRenderer {
         )
     }
 
+    /// Moves the job in progress out, so that no frame continues it, or returns `nil` (D-131).
+    func takeJob() -> Job? {
+        defer { job = nil }
+        return job
+    }
+
     /// Starts a job for `request` on a canvas shown in `viewSize`. A job in progress ends with
     /// `nil`, because the newer request wins.
     func start(_ request: PreviewRenderRequest, viewSize: Size) {

@@ -25,6 +25,15 @@ extension RenderEngine {
         }
     }
 
+    /// Ends the preview render that waits or runs with `nil`, because the render thread stops
+    /// before the render ends (D-131). The completions run after the locks.
+    func endPreviewRender() {
+        let waiting = inbox.withLock { $0.takePreviewRender() }
+        let running = core.withLock { $0.previewRenderer?.takeJob() }
+        waiting?.completion(nil)
+        running?.request.completion(nil)
+    }
+
     /// Returns the loader, made at the first request.
     private func loader(for source: any PreviewSource) -> PreviewLoader {
         assert(previewRequestLimit > 0, "A request limit is positive")

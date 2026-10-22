@@ -68,6 +68,9 @@ final class RenderThread: NSObject, CAMetalDisplayLinkDelegate, @unchecked Senda
             assert(Thread.current.name == Self.threadName, "The stop runs on the render thread")
             link?.invalidate()
             link = nil
+            // No frame runs after the link stops, so a preview render that did not end gets
+            // `nil`, and the leave that waits for it ends (D-131).
+            engine.endPreviewRender()
             CFRunLoopStop(CFRunLoopGetCurrent())
         }
     }

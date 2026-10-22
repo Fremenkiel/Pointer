@@ -91,6 +91,12 @@ struct RenderInbox {
             || endsEraser || eraserReady != nil
     }
 
+    /// Moves the waiting preview render request out, or returns `nil` (D-131).
+    mutating func takePreviewRender() -> PreviewRenderRequest? {
+        defer { previewRender = nil }
+        return previewRender
+    }
+
     /// Moves the waiting changes out. The camera stays as the newest value.
     mutating func take() -> RenderInput {
         precondition(edits.isEmpty || editHandoff > 0, "Edits need a handoff number")
