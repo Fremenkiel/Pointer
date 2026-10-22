@@ -126,6 +126,8 @@ Raise these as open entries in [decisions.md](decisions.md) before the task that
 
 Done when: section 6 of this plan holds the baseline.
 
+Status (2026-10-22): done, section 6.1. The empty card had late frames in 3 of 20 opens and 3 of 18 leaves, the D-56 card in 1 of 20 leaves. The slowest steps were 32.95 ms (erase), 30.34 ms (undo), and 31.56 ms (redo).
+
 ### Phase 1: coverage (item 1)
 
 #### 1.1 A coverage target
@@ -230,4 +232,23 @@ Rules: AGENT-05, DOC-06, D-79.
 
 ## 6. Results
 
-Not measured yet.
+### 6.1 Baseline of phase 0
+
+Measured on 2026-10-22 on the iPad Pro 11-inch (M4) in Release, with the code of commit f14d220. `OpenAnimationTests` ran twice with `-test-iterations 10`, and `EraseUndoPerformanceTests` ran three times with `-test-iterations 3`.
+
+| Event | Events | Events with late frames | Median | Slowest |
+|---|---|---|---|---|
+| Open of the D-56 card | 20 | 0 | 457.5 ms | 468 ms |
+| Leave of the D-56 card | 20 | 1 (run 1) | 593.0 ms | 616 ms |
+| Open of the empty card | 20 | 3, with 4 late frames (run 2) | 467.5 ms | 473 ms |
+| Leave of the empty card | 18 | 3 (1 in run 1, 2 in run 2) | 489.5 ms | 499 ms |
+
+In both runs, iteration 10 of the empty card test ended with "Test crashed with signal kill." after the open, so that iteration has no leave. Just before it, the log shows "[CAMetalLayer nextDrawable] returning nil because allocation failed." The system stopped the process for its memory after 30 canvas loads in one process. The time of an open is from the tap to the child. The time of a leave is from the tap to the end of the parent flight.
+
+| Step | Median of the 9 medians | Medians, lowest to highest | Median of the 9 slowest | Largest | Main-thread call, median / largest |
+|---|---|---|---|---|---|
+| Erase | 25.43 ms | 21.14 to 27.06 ms | 28.38 ms | 32.95 ms | 12.10 / 15.00 ms |
+| Undo | 25.94 ms | 21.96 to 28.41 ms | 28.95 ms | 30.34 ms | 6.00 / 8.10 ms |
+| Redo | 23.53 ms | 18.30 to 29.13 ms | 27.44 ms | 31.56 ms | 5.40 / 5.80 ms |
+
+Each step stayed under the 33 ms of D-69. The main-thread call of the erase is `finishErase` after the pencil lift. The undo has two calls per round, because each round ends with one more undo.
