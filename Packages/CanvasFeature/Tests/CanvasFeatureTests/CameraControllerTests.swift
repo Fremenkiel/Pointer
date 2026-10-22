@@ -93,64 +93,40 @@ struct CameraControllerTests {
     }
 }
 
-@Suite("Camera flight")
-struct CameraFlightTests {
+@Suite("Camera flight of the controller")
+struct CameraControllerFlightTests {
     private static let start = Camera(center: Point(x: -100, y: 40), zoom: 0.5)
     private static let cover = Camera(center: Point(x: 300, y: 200), zoom: 4)
 
-    @Test("A flight starts at the camera, ends exactly at the target, and takes 0.35 s")
+    @Test("A flight steps from its start time, ends exactly at the target, and takes 0.35 s")
     func endpoints() {
         let viewSize = Size(width: 400, height: 300)
         var controller = CameraController(camera: Self.start, viewSize: viewSize)
-        controller.fly(to: Self.cover)
+        let flight = controller.fly(to: Self.cover, start: 1)
+        #expect(flight.from == Self.start)
         #expect(controller.flightProgress == 0)
         var time = 1.0
         var steps = 0
         while controller.step(to: time), steps < 1_000 {
+            #expect(controller.camera == flight.camera(at: time))
             time += 1.0 / 120
             steps += 1
         }
         #expect(controller.camera == Self.cover)
         #expect(controller.flightProgress == nil)
-        // The first step only notes the time, so 42 frames of 1/120 s cover 0.35 s.
+        // 42 frames of 1/120 s cover 0.35 s.
         #expect((42...43).contains(steps))
     }
 
-    @Test("The progress rises without a turn back and nears 1 at the end")
-    func progress() {
-        var last = -1.0
-        for frame in 0...42 {
-            let flight = CameraController.Flight(
-                from: Self.start,
-                to: Self.cover,
-                duration: 0.35,
-                elapsed: Double(frame) / 120
-            )
-            let progress = CameraController.progress(of: flight)
-            #expect(progress >= last)
-            last = progress
-        }
-        #expect(last == 1)
-    }
-
-    @Test("The zoom of the middle of a flight lies between the two zooms on a log scale")
-    func middle() {
-        let flight = CameraController.Flight(
-            from: Self.start,
-            to: Self.cover,
-            duration: 0.35,
-            elapsed: 0.35
-        )
-        #expect(CameraController.camera(of: flight) == Self.cover)
-        let half = CameraController.Flight(
-            from: Self.start,
-            to: Self.cover,
-            duration: 0.35,
-            elapsed: 0.06
-        )
-        let camera = CameraController.camera(of: half)
-        #expect(camera.zoom > Self.start.zoom && camera.zoom < Self.cover.zoom)
-        #expect(camera.center.x > Self.start.center.x && camera.center.x < Self.cover.center.x)
+    @Test("A step after a long pause jumps to the camera of its time")
+    func pause() {
+        let viewSize = Size(width: 400, height: 300)
+        var controller = CameraController(camera: Self.start, viewSize: viewSize)
+        let flight = controller.fly(to: Self.cover, start: 1)
+        let isAnimating = controller.step(to: 1.2)
+        #expect(isAnimating)
+        #expect(controller.camera == flight.camera(at: 1.2))
+        #expect(controller.flightProgress == flight.progress(at: 1.2))
     }
 }
 

@@ -152,10 +152,14 @@ Status (2026-10-22): done, D-120 (a). `make coverage` passed on the iPad: Geomet
 #### 2.1 A test that stalls the main thread
 
 1. Add a device test to `OpenAnimationTests`, or to a new XCTest class in `PointerAppTests`. It starts the open of an empty card and blocks the main thread for 20 ms in the first 50 ms of the flight. Use one `Thread.sleep` inside a main-actor block, then yield. Do not block in other tests, because a blocked main actor broke `AppMessageTests` before.
-2. The test asserts 0 late frames of the parent.
+2. The test asserts 0 late frames of the parent, and 0 held frames. A held frame repeats the camera of the frame before it during the flight: the screen holds, and then the camera jumps. The frames before the first move and the frames at the last camera do not count.
 3. Do the same for the leave: block the main thread for 20 ms at the start of the parent's flight.
 
 Done when: both tests fail on the current code (TEST-03).
+
+Fact found on 2026-10-22: with the 20 ms block, the old code had 0 late frames in 3 of 3 opens and 3 of 3 leaves. The render thread presents frames during the block, but with the same camera, and then the camera jumps: the largest move between two frames rose from 64.3 to 172.7 points, and the largest zoom step from 1.119 to 1.320. The count of late frames alone therefore does not show the fault, so item 2 also counts the held frames.
+
+Status (2026-10-22): done. On the code before task 2.2, with 3 iterations, the open test had 1 to 3 held frames in each open, and the leave test had 3, 0, and 1 held frames. The leave test blocks only after the first move of the parent flight, because the old controller starts a flight at its first step, and a block before it only delays the flight. With task 2.2, both tests pass in 3 of 3 iterations with 0 late and 0 held frames. The blocked open then has the same largest move, 64.2 points, and zoom step, 1.119, as an open without a block.
 
 #### 2.2 The render thread computes the camera and the weight of a flight
 
@@ -177,6 +181,11 @@ Done when:
 - architecture.md sections 6.2 and 6.3 describe the new flow.
 
 Rules: CAN-05, CARD-03, CARD-04, CARD-05, D-98, D-109, D-121, PERF-01, PERF-03, TEST-03.
+
+Status (2026-10-22): the code is in, D-121 (a). One target fails, and the product owner must decide (section 6.2).
+- Pass: the tests of task 2.1 pass. `TransitionTests`, `PinchCancelTests`, `DeepTreeTests`, `NavigationTests`, and `PreviewWriteTests` pass, with the transition snapshots. A frame of a flight makes 15 allocations against 15 of a bare Metal frame (`TransitionAllocationTests`). architecture.md sections 5.1, 6.2, and 6.3 describe the new flow.
+- Pass: the times stay within 10 % of the baseline. The open of the D-56 card has a median of 464.5 to 466.0 ms (baseline 457.5 ms), and the open of the empty card 467.5 to 469.0 ms (baseline 467.5 ms).
+- Fail: `OpenAnimationTests` with 10 iterations still has late frames in the empty card, in 3 runs. The D-56 card had none in 60 events.
 
 ### Phase 3: the step speed (item 3)
 
@@ -254,3 +263,16 @@ In both runs, iteration 10 of the empty card test ended with "Test crashed with 
 | Redo | 23.53 ms | 18.30 to 29.13 ms | 27.44 ms | 31.56 ms | 5.40 / 5.80 ms |
 
 Each step stayed under the 33 ms of D-69. The main-thread call of the erase is `finishErase` after the pencil lift. The undo has two calls per round, because each round ends with one more undo.
+
+### 6.2 Phase 2: the flight on the render thread
+
+Measured on 2026-10-22 on the iPad in Release, with the code of task 2.2. Each run is `OpenAnimationTests` with `-test-iterations 10`. As in the baseline, iteration 10 of the empty card test ended with a kill for memory in each run, so each run has 9 leaves of the empty card.
+
+| Event | Baseline, 2 runs | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|---|
+| Open of the D-56 card, events with late frames | 0 of 20 | 0 of 10 | 0 of 10 | 0 of 10 |
+| Leave of the D-56 card | 1 of 20 | 0 of 10 | 0 of 10 | 0 of 10 |
+| Open of the empty card | 3 of 20 | 0 of 10 | 0 of 10 | 4 of 10 |
+| Leave of the empty card | 3 of 18 | 1 of 9 | 3 of 9 | 2 of 9 |
+
+Run 3 printed the place of each late interval in the flight. Each late interval is interval 0 or 1, 12.5 to 25.0 ms long, and each event has 0 held frames. The render thread therefore did not wait for the main thread, and its own frames came late at the start of the flight. At that time, the open of an empty card makes the child screen with its renderer and adds its view, and the leave removes the child screen with its renderer. The D-56 child loads for longer, so its screen comes in the middle of the flight, and those events have no late frames. A first run of the empty card test alone had 3 late frames in its first open after the launch.

@@ -13,7 +13,8 @@ final class TransitionAllocationTests: XCTestCase {
     private static let frames = 60
     private static let completed: @Sendable (any MTLCommandBuffer) -> Void = { _ in }
 
-    func testOpenFrameAllocatesNoMoreThanBareMetalFrame() throws {
+    /// A renderer of 200 strokes and one card, 10 frames into the open of the card.
+    private func openingRenderer() throws -> (CanvasRenderer, CAMetalLayer) {
         let renderer = try CanvasRenderer()
         let layer = CAMetalLayer()
         renderer.configure(layer)
@@ -29,6 +30,11 @@ final class TransitionAllocationTests: XCTestCase {
         for _ in 0..<100 where renderer.renderFrame(into: layer, deadline: nil) {}
         renderer.beginOpen(of: card.id)
         for _ in 0..<10 { _ = renderer.renderFrame(into: layer, deadline: nil) }
+        return (renderer, layer)
+    }
+
+    func testOpenFrameAllocatesNoMoreThanBareMetalFrame() throws {
+        let (renderer, layer) = try openingRenderer()
         var ours: [Int] = []
         for step in 0..<Self.frames {
             let progress = Double(step) / Double(Self.frames)
@@ -49,6 +55,39 @@ final class TransitionAllocationTests: XCTestCase {
         let bare = try bareFrames(layer)
         let median = { (values: [Int]) in values.sorted()[values.count / 2] }
         let line = "open frame allocations p50 \(median(ours)), bare frame p50 \(median(bare))"
+        XCTContext.runActivity(named: line) { _ in }
+        XCTAssertLessThanOrEqual(median(ours), median(bare), line)
+    }
+
+    /// A frame of a flight on the render thread (D-121) allocates no more than a bare frame, and
+    /// the flight ends exactly at its target with the parent weight 0.
+    func testFlightFrameAllocatesNoMoreThanBareMetalFrame() throws {
+        let (renderer, layer) = try openingRenderer()
+        let target = Camera(center: Point(x: 10, y: 5), zoom: 5)
+        let flight = CameraFlight(from: renderer.camera, to: target, duration: 1, start: 0)
+        renderer.fly(RenderFlight(flight: flight, effect: .open, fixedZoom: nil))
+        var ours: [Int] = []
+        for step in 0..<Self.frames {
+            let drawable = try XCTUnwrap(layer.nextDrawable())
+            let size = layer.drawableSize
+            let time = Double(step) / Double(Self.frames)
+            let count = AllocationCounter.count {
+                _ = renderer.engine.renderFrame(
+                    drawableSize: size,
+                    deadline: time,
+                    drawable: .drawable(drawable)
+                )
+            }
+            if let count { ours.append(count) }
+            RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.02))
+        }
+        _ = renderer.renderFrame(into: layer, deadline: 2)
+        let end = renderer.engine.withRenderer { ($0.camera, $0.transition?.parentWeight) }
+        XCTAssertEqual(end.0, target)
+        XCTAssertEqual(end.1, 0)
+        let bare = try bareFrames(layer)
+        let median = { (values: [Int]) in values.sorted()[values.count / 2] }
+        let line = "flight frame allocations p50 \(median(ours)), bare frame p50 \(median(bare))"
         XCTContext.runActivity(named: line) { _ in }
         XCTAssertLessThanOrEqual(median(ours), median(bare), line)
     }

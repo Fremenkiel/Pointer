@@ -33,6 +33,9 @@ public final class CanvasRenderer {
             engine.post { box in
                 box.camera = camera
                 box.hasNewCamera = true
+                // A camera from the main thread replaces a flight on the render thread (D-121).
+                box.flight = nil
+                box.endsFlight = true
             }
         }
     }

@@ -40,6 +40,13 @@ struct RenderInbox {
     var pinchExit: PinchExit?
     /// `true` after the end of a pinch-out exit that no frame took yet.
     var endsPinchExit = false
+    /// A flight of the camera that starts, or `nil` (D-121).
+    var flight: RenderFlight?
+    /// `true` after a camera from the main thread, which ends a flight (D-121).
+    var endsFlight = false
+    /// `true` while the render thread plays a flight that did not reach its end. A frame then
+    /// does not wait for a camera from the main thread (D-121).
+    var isFlying = false
     /// The edits of handoffs, erases, undo steps, and redo steps, in order.
     var edits: [RenderEdit] = []
     /// The number of the newest handoff in `edits`, or 0.
@@ -79,7 +86,8 @@ struct RenderInbox {
             || !laidOutText.isEmpty || !textEdits.isEmpty
             || !laidOutCards.isEmpty || !cardEdits.isEmpty || !decodedPreviews.isEmpty
             || previewRender != nil || transitionStart != nil || transitionWeight != nil
-            || endsTransition || pinchExit != nil || endsPinchExit || !eraserSamples.isEmpty
+            || endsTransition || pinchExit != nil || endsPinchExit || flight != nil
+            || !eraserSamples.isEmpty
             || endsEraser || eraserReady != nil
     }
 
@@ -104,6 +112,8 @@ struct RenderInbox {
             endsTransition: endsTransition,
             pinchExit: pinchExit,
             endsPinchExit: endsPinchExit,
+            flight: flight,
+            endsFlight: endsFlight,
             edits: edits,
             editHandoff: editHandoff,
             editsWantCompletion: editsWantCompletion,
@@ -141,6 +151,8 @@ struct RenderInbox {
         endsTransition = false
         pinchExit = nil
         endsPinchExit = false
+        flight = nil
+        endsFlight = false
         edits = []
         editHandoff = 0
         editsWantCompletion = false

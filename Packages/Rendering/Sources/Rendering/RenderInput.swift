@@ -37,6 +37,10 @@ struct RenderInput: Sendable {
     let pinchExit: PinchExit?
     /// `true` if the pinch-out exit ends.
     let endsPinchExit: Bool
+    /// A flight of the camera that starts, or `nil` (D-121).
+    let flight: RenderFlight?
+    /// `true` if a camera from the main thread ends the flight (D-121).
+    let endsFlight: Bool
     /// The edits, in order.
     let edits: [RenderEdit]
     /// The newest handoff of `edits`, or 0.
@@ -60,7 +64,8 @@ struct RenderInput: Sendable {
             || !laidOutText.isEmpty || !textEdits.isEmpty
             || !laidOutCards.isEmpty || !cardEdits.isEmpty || !decodedPreviews.isEmpty
             || previewRender != nil || transitionStart != nil || transitionWeight != nil
-            || endsTransition || pinchExit != nil || endsPinchExit || eraserStart != nil
+            || endsTransition || pinchExit != nil || endsPinchExit || flight != nil
+            || endsFlight || eraserStart != nil
             || !eraserSamples.isEmpty || endsEraser
             || eraserReady != nil
     }

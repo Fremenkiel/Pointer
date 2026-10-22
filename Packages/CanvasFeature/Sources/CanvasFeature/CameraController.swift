@@ -1,6 +1,7 @@
 import Foundation
 import Geometry
 import Model
+import Rendering
 
 /// Turns pan and pinch input into camera changes, with deceleration after a pan and a rubber
 /// band past the zoom limits (architecture.md 6.1).
@@ -22,19 +23,6 @@ struct CameraController {
     /// follows the fingers. The start value was 0.6. The product owner asked for an earlier
     /// leave on the iPad on 2026-10-22, so the value is 0.7 (architecture.md 6.3).
     static let exitZoomRatio = 0.7
-    /// The time of the open and the leave of a card (architecture.md 6.2, D-98).
-    static let flightDuration: TimeInterval = 0.35
-    /// The stiffness of the flight, times its duration: a critically damped spring that
-    /// reaches 99.9 % of its way at the end, as (1 + 9.23) e^-9.23 = 0.001.
-    static let flightStiffness = 9.23
-
-    /// A camera flight in closed form: the progress is a critically damped spring of time.
-    struct Flight: Equatable {
-        let from: Camera
-        let to: Camera
-        let duration: TimeInterval
-        var elapsed: TimeInterval = 0
-    }
 
     private struct Pinch {
         let startCamera: Camera
@@ -48,7 +36,7 @@ struct CameraController {
         case none
         case deceleration(velocity: Vector)
         case spring(targetZoom: Double, anchor: Point)
-        case flight(Flight)
+        case flight(CameraFlight)
     }
 
     /// The camera.
@@ -167,10 +155,17 @@ struct CameraController {
     /// The progress of a pinch-out exit from 0 to 1: 0 at the minimum zoom and 1 where a lift
     /// leaves the card, measured on the shown zoom (D-109).
     var exitProgress: Double {
-        let low = rubberBand(exitZoom)
-        let span = zoomRange.lowerBound - low
-        guard camera.zoom < zoomRange.lowerBound, span > 0 else { return 0 }
-        return min(max((zoomRange.lowerBound - camera.zoom) / span, 0), 1)
+        PinchExit.progress(
+            zoom: camera.zoom,
+            minimumZoom: zoomRange.lowerBound,
+            exitZoom: rubberBand(exitZoom)
+        )
+    }
+
+    /// The effect of the minimize flight of a pinch-out exit on the render thread, with the
+    /// same zooms as `exitProgress` (D-121).
+    var pinchExitEffect: RenderFlight.Effect {
+        .pinchExit(minimumZoom: zoomRange.lowerBound, exitZoom: rubberBand(exitZoom))
     }
 
     /// The camera of a pinch-out exit at its end: the shown zoom where a lift leaves the card,
@@ -213,53 +208,34 @@ struct CameraController {
             decelerate(velocity: velocity, delta: delta)
         case .spring(let targetZoom, let anchor):
             spring(to: targetZoom, anchor: anchor, delta: delta)
-        case .flight(var flight):
-            flight.elapsed += delta
-            camera = Self.camera(of: flight)
-            animation = flight.elapsed >= flight.duration ? .none : .flight(flight)
+        case .flight(let flight):
+            // The camera comes from the time alone, as on the render thread (D-121).
+            camera = flight.camera(at: time)
+            if time >= flight.end { animation = .none }
         }
         return isAnimating
     }
 
-    /// Starts a flight from the camera to `target` in `duration` seconds, for the open and the
-    /// leave of a card (D-98). It ends exactly at `target`.
+    /// Starts a flight from the camera to `target`, for the open and the leave of a card
+    /// (D-98). It starts at `start`, in the time base of the frame times, and ends exactly at
+    /// `target`.
     ///
-    /// - Precondition: `duration` is positive.
-    mutating func fly(to target: Camera, duration: TimeInterval = flightDuration) {
-        precondition(duration > 0 && duration.isFinite, "A flight takes time, got \(duration)")
+    /// - Precondition: `start` is finite.
+    /// - Returns: The flight, for the render thread (D-121).
+    mutating func fly(to target: Camera, start: TimeInterval) -> CameraFlight {
+        precondition(start.isFinite, "A flight starts at a finite time, got \(start)")
+        let flight = CameraFlight(from: camera, to: target, start: start)
         pinch = nil
         lastStepTime = nil
-        animation = .flight(Flight(from: camera, to: target, duration: duration))
+        animation = .flight(flight)
+        return flight
     }
 
-    /// The progress of a running flight from 0 to 1, or `nil` without a flight.
+    /// The progress of a running flight from 0 to 1 at the last step, or `nil` without a
+    /// flight.
     var flightProgress: Double? {
         guard case .flight(let flight) = animation else { return nil }
-        return Self.progress(of: flight)
-    }
-
-    /// The progress of a flight: a critically damped spring, scaled to end at 1.
-    static func progress(of flight: Flight) -> Double {
-        let time = min(max(flight.elapsed / flight.duration, 0), 1)
-        return min(reach(at: time) / reach(at: 1), 1)
-    }
-
-    /// The way of a critically damped spring at a time from 0 to 1 of the flight.
-    private static func reach(at time: Double) -> Double {
-        1 - (1 + flightStiffness * time) * exp(-flightStiffness * time)
-    }
-
-    /// The camera of a flight at its progress. The zoom moves on a log scale, and the center
-    /// moves so that the fixed point of the zoom stays in place on the screen.
-    static func camera(of flight: Flight) -> Camera {
-        let progress = progress(of: flight)
-        let (from, to) = (flight.from, flight.to)
-        let zoom = from.zoom * pow(to.zoom / from.zoom, progress)
-        let share =
-            from.zoom == to.zoom
-            ? progress : (1 / from.zoom - 1 / zoom) / (1 / from.zoom - 1 / to.zoom)
-        let center = from.center + (to.center - from.center) * share
-        return progress >= 1 ? to : Camera(center: center, zoom: zoom)
+        return flight.progress(at: lastStepTime ?? flight.start)
     }
 
     private mutating func decelerate(velocity: Vector, delta: TimeInterval) {

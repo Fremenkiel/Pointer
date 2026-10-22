@@ -89,7 +89,10 @@ final class RenderEngine: Sendable {
     private func waitForCameraIfMoving() {
         let waits = inbox.withLock { box in
             assert(!box.isWaitingForCamera, "Two frames wait for the camera at once")
-            guard box.cameraMovedInLastFrame, !box.hasNewCamera else { return false }
+            // A flight takes its camera from its closed form, not from the main thread (D-121).
+            guard box.cameraMovedInLastFrame, !box.hasNewCamera, !box.isFlying else {
+                return false
+            }
             box.isWaitingForCamera = true
             return true
         }
@@ -148,6 +151,7 @@ final class RenderEngine: Sendable {
         inbox.withLock { box in
             box.strokeCount = result.count
             box.rendererHasWork = result.needsMore
+            box.isFlying = result.isFlying
             if box.spareEraserSamples.capacity < samples.capacity {
                 box.spareEraserSamples = samples
             }
@@ -167,9 +171,10 @@ final class RenderEngine: Sendable {
     ) -> FrameResult {
         let start = CACurrentMediaTime()
         apply(input, to: renderer)
+        let isFlying = stepFlight(renderer, at: deadline ?? start)
         var needsMore = false
         var record: FrameRecord?
-        if !input.hasChange && !renderer.needsMoreFrames {
+        if !input.hasChange && !isFlying && !renderer.needsMoreFrames {
             return FrameResult(didDraw: false, needsMore: false, count: renderer.store.count)
         } else if let observer = input.observer {
             // The closure goes straight to `measure`, so it does not escape and allocates no box
@@ -192,9 +197,10 @@ final class RenderEngine: Sendable {
         assert(renderer.store.count <= Limits.maxStrokesAfterErase, "The renderer passed its bound")
         return FrameResult(
             didDraw: true,
-            needsMore: needsMore,
+            needsMore: needsMore || isFlying,
             count: renderer.store.count,
-            record: record
+            record: record,
+            isFlying: isFlying
         )
     }
 
@@ -299,4 +305,6 @@ private struct FrameResult: Sendable {
     let needsMore: Bool
     let count: Int
     var record: FrameRecord?
+    /// `true` while a flight of the camera runs or changed the frame (D-121).
+    var isFlying = false
 }

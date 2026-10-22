@@ -23,6 +23,18 @@ public struct PinchExit: Sendable, Equatable {
         progress = 0
     }
 
+    /// The progress of an exit at the shown `zoom` of the child: 0 at `minimumZoom` and above,
+    /// 1 at `exitZoom` and below (D-104, D-109). The main thread and the render thread use it for
+    /// the same value (D-121).
+    ///
+    /// - Precondition: The zooms are positive.
+    public static func progress(zoom: Double, minimumZoom: Double, exitZoom: Double) -> Double {
+        precondition(zoom > 0 && minimumZoom > 0 && exitZoom > 0, "Zooms are positive")
+        let span = minimumZoom - exitZoom
+        guard zoom < minimumZoom, span > 0 else { return 0 }
+        return min(max((minimumZoom - zoom) / span, 0), 1)
+    }
+
     /// The smallest size of a card without a known frame, as a part of the screen.
     static let unknownCardScale = 0.25
 

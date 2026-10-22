@@ -332,7 +332,8 @@ public final class CanvasViewController: UIViewController {
         if camera.zoom != renderer.camera.zoom {
             canvasView.liveCanvas.tool = PenTool.inkingTool(zoom: camera.zoom)
         }
-        renderer.camera = camera
+        // During a flight, the render thread takes the camera from the flight itself (D-121).
+        if cameraController.flightProgress == nil { renderer.camera = camera }
         textCameraDidChange(isPinching: isPinchActive)
         if cameraController.isAnimating {
             canvasView.inkView.requestFrame()

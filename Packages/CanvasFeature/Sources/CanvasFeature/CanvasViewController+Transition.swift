@@ -1,5 +1,6 @@
 import Geometry
 import Model
+import QuartzCore
 import Rendering
 import UIKit
 
@@ -16,8 +17,7 @@ extension CanvasViewController {
         canvasView.isUserInteractionEnabled = false
         cardTransition = CardTransition(kind: .open, start: camera, onEnd: onEnd)
         renderer.beginOpen(of: card.id)
-        cameraController.fly(to: Self.coverCamera(of: card.frame, viewSize: viewSize))
-        canvasView.inkView.requestFrame()
+        fly(to: Self.coverCamera(of: card.frame, viewSize: viewSize), effect: .open)
         assert(cameraController.flightProgress != nil, "The open flies")
     }
 
@@ -27,7 +27,7 @@ extension CanvasViewController {
         let start = cardTransition?.start
         cardTransition = nil
         renderer.endTransition()
-        if let start { cameraController.fly(to: start) }
+        if let start { fly(to: start, effect: .none) }
         canvasView.isUserInteractionEnabled = true
         canvasView.inkView.requestFrame()
     }
@@ -115,8 +115,10 @@ extension CanvasViewController {
         let onLeave = parentLink.onLeave
         cardTransition = CardTransition(kind: .exit, start: camera, onEnd: onLeave)
         let exit = cameraController.exitCamera
-        cameraController.fly(to: Camera(center: content.openCamera.center, zoom: exit.zoom))
-        canvasView.inkView.requestFrame()
+        fly(
+            to: Camera(center: content.openCamera.center, zoom: exit.zoom),
+            effect: cameraController.pinchExitEffect
+        )
     }
 
     /// Gives the frozen copy of this parent frame to the child after an open (D-109).
@@ -137,8 +139,7 @@ extension CanvasViewController {
             return
         }
         cardTransition = CardTransition(kind: .settle, start: camera, onEnd: onEnd)
-        cameraController.fly(to: target)
-        canvasView.inkView.requestFrame()
+        fly(to: target, effect: .none)
     }
 
     /// Shows only the card that the child of a leave covers: the parent at weight 0 under the
@@ -156,7 +157,23 @@ extension CanvasViewController {
     public func runLeave(into card: Card, onEnd: @escaping @MainActor () -> Void) {
         guard cardTransition == nil else { return }
         cardTransition = CardTransition(kind: .leave, start: camera, onEnd: onEnd)
-        cameraController.fly(to: Camera(center: card.frame.center, zoom: Limits.standardZoom))
+        fly(to: Camera(center: card.frame.center, zoom: Limits.standardZoom), effect: .leave)
+    }
+
+    /// Starts a flight of the camera to `target` on the main thread, for the logic, and on the
+    /// render thread, for the frames (D-121). Both take the same start time, in the time base of
+    /// the frame times. Inside a card, the screen shows the flight at the one zoom (D-119).
+    private func fly(to target: Camera, effect: RenderFlight.Effect) {
+        let flight = cameraController.fly(to: target, start: CACurrentMediaTime())
+        let range = cameraController.zoomRange
+        renderer.fly(
+            RenderFlight(
+                flight: flight,
+                effect: effect,
+                fixedZoom: cameraController.isZoomFixed ? range.lowerBound : nil
+            )
+        )
         canvasView.inkView.requestFrame()
+        assert(cameraController.flightProgress != nil, "The camera flies")
     }
 }

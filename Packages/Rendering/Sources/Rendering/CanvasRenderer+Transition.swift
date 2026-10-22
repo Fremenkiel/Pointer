@@ -62,6 +62,16 @@ extension CanvasRenderer {
         engine.giveParentImage(to: child.engine)
     }
 
+    /// Plays `flight` on the render thread (D-121): each frame takes its camera, and the
+    /// effect of the flight, from the closed form at the target time of the frame, also while
+    /// the main thread is blocked. The next camera from the main thread ends the flight.
+    public func fly(_ flight: RenderFlight) {
+        engine.post { box in
+            box.flight = flight
+            box.endsFlight = false
+        }
+    }
+
     /// Ends the transition. A renderer whose committed textures went makes new ones.
     public func endTransition() {
         engine.post { box in box.endsTransition = true }

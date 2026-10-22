@@ -37,6 +37,8 @@ final class FrameRenderer {
     var parentImage: InkTarget?
     /// The pinch-out exit that runs, or `nil` (CARD-05).
     var pinchExit: PinchExit?
+    /// The flight of the camera that the render thread plays, or `nil` (D-121).
+    var flight: RenderFlight?
     private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     /// The committed layer, or `nil` before the first frame with a drawable size.

@@ -71,10 +71,11 @@ final class OpenAnimationTests: XCTestCase {
         XCTAssertEqual(open.child.camera.zoom, Limits.standardZoom)
     }
 
-    /// The report line of an open, its late frames, and the child.
+    /// The report line of an open, its late frames, its held frames, and the child.
     struct Measure {
         let text: String
         let late: Int
+        let held: Int
         let child: CanvasViewController
     }
 
@@ -103,7 +104,12 @@ final class OpenAnimationTests: XCTestCase {
         )
         var report = FrameLoopReport()
         collector.fill(&report)
-        return Measure(text: line, late: report.lateIntervals, child: child)
+        return Measure(
+            text: line,
+            late: report.lateIntervals,
+            held: heldFrames(cameras.all),
+            child: child
+        )
     }
 
     /// The leave of a D-56 card back to the D-56 canvas (m6-plan.md task 4.6): the late frames
@@ -143,7 +149,7 @@ final class OpenAnimationTests: XCTestCase {
         card: Card,
         in composition: AppComposition,
         name: String = "a D-56 card"
-    ) async throws -> (text: String, late: Int) {
+    ) async throws -> LeaveMeasure {
         let viewSize = Size(width: child.view.bounds.width, height: child.view.bounds.height)
         let childFrames = FrameLoopCollector(viewSize: viewSize)
         let parentFrames = FrameLoopCollector(viewSize: viewSize)
@@ -153,7 +159,8 @@ final class OpenAnimationTests: XCTestCase {
         child.renderer.engine.post { $0.observer = Cameras(collector: childFrames) }
         composition.leave()
         let parent = try await waitForCanvas(card.canvasID, in: composition)
-        parent.renderer.engine.post { $0.observer = Cameras(collector: parentFrames) }
+        let parentCameras = Cameras(collector: parentFrames)
+        parent.renderer.engine.post { $0.observer = parentCameras }
         let target = Camera(center: card.frame.center, zoom: Limits.standardZoom)
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: timeout)
@@ -166,15 +173,18 @@ final class OpenAnimationTests: XCTestCase {
         var parentReport = FrameLoopReport()
         parentFrames.fill(&parentReport)
         let late = childReport.lateIntervals + parentReport.lateIntervals
+        let held = heldFrames(parentCameras.all)
         let text = String(
-            format: "leave of %@: %.0f ms, child %d frames, parent %d frames, late %d",
+            format: "leave of %@: %.0f ms, child %d frames, parent %d frames, late %d, held %d %@",
             name,
             (end - start) * 1000,
             childReport.frames,
             parentReport.frames,
-            late
+            late,
+            held,
+            lateDetail(child: childReport, parent: parentReport)
         )
-        return (text, late)
+        return LeaveMeasure(text: text, late: late, held: held)
     }
 
     /// A double tap hits a card on the screen: the card nearest to the screen center.
@@ -229,14 +239,16 @@ final class OpenAnimationTests: XCTestCase {
         collector.fill(&report)
         let jump = largestJump(cameras, viewSize: viewSize)
         return String(
-            format: "open of %@: %.0f ms to the child, %d frames, late %d, "
-                + "largest move %.1f points, largest zoom step %.3f",
+            format: "open of %@: %.0f ms to the child, %d frames, late %d, held %d, "
+                + "largest move %.1f points, largest zoom step %.3f (late at %@)",
             name,
             milliseconds,
             report.frames,
             report.lateIntervals,
+            heldFrames(cameras),
             jump.move,
-            jump.zoom
+            jump.zoom,
+            latePlaces(report)
         )
     }
 
