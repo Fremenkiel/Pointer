@@ -166,6 +166,7 @@ extension CanvasViewController {
     /// render thread, for the frames (D-121). Both take the same start time, in the time base of
     /// the frame times. Inside a card, the screen shows the flight at the one zoom (D-119).
     private func fly(to target: Camera, effect: RenderFlight.Effect) {
+        hideHoverDot()
         let flight = cameraController.fly(to: target, start: CACurrentMediaTime())
         let range = cameraController.zoomRange
         renderer.fly(

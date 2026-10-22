@@ -165,7 +165,7 @@ The mapping of user preferences to actions is decision D-130 for double tap and 
 
 ### 4.6 Hover
 
-A `UIHoverGestureRecognizer` with `allowedTouchTypes = [.pencil]` shows a small gray dot at the tip for the pen and the text tool. For the eraser, the dot is a gray outline circle with the eraser radius (D-133). If `UIPencilInteraction.prefersHoverToolPreview` is `false`, the dot does not show (D-128). The dot is a `CAShapeLayer` in `CanvasView` above the live `PKCanvasView`, with implicit animations off, so a hover sample wakes no frame of the renderer (D-126). It hides at pencil down, at the end of the hover, and during a card flight. A shadow of PencilKit below the pencil can show beside it, and Pointer accepts it (D-127).
+A `UIHoverGestureRecognizer` with `allowedTouchTypes = [.pencil]` shows a small gray dot at the tip for the pen and the text tool. For the eraser, the dot is a gray outline circle with the eraser radius (D-133). If `UIPencilInteraction.prefersHoverToolPreview` is `false`, the dot does not show (D-128). The dot is a `CAShapeLayer` in `CanvasView` above the live `PKCanvasView`, with implicit animations off, so a hover sample wakes no frame of the renderer (D-126). It hides at pencil down, at the end of the hover, and during a card flight. The recognizer runs together with every other recognizer, also the hover recognizers of `UIPencilInteraction` and PencilKit, so that it blocks no gesture. A shadow of PencilKit below the pencil can show beside it, and Pointer accepts it (D-127).
 
 ### 4.7 Finger gestures
 

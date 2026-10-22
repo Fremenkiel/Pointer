@@ -151,6 +151,7 @@ public final class CanvasViewController: UIViewController {
         // The mask texture is made now, not at the first sample (D-78).
         renderer.setEraserReady(tool == .eraser)
         applyToolState()
+        toolDidChangeForHover()
     }
 
     /// Turns the drawing gesture of PencilKit on only for an active pen (D-34, D-70).
@@ -182,6 +183,7 @@ public final class CanvasViewController: UIViewController {
         installHistoryButtons()
         installToolControls()
         installTextControls()
+        installHover()
     }
 
     /// Keeps the session when the canvas leaves its parent, for example at a workspace switch.
@@ -261,6 +263,7 @@ public final class CanvasViewController: UIViewController {
         if toolState.pencilDown() == .eraser, toolState.isErasingEnabled {
             beginErase()
         }
+        hideHoverDot()
         palmGuard.pencilBegan()
         cameraController.stopAnimation()
         for recognizer in [panRecognizer, pinchRecognizer] where recognizer.state != .possible {

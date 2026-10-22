@@ -113,5 +113,5 @@ extension CanvasViewController: UIPencilInteractionDelegate {
 
     /// `true` if a double tap and a squeeze act: the container shows this canvas, and no card
     /// flight runs on it (architecture.md 4.5, CARD-03, CARD-04).
-    private var takesPencilActions: Bool { isShownCanvas && !isInCardTransition }
+    var takesPencilActions: Bool { isShownCanvas && !isInCardTransition }
 }

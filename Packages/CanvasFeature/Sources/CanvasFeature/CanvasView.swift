@@ -11,6 +11,8 @@ final class CanvasView: UIView {
     let inkView: InkView
     /// The live `PKCanvasView`. It never zooms or scrolls, and never becomes the first responder.
     let liveCanvas = LiveCanvasView()
+    /// The hover dot of the pencil, above the live canvas (D-126).
+    let hoverDot = HoverDotLayer()
 
     /// Makes the view.
     init(renderer: CanvasRenderer) {
@@ -21,6 +23,7 @@ final class CanvasView: UIView {
         configureLiveCanvas()
         addSubview(inkView)
         addSubview(liveCanvas)
+        layer.addSublayer(hoverDot.layer)
         assert(liveCanvas.superview === self, "The live canvas lies on top of the ink")
     }
 
@@ -43,6 +46,7 @@ final class CanvasView: UIView {
         liveCanvas.frame = bounds
         liveCanvas.contentSize = bounds.size
         liveCanvas.contentOffset = .zero
+        hoverDot.layer.contentsScale = traitCollection.displayScale
     }
 
     private func configureLiveCanvas() {

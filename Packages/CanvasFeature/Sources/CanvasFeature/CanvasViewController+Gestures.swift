@@ -37,11 +37,13 @@ extension CanvasViewController: UIGestureRecognizerDelegate {
         return longPressCanBegin(gestureRecognizer)
     }
 
-    /// Pan and pinch run together, so a second finger can join a pan.
+    /// Pan and pinch run together, so a second finger can join a pan. The hover recognizer of
+    /// the dot runs together with every recognizer (architecture.md 4.6).
     public func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
         shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
     ) -> Bool {
+        if gestureRecognizer is UIHoverGestureRecognizer { return true }
         // An identity check, without a set per call (C-05).
         let first = gestureRecognizer === panRecognizer || gestureRecognizer === pinchRecognizer
         let second =
