@@ -21,7 +21,16 @@ enum ViewSnapshot {
         named name: String,
         sourceLocation: SourceLocation = #_sourceLocation
     ) throws {
-        let image = try render(view)
+        try assertMatches(image: render(view), named: name, sourceLocation: sourceLocation)
+    }
+
+    /// Compares an image, for example a capture of system UI in a window (D-114), with the
+    /// reference PNG `name`.
+    static func assertMatches(
+        image: UIImage,
+        named name: String,
+        sourceLocation: SourceLocation = #_sourceLocation
+    ) throws {
         let url = Bundle(for: BundleToken.self).url(forResource: name, withExtension: "png")
         guard let url, let data = try? Data(contentsOf: url), let reference = UIImage(data: data)
         else {

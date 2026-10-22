@@ -342,6 +342,8 @@ Rules: CARD-07, CARD-08, UNDO-03, TEST-07, D-10, D-16, D-101.
 
 Status: done on 2026-10-21, except the snapshot tests of the menu and the alert, which wait for D-114. The menu and the alert are system UI, so the tests check their content instead: the titles, the order, the destructive attribute of "Delete", the text field, and the actions. A title above 120 code points shows the message "A title holds at most 120 characters." and records no step. `beginLongPress(at:)` holds the rule that a text box above a card wins (D-16). 7 new tests pass on the iPad, with the tests of task 4.1 and the 16 text tests of M5.
 
+Status: changed on 2026-10-22 by D-114. `CardMenuSnapshotTests` compares the card menu and the rename alert with the references `card-menu` and `card-rename-alert` from the iPad. It passed 5 of 5 runs in a row. `make snapshots` runs it.
+
 #### 4.3 Double tap on a card
 
 1. Add a finger double-tap recognizer. It begins only on a card that no text box covers (D-100).
