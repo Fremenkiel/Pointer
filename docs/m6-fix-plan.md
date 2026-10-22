@@ -199,6 +199,8 @@ Status (2026-10-22): the code is in, D-121 (a). One target fails, and the produc
 
 Done when: section 6 names the parts of the 4 to 5 ms with their measured cost.
 
+Status (2026-10-22): done, section 6.3. The step itself costs about 0.5 to 0.8 ms on the iPad. Most of the 4 to 6 ms in the app comes from the state of the CPU after the main thread waited for a frame.
+
 #### 3.2 The renderer gets the change before the model step
 
 1. Raise D-122 and wait for the decision.
@@ -277,3 +279,29 @@ Measured on 2026-10-22 on the iPad in Release, with the code of task 2.2. Each r
 | Leave of the empty card | 3 of 18 | 1 of 9 | 3 of 9 | 2 of 9 |
 
 Run 3 printed the place of each late interval in the flight. Each late interval is interval 0 or 1, 12.5 to 25.0 ms long, and each event has 0 held frames. The render thread therefore did not wait for the main thread, and its own frames came late at the start of the flight. At that time, the open of an empty card makes the child screen with its renderer and adds its view, and the leave removes the child screen with its renderer. The D-56 child loads for longer, so its screen comes in the middle of the flight, and those events have no late frames. A first run of the empty card test alone had 3 late frames in its first open after the launch.
+
+### 6.3 Phase 3: the parts of the model step
+
+Measured on 2026-10-22. On the Mac in Release, `EraseStepPerformanceTests` gave 1.3 ms for one apply and one revert of the D-69 erase, and 2.8 ms while a second copy of the content exists. A copy of the dictionaries therefore costs about 0.75 ms per step on the Mac.
+
+Temporary time marks in the app, on the iPad, in `EraseUndoPerformanceTests`, 2 runs of 5 rounds:
+
+| Part | Erase (`perform`) | Undo | Redo |
+|---|---|---|---|
+| The whole model step | 1.73 to 3.08 ms | 4.61 to 7.00 ms | 4.89 to 5.20 ms |
+| `remove` of the batch | 0.56 to 0.87 ms | 3.90 to 6.49 ms, 2,012 parts | 1.94 to 2.30 ms, 1,006 strokes |
+| `restore` of the batch | 0.51 to 0.73 ms | 0.52 to 1.26 ms | 2.06 to 2.76 ms |
+| `textDelta` and `cardDelta` | | 0.07 to 0.20 ms | 0.08 to 0.21 ms |
+| `renderDelta`, `renderer.change`, `send`, `historyDidChange` | under 0.1 ms each | under 0.1 ms each | under 0.1 ms each |
+| The cut of the eraser path before the step | 7.91 to 9.89 ms | | |
+
+A probe on the iPad ran the same step on the same content, with no frames in between. One apply took 0.50 to 0.94 ms, and one revert 0.55 to 1.11 ms. Each of these changes made at most 0.4 ms of difference:
+
+- a second copy of the content
+- a flush of the cache of 64 MB before each step
+- a removal in the order of the eraser path instead of the order of the hash table
+
+With a sleep of 30 ms before each step, as the main thread waits for a frame in the app, the apply took up to 3.63 ms and the revert up to 4.34 ms.
+
+The dictionary work is about 0.5 to 0.8 ms per step. The rest of the 4 to 6 ms comes from the state of the CPU after a wait: the system ramps up the core of the main thread again, or moves the thread to a faster core. The erase is fast because the cut of the path runs for 8 to 10 ms just before it. No second reference to the content exists in the canvas screen. The local `dependencies` value of the test holds one, but that costs only the first step. A faster model step therefore saves less than its share of the time. Task 3.2 lets the render thread start before the model step, so it does not wait for that state.
+
