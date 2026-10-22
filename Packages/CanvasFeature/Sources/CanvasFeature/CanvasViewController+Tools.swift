@@ -81,4 +81,21 @@ extension CanvasViewController: UIPencilInteractionDelegate {
         guard let anchor else { return }
         showPalette(at: anchor)
     }
+
+    /// A double tap switches between pen and eraser for the settings of D-130 (architecture.md
+    /// 4.5). The setting is read at each tap, because the user can change it while the app runs.
+    public func pencilInteraction(
+        _ interaction: UIPencilInteraction,
+        didReceiveTap tap: UIPencilInteraction.Tap
+    ) {
+        doubleTap(action: UIPencilInteraction.preferredTapAction)
+    }
+
+    /// Picks the tool of a double tap with the setting `action`, or does nothing (D-130). A tap
+    /// during a pencil touch takes effect at the next pencil down (D-70), and a tap during a text
+    /// edit ends the edit (D-87).
+    func doubleTap(action: UIPencilPreferredAction) {
+        guard let next = ToolSwitch.tool(after: tool, action: action) else { return }
+        select(next)
+    }
 }
