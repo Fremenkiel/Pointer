@@ -1,5 +1,6 @@
 import CanvasFeature
 import Model
+import Rendering
 
 /// One open of a card or one leave: the path of the canvas to show, the end of the flight, and
 /// the new screen when its first frame is ready (architecture.md 6.2 and 6.3, D-98, D-109).
@@ -21,6 +22,10 @@ final class CardOpening {
     var card: Card?
     /// The new screen after its first frame, or `nil`.
     var canvas: CanvasViewController?
+    /// `false` while the preview of the child of a leave renders (D-111).
+    var isPreviewDone = true
+    /// The new preview of the child of a leave, or `nil`.
+    var preview: PreviewImage?
 
     init(target: NavigationPath) {
         self.target = target

@@ -107,7 +107,12 @@ extension FrameRenderer {
         )
         blit.endEncoding()
         let completion = job.request.completion
-        commandBuffer.addCompletedHandler { [renderer] _ in
+        commandBuffer.addCompletedHandler { [renderer] buffer in
+            // In the background, iOS refuses work on the GPU, and the buffer ends with an error.
+            guard buffer.status == .completed else {
+                DispatchQueue.global(qos: .utility).async { completion(nil) }
+                return
+            }
             let image = renderer.readImage(width: width, height: height)
             DispatchQueue.global(qos: .utility).async { completion(image) }
         }

@@ -419,6 +419,8 @@ Done when: tests cover each leave event of D-111. On the iPad, a change in a chi
 
 Rules: CARD-02, D-97, D-111.
 
+Status: done on 2026-10-22. At the up button and at the pinch-out, the app starts the render of the child preview when the parent content loads, in parallel with the first frame of the parent. The leave ends after both, and the parent shows the image with `showPreview`. A workspace switch from a child waits for the render before it shows the new canvas. The move to the background starts the render at `sceneWillResignActive`, because iOS refuses work on the GPU in the background. A command buffer that ends with an error now gives `nil`, not an image. After a launch into a child, the app loads the parent for the aspect of the card. The PNG encode and the file write run off the main actor. `PreviewWriteTests` covers the four events: each writes a changed preview of 512 pixels with the aspect of the card. The leave of a D-56 card took 585 ms with 0 late frames (592 ms before).
+
 ### Phase 5: acceptance tests
 
 #### 5.1 Acceptance 1: open and leave without a visible jump

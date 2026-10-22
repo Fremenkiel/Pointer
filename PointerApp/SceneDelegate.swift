@@ -38,9 +38,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         composition?.startIdleTimer()
     }
 
-    /// Stops the check for an idle moment.
+    /// Stops the check for an idle moment and writes the preview of a child canvas.
     func sceneWillResignActive(_ scene: UIScene) {
-        composition?.stopIdleTimer()
+        composition?.resignActive()
     }
 
     /// Writes all pending rows and the device state (storage.md section 4).

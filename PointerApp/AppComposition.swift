@@ -192,6 +192,8 @@ final class AppComposition {
             )
             // The canvas is on the screen already, with its history (F-02).
             guard container.canvas?.canvasID != path.currentCanvas else { return }
+            // A child on the screen stays until its preview renders (D-111).
+            await writeShownPreview()
             onLoadStarted?(path.currentCanvas)
             let content = try await repository.content(of: path.currentCanvas)
             let camera = try await storedCamera(for: path.currentCanvas)

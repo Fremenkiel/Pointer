@@ -15,15 +15,15 @@ import WorkspaceFeature
 @Suite("Card navigation")
 struct NavigationTests {
     /// The longest wait for a canvas.
-    private static let timeout = Duration.seconds(10)
+    static let timeout = Duration.seconds(10)
     /// The frames of the cards of the chain, in the canvas of the card before.
-    private static let frame = Rect(
+    static let frame = Rect(
         origin: Point(x: 200, y: 100),
         size: Size(width: 300, height: 210)
     )
 
     /// A library with one workspace and a chain of cards, each in the canvas of the card before.
-    private struct Tree {
+    struct Tree {
         let folder: URL
         let repository: SQLiteLibraryRepository
         let clock: AppClock
@@ -36,7 +36,7 @@ struct NavigationTests {
         }
     }
 
-    private static func makeTree(depth: Int, deleted: Int? = nil) async throws -> Tree {
+    static func makeTree(depth: Int, deleted: Int? = nil) async throws -> Tree {
         // swiftlint:disable:next arch_04_file_system
         let folder = FileManager().temporaryDirectory.appending(path: "Navigation-\(UUID())")
         // swiftlint:disable:next arch_04_file_system
@@ -104,7 +104,7 @@ struct NavigationTests {
         return chain
     }
 
-    private static func composition(for tree: Tree) throws -> AppComposition {
+    static func composition(for tree: Tree) throws -> AppComposition {
         let host = try OnScreenCanvas.host()
         let window = try #require(host.view.window as? InputTrackingWindow)
         let composition = AppComposition(
@@ -131,7 +131,7 @@ struct NavigationTests {
     }
 
     /// Waits until the container shows the canvas.
-    private static func waitForCanvas(
+    static func waitForCanvas(
         _ canvas: CanvasID,
         in composition: AppComposition,
         timeout: Duration = timeout

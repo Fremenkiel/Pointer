@@ -143,6 +143,7 @@ extension AppComposition {
             else { return }
             if !leaving.isPinch { canvas.holdLeave(into: parentCard) }
             leaving.card = parentCard
+            renderPreview(of: child, for: parentCard, in: leaving)
             container.showBelow(canvas)
             try await CardOpening.waitForFirstFrame(of: canvas)
             leaving.canvas = canvas
@@ -158,11 +159,12 @@ extension AppComposition {
 
     /// Fades the child out when its flight and the first frame of the parent are both done,
     /// then plays the leave on the parent (D-98).
-    private func finishLeave(into card: CardID) {
-        guard let leaving = opening, leaving.isFlightDone, let parent = leaving.canvas,
-            let parentCard = leaving.card, parentCard.id == card
+    func finishLeave(into card: CardID) {
+        guard let leaving = opening, leaving.isFlightDone, leaving.isPreviewDone,
+            let parent = leaving.canvas, let parentCard = leaving.card, parentCard.id == card
         else { return }
         opening = nil
+        if let preview = leaving.preview { parent.showPreview(preview, of: card) }
         let level = leaving.target.level
         let isPinch = leaving.isPinch
         let runLeave: @MainActor () -> Void = {
