@@ -132,6 +132,8 @@ Acceptance:
 
 Status on 2026-10-22: the three acceptance tests pass on the iPad, and the product owner reported a pass of acceptance 1 and 3 by hand. The product owner decided D-118 and D-119 on the same day. `make check` passes with the iPad. Three items of phase 6 wait for the product owner: the coverage of Rendering cannot be measured, the open of an empty card had 1 late frame in 2 of 5 close runs, and the slowest redo is 13 % above the baseline (m6-plan.md section 6.3.1). D-114 stays open.
 
+Status after the fix plan, 2026-10-22: [m6-fix-plan.md](m6-fix-plan.md) is done on branch `m6-fix`, with the decisions D-120, D-121, and D-122. `make coverage` passes, with Rendering at 86.78 %. A blocked main thread no longer stops the flight of a card. The open of an empty card can still have 1 late frame at the start of its flight, an open item that the product owner accepted. It came in 1 of 5 close runs. The slowest erase, undo, and redo of 5 full runs took 27.15, 21.69, and 24.80 ms. The snapshot of the card menu fails in full runs and passes alone, and it waits for the product owner. The manual tests of section 6.5 of the fix plan wait for the product owner.
+
 ## M7: Apple Pencil interactions
 
 - Double tap and hover dot. The squeeze palette comes in M4 (D-63).

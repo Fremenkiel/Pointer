@@ -252,6 +252,8 @@ Since task 3.2, the render thread does not wait for the model step, so its time 
 
 Done when: each step passes, or the product owner accepts the failure.
 
+Status (2026-10-22): done except the snapshot of the card menu, which waits for the product owner (section 6.4). `make check` passed every target with the iPad except that snapshot in its device run. `make coverage` passed.
+
 Rules: AGENT-05, DOC-06, D-79.
 
 ## 5. Facts to keep in mind
@@ -322,4 +324,35 @@ A probe on the iPad ran the same step on the same content, with no frames in bet
 With a sleep of 30 ms before each step, as the main thread waits for a frame in the app, the apply took up to 3.63 ms and the revert up to 4.34 ms.
 
 The dictionary work is about 0.5 to 0.8 ms per step. The rest of the 4 to 6 ms comes from the state of the CPU after a wait: the system ramps up the core of the main thread again, or moves the thread to a faster core. The erase is fast because the cut of the path runs for 8 to 10 ms just before it. No second reference to the content exists in the canvas screen. The local `dependencies` value of the test holds one, but that costs only the first step. A faster model step therefore saves less than its share of the time. Task 3.2 lets the render thread start before the model step, so it does not wait for that state.
+
+### 6.4 Phase 4: close
+
+Measured on 2026-10-22 on the iPad Pro 11-inch (M4) in Release, with the code of commit 668af91.
+
+`make check` with the iPad: build and analyze passed with 0 findings. The Tier A tests passed. `PointerDeviceTests` passed 303 of 304 tests, and only the snapshot of the card menu failed. `make check` stops at the first failed target. So the other targets ran one by one, and each passed: `snapshots`, `format`, `lint`, `layers`, `density`, `self-test`, and `plist`.
+
+`make coverage` passed: Geometry 90.80 % (474 of 522 lines), Model 90.31 % (1,277 of 1,414), InkEngine 92.73 % (625 of 674), Persistence 91.23 % (2,163 of 2,371), and Rendering 86.78 % (5,927 of 6,830).
+
+Five full runs of `PointerDeviceTests` in a row (D-79):
+
+| Run | Open of D-56, median / slowest | Memory of the open, held / peak | Content pass 20,000 / 200,000 / 200,000 handwriting | Eraser frame CPU / GPU median | Erase / undo / redo, slowest |
+|---|---|---|---|---|---|
+| 1 | 253.3 / 264.9 ms | 356 / 356 MB | 35 / 115 / 171 ms | 0.11 / 0.41 ms | 21.55 / 20.90 / 22.31 ms |
+| 2 | 252.0 / 271.9 ms | 349 / 349 MB | 35 / 113 / 170 ms | 0.11 / 0.41 ms | 24.94 / 20.50 / 24.80 ms |
+| 3 | 253.3 / 264.0 ms | 351 / 351 MB | 34 / 115 / 171 ms | 0.12 / 0.28 ms | 26.99 / 18.40 / 22.94 ms |
+| 4 | 253.7 / 260.5 ms | 349 / 349 MB | 35 / 114 / 170 ms | 0.12 / 0.29 ms | 27.15 / 21.64 / 19.92 ms |
+| 5 | 254.0 / 258.0 ms | 351 / 351 MB | 35 / 115 / 163 ms | 0.11 / 0.28 ms | 25.19 / 21.69 / 20.68 ms |
+
+Each run passed 303 of 304 tests, and run 3 passed 302. The snapshot of the card menu (`CardMenuSnapshotTests`, D-114) failed in each run: 28,664 pixels differ, and the captured image is black, so the menu did not show. The suite passes alone, on this code and on commit f14d220, and in `make snapshots`. The suite came in commit 732896a, after the close runs of M6, so these are its first full runs. Run 3 also had 1 late frame at place 0 of the flight in the open of the empty card, which is the open item of phase 2. No run had a held frame. The zoom over the D-56 text had 1 late frame of 478 in runs 2, 3, and 5, which D-94 allows. The pan over the D-56 text showed uncovered screen in 106 to 182 of 480 frames (D-94). The preview render of D-56 took 37.5 to 47.2 ms.
+
+Against m6-plan.md section 6.1, the open, the memory, the content passes, and the eraser frame stay within 10 %. The slowest open, 271.9 ms, is 3.7 % above the slowest of section 6.1, 262.3 ms. The slowest erase, undo, and redo of all runs are 27.15, 21.69, and 24.80 ms. Section 6.1 had 31.81, 28.09, and 26.53 ms, and the close runs of M6 had 28.48, 30.18, and 30.10 ms.
+
+### 6.5 Manual tests for the product owner
+
+1. Open an empty card with a finger tap, 10 times. The card grows to cover the screen without a stop or a jump.
+2. Leave the empty card with the up button, 10 times. The parent flies back without a stop or a jump.
+3. Open a card that holds the D-56 content, and leave it with the up button. Both flights run without a stop.
+4. Open the D-56 card, and pinch out until it leaves. The card shrinks without a jump, and the parent shows.
+5. On a canvas with much ink, erase across about 1,000 strokes with the pencil in one gesture. The ink goes at the lift without a visible wait.
+6. Tap undo, then redo, 5 times each. The ink comes back and goes again without a visible wait, and the screen never shows a wrong state.
 

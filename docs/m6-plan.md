@@ -524,6 +524,20 @@ Measured on 2026-10-22 on the iPad Pro 11-inch (M4) in Release, with the code of
 
 Against section 6.1, the open, the memory, the content passes, and the eraser frame stay within 10 %. The slowest redo is 13 % above the slowest redo of section 6.1 (30.10 against 26.53 ms). Alternating runs of `EraseUndoPerformanceTests`, 3 times 3 iterations of each build, gave the same medians: redo 22.60 ms for commit 7284f4e and 22.75 ms now. The median of the slowest redo rose from 24.18 to 29.86 ms, but the largest values are equal: 30.89 and 31.14 ms. Each step stays under the 33 ms of M4 acceptance 2. The frame loop tests ran at 120 fps. The text zoom had 1 late frame of 478 in runs 1 and 2. The pan over the D-56 text showed uncovered screen in 113 to 189 of 480 frames (D-94). The preview render of D-56 took 30.7 to 38.0 ms.
 
+### 6.3.2 Close runs after the M6 fix plan
+
+The open items of section 6.3.1 went through [m6-fix-plan.md](m6-fix-plan.md) on 2026-10-22. `make coverage` measures the coverage of Rendering, 86.78 % (D-120). The render thread plays the flight of a card (D-121), and an erase, an undo, and a redo give their change to the renderer before the model step (D-122). Measured with the code of commit 668af91:
+
+| Run | Open of D-56, median / slowest | Memory of the open, held / peak | Content pass 20,000 / 200,000 / 200,000 handwriting | Eraser frame CPU / GPU median | Erase / undo / redo, slowest |
+|---|---|---|---|---|---|
+| 1 | 253.3 / 264.9 ms | 356 / 356 MB | 35 / 115 / 171 ms | 0.11 / 0.41 ms | 21.55 / 20.90 / 22.31 ms |
+| 2 | 252.0 / 271.9 ms | 349 / 349 MB | 35 / 113 / 170 ms | 0.11 / 0.41 ms | 24.94 / 20.50 / 24.80 ms |
+| 3 | 253.3 / 264.0 ms | 351 / 351 MB | 34 / 115 / 171 ms | 0.12 / 0.28 ms | 26.99 / 18.40 / 22.94 ms |
+| 4 | 253.7 / 260.5 ms | 349 / 349 MB | 35 / 114 / 170 ms | 0.12 / 0.29 ms | 27.15 / 21.64 / 19.92 ms |
+| 5 | 254.0 / 258.0 ms | 351 / 351 MB | 35 / 115 / 163 ms | 0.11 / 0.28 ms | 25.19 / 21.69 / 20.68 ms |
+
+Each run passed 303 of 304 tests, and run 3 passed 302. The snapshot of the card menu (`CardMenuSnapshotTests`, D-114) failed in each run: 28,664 pixels differ, and the captured image is black, so the menu did not show. The suite passes alone, on this code and on commit f14d220, and in `make snapshots`. The suite came in commit 732896a, after the close runs of M6, so these are its first full runs. Run 3 also had 1 late frame at place 0 of the flight in the open of the empty card, which is the open item of phase 2. No run had a held frame. The zoom over the D-56 text had 1 late frame of 478 in runs 2, 3, and 5, which D-94 allows. The pan over the D-56 text showed uncovered screen in 106 to 182 of 480 frames (D-94). The preview render of D-56 took 37.5 to 47.2 ms.
+
 ### 6.4 Canvas
 
 | Item | Target | Result |
