@@ -125,6 +125,9 @@ Status values: Open, Decided, Replaced.
 | D-115 | How a card opens | A single finger tap. Replaces the double tap of D-09 and D-100. | Decided (2026-10-22) |
 | D-116 | The body of a card | A light gray fill, as in Allume. Changes "no fill" of D-96. | Decided (2026-10-22) |
 | D-117 | How a new card comes | Open | Open |
+| D-120 | Where the coverage check of TEST-02 runs | Open | Open |
+| D-121 | The render thread computes the camera of a card flight | Open | Open |
+| D-122 | The renderer gets the change of a step before the model step | Open | Open |
 
 ## Details
 
@@ -1261,6 +1264,37 @@ Status values: Open, Decided, Replaced.
 - Questions and answers: (1) Zoom goes away only inside cards. The root canvas of a workspace keeps the zoom range of CAN-04. (2) Inside a card, a pinch-out only drives the exit. It shrinks the child into its card from the first movement. A pinch-in does nothing. (3) The one-finger pan stays inside a card, so a child canvas stays unbounded.
 - Design: a canvas inside a card has the zoom range 1...1. A pinch there keeps the shown camera. The raw zoom of the fingers drives the exit progress, as in D-104, with the threshold `exitZoomRatio` times zoom 1. A stored camera of a child with another zoom opens at zoom 1 with the same center.
 - Closed point: a pan, or new content that moves the content bounds, put the child away from the camera of the open, so the shrinking card showed another region than the preview. Since 2026-10-22, the minimize animation of the pinch-out moves the camera to the camera of the open, as the up button does (D-109).
+
+### D-120 Where the coverage check of TEST-02 runs
+
+- Raised by task 1.1 of [m6-fix-plan.md](m6-fix-plan.md) on 2026-10-22.
+- TEST-02 asks for 90 % line coverage in each Tier A package and 70 % in Rendering. The M6 close measured it by hand. The Tier A numbers come from `swift test --enable-code-coverage` on the Mac. The Rendering number needs one more full run of `PointerDeviceTests` on the iPad with the instrumented build of section 2.1 of the fix plan.
+- The instrumented code is slower, so the performance tests of a coverage run fail or do not count.
+- Options:
+  - (a) A separate target `make coverage`. `make check` does not run it. Section 5 of code-of-code.md names it in item 3 of the pull request checklist.
+  - (b) `make check` runs the coverage target. Each full check then has one more full device run, and the check must ignore the performance failures of that run.
+  - (c) No target. The coverage stays a measure by hand at the close of a milestone.
+- Recommendation: (a).
+
+### D-121 The render thread computes the camera of a card flight
+
+- Raised by task 2.2 of [m6-fix-plan.md](m6-fix-plan.md) on 2026-10-22.
+- The open of an empty card had 1 late frame in 2 of 5 close runs of D-79. The main thread steps the camera of the flight in `InkView.onFrame`. The render thread waits at most 3 ms for a new camera, and without one it presents no frame. The load of the child screen blocks the main thread for 4 to 14 ms, so the animation stops for one or two frames. The leave has the same gap at the start of the parent flight. Section 2.2 of the fix plan has the research.
+- Options:
+  - (a) The render thread computes the camera and the parent weight of a flight from the closed form of the spring, at the target time of each frame. The main thread still steps its own camera for the logic: the end callbacks, the input lock, and `isInCardTransition`. Architecture.md section 6.2 changes: the main thread no longer drives the frames of a flight.
+  - (b) Keep the main thread as the driver, and move the work of the child screen out of the flight: make the child screen before the flight, or after it. Research item 7 found that the leave has more main-thread work than the removal of the child, so this covers only part of the gaps.
+  - (c) Accept the late frame, and relax the test of acceptance 1 of M6.
+- Recommendation: (a).
+
+### D-122 The renderer gets the change of a step before the model step
+
+- Raised by task 3.2 of [m6-fix-plan.md](m6-fix-plan.md) on 2026-10-22.
+- An undo, a redo, and an erase first run the model step on the main thread, 4 to 8 ms for the D-69 content, and only then give the change to the renderer. The change of `EraseStrokes` and `AddStroke` comes from the command alone (`renderDelta(of:isUndo:)`), so the renderer can start about 5 ms earlier.
+- Risk: if the model step then throws, the renderer already has the change. The code then gives the renderer the reverse change and logs the error. For one frame, the screen can show ink that the model does not hold.
+- Options:
+  - (a) Give the change to the renderer before the model step for `EraseStrokes` and `AddStroke`, and undo it in the renderer if the model step throws. The other commands keep the order of today.
+  - (b) Keep the order, and make only the model step faster (task 3.3 of the fix plan).
+- Recommendation: (a), together with task 3.3.
 
 ## Points in the request that conflict or are not complete
 
