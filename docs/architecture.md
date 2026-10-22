@@ -346,7 +346,7 @@ The threshold is `0.7`. The start value was `0.6`, and the product owner asked f
 
 ### 6.4 Navigation state
 
-`NavigationPath` in `Model` holds the workspace and the path from the root canvas to the current canvas as a list of card IDs. The list has a limit of `Limits.maxDepth = 32`. The root canvas is level 0, so a list of 32 cards reaches level 32, and "New card" there is refused with a message (D-95). If the list is not empty, the up button shows. At launch, the app cuts the stored path before the first card that is not valid (D-112). A valid card is live, and its `canvasID` is the canvas above it.
+`NavigationPath` in `Model` holds the workspace and the path from the root canvas to the current canvas as a list of card IDs. The list has a limit of `Limits.maxDepth = 32`. The root canvas is level 0, so a list of 32 cards reaches level 32, and the card button there is refused with a message (D-95). If the list is not empty, the up button shows. At launch, the app cuts the stored path before the first card that is not valid (D-112). A valid card is live, and its `canvasID` is the canvas above it.
 
 ## 7. Text boxes
 

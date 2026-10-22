@@ -130,6 +130,8 @@ Acceptance:
 2. A tree of 32 levels below the root canvas works. A card on a canvas of level 32 is refused with a message (D-95).
 3. A finger lift above the threshold cancels the pinch-out exit.
 
+Status on 2026-10-22: the three acceptance tests pass on the iPad, and the product owner reported a pass of acceptance 1 and 3 by hand. The product owner decided D-118 and D-119 on the same day. `make check` passes with the iPad. Three items of phase 6 wait for the product owner: the coverage of Rendering cannot be measured, the open of an empty card had 1 late frame in 2 of 5 close runs, and the slowest redo is 13 % above the baseline (m6-plan.md section 6.3.1). D-114 stays open.
+
 ## M7: Apple Pencil interactions
 
 - Double tap and hover dot. The squeeze palette comes in M4 (D-63).
