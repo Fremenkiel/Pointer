@@ -107,12 +107,15 @@ extension CanvasViewController {
 
     /// Plays the minimize animation after a lift under the threshold (CARD-05, D-104): input
     /// goes off, and the camera flies to the end of the exit. Then the app leaves for the parent.
+    /// The flight also moves the center to the camera of the open, so that the shrinking child
+    /// ends at the region that its preview shows, as the up button does (D-109).
     func startPinchLeave() {
         endTextEdit()
         canvasView.isUserInteractionEnabled = false
         let onLeave = parentLink.onLeave
         cardTransition = CardTransition(kind: .exit, start: camera, onEnd: onLeave)
-        cameraController.fly(to: cameraController.exitCamera)
+        let exit = cameraController.exitCamera
+        cameraController.fly(to: Camera(center: content.openCamera.center, zoom: exit.zoom))
         canvasView.inkView.requestFrame()
     }
 

@@ -1259,7 +1259,7 @@ Status values: Open, Decided, Replaced.
 - Cause of the jump: during the pinch-out, the child zoomed out to about 0.18 with the rubber band, so the shrinking card showed the child content small. The preview shows the child at zoom 1. The two images did not match.
 - Questions and answers: (1) Zoom goes away only inside cards. The root canvas of a workspace keeps the zoom range of CAN-04. (2) Inside a card, a pinch-out only drives the exit. It shrinks the child into its card from the first movement. A pinch-in does nothing. (3) The one-finger pan stays inside a card, so a child canvas stays unbounded.
 - Design: a canvas inside a card has the zoom range 1...1. A pinch there keeps the shown camera. The raw zoom of the fingers drives the exit progress, as in D-104, with the threshold `exitZoomRatio` times zoom 1. A stored camera of a child with another zoom opens at zoom 1 with the same center.
-- Open point: if you pan a child away from the camera of the open, the shrinking card shows another region than the preview. The up button flies the camera back first (D-109), but the pinch-out does not.
+- Closed point: a pan, or new content that moves the content bounds, put the child away from the camera of the open, so the shrinking card showed another region than the preview. Since 2026-10-22, the minimize animation of the pinch-out moves the camera to the camera of the open, as the up button does (D-109).
 
 ## Points in the request that conflict or are not complete
 

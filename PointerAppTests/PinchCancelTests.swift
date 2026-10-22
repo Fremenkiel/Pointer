@@ -94,7 +94,7 @@ struct PinchCancelTests {
         #expect(composition.opening == nil, "No leave started")
     }
 
-    @Test("A lift under the threshold leaves the child for its parent")
+    @Test("A lift under the threshold leaves the child and ends at the region of the preview")
     func liftUnder() async throws {
         let (tree, composition) = try await Self.child()
         defer {
@@ -102,8 +102,14 @@ struct PinchCancelTests {
             tree.remove()
         }
         let child = try #require(composition.container.canvas)
+        // A pan moves the child away from the camera of the open, which the preview shows.
+        child.cameraController.pan(byView: Vector(dx: 300, dy: -120))
+        let open = child.content.openCamera
+        #expect(child.cameraController.camera.center != open.center)
         Self.pinch(child, to: 0.95)
         try await NavigationTests.waitForCanvas(tree.workspace.canvasID, in: composition)
+        // The minimize animation slides the child to the region of the preview (D-109).
+        #expect(child.camera == open)
         #expect(composition.path?.level == 0)
     }
 }
