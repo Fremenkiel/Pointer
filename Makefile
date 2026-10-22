@@ -59,7 +59,8 @@ snapshots:
 		-only-testing:PointerDeviceTests/PreviewRenderTests \
 		-only-testing:PointerDeviceTests/TransitionTests \
 		-only-testing:PointerDeviceTests/UpButtonSnapshotTests \
-		-only-testing:PointerDeviceTests/CardMenuSnapshotTests
+		-only-testing:PointerDeviceTests/CardMenuSnapshotTests \
+		-only-testing:PointerDeviceTests/HoverDotSnapshotTests
 	@echo "snapshots: done"
 
 # TEST-02, D-120: the line coverage of the Tier A packages and of Rendering. The device run builds
