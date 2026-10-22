@@ -1,0 +1,103 @@
+import Foundation
+import Geometry
+import Model
+import Testing
+import UIKit.UIGestureRecognizerSubclass
+
+@testable import CanvasFeature
+@testable import Pointer
+
+/// A pinch recognizer whose state, scale, and midpoint the test sets.
+private final class ScriptedPinch: UIPinchGestureRecognizer {
+    var midpoint = CGPoint(x: 400, y: 300)
+    private var scripted = UIGestureRecognizer.State.possible
+    private var scriptedScale: CGFloat = 1
+
+    override var state: UIGestureRecognizer.State {
+        get { scripted }
+        set { scripted = newValue }
+    }
+
+    override var scale: CGFloat {
+        get { scriptedScale }
+        set { scriptedScale = newValue }
+    }
+
+    override var numberOfTouches: Int { 2 }
+
+    override func location(in view: UIView?) -> CGPoint { midpoint }
+
+    /// Sends one step of the pinch to the canvas.
+    func send(_ state: UIGestureRecognizer.State, scale: CGFloat, to canvas: CanvasViewController) {
+        self.state = state
+        self.scale = scale
+        canvas.handlePinch(self)
+    }
+}
+
+/// Acceptance 3 of M6: a lift above the threshold cancels the pinch-out exit (m6-plan.md task
+/// 5.3, CARD-05, D-104).
+@MainActor
+@Suite("Pinch-out cancel")
+struct PinchCancelTests {
+    /// The child of a tree of one card on the screen, at zoom 1.
+    private static func child() async throws -> (NavigationTests.Tree, AppComposition) {
+        let tree = try await NavigationTests.makeTree(depth: 1)
+        let composition = try NavigationTests.composition(for: tree)
+        await composition.selector?.start(lastWorkspace: tree.workspace.id)
+        try await NavigationTests.waitForCanvas(tree.workspace.canvasID, in: composition)
+        let card = try #require(composition.container.canvas?.content.cards[tree.chain[0]])
+        composition.openChild(card)
+        try await NavigationTests.waitForCanvas(CanvasID(tree.chain[0]), in: composition)
+        return (tree, composition)
+    }
+
+    /// Pinches the shown canvas from zoom 1 to a raw zoom of `factor` times the exit zoom.
+    private static func pinch(_ canvas: CanvasViewController, to factor: Double) {
+        let pinch = ScriptedPinch()
+        let raw = Limits.minZoom * CameraController.exitZoomRatio * factor
+        pinch.send(.began, scale: 1, to: canvas)
+        for step in 1...20 {
+            let scale = 1 + (raw - 1) * Double(step) / 20
+            pinch.send(.changed, scale: scale, to: canvas)
+        }
+        pinch.send(.ended, scale: raw, to: canvas)
+    }
+
+    @Test("A lift above the threshold keeps the child, and the camera springs back to minZoom")
+    func liftAbove() async throws {
+        let (tree, composition) = try await Self.child()
+        defer {
+            composition.container.view.removeFromSuperview()
+            tree.remove()
+        }
+        let child = try #require(composition.container.canvas)
+        #expect(child.camera.zoom == Limits.standardZoom)
+        Self.pinch(child, to: 1.05)
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: NavigationTests.timeout)
+        while child.camera.zoom != Limits.minZoom {
+            guard clock.now < deadline else {
+                Issue.record("The camera stopped at zoom \(child.camera.zoom)")
+                throw OpenTimedOut()
+            }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(composition.container.canvas === child)
+        #expect(composition.path?.level == 1)
+        #expect(composition.opening == nil, "No leave started")
+    }
+
+    @Test("A lift under the threshold leaves the child for its parent")
+    func liftUnder() async throws {
+        let (tree, composition) = try await Self.child()
+        defer {
+            composition.container.view.removeFromSuperview()
+            tree.remove()
+        }
+        let child = try #require(composition.container.canvas)
+        Self.pinch(child, to: 0.95)
+        try await NavigationTests.waitForCanvas(tree.workspace.canvasID, in: composition)
+        #expect(composition.path?.level == 0)
+    }
+}

@@ -64,27 +64,46 @@ final class OpenAnimationTests: XCTestCase {
         )
         let parent = try await Self.waitForCanvas(library.canvas, in: composition)
         try await Self.waitForDrawn(parent)
+        let card = try XCTUnwrap(Self.cardNearestToCenter(of: parent))
+        let open = try await Self.measureOpen(of: card, from: parent, in: composition)
+        XCTContext.runActivity(named: open.text) { _ in }
+        XCTAssertEqual(open.late, 0, open.text)
+        XCTAssertEqual(open.child.camera.zoom, Limits.standardZoom)
+    }
+
+    /// The report line of an open, its late frames, and the child.
+    struct Measure {
+        let text: String
+        let late: Int
+        let child: CanvasViewController
+    }
+
+    /// Runs the open of `card` and returns its report line, its late frames, and the child.
+    static func measureOpen(
+        of card: Card,
+        from parent: CanvasViewController,
+        in composition: AppComposition,
+        name: String = "a D-56 card"
+    ) async throws -> Measure {
         let viewSize = Size(width: parent.view.bounds.width, height: parent.view.bounds.height)
         let collector = FrameLoopCollector(viewSize: viewSize)
         let cameras = Cameras(collector: collector)
         let start = CACurrentMediaTime()
         collector.measure(from: start, to: start + 5)
         parent.renderer.engine.post { $0.observer = cameras }
-        let card = try XCTUnwrap(Self.cardNearestToCenter(of: parent))
         composition.openChild(card)
-        let child = try await Self.waitForCanvas(card.childCanvasID, in: composition)
+        let child = try await waitForCanvas(card.childCanvasID, in: composition)
         let end = CACurrentMediaTime()
-        let line = Self.reportLine(
+        let line = reportLine(
+            name: name,
             collector: collector,
             cameras: cameras.all,
             viewSize: viewSize,
             milliseconds: (end - start) * 1000
         )
-        XCTContext.runActivity(named: line) { _ in }
         var report = FrameLoopReport()
         collector.fill(&report)
-        XCTAssertEqual(report.lateIntervals, 0, line)
-        XCTAssertEqual(child.camera.zoom, Limits.standardZoom)
+        return Measure(text: line, late: report.lateIntervals, child: child)
     }
 
     /// The leave of a D-56 card back to the D-56 canvas (m6-plan.md task 4.6): the late frames
@@ -119,10 +138,11 @@ final class OpenAnimationTests: XCTestCase {
     }
 
     /// Runs the leave and returns its report line and its late frames.
-    private static func measureLeave(
+    static func measureLeave(
         of child: CanvasViewController,
         card: Card,
-        in composition: AppComposition
+        in composition: AppComposition,
+        name: String = "a D-56 card"
     ) async throws -> (text: String, late: Int) {
         let viewSize = Size(width: child.view.bounds.width, height: child.view.bounds.height)
         let childFrames = FrameLoopCollector(viewSize: viewSize)
@@ -147,7 +167,8 @@ final class OpenAnimationTests: XCTestCase {
         parentFrames.fill(&parentReport)
         let late = childReport.lateIntervals + parentReport.lateIntervals
         let text = String(
-            format: "leave of a D-56 card: %.0f ms, child %d frames, parent %d frames, late %d",
+            format: "leave of %@: %.0f ms, child %d frames, parent %d frames, late %d",
+            name,
             (end - start) * 1000,
             childReport.frames,
             parentReport.frames,
@@ -198,6 +219,7 @@ final class OpenAnimationTests: XCTestCase {
 
     /// The line of the report: the time, the frames, the late frames, and the largest jump.
     private static func reportLine(
+        name: String,
         collector: FrameLoopCollector,
         cameras: [Camera],
         viewSize: Size,
@@ -207,8 +229,9 @@ final class OpenAnimationTests: XCTestCase {
         collector.fill(&report)
         let jump = largestJump(cameras, viewSize: viewSize)
         return String(
-            format: "open of a D-56 card: %.0f ms to the child, %d frames, late %d, "
+            format: "open of %@: %.0f ms to the child, %d frames, late %d, "
                 + "largest move %.1f points, largest zoom step %.3f",
+            name,
             milliseconds,
             report.frames,
             report.lateIntervals,
@@ -231,7 +254,7 @@ final class OpenAnimationTests: XCTestCase {
         return (move, zoom)
     }
 
-    private static func waitForCanvas(
+    static func waitForCanvas(
         _ canvas: CanvasID,
         in composition: AppComposition
     ) async throws -> CanvasViewController {
@@ -253,7 +276,7 @@ final class OpenAnimationTests: XCTestCase {
         canvas.hasDrawnLoad && !canvas.renderer.isLoadingText && !canvas.renderer.isLoadingCards
     }
 
-    private static func waitForDrawn(_ canvas: CanvasViewController) async throws {
+    static func waitForDrawn(_ canvas: CanvasViewController) async throws {
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: timeout)
         while !isSettled(canvas) {

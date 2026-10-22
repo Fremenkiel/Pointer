@@ -432,6 +432,8 @@ Done when: the device tests pass, and the product owner reports a pass.
 
 Rules: CARD-03, CARD-04, D-98.
 
+Status: item 1 done on 2026-10-22. Item 2 waits for the product owner. `OpenAnimationTests` captures the frames on a card of the D-56 canvas and on a card of an empty canvas. Open of the D-56 card: 456 ms to the child, 55 frames, 0 late, largest move 14.8 points, largest zoom step 1.223. Leave of the D-56 card: 586 ms, 0 late. Open of the empty card: 463 ms, 56 frames, 0 late, largest move 64.3 points, largest zoom step 1.119. The card lies off the screen center, so the flight moves farther in each frame, without a jump. Leave of the empty card: 492 ms, 0 late.
+
 #### 5.2 Acceptance 2: a tree of 32 levels
 
 1. Add a device test that builds a tree of 32 cards, one in each canvas.
@@ -443,6 +445,8 @@ Done when: the test passes on the iPad.
 
 Rules: CARD-09, D-95.
 
+Status: done on 2026-10-22. `DeepTreeTests` builds a tree of 32 cards, opens each level from the root, draws one stroke at each level, and leaves to the root. At level 32, the card button shows the message of D-95 and no card. After the save, each of the 33 canvases holds its stroke. A launch with the path of 32 cards opens level 32. The full test took 41.8 s on the iPad. The app refuses a leave during the flight of the last leave, so the test waits for the end of each flight.
+
 #### 5.3 Acceptance 3: a lift above the threshold cancels the exit
 
 1. Add a test that drives a pinch below `minZoom` and lifts above the threshold. The canvas stays the child, and the camera springs back to `minZoom`.
@@ -451,6 +455,8 @@ Rules: CARD-09, D-95.
 Done when: the test passes, and the product owner reports a pass.
 
 Rules: CARD-05, D-104.
+
+Status: item 1 done on 2026-10-22. Item 2 waits for the product owner. `PinchCancelTests` sends a scripted pinch to the canvas of a child. A lift at 1.05 times the exit zoom keeps the child, and the camera springs back to `minZoom`. A lift at 0.95 times the exit zoom leaves for the parent.
 
 ### Phase 6: close of M6
 
