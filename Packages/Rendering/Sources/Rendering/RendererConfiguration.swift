@@ -42,6 +42,21 @@ public struct RendererConfiguration: Sendable {
             )
         }
     }
+    /// The coverage of the body of a card, a light gray on the canvas color (D-116). The app
+    /// passes `DesignSystem.Color.cardFill`.
+    ///
+    /// - Precondition: The value is from 0 to the border coverage.
+    public var cardFillCoverage: Float = defaultCardFillCoverage {
+        didSet {
+            precondition(
+                cardFillCoverage >= 0 && cardFillCoverage < 1,
+                "A card body has a coverage below 1, got \(cardFillCoverage)"
+            )
+        }
+    }
+    /// The coverage of the body of a card without a value of the app: the value of
+    /// `DesignSystem.Color.cardFill`.
+    public static let defaultCardFillCoverage: Float = 0.065
     /// The coverage of a card border without a value of the app: the value of
     /// `DesignSystem.Color.cardBorder`.
     public static let defaultCardBorderCoverage: Float = 0.5

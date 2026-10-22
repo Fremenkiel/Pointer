@@ -48,7 +48,7 @@ struct CompositeUniforms {
 };
 
 // The values of one transition frame (D-98, D-108). The layout matches `TransitionUniforms` in
-// ShaderTypes.swift: three float4, three float2, and five float, 96 bytes.
+// ShaderTypes.swift: three float4, three float2, and six float, 96 bytes.
 struct TransitionUniforms {
     float4 background;    // canvas color in sRGB, alpha 1 (D-106)
     float4 cardRect;      // the opened card: min x, min y, max x, max y, drawable pixels
@@ -61,10 +61,11 @@ struct TransitionUniforms {
     float borderHalfWidth;// pixels
     float cornerRadius;   // pixels
     float hasSource;      // 1 if a parent image exists
+    float fillCoverage;   // the gray of the card body (D-116)
 };
 
 // The values of one frame of a pinch-out exit (D-109). The layout matches `PinchUniforms` in
-// ShaderTypes.swift: two float4, seven float2, and five float, 112 bytes with the padding.
+// ShaderTypes.swift: two float4, seven float2, and six float, 112 bytes.
 struct PinchUniforms {
     float4 background;    // canvas color in sRGB, alpha 1 (D-106)
     float4 cardRect;      // the shrinking card: min x, min y, max x, max y, drawable pixels
@@ -80,6 +81,7 @@ struct PinchUniforms {
     float borderHalfWidth;// pixels
     float cornerRadius;   // pixels
     float shrink;         // the card width over its width at the start of the exit
+    float fillCoverage;   // the gray of the card body (D-116)
 };
 
 // One eraser stamp: a capsule from one sample to the next, in mask pixels (D-66). 32 bytes.
@@ -116,6 +118,20 @@ struct CardBorderVertexOut {
     float halfWidth [[flat]];    // half the line width, pixels
     float radius [[flat]];       // corner radius, pixels
     float coverage [[flat]];     // the gray of the border (D-96)
+    float fill [[flat]];         // the gray of the body (D-116)
+};
+
+struct CardPreviewOut {
+    float4 position [[position]];
+    float2 atlasPoint;           // atlas pixels
+    float2 center [[flat]];      // target pixels
+    float2 halfSize [[flat]];    // target pixels
+};
+
+struct CardPreviewUniforms {
+    float2 targetSize;    // pixels
+    float2 atlasSize;     // pixels of the atlas
+    float radius;         // corner radius, pixels
 };
 
 struct InkVertexOut {
@@ -325,9 +341,10 @@ fragment half4 glyphFragment(GlyphVertexOut in [[stage_in]],
     return half4(coverage);
 }
 
-// The border of one card: a rounded rectangle on a quad that holds the line and its edge (D-96).
-// The quad uses the glyph instance: `atlasOrigin` holds the line width and the corner radius in
-// pixels, and `atlasSize.x` holds the coverage of the border.
+// The border and the body of one card: a rounded rectangle on a quad that holds the line and its
+// edge (D-96, D-116). The quad uses the glyph instance: `atlasOrigin` holds the line width and
+// the corner radius in pixels, `atlasSize.x` the coverage of the border, and `atlasSize.y` the
+// coverage of the body.
 vertex CardBorderVertexOut cardBorderVertex(uint vertexID [[vertex_id]],
                                             uint instanceID [[instance_id]],
                                             constant GlyphInstance *quads [[buffer(0)]],
@@ -345,6 +362,7 @@ vertex CardBorderVertexOut cardBorderVertex(uint vertexID [[vertex_id]],
     out.halfWidth = halfWidth;
     out.radius = min(quad.atlasOrigin.y, min(out.halfSize.x, out.halfSize.y));
     out.coverage = quad.atlasSize.x;
+    out.fill = quad.atlasSize.y;
     return out;
 }
 
@@ -353,7 +371,37 @@ fragment half4 cardBorderFragment(CardBorderVertexOut in [[stage_in]]) {
     float2 q = abs(in.position.xy - in.center) - (in.halfSize - in.radius);
     float distance = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - in.radius;
     float line = clamp(in.halfWidth + 0.5 - abs(distance), 0.0, 1.0);
-    return half4(line * in.coverage);
+    float inside = clamp(0.5 - distance, 0.0, 1.0);
+    return half4(max(line * in.coverage, inside * in.fill));
+}
+
+// The preview of one card from the preview atlas, cut to the rounded rectangle of the card
+// (D-97). The quad uses the glyph instance in target pixels and atlas pixels.
+vertex CardPreviewOut cardPreviewVertex(uint vertexID [[vertex_id]],
+                                        uint instanceID [[instance_id]],
+                                        constant GlyphInstance *quads [[buffer(0)]],
+                                        constant CardPreviewUniforms &uniforms [[buffer(1)]]) {
+    GlyphInstance quad = quads[instanceID];
+    float2 corner = float2((vertexID & 1) ? 1.0 : 0.0, (vertexID & 2) ? 1.0 : 0.0);
+    float2 pixel = quad.position + corner * quad.size;
+    CardPreviewOut out;
+    out.position = float4(pixel.x / uniforms.targetSize.x * 2.0 - 1.0,
+                          1.0 - pixel.y / uniforms.targetSize.y * 2.0, 0.0, 1.0);
+    out.atlasPoint = quad.atlasOrigin + corner * quad.atlasSize;
+    out.halfSize = quad.size * 0.5;
+    out.center = quad.position + out.halfSize;
+    return out;
+}
+
+fragment half4 cardPreviewFragment(CardPreviewOut in [[stage_in]],
+                                   texture2d<float> atlas [[texture(0)]],
+                                   constant CardPreviewUniforms &uniforms [[buffer(1)]]) {
+    constexpr sampler linearSampler(address::clamp_to_zero, filter::linear);
+    float radius = min(uniforms.radius, min(in.halfSize.x, in.halfSize.y));
+    float2 q = abs(in.position.xy - in.center) - (in.halfSize - radius);
+    float distance = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
+    float inside = clamp(0.5 - distance, 0.0, 1.0);
+    return half4(atlas.sample(linearSampler, in.atlasPoint / uniforms.atlasSize).r * inside);
 }
 
 // The preview of a child canvas: the larger coverage of the two channels in one channel, as the
@@ -395,9 +443,11 @@ fragment float4 transitionFragment(CompositeVertexOut in [[stage_in]],
     float2 q = abs(p - (low + halfSize)) - (halfSize - radius);
     float distance = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
     float card = clamp(u.borderHalfWidth + 0.5 - abs(distance), 0.0, 1.0) * u.borderCoverage;
+    float inside = clamp(0.5 - distance, 0.0, 1.0);
+    card = max(card, inside * u.fillCoverage);
     if (u.previewRect.z > 0.0 && all(p >= low) && all(p <= high)) {
         float2 uv = u.previewRect.xy + (p - low) / (high - low) * u.previewRect.zw;
-        card = max(card, atlas.sample(linearSampler, uv).r);
+        card = max(card, atlas.sample(linearSampler, uv).r * inside);
     }
     return float4(mix(u.background.rgb, float3(1.0), max(parent, card)), 1.0);
 }
@@ -423,7 +473,7 @@ fragment float4 pinchFragment(CompositeVertexOut in [[stage_in]],
     if (distance < 0.0) {
         float2 screen = u.screenCenter + (p - center) / max(u.shrink, 1e-4);
         float2 coverage = child.sample(linearSampler, (screen * u.childScale + u.childOffset) / u.childSize).rg;
-        value = max(coverage.r, coverage.g);
+        value = max(max(coverage.r, coverage.g), u.fillCoverage);
     }
     float border = clamp(u.borderHalfWidth + 0.5 - abs(distance), 0.0, 1.0) * u.borderCoverage;
     return float4(mix(u.background.rgb, float3(1.0), max(value, border)), 1.0);

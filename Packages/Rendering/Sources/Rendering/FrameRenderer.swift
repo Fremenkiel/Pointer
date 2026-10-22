@@ -117,7 +117,8 @@ final class FrameRenderer {
             cards: cards,
             atlas: GlyphAtlas(device: device, byteBudget: configuration.glyphAtlasByteBudget),
             ring: try GlyphRing(device: device, capacity: configuration.glyphCapacity),
-            borderCoverage: configuration.cardBorderCoverage
+            borderCoverage: configuration.cardBorderCoverage,
+            fillCoverage: configuration.cardFillCoverage
         )
         pendingSlots.reserveCapacity(Self.pendingCapacity)
     }

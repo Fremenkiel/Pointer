@@ -65,7 +65,8 @@ extension FrameRenderer {
             borderCoverage: configuration.cardBorderCoverage,
             borderHalfWidth: Float(RendererConfiguration.cardBorderWidth * displayScale / 2),
             cornerRadius: Float(RendererConfiguration.cardCornerRadius * pixels),
-            shrink: Float(max(card.z - card.x, 1) / max(start.z - start.x, 1))
+            shrink: Float(max(card.z - card.x, 1) / max(start.z - start.x, 1)),
+            fillCoverage: configuration.cardFillCoverage
         )
     }
 

@@ -37,7 +37,8 @@ extension TextEncoder {
         let size = target.pixelSize
         let targetSize = SIMD2(Float(size.width), Float(size.height))
         encodeBorders(encoder, targetSize: targetSize)
-        encodePreviews(encoder, targetSize: targetSize)
+        let radius = RendererConfiguration.cardCornerRadius * target.pixelsPerCanvasPoint
+        encodePreviews(encoder, targetSize: targetSize, radius: Float(radius))
         encodeGlyphRuns(encoder, targetSize: targetSize)
         encoder.endEncoding()
     }

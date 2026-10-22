@@ -167,7 +167,8 @@ extension FrameRenderer {
             cornerRadius: Float(
                 RendererConfiguration.cardCornerRadius * camera.zoom * displayScale
             ),
-            hasSource: mapping == nil ? 0 : 1
+            hasSource: mapping == nil ? 0 : 1,
+            fillCoverage: configuration.cardFillCoverage
         )
     }
 

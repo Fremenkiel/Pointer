@@ -190,7 +190,8 @@ extension FrameRenderer {
                 byteBudget: configuration.glyphAtlasByteBudget
             ),
             ring: try GlyphRing(device: resources.device, capacity: max(1, glyphs)),
-            borderCoverage: configuration.cardBorderCoverage
+            borderCoverage: configuration.cardBorderCoverage,
+            fillCoverage: configuration.cardFillCoverage
         )
         encoder.beginFrame()
         let ids = cards.map { GreenItem.card($0.id) } + boxes.map { GreenItem.textBox($0.id) }

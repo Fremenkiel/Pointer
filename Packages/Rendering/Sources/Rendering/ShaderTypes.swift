@@ -108,6 +108,8 @@ struct TransitionUniforms {
     var cornerRadius: Float
     /// 1 if a parent image exists, else 0.
     var hasSource: Float
+    /// The coverage of the card body (D-116).
+    var fillCoverage: Float
 }
 
 /// The values of one frame of a pinch-out exit (D-109). The layout matches `PinchUniforms` in
@@ -141,6 +143,18 @@ struct PinchUniforms {
     var cornerRadius: Float
     /// The width of the card over its width at the start of the exit.
     var shrink: Float
+    /// The coverage of the card body (D-116).
+    var fillCoverage: Float
+}
+
+/// The values of one preview draw. The layout matches `CardPreviewUniforms` in Shaders.metal.
+struct CardPreviewUniforms {
+    /// The size of the target texture, in pixels.
+    var targetSize: SIMD2<Float>
+    /// The size of the preview atlas, in pixels.
+    var atlasSize: SIMD2<Float>
+    /// The corner radius of the cards of the pass, in pixels.
+    var radius: Float
 }
 
 /// One eraser stamp in mask pixels. The layout matches `EraserStamp` in Shaders.metal.

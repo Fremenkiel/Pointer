@@ -40,6 +40,8 @@ final class TextEncoder {
     let cards: CardStore
     /// The coverage of a card border (D-96).
     let borderCoverage: Float
+    /// The coverage of the body of a card (D-116).
+    let fillCoverage: Float
     /// The border quads of the current pass. They go into the glyph buffer as one run at the end
     /// of the pass, so that a pass makes one border draw. Reused (PERF-01).
     var borderQuads: [GlyphInstance] = []
@@ -74,7 +76,8 @@ final class TextEncoder {
         cards: CardStore = CardStore(),
         atlas: GlyphAtlas,
         ring: GlyphRing,
-        borderCoverage: Float = RendererConfiguration.defaultCardBorderCoverage
+        borderCoverage: Float = RendererConfiguration.defaultCardBorderCoverage,
+        fillCoverage: Float = RendererConfiguration.defaultCardFillCoverage
     ) {
         precondition(borderCoverage > 0 && borderCoverage < 1, "Border \(borderCoverage)")
         self.resources = resources
@@ -83,6 +86,7 @@ final class TextEncoder {
         self.atlas = atlas
         self.ring = ring
         self.borderCoverage = borderCoverage
+        self.fillCoverage = fillCoverage
         runs.reserveCapacity(Self.initialRunCapacity)
         boxGlyphs.reserveCapacity(Limits.maxTextLength)
         borderQuads.reserveCapacity(Limits.maxNodesPerCanvas)

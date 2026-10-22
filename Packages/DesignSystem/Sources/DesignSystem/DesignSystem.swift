@@ -19,6 +19,9 @@ public enum DesignSystem {
         /// canvas color: 0.5 mixes RGB(24, 24, 24) and white to about RGB(140, 140, 140)
         /// (architecture.md 5.5, D-96). The renderer takes this value.
         public static let cardBorder: Float = 0.5
+        /// The coverage of the body of a card: a light gray on the canvas color, about RGB(39,
+        /// 39, 39), the step of the card body over the canvas in Allume (RGB 35 on RGB 20, D-116).
+        public static let cardFill: Float = 0.065
         /// The text and the icons of the controls on top of the canvas.
         public static let chromeForeground = SwiftUI.Color.white
         /// The background of the controls on top of the canvas: a dark gray, a little brighter than

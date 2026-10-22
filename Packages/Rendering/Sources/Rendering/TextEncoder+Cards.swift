@@ -37,7 +37,7 @@ extension TextEncoder {
                     Float(lineWidth),
                     Float(RendererConfiguration.cardCornerRadius * pixels)
                 ),
-                atlasSize: SIMD2(borderCoverage, 0)
+                atlasSize: SIMD2(borderCoverage, fillCoverage)
             )
         )
         if let layout = entry.layout, let origin = entry.titleOrigin {
@@ -98,17 +98,23 @@ extension TextEncoder {
         assert(borderQuads.isEmpty && previewQuads.isEmpty, "The runs took the quads")
     }
 
-    /// Draws the preview run of the pass from the atlas with the glyph pipeline: a preview quad
-    /// samples its slot and writes green with `max`, cut to the frame of the card (D-97).
-    func encodePreviews(_ encoder: any MTLRenderCommandEncoder, targetSize: SIMD2<Float>) {
+    /// Draws the preview run of the pass from the atlas: a preview quad samples its slot and
+    /// writes green with `max`, cut to the rounded rectangle of the card (D-97). `radius` is the
+    /// corner radius of the cards in target pixels.
+    func encodePreviews(
+        _ encoder: any MTLRenderCommandEncoder,
+        targetSize: SIMD2<Float>,
+        radius: Float
+    ) {
         guard let run = previewRun, let atlas = previews?.texture else { return }
         precondition(run.count > 0, "A preview run holds a preview")
         assert(run.first + run.count <= ring.used, "The preview run lies in the written buffer")
-        let uniforms = GlyphUniforms(
+        let uniforms = CardPreviewUniforms(
             targetSize: targetSize,
-            atlasSize: SIMD2(Float(atlas.width), Float(atlas.height))
+            atlasSize: SIMD2(Float(atlas.width), Float(atlas.height)),
+            radius: radius
         )
-        encoder.setRenderPipelineState(resources.glyphPipeline)
+        encoder.setRenderPipelineState(resources.cardPreviewPipeline)
         encoder.setVertexBuffer(
             ring.buffer,
             offset: run.first * MemoryLayout<GlyphInstance>.stride,

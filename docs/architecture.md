@@ -175,7 +175,7 @@ A `UIHoverGestureRecognizer` with `allowedTouchTypes = [.pencil]` shows a small 
 | One-finger pan | Canvas | Pan the camera. Deceleration after release. |
 | Two-finger pinch | Canvas | Zoom about the midpoint of the two fingers. Pan at the same time. |
 | Tap | Text box | Start editing (TOOL-06). |
-| Double tap | Card | Open the card (decision D-09). The double tap begins only on a card that no text box covers. A single tap waits for it only on such a card, so a tap on a text box starts its edit at once (D-100). |
+| Tap | Card | Open the card (D-115), if no text box covers the card there. A tap while an edit runs only ends the edit. |
 | Long press | Empty canvas | Menu with "New card" (D-08). Empty means no card and no text box under the finger. Ink does not count (D-113). |
 | Long press | Card or text box | Context menu: rename (card), delete. |
 | Long press, then drag | Card or text box | Move it (decision D-10). |
@@ -292,7 +292,7 @@ The text font is SF Mono, 17 points at zoom 1.0 (decision D-15).
 
 A card on its parent canvas has these parts:
 
-- A rounded rectangle with a 1-point border in gray. The border is a coverage value below 1 (`DesignSystem.Color.cardBorder`). It has no fill.
+- A rounded rectangle with a 1-point border in gray and a body in a lighter gray than the canvas (D-116). The border and the body are coverage values below 1 (`DesignSystem.Color.cardBorder` and `DesignSystem.Color.cardFill`). The preview is cut to the rounded rectangle.
 - The optional title, above the top-left corner.
 - A preview of the child canvas inside the frame.
 

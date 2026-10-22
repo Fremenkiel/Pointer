@@ -33,6 +33,9 @@ final class InkResources {
     let freezePipeline: any MTLRenderPipelineState
     /// Draws a frame of an open or a leave into the drawable (D-98, D-108).
     let transitionPipeline: any MTLRenderPipelineState
+    /// Draws card previews from the atlas into the text channel, cut to the rounded rectangle
+    /// of each card, with `max` blending (D-97).
+    let cardPreviewPipeline: any MTLRenderPipelineState
     /// Draws a frame of a pinch-out exit into the drawable (CARD-05, D-109).
     let pinchPipeline: any MTLRenderPipelineState
     /// A texture of one pixel for a pass argument that a frame does not read.
@@ -64,17 +67,14 @@ final class InkResources {
         )
         glyphPipeline = try Self.makeGreenPipeline(device, library, "glyph")
         cardBorderPipeline = try Self.makeGreenPipeline(device, library, "cardBorder")
+        cardPreviewPipeline = try Self.makeGreenPipeline(device, library, "cardPreview")
         previewResolvePipeline = try Self.makeResolvePipeline(device, library, "previewResolve")
         freezePipeline = try Self.makeResolvePipeline(device, library, "freeze")
         (compositeMaskedPipeline, transitionPipeline) = try Self.makeCompositeVariants(
             device,
             library
         )
-        pinchPipeline = try Self.makeCompositePipeline(
-            device: device,
-            library: library,
-            fragment: "pinchFragment"
-        )
+        pinchPipeline = try Self.makeComposite(device, library, "pinchFragment")
         eraserPipeline = try Self.makeInkPipeline(
             device: device,
             library: library,
@@ -113,6 +113,16 @@ final class InkResources {
         attachment.destinationAlphaBlendFactor = .one
         assert(attachment.rgbBlendOperation == .max, "Ink blends with max (D-38)")
         return try makePipeline(device: device, descriptor: descriptor)
+    }
+
+    /// Makes a pipeline into the drawable with the full-screen vertex shader and `fragment`.
+    private static func makeComposite(
+        _ device: any MTLDevice,
+        _ library: any MTLLibrary,
+        _ fragment: String
+    ) throws(RenderingError) -> any MTLRenderPipelineState {
+        precondition(!fragment.isEmpty, "A pipeline needs a shader name")
+        return try makeCompositePipeline(device: device, library: library, fragment: fragment)
     }
 
     /// Makes the composite through the eraser mask (D-66) and the transition pass (D-108).
