@@ -20,8 +20,9 @@ struct DoubleTapTests {
         UIPencilPreferredAction(rawValue: 7) ?? .ignore,
     ]
 
-    /// A view of 400 x 300 points with a library, so that a text edit can start.
-    private func makeController() throws -> CanvasViewController {
+    /// A view of 400 x 300 points with a library, so that a text edit can start. The container
+    /// shows it, unless `isShown` is `false`.
+    private func makeController(isShown: Bool = true) throws -> CanvasViewController {
         var dependencies = CanvasDependencies(
             renderer: try CanvasRenderer(),
             clock: Fixtures.clock(),
@@ -30,6 +31,7 @@ struct DoubleTapTests {
         dependencies.camera = Camera(center: .zero, zoom: 1)
         dependencies.repository = RecordingLibrary()
         let controller = CanvasViewController(dependencies: dependencies)
+        controller.isShownCanvas = isShown
         controller.view.frame = CGRect(x: 0, y: 0, width: 400, height: 300)
         controller.view.layoutIfNeeded()
         return controller
@@ -97,6 +99,23 @@ struct DoubleTapTests {
         #expect(controller.tool == tool)
         #expect(controller.toolControls.selected == tool)
         #expect(controller.textEditing.isEditing == (tool == .text))
+    }
+
+    @Test(
+        "A canvas that the container does not show ignores a double tap and a squeeze",
+        arguments: switchingActions
+    )
+    func notShown(action: UIPencilPreferredAction) throws {
+        let controller = try makeController(isShown: false)
+        controller.doubleTap(action: action)
+        controller.squeeze(
+            isEnded: true,
+            action: .showContextualPalette,
+            hoverLocation: CGPoint(x: 10, y: 10)
+        )
+        #expect(controller.tool == .pen)
+        #expect(controller.toolControls.selected == .pen)
+        #expect(controller.presentedViewController == nil)
     }
 
     @Test("The canvas is the delegate of its pencil interaction and gets the double tap")

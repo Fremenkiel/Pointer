@@ -7,7 +7,12 @@ import WorkspaceFeature
 /// The root view controller: the canvas of the current workspace, with the workspace selector
 /// on top in the top left corner (WS-01).
 final class AppViewController: UIViewController {
-    private(set) var canvas: CanvasViewController?
+    private(set) var canvas: CanvasViewController? {
+        didSet {
+            oldValue?.isShownCanvas = false
+            canvas?.isShownCanvas = true
+        }
+    }
     /// `true` while a swap or a fade between two canvases runs. No open or leave starts then.
     private(set) var isSwapping = false
     private var selector: UIViewController?

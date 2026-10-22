@@ -71,6 +71,9 @@ public final class CanvasViewController: UIViewController {
     var cardTransition: CardTransition?
     /// The card of this canvas in its parent and the leave by a pinch (CARD-05).
     let parentLink: ParentLink
+    /// `true` while the container shows this canvas. Two screens exist during a card flight, and
+    /// only the shown one takes a double tap or a squeeze (architecture.md 4.5).
+    public var isShownCanvas = false
 
     /// Makes the canvas screen.
     ///

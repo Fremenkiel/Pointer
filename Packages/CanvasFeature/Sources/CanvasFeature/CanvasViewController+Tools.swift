@@ -72,10 +72,21 @@ extension CanvasViewController: UIPencilInteractionDelegate {
         _ interaction: UIPencilInteraction,
         didReceiveSqueeze squeeze: UIPencilInteraction.Squeeze
     ) {
-        let anchor = PaletteAnchor.squeeze(
+        self.squeeze(
             isEnded: squeeze.phase == .ended,
             action: UIPencilInteraction.preferredSqueezeAction,
-            hoverLocation: squeeze.hoverPose?.location,
+            hoverLocation: squeeze.hoverPose?.location
+        )
+    }
+
+    /// Opens the palette for a squeeze with the setting `action` at the anchor of
+    /// `PaletteAnchor`, or does nothing (D-63). During a card flight it does nothing.
+    func squeeze(isEnded: Bool, action: UIPencilPreferredAction, hoverLocation: CGPoint?) {
+        guard takesPencilActions else { return }
+        let anchor = PaletteAnchor.squeeze(
+            isEnded: isEnded,
+            action: action,
+            hoverLocation: hoverLocation,
             lastPencilLocation: lastPencilLocation
         )
         guard let anchor else { return }
@@ -93,9 +104,14 @@ extension CanvasViewController: UIPencilInteractionDelegate {
 
     /// Picks the tool of a double tap with the setting `action`, or does nothing (D-130). A tap
     /// during a pencil touch takes effect at the next pencil down (D-70), and a tap during a text
-    /// edit ends the edit (D-87).
+    /// edit ends the edit (D-87). During a card flight it does nothing.
     func doubleTap(action: UIPencilPreferredAction) {
+        guard takesPencilActions else { return }
         guard let next = ToolSwitch.tool(after: tool, action: action) else { return }
         select(next)
     }
+
+    /// `true` if a double tap and a squeeze act: the container shows this canvas, and no card
+    /// flight runs on it (architecture.md 4.5, CARD-03, CARD-04).
+    private var takesPencilActions: Bool { isShownCanvas && !isInCardTransition }
 }
