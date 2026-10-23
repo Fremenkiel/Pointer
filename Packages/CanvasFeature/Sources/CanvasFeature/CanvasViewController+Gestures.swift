@@ -99,4 +99,22 @@ extension CanvasViewController: UIGestureRecognizerDelegate {
         pencilObserver.isSurface = { [weak canvasView] in canvasView?.isSurface($0) ?? false }
         canvasView.addGestureRecognizer(pencilObserver)
     }
+
+    /// Ends a pinch: inside a card, a lift under the threshold leaves the card (CARD-05), and a
+    /// zoom past a limit springs back (CARD-06). While the pencil touches, the spring waits for
+    /// the end of the stroke, so that the camera stays under the pencil (D-135).
+    func endPinchGesture() {
+        if cameraController.endPinch(canLeave: level > 0) {
+            startPinchLeave()
+            return
+        }
+        if toolState.isPencilDown { cameraController.holdSpring() }
+    }
+
+    /// Starts a spring back that waited for the end of a pencil stroke (D-135).
+    func releaseHeldSpring() {
+        guard cameraController.isSpringHeld else { return }
+        cameraController.releaseSpring()
+        canvasView.inkView.requestFrame()
+    }
 }

@@ -48,6 +48,8 @@ struct CameraController {
     private var pinch: Pinch?
     private var animation = Animation.none
     private var lastStepTime: TimeInterval?
+    /// A spring back to a zoom limit that waits for the end of a pencil stroke (D-135).
+    private var heldSpring: Animation?
 
     /// Makes a controller.
     ///
@@ -105,6 +107,25 @@ struct CameraController {
         lastStepTime = nil
     }
 
+    /// `true` while a spring back waits for the end of a pencil stroke (D-135).
+    var isSpringHeld: Bool { heldSpring != nil }
+
+    /// Holds a running spring back until `releaseSpring()`, so that the camera stays while the
+    /// pencil draws (D-135). Without a spring, it does nothing.
+    mutating func holdSpring() {
+        guard case .spring = animation else { return }
+        heldSpring = animation
+        stopAnimation()
+    }
+
+    /// Starts the spring that `holdSpring()` held. Without one, it does nothing.
+    mutating func releaseSpring() {
+        guard let held = heldSpring else { return }
+        heldSpring = nil
+        lastStepTime = nil
+        animation = held
+    }
+
     /// Moves the content with a finger.
     mutating func pan(byView delta: Vector) {
         stopAnimation()
@@ -120,6 +141,8 @@ struct CameraController {
     /// Starts a pinch at the midpoint of the fingers.
     mutating func beginPinch(centroid: Point) {
         stopAnimation()
+        // The new pinch springs back at its own end.
+        heldSpring = nil
         pinch = Pinch(
             startCamera: camera,
             startCentroid: centroid,
@@ -226,6 +249,7 @@ struct CameraController {
         precondition(start.isFinite, "A flight starts at a finite time, got \(start)")
         let flight = CameraFlight(from: camera, to: target, start: start)
         pinch = nil
+        heldSpring = nil
         lastStepTime = nil
         animation = .flight(flight)
         return flight

@@ -286,11 +286,14 @@ public final class CanvasViewController: UIViewController {
     /// active.
     func pencilEnded(at time: TimeInterval, isCancelled: Bool) {
         palmGuard.pencilEnded(at: time)
+        let hasPenStroke = toolState.isDrawingEnabled && !isCancelled
         if eraserSamples != nil {
             finishErase(isCancelled: isCancelled)
         }
         toolState.pencilUp()
         applyToolState()
+        // A pen stroke releases a held spring at its handoff instead (D-135).
+        if !hasPenStroke { releaseHeldSpring() }
     }
 
     @objc func handlePan(_ recognizer: UIPanGestureRecognizer) {
@@ -316,7 +319,7 @@ public final class CanvasViewController: UIViewController {
         case .changed where recognizer.numberOfTouches >= 2 && recognizer.scale > 0:
             cameraController.updatePinch(scale: recognizer.scale, centroid: centroid)
         case .ended, .cancelled, .failed:
-            if cameraController.endPinch(canLeave: level > 0) { startPinchLeave() }
+            endPinchGesture()
         default:
             return
         }
@@ -353,6 +356,7 @@ extension CanvasViewController: PKCanvasViewDelegate {
     public func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
         guard viewSize.width > 0, viewSize.height > 0 else { return }
         handoff.drawingDidChange(camera: cameraController.shownCamera, viewSize: viewSize)
+        releaseHeldSpring()
     }
 
     /// The pencil starts a live stroke. The removal of handed-off strokes waits.

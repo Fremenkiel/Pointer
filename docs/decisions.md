@@ -142,6 +142,7 @@ Status values: Open, Decided, Replaced.
 | D-132 | Warnings that `-warnings-as-errors` does not stop | Recommendation: `make build` fails on any warning line in the build output | Open |
 | D-133 | The eraser circle of the hover dot: an outline or a filled disc | An outline ring with a line width token | Decided (2026-10-22) |
 | D-134 | The measure of the frames in task 3.1 of M7 | The frames of the canvas screen in `ZoomFrameAllocationTests` decide. The `dense 20k zoom` loop is recorded only. | Decided (2026-10-23) |
+| D-135 | A pencil down during a pinch past a zoom limit | The camera holds during the stroke and springs back after the lift | Decided (2026-10-23) |
 
 ## Details
 
@@ -1395,6 +1396,16 @@ Status values: Open, Decided, Replaced.
   - (b) Keep the plan as written.
   - (c) Add a frame loop of the canvas screen with the dense 20k content.
 - Recommendation: (a). It measures the code of the task, and it costs no new suite of long runs.
+
+### D-135 A pencil down during a pinch past a zoom limit
+
+- Decided by the product owner on 2026-10-23: (a), the recommendation. Raised on 2026-10-23 by the manual check of task 3.1 of [m7-plan.md](m7-plan.md).
+- Facts: the product owner pinched out past the minimum zoom, kept both fingers on the screen, and drew. The stroke came out slimmer than a stroke after the lift, and the canvas sprang back while the line was drawn. The build before task 3.1 (commit 09044e4) does the same, so M7 did not cause it. `pencilBegan()` stops the camera and then ends the running pinch (D-36). The end of the pinch starts the spring back to the zoom limit (CARD-06), so the camera moves during the stroke. `PencilKitStrokeConverter` converts the stroke with the camera at the handoff, so the stroke loses width and can move. No document says what the camera does when a pencil touches during a pinch past a limit.
+- Options:
+  - (a) The camera holds its zoom during the stroke, and the spring back starts after the lift, once the stroke is handed off.
+  - (b) The pencil down puts the camera at the limit at once, before the stroke starts. The canvas jumps under the pencil.
+  - (c) The camera holds, and it springs back only at the next finger gesture.
+- Recommendation: (a). The stroke keeps the shape and the width that the user saw, and the canvas ends inside the zoom range as after every pinch.
 
 ## Points in the request that conflict or are not complete
 
