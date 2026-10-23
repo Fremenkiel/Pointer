@@ -5,6 +5,8 @@ import SwiftUI
 /// are off while their list is empty. Export is off while an export runs.
 struct HistoryButtons: View {
     let controls: HistoryControls
+    /// `false` in the tool palette, which shows undo and redo only (D-63).
+    var showsExport = true
 
     var body: some View {
         HStack(spacing: DesignSystem.Spacing.small) {
@@ -14,12 +16,14 @@ struct HistoryButtons: View {
             button(DesignSystem.Icon.redo, label: CanvasStrings.redo, isEnabled: controls.canRedo) {
                 controls.redo()
             }
-            button(
-                DesignSystem.Icon.export,
-                label: CanvasStrings.export,
-                isEnabled: !controls.isExporting
-            ) {
-                controls.export()
+            if showsExport {
+                button(
+                    DesignSystem.Icon.export,
+                    label: CanvasStrings.export,
+                    isEnabled: !controls.isExporting
+                ) {
+                    controls.export()
+                }
             }
         }
     }

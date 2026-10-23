@@ -19,7 +19,7 @@ struct ToolPalette: View {
                 .accessibilityLabel(tool.label)
                 .accessibilityAddTraits(tool == tools.selected ? .isSelected : [])
             }
-            HistoryButtons(controls: history)
+            HistoryButtons(controls: history, showsExport: false)
         }
         .padding(DesignSystem.Spacing.small)
     }
