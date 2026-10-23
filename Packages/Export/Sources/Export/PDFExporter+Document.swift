@@ -41,6 +41,6 @@ extension PDFExporter {
         context.endPDFPage()
         context.closePDF()
         assert(data.length > 0, "The PDF of \(content.canvasID) is not empty")
-        return data as Data
+        return Self.data(sharing: data)
     }
 }
