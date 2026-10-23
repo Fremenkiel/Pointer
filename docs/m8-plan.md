@@ -398,3 +398,40 @@ The product owner tested on 2026-10-23 with the iPad Pro 11-inch (M4) and a Mac,
 The product owner did not report the name of the PDF on the Mac.
 
 ### 6.7 Close (phase 5)
+
+Measured on 2026-10-23 on the iPad in Release.
+
+1. The first `make check` failed in `make test`: `ExportPerformanceTests.testExportOfD56Canvas` (178 MB against 120 MB) and `ToolControlsSnapshotTests.palette(tool:)` ("Size 612x112 differs from the reference 512x112"). The palette reused `HistoryButtons` and showed the export button too. Commit e0c8e65 keeps the button out of the palette. Commit 185a261 makes the export measure start at steady memory, and the product owner set the D-56 budget to 180 MB (section 6.4).
+2. The second `make check` passed: 0 analyzer findings, format, lint, layers, density (Export 2.14), self-test, plist, and all tests on the Mac and the iPad (`.build/Runs/P5-check2.log`).
+3. `make coverage` passed: Geometry 90.88 %, Model 91.08 %, InkEngine 92.73 %, Persistence 91.15 %, Rendering 86.87 %, and Export 87.20 % (143 of 164 lines).
+4. Five full runs of `PointerDeviceTests` (`.build/Runs/P5-full-1.xcresult` to `P5-full-5.xcresult`) ran 395 tests each. Run 3 passed. The other runs failed one test each:
+   - Runs 1 and 4: `ExportPerformanceTests.testExportOfD56Canvas`, 198 MB and 210 MB against 180 MB. The export with 10,000 text boxes read 0, 8, 1, 0, and 8 MB in the five runs, so the memory measure of one export in a full run is not reliable. D-145 holds the question.
+   - Run 2: `TextEditFrameAllocationTests.testGlideFramesWithALongText`, edit frame max 5 against bare move max 4. Alternating runs (item 6) show the same failure on the base build.
+   - Run 5: `SnapshotPerformanceTests.testSnapshotOfTwentyThousandStrokesWithSaves`, 54.66 ms against 50 ms. Section 5 lists this failure as older than M8, and M10 holds it.
+   - Runs 1 and 2 also had the expected failure of D-137 in `OpenAnimationTests`.
+5. The measures of the five runs against the baseline of section 6.1:
+
+| Measure | Baseline | Five runs |
+|---|---|---|
+| Erase, median | 20.83 ms | 23.40, 22.81, 24.77, 21.15, 24.43 ms |
+| Undo, median | 16.88 ms | 17.02, 18.16, 17.84, 17.66, 18.60 ms |
+| Redo, median | 19.01 ms | 17.79, 21.32, 21.50, 20.67, 19.51 ms |
+| Open of D-56, median | 248.2 ms | 254.2, 252.4, 257.8, 258.9, 253.2 ms |
+| Memory of the open canvas, held / peak | 339 / 351 MB | 333 to 337 / 334 to 349 MB |
+| Transition, open peak / leave peak | 353 / 434 MB | 334 to 366 / 416 to 447 MB |
+| Text layout of 5,000 boxes | 57.6 ms | 56.7 to 57.5 ms |
+| Text pass of 300 boxes | 0.830 ms | 0.836 to 0.873 ms |
+| Preview render of D-56 | 39.0 ms | 37.6 to 45.9 ms |
+| Export of D-56 | none | 6.94 to 6.99 s |
+| Export of 200,000 handwriting strokes | none | 14.79 to 14.88 s, 272 to 316 MB |
+
+   Each frame loop ran at 119.7 to 120.0 fps, with at most 1 late frame of 479 in the D-56 text loops, and main ms max at most 0.08. The allocation counts equal the baseline: frame 15 / bare 15, apply 14 / 2 / 1, move step 6, and zoom spring median 0, max 140.
+6. One baseline run is not a fair comparison, so the erase steps and the glide allocations ran in 6 alternating pairs of the base build 55d43ea and the new build (`.build/Runs/P5-alt-*.xcresult`, section 1.3 of m6-fix-plan.md):
+
+| Build | Erase, median per run | Undo, median per run | Redo, median per run |
+|---|---|---|---|
+| Base | 22.91, 23.82, 25.02, 21.34, 22.44, 24.25 ms (mean 23.30) | 20.50, 16.35, 19.11, 17.50, 17.09, 17.39 ms (mean 17.99) | 22.45, 21.54, 24.31, 23.36, 19.52, 18.16 ms (mean 21.56) |
+| New | 24.83, 25.15, 22.84, 25.76, 24.03, 25.03 ms (mean 24.61) | 20.32, 16.94, 17.60, 19.14, 19.09, 19.94 ms (mean 18.84) | 21.78, 17.56, 21.17, 21.04, 20.58, 19.99 ms (mean 20.35) |
+
+   The new build is 5.6 % slower on erase (slower in 5 of 6 pairs), 4.7 % slower on undo, and 5.6 % faster on redo. Each is under the limit of 10 % (code-of-code.md section 5, item 10). The glide check failed in 1 of 6 base runs and in 2 of 6 new runs, always with an edit frame of 5 against 4, so the failure is older than M8.
+
