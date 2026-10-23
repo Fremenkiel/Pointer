@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-114 to D-119 on 2026-10-22. D-115 replaced D-09 and D-100, and D-117 replaced D-08. The M6 fix plan raised D-120 to D-122 on 2026-10-22, and the product owner decided them on the same day, then D-123 and D-124. The review before M7 raised D-125 to D-131 on 2026-10-22, and the product owner decided them on the same day. D-130 replaced the rule of D-07. The review after M7 raised D-138 to D-142 for M8 on 2026-10-23, and the product owner decided them with the recommendations on the same day. The M8 plan raised D-143 on the same day.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-114 to D-119 on 2026-10-22. D-115 replaced D-09 and D-100, and D-117 replaced D-08. The M6 fix plan raised D-120 to D-122 on 2026-10-22, and the product owner decided them on the same day, then D-123 and D-124. The review before M7 raised D-125 to D-131 on 2026-10-22, and the product owner decided them on the same day. D-130 replaced the rule of D-07. The review after M7 raised D-138 to D-142 for M8 on 2026-10-23, and the product owner decided them with the recommendations on the same day. The M8 plan raised D-143 on the same day. Task 2.7 raised D-144 on the same day.
 
 Status values: Open, Decided, Replaced.
 
@@ -151,6 +151,7 @@ Status values: Open, Decided, Replaced.
 | D-141 | The page bounds of the PDF | A function in `Export`: strokes and full text boxes, no cards. `contentBounds` stays. | Decided (2026-10-23) |
 | D-142 | An empty canvas, emoji, and pages over 14,400 points | A message and no PDF. Emoji as the system draws them. A uniform scale of the whole page. | Decided (2026-10-23) |
 | D-143 | The file name of the shared PDF | Recommendation: the title of the card or of the workspace, through `NSItemProvider.suggestedName` | Open |
+| D-144 | A budget for the time and the memory of an export | Recommendation: budgets from the measures of task 2.7 plus about 15 %, checked by `ExportPerformanceTests` | Open |
 
 ## Details
 
@@ -1495,6 +1496,21 @@ Status values: Open, Decided, Replaced.
   - (b) One fixed name from the String Catalog, for example "Pointer.pdf".
   - (c) Data without a name. The share targets give their own name.
 - Recommendation: (a). The file says what it holds, and the user can still rename it in the share target. `PointerApp` gives the name to the canvas screen through `CanvasDependencies`. Characters that file names do not allow become "-".
+
+### D-144 A budget for the time and the memory of an export
+
+- Open. Raised on 2026-10-23 by task 2.7 of [m8-plan.md](m8-plan.md).
+- Facts: architecture.md section 12 has no budget for an export. `ExportPerformanceTests` measured on the iPad Pro 11-inch (M4) in Release, in two runs:
+  1. D-56 (20,000 strokes of 300 points, 5,000 cards, 5,000 text boxes): 6.92 and 7.06 s, a peak memory growth of 101 MB, and a PDF of 79.6 MB.
+  2. The strokes of D-56 and 10,000 text boxes: 7.43 and 7.52 s, 137 MB, and 79.8 MB.
+  3. 200,000 handwriting strokes of 60 points: 14.77 and 14.83 s, 235 to 277 MB, and 226.4 MB.
+- The strokes take almost all of the time, about 1.1 to 1.3 µs per Bézier segment. The export runs off the main actor, so drawing does not stop, and the export button is off until the export ends (task 3.1). The PDF stays in memory until the share sheet ends, because no file is written (ARCH-04). No document lists a progress indicator.
+- Task 2.7 names "20,000 strokes and 10,000 text boxes" for D-56, but D-56 holds 5,000 cards and 5,000 text boxes. The test measures both contents.
+- Options:
+  - (a) Budgets from the measures plus about 15 %: D-56 at most 8.5 s and 160 MB, and 200,000 handwriting strokes at most 17 s and 320 MB. `ExportPerformanceTests` fails above them. The code stays as it is.
+  - (b) As (a), and the export button shows a progress indicator while an export runs. PERF and EXP do not list it, so it needs a change of the product specification.
+  - (c) A trace in Instruments first, to find a faster way to write the paths, and a lower budget after it. The gain is not known.
+- Recommendation: (a). An export of a normal canvas takes far less time, the screen stays responsive, and the button shows that an export runs. D-56 with 300 points per stroke is a hard case (D-56).
 
 ## Points in the request that conflict or are not complete
 

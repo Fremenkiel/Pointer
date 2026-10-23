@@ -346,6 +346,16 @@ Measured on 2026-10-23 on the iPad in Release.
 
 ### 6.4 The measures of an export (task 2.7)
 
+Measured on 2026-10-23 on the iPad in Release, with `ExportPerformanceTests` in two runs (result bundles `.build/Runs/T27-1.xcresult` and `.build/Runs/T27-2.xcresult`). Each test exports once in a detached task, as the canvas will do, and reads `os_proc_available_memory` every 2 ms. The test makes sure that the PDF has a page.
+
+| Content | Time | Peak memory growth | PDF size |
+|---|---|---|---|
+| D-56: 20,000 strokes of 300 points, 5,000 cards, 5,000 text boxes | 6.92 s, 7.06 s | 101 MB, 101 MB | 79.6 MB |
+| 20,000 strokes of D-56 and 10,000 text boxes | 7.43 s, 7.52 s | 137 MB, 137 MB | 79.8 MB |
+| 200,000 handwriting strokes of `FrameLoopTests` | 14.77 s, 14.83 s | 277 MB, 235 MB | 226.4 MB |
+
+Task 2.7 names "the D-56 canvas (20,000 strokes and 10,000 text boxes)", but D-56 holds 5,000 cards and 5,000 text boxes. The test measures both. The strokes take almost all of the time: about 1.1 to 1.3 µs per Bézier segment, for 6.0 million segments in D-56 and 11.8 million in the handwriting. D-144 holds the question of a budget.
+
 ### 6.5 The button and the share sheet (tasks 3.1 to 3.3)
 
 ### 6.6 Manual tests (task 4.1)
