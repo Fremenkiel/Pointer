@@ -444,7 +444,7 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 | Memory peak of an open from the D-56 canvas into a D-56 child | Under 670 MB on the 11-inch iPad (D-110) | `TransitionMemoryPerformanceTests` alone: the growth over the steady memory before the parent opened |
 | Memory peak of the leave from that child back to the D-56 parent | Under 720 MB on the 11-inch iPad (D-110) | The same test. The parent and the child are both loaded (D-109). The allocator of the process keeps about 165 MB of the heap of the parent that closed after the open, and the next load reuses it. |
 | Frame with 4 new eraser samples | Under 3 ms CPU, under 4 ms GPU | `EraserFramePerformanceTests` |
-| PDF export of the D-56 canvas | Under 8.5 s and 120 MB of peak memory growth on the 11-inch iPad, off the main actor (D-144) | `ExportPerformanceTests`: the time of `PDFExporter.pdfData(of:)` in a detached task, and the peak growth of `os_proc_available_memory`, read every 0.25 ms |
+| PDF export of the D-56 canvas | Under 8.5 s and 180 MB of peak memory growth on the 11-inch iPad, off the main actor (D-144) | `ExportPerformanceTests`: the time of `PDFExporter.pdfData(of:)` in a detached task, and the peak growth of `os_proc_available_memory`, read every 0.25 ms after 1.5 s of steady memory |
 | PDF export of 200,000 handwriting strokes | Under 17 s and 370 MB of peak memory growth on the 11-inch iPad (D-144) | The same test |
 | Erase, undo, or redo of 1,000 strokes in one gesture | Under 33 ms, 16 ms as a goal (D-75) | `EraseUndoPerformanceTests`: from the lift or the call until the GPU completes the first frame that holds the result (D-74) |
 

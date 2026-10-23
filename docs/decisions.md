@@ -151,7 +151,7 @@ Status values: Open, Decided, Replaced.
 | D-141 | The page bounds of the PDF | A function in `Export`: strokes and full text boxes, no cards. `contentBounds` stays. | Decided (2026-10-23) |
 | D-142 | An empty canvas, emoji, and pages over 14,400 points | A message and no PDF. Emoji as the system draws them. A uniform scale of the whole page. | Decided (2026-10-23) |
 | D-143 | The file name of the shared PDF | The title of the card or of the workspace, through `NSItemProvider.suggestedName` | Decided (2026-10-23) |
-| D-144 | A budget for the time and the memory of an export | D-56 at most 8.5 s and 120 MB, 200,000 handwriting strokes at most 17 s and 370 MB, checked by `ExportPerformanceTests` | Decided again (2026-10-23) |
+| D-144 | A budget for the time and the memory of an export | D-56 at most 8.5 s and 180 MB, 200,000 handwriting strokes at most 17 s and 370 MB, checked by `ExportPerformanceTests` | Decided again (2026-10-23) |
 
 ## Details
 
@@ -1514,6 +1514,8 @@ Status values: Open, Decided, Replaced.
 - Change after the decision: the test with the budgets of (a) measured a peak of 261 MB for D-56 in 3 of 6 runs, and up to 331 MB for the handwriting. The reads every 2 ms missed short peaks, so the first measures were too low. Two copies of the whole PDF caused the peaks: the bridge from `NSMutableData` to `Data` at the end of the export, and a move of the growing buffer. The product owner chose to remove the copy first.
 - The exporter now gives `Data` that shares the bytes of the buffer (`PDFExporter+Unsafe.swift`), and the test reads the memory every 0.25 ms. In 4 runs, D-56 peaked at 100 to 101 MB in 6.97 to 7.30 s, and the handwriting at 220 to 323 MB in 14.89 to 15.06 s.
 - Decided again by the product owner on 2026-10-23: the highest measures plus about 15 %. An export of D-56 takes at most 8.5 s and 120 MB. An export of 200,000 handwriting strokes takes at most 17 s and 370 MB.
+- Change at the close of M8: the full run of `make check` measured 178 MB for D-56, and 0 MB for the export with 10,000 text boxes. The export reused memory that the content build had freed just before, and in a full run other tests free and take memory. The test now waits for 1.5 s of steady memory before it measures, as `CanvasMemoryPerformanceTests` does. In 4 runs, D-56 then peaked at 139 to 153 MB in 6.95 to 7.27 s, and the handwriting at 265 to 281 MB in 14.84 to 15.02 s.
+- Decided a third time by the product owner on 2026-10-23: an export of D-56 takes at most 8.5 s and 180 MB. An export of 200,000 handwriting strokes takes at most 17 s and 370 MB.
 
 ## Points in the request that conflict or are not complete
 

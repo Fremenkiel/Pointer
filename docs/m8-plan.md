@@ -76,7 +76,7 @@ The product owner decided these on 2026-10-23. [decisions.md](decisions.md) give
 | D-141 | The page bounds come from the strokes and the full text boxes, not the cards. `contentBounds` stays. | 2.1 |
 | D-142 | An empty canvas gives a message and no PDF. Emoji stay bitmaps. A page over 14,400 points scales as a whole. | 2.1, 2.2, 3.2 |
 | D-143 | The item provider names the PDF after the title of the card, or of the workspace on the root canvas and for a card without a title. Characters that file names do not allow become "-". | 3.2 |
-| D-144 | An export of D-56 takes at most 8.5 s and 120 MB, and an export of 200,000 handwriting strokes at most 17 s and 370 MB. | 2.7 |
+| D-144 | An export of D-56 takes at most 8.5 s and 180 MB, and an export of 200,000 handwriting strokes at most 17 s and 370 MB. | 2.7 |
 
 Raise each new question as an open entry in [decisions.md](decisions.md) before the task that needs it. Do not decide it yourself (AGENT-04). The product owner decided D-143 and D-144 on 2026-10-23.
 
@@ -366,6 +366,16 @@ After the fix, `PDFExporter.data(sharing:)` gives `Data` that shares the bytes o
 | 200,000 handwriting strokes | 14.89, 14.92, 15.01, 15.06 s | 323, 276, 227, 220 MB |
 
 The product owner decided D-144 again on the same day: D-56 at most 8.5 s and 120 MB, and 200,000 handwriting strokes at most 17 s and 370 MB. `ExportPerformanceTests` fails above them. The first run with these budgets passed (`T27-11.xcresult`): D-56 6.98 s and 91 MB, 10,000 text boxes 7.50 s and 122 MB, and the handwriting 14.87 s and 320 MB.
+
+At the close (phase 5), the full run of `make check` failed the budget of D-56 with 178 MB, and it reported 0 MB for the export with 10,000 text boxes. The export reused memory that the content build had freed just before, and other tests of the full run free and take memory. `ExportPerformanceTests` now waits for 1.5 s of steady memory with `OnScreenCanvas.waitForSteadyMemory()` before it measures. Four runs alone (`.build/Runs/P5-fix-1.xcresult` to `P5-fix-4.xcresult`):
+
+| Content | Time | Peak memory growth |
+|---|---|---|
+| D-56 | 6.95, 7.10, 7.25, 7.27 s | 153, 139, 150, 152 MB |
+| 20,000 strokes of D-56 and 10,000 text boxes | 7.47, 7.54, 7.64, 7.65 s | 139, 139, 144, 142 MB |
+| 200,000 handwriting strokes | 14.84, 14.91, 14.99, 15.02 s | 279, 265, 281, 273 MB |
+
+The product owner decided D-144 a third time on the same day: D-56 at most 8.5 s and 180 MB, and 200,000 handwriting strokes at most 17 s and 370 MB.
 
 ### 6.5 The button and the share sheet (tasks 3.1 to 3.3)
 
