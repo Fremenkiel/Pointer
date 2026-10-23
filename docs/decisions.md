@@ -143,6 +143,7 @@ Status values: Open, Decided, Replaced.
 | D-133 | The eraser circle of the hover dot: an outline or a filled disc | An outline ring with a line width token | Decided (2026-10-22) |
 | D-134 | The measure of the frames in task 3.1 of M7 | The frames of the canvas screen in `ZoomFrameAllocationTests` decide. The `dense 20k zoom` loop is recorded only. | Decided (2026-10-23) |
 | D-135 | A pencil down during a pinch past a zoom limit | The camera holds during the stroke and springs back after the lift | Decided (2026-10-23) |
+| D-136 | Late frames at the start of card flights in full runs | Trace the late frame now, before M7 closes | Decided (2026-10-23) |
 
 ## Details
 
@@ -1406,6 +1407,16 @@ Status values: Open, Decided, Replaced.
   - (b) The pencil down puts the camera at the limit at once, before the stroke starts. The canvas jumps under the pencil.
   - (c) The camera holds, and it springs back only at the next finger gesture.
 - Recommendation: (a). The stroke keeps the shape and the width that the user saw, and the canvas ends inside the zoom range as after every pinch.
+
+### D-136 Late frames at the start of card flights in full runs
+
+- Decided by the product owner on 2026-10-23: (c). Raised on 2026-10-23 by phase 5 of [m7-plan.md](m7-plan.md).
+- Facts: in 5 full runs of `PointerDeviceTests` with the code of commit 194959c, 4 runs failed a strict check of `OpenAnimationTests` with 1 late frame at place 0 or 1 of a flight: the leave of the empty card (2 runs), the open with a blocked main thread (2 runs), and the leave of the D-56 card (1 run). Alternating full runs gave the same failure for the code before phase 1 of M7 (commit 550aaef) in 1 of 2 runs, and for the new code in 1 of 2 runs. `OpenAnimationTests` alone, 5 iterations each, alternating: the old code had 1 late frame in 10 iterations, and the new code had 0 in 10. M7 therefore does not cause the late frame, but the samples are too small to show whether M7 changes how often it comes. D-125 accepts the same late frame for the open of the empty card only, and M10 traces it.
+- Options:
+  - (a) Mark the late-frame checks of each flight in `OpenAnimationTests` as expected failures that are not strict, as D-125 does, and add them to the trace of M10.
+  - (b) Keep the checks strict, and accept that `make check` fails in most full runs until M10.
+  - (c) Trace the late frame now, before M7 closes.
+- Recommendation: (a). The late frame is older than M7, a strict check that fails in most runs hides new failures (the reason of D-125), and M10 already holds the trace.
 
 ## Points in the request that conflict or are not complete
 
