@@ -35,16 +35,12 @@ extension PreviewRenderer {
         }
     }
 
-    /// Copies the image of `width` by `height` pixels out of the readback buffer, after the GPU
-    /// completed the blit into it.
+    /// Copies the image of `width` by `height` pixels out of `buffer`, after the GPU completed
+    /// the blit into it.
     ///
+    /// - Precondition: The image fits the buffer.
     /// - Returns: The image, or `nil` for an empty size.
-    func readImage(width: Int, height: Int) -> PreviewImage? {
-        Self.readImage(of: readback, width: width, height: height)
-    }
-
-    /// Copies the image of `width` by `height` pixels out of `buffer`.
-    private static func readImage(
+    static func readImage(
         of buffer: any MTLBuffer,
         width: Int,
         height: Int

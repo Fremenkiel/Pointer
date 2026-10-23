@@ -451,3 +451,44 @@ Fix after the close, commit 3739e40. On 2026-10-23, the product owner hovered on
 In the first run after the fix, with 9 other suites, `HoverSampleAllocationTests` counted 1 allocation of the eraser in one batch. Alone it counted 0 in 20 of 20 runs, and in the full runs of `make check` it counted 0. The cause of the one count is not known.
 
 Second close, 2026-10-23, with the code of commit 3739e40. After a touch of the changed Swift files, `make build` printed 0 lines with `warning:`. `make check` passed with the iPad: `analyze` with 0 findings, 345 tests of `PointerDeviceTests` passed with 0 failures and 1 expected failure of D-125, `snapshots` passed 48 of 48, and `layers`, `density`, `format`, `lint`, `self-test`, and `plist` passed. `make coverage` passed: Geometry 90.80 %, Model 90.80 %, InkEngine 92.73 %, Persistence 91.15 %, and Rendering 86.91 %. Only `EraseUndoPerformanceTests` failed in its instrumented run, which the target ignores (D-120). The full run gave erase 21.50 ms, undo 18.84 ms, and redo 17.91 ms at the median.
+
+### 6.10 Review after the close
+
+Measured on 2026-10-23 on the iPad in Release, on branch `m7-review` from commit 2131124.
+
+A clean build in a new derived data folder printed 0 compiler warnings. `make check` with the iPad passed on commit 2131124: 356 of 356 tests of `PointerDeviceTests` and 48 of 48 snapshots.
+
+A review of the per-frame and per-sample paths found one path that no allocation test covered and that broke PERF-01. While a text edit is open, each camera frame called `TextEditView.layOut`, which made a new `TextLayout` of the whole text and set the frame of the `UITextView` again. A benchmark stepped the glide frames of a pan with an open edit:
+
+| Edit | Allocations of a frame, median | Main thread of a frame, median |
+|---|---|---|
+| No edit | 0 | 0.3 µs |
+| 5 characters, before | 73 | 17.4 µs |
+| 984 characters, before | 218 | 58.7 µs |
+| Both texts, after the text size cache | 52 | 13.2 µs |
+| Both texts, after the move of the center | 4 | 1.8 µs |
+
+The edit view now keeps the size of its text and measures it again only after `setText(_:)` and `textViewDidChange(_:)`. A camera move at one zoom sets only the center of the view. A bare move of the center of a `UITextView` also makes 4 allocations, so Pointer code makes none. `TextEditFrameAllocationTests` compares the frames with the bare move, and checks that the view stays at the corner of the box. It failed on the old code with 74 and 219 allocations against 4, and it passes on the new code.
+
+The fix of section 6.7 left the shared readback buffer of `PreviewRenderer` without a user on the screen path, but each renderer still made it at the first leave. Only the offscreen render of `PreviewMaker` read it. That render now makes a buffer of the image size, as the screen path does. The Metal memory of one `PreviewRenderer`, measured with `MTLDevice.currentAllocatedSize`, went from 1,081,344 to 819,200 bytes. `PreviewRenderTests`, `PreviewStopTests`, `PreviewWriteTests`, and `PreviewAllocationTests` passed.
+
+`make check` with the iPad passed on the changed code: 358 of 358 tests of `PointerDeviceTests` and 48 of 48 snapshots, with `density` at 2.00 for Rendering. Five alternating pairs of the old and the new code gave these medians of the five runs:
+
+| Measure | Old code | New code |
+|---|---|---|
+| Erase, median | 22.24 ms | 22.16 ms |
+| Erase, slowest | 25.58 ms | 24.82 ms |
+| Undo, median | 18.52 ms | 18.13 ms |
+| Redo, median | 21.42 ms | 21.10 ms |
+
+Two pairs also ran the open of the D-56 canvas: 254.4 and 254.7 ms for the old code, 256.5 and 251.7 ms for the new code. The memory of the open canvas held 357 and 358 MB for the old code, and 351 and 353 MB for the new code.
+
+The review measured or read these items and did not change them:
+
+1. The array literal in `cameraMayRest()` makes no allocation. The last glide frame of `ZoomFrameAllocationTests` runs it and counts 0.
+2. A sample of a text-box drag makes 1 allocation at the median and 2 at most, at 0.2 µs. The causes are the array `[moved]` in `continueTextMove` and `RenderInbox.reset()`, which drops the capacity of the edit lists. The card drags use the same pattern.
+3. `CanvasRenderer.deliver(upTo:)` and `deliverCompletions(upTo:time:)` keep a slice of the callbacks while `removeFirst` runs, so the array copies once at each handoff.
+4. No allocation test drives `PencilTouchObserver`, `handlePan`, or `handlePinch` through UIKit.
+5. Three completions of a preview still run under a lock, as the M10 list says.
+
+M10 holds items 2 to 4.

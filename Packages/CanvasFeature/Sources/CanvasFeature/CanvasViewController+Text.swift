@@ -236,6 +236,7 @@ extension CanvasViewController: UITextViewDelegate {
     /// Grows the edit view with its text, and updates the undo and redo buttons.
     public func textViewDidChange(_ textView: UITextView) {
         guard let edit = textEditing.edit else { return }
+        textEditing.view.textDidChange()
         textEditing.view.layOut(origin: edit.origin, camera: camera, viewSize: viewSize)
         historyDidChange()
     }

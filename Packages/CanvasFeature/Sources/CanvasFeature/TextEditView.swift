@@ -12,6 +12,9 @@ import UIKit
 final class TextEditView: UITextView {
     /// The zoom of the last layout, or `nil` before the first layout of a text.
     private(set) var layoutZoom: Double?
+    /// The size of the text in canvas points, or `nil` after a change of the text. A camera move
+    /// keeps it, so that a pan or a glide frame makes no new layout (PERF-01).
+    private var textSize: Size?
     /// The part of the view that takes touches: the text box with a margin. Outside it, a tap
     /// reaches the canvas and ends the edit.
     private var touchArea = CGRect.zero
@@ -73,21 +76,29 @@ final class TextEditView: UITextView {
             let range = NSRange(location: 0, length: textStorage.length)
             textStorage.setAttributes(attributes, range: range)
         }
-        transform = .identity
         let corner = camera.viewPoint(fromCanvas: origin, viewSize: viewSize)
-        let layout = TextLayout(text: text ?? "")
-        frame = CGRect(
+        let size = textSize ?? TextLayout(text: text ?? "").size
+        textSize = size
+        let next = CGRect(
             x: corner.x,
             y: corner.y,
             width: TextStyle.maxWidth * camera.zoom,
-            height: layout.size.height * camera.zoom
+            height: size.height * camera.zoom
         )
+        if transform.isIdentity, bounds.size == next.size {
+            // A pan or a glide moves the view only. A new frame would lay out the text view again
+            // at each frame (PERF-01).
+            center = CGPoint(x: next.midX, y: next.midY)
+        } else {
+            transform = .identity
+            frame = next
+        }
         let caret = TextLayout.lineHeight * camera.zoom
         touchArea = CGRect(
             x: 0,
             y: 0,
-            width: layout.size.width * camera.zoom + caret,
-            height: layout.size.height * camera.zoom
+            width: size.width * camera.zoom + caret,
+            height: size.height * camera.zoom
         ).insetBy(dx: -caret / 2, dy: -caret / 2)
         assert(frame.origin.x.isFinite && frame.origin.y.isFinite, "The edit view has a place")
     }
@@ -96,7 +107,15 @@ final class TextEditView: UITextView {
     func setText(_ newText: String) {
         text = newText
         layoutZoom = nil
+        textSize = nil
         assert(layoutZoom == nil, "A new text gets the style at the next layout")
+    }
+
+    /// Drops the size of the text after the user changed it, so that the next layout measures
+    /// the new text.
+    func textDidChange() {
+        textSize = nil
+        assert(textSize == nil, "The next layout measures the text")
     }
 
     /// Follows the camera during a pinch with a scale transform of the last layout (D-85).

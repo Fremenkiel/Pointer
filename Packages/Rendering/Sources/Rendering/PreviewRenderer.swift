@@ -6,7 +6,8 @@ import Model
 /// section 4, rule 6, D-97, D-98).
 ///
 /// One `.rg8Unorm` target of 512 by 512 pixels and one `.r8Unorm` resolve target of the same
-/// size, made at the first leave, and one shared readback buffer of 256 KB. The preview shows
+/// size, made at the first leave. Each preview reads its image back through a buffer of its own
+/// (m7-plan.md section 6.7). The preview shows
 /// the child region of the open camera, cut to the aspect of the card. Cards of the canvas show
 /// their frames and titles without previews (architecture.md 5.5).
 final class PreviewRenderer {
@@ -30,14 +31,13 @@ final class PreviewRenderer {
     let resources: InkResources
     let coverage: any MTLTexture
     let resolved: any MTLTexture
-    let readback: any MTLBuffer
     /// The preview in progress, or `nil`.
     var job: Job?
     /// The strokes and the green items of the job. Reused (PERF-01).
     var slots: [Int] = []
     var greens: [GreenItem] = []
 
-    /// Makes the targets and the readback buffer.
+    /// Makes the targets.
     ///
     /// - Throws: `RenderingError.resourceUnavailable` if Metal cannot make one of them.
     init(resources: InkResources) throws(RenderingError) {
@@ -52,15 +52,7 @@ final class PreviewRenderer {
             height: Self.side,
             format: InkResources.maskFormat
         )
-        guard
-            let buffer = resources.device.makeBuffer(
-                length: Self.side * Self.side,
-                options: .storageModeShared
-            )
-        else { throw .resourceUnavailable("preview readback buffer") }
-        buffer.label = "Preview readback"
-        readback = buffer
-        assert(readback.length == Self.side * Self.side, "One byte per pixel")
+        assert(resolved.width == Self.side && resolved.height == Self.side, "Targets of one size")
     }
 
     /// Returns the child region of the open camera, cut to the aspect of the card (D-98): the

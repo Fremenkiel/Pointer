@@ -148,6 +148,8 @@ Status of phases 1 and 2 on 2026-10-22: tasks 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, and 
 
 Status of phase 3 on 2026-10-23: task 3.1 is done. The live canvas gets a new pen tool only at a pencil down and at rest, so a zoom frame makes 0 allocations instead of 139 (D-131). The product owner decided D-134: the frames of the canvas screen decide this task, because `FrameLoopTests` does not run the canvas code. `make check` with the iPad passed 350 of 350 tests, and `make coverage` passes. Phase 4 passed on 2026-10-23: the product owner reported a pass for acceptance 1 to 4, and the check of the pen width after a zoom found two faults, which commits 436fe7b and 194959c fix (D-135). Phase 5 passed on 2026-10-23: no measure is more than 10 % slower than the baseline, and `make check` with the iPad (356 of 356 tests) and `make coverage` pass. The late frames at the start of a leave are older than M7. The product owner decided D-136 and D-137: a trace now, then expected failures that are not strict, and the rest of the trace in M10. M7 is done. Section 6 of the M7 plan holds the results.
 
+Review after M7, 2026-10-23: a glide frame with an open text edit laid out the whole text again and made up to 218 allocations. It now makes none in Pointer code (`TextEditFrameAllocationTests`). Each `PreviewRenderer` no longer makes the shared readback buffer that only the offscreen preview used, which saves 256 KB of Metal memory for each canvas with a leave. `make check` with the iPad passed 358 of 358 tests, and five alternating pairs showed no change of erase, undo, or redo. Section 6.10 of the M7 plan holds the measures.
+
 Acceptance:
 
 1. Double tap follows D-130 for each value of `preferredTapAction`.
@@ -190,6 +192,9 @@ Acceptance:
   - Measure the sets that the release preconditions of `Eraser.command` and `EraseStrokes.init` build at each erase, and move them to `assert` if the cost shows.
   - Read `isLoadingText`, `isLoadingCards`, and `isLoadingPreviews` of `RenderEngine` under one lock, or count the items in transit, so that no wait ends early.
   - Call the completions of a card load and a preview render after their lock, not under it, so that a completion cannot deadlock.
+  - From the review after M7: a text-box drag and a card drag make 1 to 2 allocations at each sample, from the array of the moved item and from `RenderInbox.reset()`, which drops the capacity of the edit lists. Keep the lists, and post one item without an array (PERF-01).
+  - `CanvasRenderer.deliver(upTo:)` and `deliverCompletions(upTo:time:)` copy their arrays at each handoff, because a slice of the array lives during `removeFirst`.
+  - Add allocation tests that drive `PencilTouchObserver`, `handlePan`, and `handlePinch` through UIKit events.
   - Read the contract checks of each Tier A and Tier B package by hand. Each package has an average of exactly 2.00 (CONTRACT-02), so remove checks that test nothing.
 
 Acceptance:

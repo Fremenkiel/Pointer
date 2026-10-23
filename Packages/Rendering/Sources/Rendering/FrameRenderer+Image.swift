@@ -93,6 +93,45 @@ extension FrameRenderer {
             target: target,
             commandBuffer: commandBuffer
         )
+        let size = placement.image.size
+        let readback = try encodeReadback(
+            of: preview,
+            image: placement.image,
+            commandBuffer: commandBuffer
+        )
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        withExtendedLifetime((ink, text)) {}
+        let image = PreviewRenderer.readImage(of: readback, width: size.width, height: size.height)
+        guard let image else {
+            throw .resourceUnavailable("preview readback")
+        }
+        return image
+    }
+
+    /// Encodes the resolve of the preview targets and the copy of the image into a new shared
+    /// buffer of the image size.
+    ///
+    /// - Precondition: The image lies inside the targets.
+    /// - Throws: `RenderingError.resourceUnavailable` if Metal gives no buffer or no encoder.
+    /// - Returns: The buffer that holds the image after the GPU completes `commandBuffer`.
+    private func encodeReadback(
+        of preview: PreviewRenderer,
+        image: MTLRegion,
+        commandBuffer: any MTLCommandBuffer
+    ) throws(RenderingError) -> any MTLBuffer {
+        let size = image.size
+        precondition(
+            image.origin.x + size.width <= PreviewRenderer.side
+                && image.origin.y + size.height <= PreviewRenderer.side,
+            "The image lies inside the targets, got \(image)"
+        )
+        guard
+            let readback = resources.device.makeBuffer(
+                length: size.width * size.height,
+                options: .storageModeShared
+            )
+        else { throw .resourceUnavailable("preview readback buffer") }
         let pass = MTLRenderPassDescriptor()
         pass.colorAttachments[0].texture = preview.resolved
         pass.colorAttachments[0].loadAction = .dontCare
@@ -100,26 +139,20 @@ extension FrameRenderer {
         guard let resolve = commandBuffer.makeRenderCommandEncoder(descriptor: pass),
             let blit = Self.resolve(resolve, renderer: preview, commandBuffer: commandBuffer)
         else { throw .resourceUnavailable("preview resolve") }
-        let size = placement.image.size
         blit.copy(
             from: preview.resolved,
             sourceSlice: 0,
             sourceLevel: 0,
-            sourceOrigin: placement.image.origin,
+            sourceOrigin: image.origin,
             sourceSize: size,
-            to: preview.readback,
+            to: readback,
             destinationOffset: 0,
             destinationBytesPerRow: size.width,
             destinationBytesPerImage: size.width * size.height
         )
         blit.endEncoding()
-        commandBuffer.commit()
-        commandBuffer.waitUntilCompleted()
-        withExtendedLifetime((ink, text)) {}
-        guard let image = preview.readImage(width: size.width, height: size.height) else {
-            throw .resourceUnavailable("preview readback")
-        }
-        return image
+        assert(readback.length >= size.width * size.height, "One byte per pixel of the image")
+        return readback
     }
 
     /// Draws all strokes in one pass with a store of their own. The encoder must live until the
