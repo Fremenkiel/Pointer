@@ -7,14 +7,15 @@ struct Limit {
     let minimumPercent: Double
 }
 
-/// The limits of TEST-02: 90 % for Tier A and 70 % for Tier B. Export is Tier B, but it has no
-/// tests yet (the context map of AGENTS.md), so it has no report (m6-fix-plan.md task 1.1).
+/// The limits of TEST-02: 90 % for Tier A and 70 % for Tier B. The tests of Rendering and Export
+/// run on the iPad in PointerDeviceTests (D-77, D-120).
 let limits = [
     Limit(package: "Geometry", minimumPercent: 90),
     Limit(package: "Model", minimumPercent: 90),
     Limit(package: "InkEngine", minimumPercent: 90),
     Limit(package: "Persistence", minimumPercent: 90),
     Limit(package: "Rendering", minimumPercent: 70),
+    Limit(package: "Export", minimumPercent: 70),
 ]
 
 /// The line counts of one file in the JSON of `llvm-cov export`.

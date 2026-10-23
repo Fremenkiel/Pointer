@@ -80,12 +80,14 @@ struct PDFExporterTests {
         #expect(mainPage.bounds(for: .mediaBox) == detachedPage.bounds(for: .mediaBox))
     }
 
-    /// Strokes, two text boxes, and a card with the title "Graveyard".
+    /// Strokes, two text boxes, and a card with the title "Graveyard". The card lies inside the
+    /// page, between the strokes, so a drawn card would show in the snapshot.
     static func mixedContent() throws -> CanvasContent {
         try ExportContent.content(
             strokes: [
                 ExportContent.wave(count: 40, at: Point(x: 0, y: 0), width: 3),
                 ExportContent.wave(count: 12, at: Point(x: 60, y: 120)),
+                ExportContent.wave(count: 30, at: Point(x: 0, y: 320)),
             ],
             textBoxes: [
                 ExportContent.textBox("heap.push(node)", at: Point(x: 160, y: 0)),
@@ -94,7 +96,7 @@ struct PDFExporterTests {
             cards: [
                 ExportContent.card(
                     title: "Graveyard",
-                    frame: Rect(origin: Point(x: 0, y: 200), size: Size(width: 140, height: 90))
+                    frame: Rect(origin: Point(x: 160, y: 190), size: Size(width: 140, height: 90))
                 )
             ]
         )

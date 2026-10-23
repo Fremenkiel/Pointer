@@ -335,6 +335,15 @@ Task 1.2, on 2026-10-23 on the iPad in Release: `TextLayout.lines(of:)` gives th
 
 ### 6.3 The exporter (tasks 2.1 to 2.6)
 
+Measured on 2026-10-23 on the iPad in Release.
+
+1. Task 2.1 (commit 0fba8a5): `PDFExporter.pageBounds(of:)`. `PageBoundsTests` passes: strokes only, text only, strokes and text, a far card that does not count, cards only and an empty canvas (`nil`), and a stroke at (1,000,000, 1,000,000).
+2. Task 2.2 (commit c76bdbf): `PDFExporter.pageLayout(for:)` and `PageLayout`. `PageLayoutTests` passes for a longer side of 3, 14,400, 14,401, and 2,000,000 points, in width and in height.
+3. Task 2.3 (commit b110609): `PDFExporter.path(of:from:)` and `drawStrokes`. `StrokePathTests` passes: one move and `count - 1` curves for 2 and 300 points, the end points, and the same path within 1e-6 points for a stroke at (1,000,000, 1,000,000). The test reads the path elements in `PathElements+Unsafe.swift` (SAFE-09).
+4. Task 2.4 (commit e7c46f5): `drawText` with `CTLineDraw`. `PDFTextTests` passes: PDFKit finds each word of two text boxes, "balanced" 30 times, the emoji, the CJK, and the Hangul, and the lines are in order from top to bottom.
+5. Task 2.5 (commit bb5fbb1): `PDFExporter.pdfData(of:)` and `ExportError`. `PDFExporterTests` passes: an empty canvas and a canvas with only cards throw `emptyCanvas`, one page with the media box of the layout, no card title in the page text, no XObject on an ink-only page that shows more than 1,000 dark pixels, a page over 14,400 points with its proportions kept, and the same page text and media box from a detached task.
+6. Task 2.6: `PDFSnapshotTests` compares the page at scale 2 with `References/pdf-page.png` (830 by 869 pixels). The card lies inside the page, and the image shows no card. The first image had a dark last column, because the media box is not a whole number of pixels. `PDFRender` now cuts the image to whole pixels. `make snapshots` passes. `make coverage` passes: Geometry 90.88 %, Model 90.80 %, InkEngine 92.73 %, Persistence 91.15 %, Rendering 86.95 %, and Export 87.14 % (122 of 140 lines). In the instrumented run, `EraseUndoPerformanceTests` failed, as the `coverage` target of the `Makefile` expects.
+
 ### 6.4 The measures of an export (task 2.7)
 
 ### 6.5 The button and the share sheet (tasks 3.1 to 3.3)

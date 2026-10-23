@@ -11,11 +11,15 @@ enum PDFRender {
         return CGPDFDocument(provider)?.page(at: 1)
     }
 
-    /// Renders the first page at one pixel per PDF point, times `scale`.
+    /// Renders the first page at one pixel per PDF point, times `scale`, cut to whole pixels.
     static func image(of data: Data, scale: Double = 1) -> RenderedImage? {
         guard let page = firstPage(of: data) else { return nil }
         let box = page.getBoxRect(.mediaBox)
-        let size = CGSize(width: box.width * scale, height: box.height * scale)
+        // Whole pixels only: a partial last column lies outside the page and reads as black.
+        let size = CGSize(
+            width: (box.width * scale).rounded(.down),
+            height: (box.height * scale).rounded(.down)
+        )
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
         let image = UIGraphicsImageRenderer(size: size, format: format).image { context in

@@ -65,9 +65,11 @@ expect 1 assertion-density.swift density-low "1 functions, 1 checks, average 1.0
 expect 1 assertion-density.swift density-syntax "3 functions, 4 checks, average 1.33 is below 2.0"
 expect 0 assertion-density.swift density-ok "1 functions, 3 checks, average 3.00"
 expect 0 coverage.swift coverage-ok "Geometry: 90.00 % (90 of 100 lines)" \
-    "Persistence: 95.00 % (95 of 100 lines)" "Rendering: 70.00 % (70 of 100 lines)"
+    "Persistence: 95.00 % (95 of 100 lines)" "Rendering: 70.00 % (70 of 100 lines)" \
+    "Export: 70.00 % (70 of 100 lines)"
 expect 1 coverage.swift coverage-low "TEST-02 Geometry: 89.00 % (89 of 100 lines) is below 90 %" \
-    "TEST-02 Rendering: 69.00 % (69 of 100 lines) is below 70 %"
+    "TEST-02 Rendering: 69.00 % (69 of 100 lines) is below 70 %" \
+    "TEST-02 Export: 69.00 % (69 of 100 lines) is below 70 %"
 expect 1 coverage.swift coverage-missing "TEST-02 Rendering: no report at"
 expect_lint lint-violations
 expect_lint lint-pdf-context

@@ -60,10 +60,11 @@ snapshots:
 		-only-testing:PointerDeviceTests/TransitionTests \
 		-only-testing:PointerDeviceTests/UpButtonSnapshotTests \
 		-only-testing:PointerDeviceTests/CardMenuSnapshotTests \
-		-only-testing:PointerDeviceTests/HoverDotSnapshotTests
+		-only-testing:PointerDeviceTests/HoverDotSnapshotTests \
+		-only-testing:PointerDeviceTests/PDFSnapshotTests
 	@echo "snapshots: done"
 
-# TEST-02, D-120: the line coverage of the Tier A packages and of Rendering. The device run builds
+# TEST-02, D-120: the line coverage of the Tier A packages and of Rendering and Export. The device run builds
 # with coverage flags into a derived data folder of its own, so the Release build of `make test`
 # stays. The instrumented code is slower, so the target ignores the test failures of that run, and
 # its measures do not count. `make test` runs the tests. Keep the iPad unlocked during the run.
@@ -83,10 +84,12 @@ coverage:
 		ENABLE_TESTABILITY=YES -enableCodeCoverage YES \
 		OTHER_SWIFT_FLAGS='$$(inherited) -profile-generate -profile-coverage-mapping' \
 		-quiet -only-testing:PointerDeviceTests
-	@framework=$$(ls -d $(COVERAGE_FRAMEWORKS)/Rendering_*_PackageProduct.framework) && \
+	@for package in Rendering Export; do \
+		framework=$$(ls -d $(COVERAGE_FRAMEWORKS)/$${package}_*_PackageProduct.framework) && \
 		xcrun llvm-cov export "$$framework/$$(basename "$$framework" .framework)" -summary-only \
 			-instr-profile $(COVERAGE_DATA)/Build/ProfileData/$(DEVICE)/Coverage.profdata \
-			> $(COVERAGE_REPORTS)/Rendering.json
+			> $(COVERAGE_REPORTS)/$$package.json || exit 1; \
+	done
 	swift Scripts/coverage.swift --root .build
 
 # STYLE-04. The fixtures hold deliberate violations, so the formatter skips them.
