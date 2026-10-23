@@ -67,6 +67,33 @@ public struct StrokeCurve: Sendable {
         )
     }
 
+    /// Returns the cubic Bézier points of one segment, for a PDF path (architecture.md section 9).
+    ///
+    /// The conversion of a uniform cubic B-spline segment to a Bézier segment is exact (D-26).
+    ///
+    /// - Precondition: `index` is in `0..<segmentCount`.
+    /// - Returns: The start point, the two control points, and the end point of the segment. The
+    ///   start of segment 0 is the first control point, and the end of the last segment is the
+    ///   last control point.
+    public func bezierSegment(at index: Int) -> BezierSegment {
+        precondition(
+            index >= 0 && index < segmentCount,
+            "Segment index \(index) out of 0..<\(segmentCount)"
+        )
+        let p0 = extendedControlPoint(at: index - 1)
+        let p1 = extendedControlPoint(at: index)
+        let p2 = extendedControlPoint(at: index + 1)
+        let p3 = extendedControlPoint(at: index + 2)
+        let segment = BezierSegment(
+            start: Point(x: (p0.x + 4 * p1.x + p2.x) / 6, y: (p0.y + 4 * p1.y + p2.y) / 6),
+            control1: Point(x: (2 * p1.x + p2.x) / 3, y: (2 * p1.y + p2.y) / 3),
+            control2: Point(x: (p1.x + 2 * p2.x) / 3, y: (p1.y + 2 * p2.y) / 3),
+            end: Point(x: (p1.x + 4 * p2.x + p3.x) / 6, y: (p1.y + 4 * p2.y + p3.y) / 6)
+        )
+        assert(segment.start.isFinite && segment.end.isFinite, "Segment \(index) is not finite")
+        return segment
+    }
+
     /// Returns the point of one uniform cubic B-spline segment.
     ///
     /// - Precondition: `local` is in `0...1`.

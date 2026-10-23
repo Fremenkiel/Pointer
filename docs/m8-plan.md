@@ -329,6 +329,8 @@ The preview render of D-56 took 39.0 ms. The eraser frame took 0.13 ms on the CP
 
 ### 6.2 Geometry and text (tasks 1.1 and 1.2)
 
+Task 1.1, on 2026-10-23 on the Mac: `StrokeCurve.bezierSegment(at:)` gives a `BezierSegment`. For curves of 2, 3, and 300 points, the largest distance between the Bézier segments and `point(at:)` at 33 parameters per segment was below 1e-9 canvas points. The ends equal the end control points. Exit tests cover the preconditions of the segment index and of the Bézier parameter. All 40 Geometry tests pass, and the line coverage of `Geometry` is 90.88 % (518 of 570 lines).
+
 ### 6.3 The exporter (tasks 2.1 to 2.6)
 
 ### 6.4 The measures of an export (task 2.7)
