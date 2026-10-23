@@ -322,6 +322,27 @@ The preview render of D-56 took 30.9 ms. The eraser frame took 0.12 ms on the CP
 
 ### 6.3 Measures of the pen tool (task 3.1)
 
+Measured on 2026-10-23 on the iPad in Release. Commit cab4bd9.
+
+`FrameLoopTests` is in `Rendering` and never runs `applyCamera()`, so the product owner decided D-134: the frames of the canvas screen in the new `ZoomFrameAllocationTests` decide, and the `dense 20k zoom` loop is recorded only. Before the change, that loop gave main ms mean 0.00, p99 0.02, and max 0.03. After it, in the full run of `make check`, it gave mean 0.01, p99 0.03, and max 0.04, at 120.0 fps with 0 late frames of 479.
+
+`ZoomFrameAllocationTests` steps the frame callback of a root canvas screen through a spring of 52 frames after a pinch past the minimum zoom, and through a glide at one zoom. Before the change, a spring frame made 139 allocations at the median and 141 at most. The line `liveCanvas.tool = PenTool.inkingTool(zoom:)` alone made 139, so the tool made all of them. A glide frame made 0.
+
+Alternating runs in a worktree of commit 09044e4, in the order base, new, base, new, each with 5 iterations:
+
+| Build | Allocations of a spring frame, median | Main thread of a spring frame, median | Slowest frame |
+|---|---|---|---|
+| Base | 139 | 26.5 to 34.9 µs | 30.0 to 56.1 µs |
+| New | 0 | 0.2 to 0.3 µs | 37.5 to 63.1 µs |
+
+After the change, each zoom frame makes 0 allocations. The last frame of the spring brings the camera to rest and makes the one tool of the new zoom, so the slowest frame is that frame. Before the change, every frame of the spring cost as much.
+
+`PenToolZoomTests` checks the width of a new canvas, the width at a pencil down during a spring, and the width at rest. Before the change, the test of the pencil down failed with "No new tool at a zoom frame", and `ZoomFrameAllocationTests` failed with "Optional(140) is not equal to Optional(0)". After it, both suites passed 4 of 4 in 3 iterations, and `PencilKitParityTests`, `LiveStrokeHandoffTests`, `PencilKitStrokeConverterTests`, `CameraControllerTests`, `CameraRestTests`, `TransitionTests`, `NavigationTests`, and `CanvasViewControllerTests` passed.
+
+No test can make a pencil touch, so no test shows whether PencilKit reads its tool before `pencilBegan()` sets it. The converter takes the width that PencilKit drew. Phase 4 checks it by hand: a stroke drawn while two fingers still pinch must have the width of the other strokes at that zoom.
+
+Close of task 3.1, with the code of commit cab4bd9. After a touch of the changed Swift files, `make build` printed 0 lines with `warning:`. `make check` passed with the iPad: `analyze` with 0 findings, 350 of 350 tests of `PointerDeviceTests` in 319 s, 48 of 48 snapshots, and `format`, `lint`, `layers`, `density` with Rendering at 2.00, `self-test`, and `plist`. The full run gave erase 21.70 ms, undo 19.13 ms, and redo 19.27 ms at the median. `make coverage` passed: Geometry 90.80 %, Model 90.80 %, InkEngine 92.73 %, Persistence 91.15 %, and Rendering 86.98 %. Only `EraseUndoPerformanceTests` failed in its instrumented run, which the target ignores (D-120).
+
 ### 6.4 Manual tests (tasks 2.5 and 4.1)
 
 Task 2.5, on 2026-10-23 on the iPad with the Apple Pencil Pro, with the code of commit 3739e40. The product owner hovered with the pen, the eraser, and the text tool on the root canvas and reported: "Works as expected." Inside a card, and with "Show Hover Preview" off in Settings, the product owner reported: "It works in cards, and are correctly disabled when setting are disabled." On 2026-10-23, the product owner accepted the start tokens: "Yes, they are fine with me." The tokens stay: a dot radius of 2 view points, a ring width of 1 view point, and the gray of `chromeSecondary`. Task 2.5 is done.
