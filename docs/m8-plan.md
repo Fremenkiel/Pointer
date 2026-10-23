@@ -371,6 +371,10 @@ The product owner decided D-144 again on the same day: D-56 at most 8.5 s and 12
 
 Task 3.1, on 2026-10-23 on the iPad in Release: `DesignSystem.Icon.export` (`square.and.arrow.up`), the string "Export", and the third button of `HistoryButtons`, which is off while `HistoryControls.isExporting` is `true`. The iPad made the references of `HistoryButtonsSnapshotTests` again, 288 by 88 pixels, and I looked at them before the commit. A new case shows the export button off during an export. The 4 tests pass (`.build/Runs/T31-3.xcresult`).
 
+Tasks 3.2 and 3.3, on 2026-10-23 on the iPad in Release. `CanvasViewController+Export.swift` ends a running text edit, shows the message "This canvas holds no ink and no text to export." for a canvas without strokes and text boxes, and runs `PDFExporter` in a detached task from a copy of the content. `CanvasExport` holds the running task, the anchor view, and the `share` closure that opens `UIActivityViewController(activityItemsConfiguration:)` with an `NSItemProvider` of the type PDF. `PDFFileName` makes the name of D-143. It also cuts a name over 255 UTF-8 bytes, the name limit of APFS, because a title of 120 CJK characters has 360 bytes. `PointerApp` gives the workspace title through `CanvasDependencies.workspaceTitle`. A failed export shows "The PDF could not be made." and logs the error without content.
+
+`ExportActionTests` passes: an empty canvas and a canvas with only cards show the message and start no export, a running edit ends and PDFKit finds its text in the PDF, the provider has the type PDF and the name "Trees.pdf" or the card title "AVL.pdf", a second tap starts no second export, and the screen goes away after an export. `PDFFileNameTests` passes. `TextEditTests`, `CanvasHistoryTests`, `CanvasLifetimeTests`, `AppMessageTests`, and `HistoryButtonsSnapshotTests` pass (39 tests, `.build/Runs/T33-3.xcresult`).
+
 ### 6.6 Manual tests (task 4.1)
 
 ### 6.7 Close (phase 5)
