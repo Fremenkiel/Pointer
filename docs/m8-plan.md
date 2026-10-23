@@ -273,6 +273,60 @@ Fill in this section during the work.
 
 ### 6.1 Baseline (task 0.1)
 
+Measured on 2026-10-23 on the iPad Pro 11-inch (M4) in Release, with the code of commit e986140 (the code of 55d43ea). The run is one full run of `PointerDeviceTests` with the result bundle `.build/Runs/m8-baseline.xcresult`. It took 296 s, and all 358 tests passed.
+
+| Step | Median | Slowest | Steps |
+|---|---|---|---|
+| Erase | 20.83 ms | 25.57 ms | 5 |
+| Undo | 16.88 ms | 20.21 ms | 5 |
+| Redo | 19.01 ms | 24.58 ms | 5 |
+
+The main-thread calls of `EraseUndoPerformanceTests` took 4.9 to 12.7 ms.
+
+The open of the D-56 canvas (`CanvasOpenPerformanceTests`) took a median of 248.2 ms and at most 259.9 ms over 10 opens, from the tap to the first frame. The load part took 69.7 to 86.1 ms. The memory of the open canvas was 339 MB held and 351 MB at the peak. The transition between two D-56 canvases held 223 MB for the parent, 353 MB at the peak of the open, 297 MB after the open, and 434 MB at the peak of the leave, and it freed the parent.
+
+| Card flight | Time | Frames | Late | Held |
+|---|---|---|---|---|
+| Open of the D-56 card | 469 ms to the child | 56 | 0 | 0 |
+| Leave of the D-56 card | 595 ms | 2 child, 43 parent | 0 | 0 |
+| Open of the empty card | 471 ms to the child | 56 | 0 | 0 |
+| Leave of the empty card | 490 ms | 2 child, 43 parent | 0 | 0 |
+| Open, main thread blocked | 465 ms to the child | 56 | 0 | 0 |
+| Leave, main thread blocked | 488 ms | 2 child, 43 parent | 0 | 0 |
+
+Each frame loop of `FrameLoopTests` ran at 120.0 fps with 0 late frames of 479.
+
+| Frame loop | Main ms, mean / p99 / max | Render ms, p50 / max | GPU ms, p50 / max | Allocations, p50 / p99 / max | Uncovered |
+|---|---|---|---|---|---|
+| few pan | 0.01 / 0.03 / 0.04 | 0.17 / 0.30 | 0.35 / 1.60 | 17 / 33 / 36 | 0 / 480 |
+| dense 20k pan | 0.01 / 0.03 / 0.04 | 0.20 / 2.86 | 0.35 / 2.62 | 17 / 2,256 / 2,641 | 0 / 480 |
+| dense 20k fast pan | 0.00 / 0.04 / 0.06 | 0.22 / 2.87 | 0.35 / 2.63 | 26 / 2,482 / 3,184 | 0 / 480 |
+| dense 20k zoom | 0.00 / 0.03 / 0.04 | 0.19 / 2.78 | 0.35 / 2.91 | 17 / 2,032 / 2,097 | 0 / 480 |
+| handwriting 200k pan | 0.01 / 0.03 / 0.04 | 0.20 / 2.18 | 0.35 / 5.07 | 17 / 2,170 / 2,175 | 0 / 480 |
+| handwriting 200k zoom | 0.01 / 0.03 / 0.04 | 0.19 / 2.69 | 0.35 / 4.32 | 17 / 2,161 / 2,176 | 0 / 480 |
+| D-56 text pan | 0.01 / 0.03 / 0.05 | 0.24 / 3.51 | 0.40 / 2.39 | 36 / 2,064 / 2,224 | 120 / 480 |
+| D-56 text zoom | 0.01 / 0.02 / 0.05 | 2.19 / 3.55 | 0.83 / 3.47 | 50 / 2,673 / 4,339 | 0 / 480 |
+| D-56 cards pan | 0.00 / 0.00 / 0.01 | 0.44 / 2.44 | 0.67 / 5.07 | 238 / 8,587 / 9,539 | 0 / 480 |
+| D-56 cards pan at zoom 1 | 0.00 / 0.00 / 0.01 | 0.12 / 0.90 | 0.79 / 7.06 | 89 / 2,613 / 2,621 | 0 / 480 |
+| D-56 cards zoom | 0.00 / 0.01 / 0.04 | 0.38 / 3.33 | 0.64 / 4.86 | 221 / 6,500 / 8,065 | 0 / 480 |
+
+The preview render of D-56 took 39.0 ms. The eraser frame took 0.13 ms on the CPU and 0.36 ms on the GPU at the median, and at most 0.22 and 1.57 ms.
+
+| Allocation test | Count |
+|---|---|
+| `FrameAllocationTests` | frame p50 15, bare Metal frame p50 15 |
+| `TransitionAllocationTests`, flight frame | p50 15, bare frame p50 15 |
+| `TransitionAllocationTests`, open frame | p50 15, bare frame p50 15 |
+| `PreviewAllocationTests` | card pass p50 2, bare pass p50 2 |
+| `TextPassAllocationTests` | text pass p50 2, bare pass p50 2 |
+| `TextMoveAllocationTests`, move step | median 6 |
+| `EditAllocationTests` | `FrameRenderer.apply`: erase 14, undo 2, redo 1 |
+| `HoverSampleAllocationTests`, pen and eraser | hover 0, bare move 0 |
+| `TextEditFrameAllocationTests`, short and long text | edit frame max 4, bare move max 4 |
+| `ZoomFrameAllocationTests` | spring median 0, max 140, glide max 0 |
+
+`TextLayoutPerformanceTests` laid out 5,000 boxes in a median of 57.6 ms. `TextPassPerformanceTests` took a median of 0.830 ms for 300 boxes and 48,000 glyphs.
+
 ### 6.2 Geometry and text (tasks 1.1 and 1.2)
 
 ### 6.3 The exporter (tasks 2.1 to 2.6)
