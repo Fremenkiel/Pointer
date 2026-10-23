@@ -25,6 +25,9 @@ public struct CanvasDependencies {
     public var onMessage: @MainActor (String) -> Void = { _ in }
     /// Opens a card after a double tap on it (CARD-03, D-09).
     public var onOpenCard: @MainActor (Card) -> Void = { _ in }
+    /// Gives the title of the workspace of this canvas for the name of an exported PDF, or `nil`
+    /// (D-143).
+    public var workspaceTitle: @MainActor () -> String? = { nil }
     /// The card of this canvas in its parent, for the pinch-out exit, or `nil` (CARD-05).
     public var parentCard: Card?
     /// Leaves this canvas for its parent after a pinch-out exit (CARD-05).

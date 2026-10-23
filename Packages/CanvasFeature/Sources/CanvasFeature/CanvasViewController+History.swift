@@ -250,11 +250,14 @@ extension CanvasViewController {
         historyControls.canRedo = textEditing.view.undoManager?.canRedo ?? false
     }
 
-    /// Shows the undo and redo buttons in the top right corner (UNDO-01).
+    /// Shows the undo, redo, and export buttons in the top right corner (UNDO-01, EXP-01).
     func installHistoryButtons() {
         historyControls.undo = { [weak self] in self?.undo() }
         historyControls.redo = { [weak self] in self?.redo() }
+        historyControls.export = { [weak self] in self?.exportCanvas() }
         let host = UIHostingController(rootView: HistoryButtons(controls: historyControls))
+        canvasExport.anchor = host.view
+        canvasExport.share = { [weak self] provider in self?.presentShareSheet(provider) }
         host.view.backgroundColor = .clear
         host.sizingOptions = .intrinsicContentSize
         addChild(host)

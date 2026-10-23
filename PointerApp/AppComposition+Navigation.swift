@@ -274,6 +274,9 @@ extension AppComposition {
         dependencies.level = target.level
         dependencies.onOpenCard = { [weak self] card in self?.openChild(card) }
         dependencies.parentCard = parentCard
+        dependencies.workspaceTitle = { [weak self] in
+            self?.selector?.workspaces.first { $0.id == target.workspace }?.title
+        }
         dependencies.onPinchLeave = { [weak self] in self?.leaveByPinch() }
         container.canvas?.endSession()
         let canvas = CanvasViewController(dependencies: dependencies)

@@ -111,6 +111,26 @@
         }
       }
     },
+    "The PDF could not be made.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The PDF could not be made."
+          }
+        }
+      }
+    },
+    "This canvas holds no ink and no text to export.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This canvas holds no ink and no text to export."
+          }
+        }
+      }
+    },
     "This canvas holds no more cards or text boxes.": {
       "localizations": {
         "en": {

@@ -5,6 +5,12 @@ enum CanvasStrings {
     static var undo: String { String(localized: "Undo", bundle: .module) }
     static var redo: String { String(localized: "Redo", bundle: .module) }
     static var export: String { String(localized: "Export", bundle: .module) }
+    static var exportEmpty: String {
+        String(localized: "This canvas holds no ink and no text to export.", bundle: .module)
+    }
+    static var exportFailed: String {
+        String(localized: "The PDF could not be made.", bundle: .module)
+    }
     static var pen: String { String(localized: "Pen", bundle: .module) }
     static var eraser: String { String(localized: "Eraser", bundle: .module) }
     static var tools: String { String(localized: "Tools", bundle: .module) }
