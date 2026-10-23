@@ -5,13 +5,17 @@ import UIKit
 /// The tool palette, the squeeze of the pencil, and the current-tool button (TOOL-07, PEN-03,
 /// D-63, D-64). The app plays no haptic event (PEN-06, D-23).
 extension CanvasViewController: UIPencilInteractionDelegate {
-    /// Connects the button and installs the one pencil interaction of the canvas.
+    /// Connects the button, installs the one pencil interaction of the canvas, and lets a new
+    /// touch set the pen width.
     func installToolControls() {
         toolControls.select = { [weak self] tool in self?.pick(tool) }
         toolControls.openPalette = { [weak self] in self?.showPaletteUnderButton() }
         toolControls.newCard = { [weak self] in self?.showPendingCard() }
         let interaction = UIPencilInteraction(delegate: self)
         view.addInteraction(interaction)
+        // PencilKit takes the pen width before `pencilBegan()` runs, so the width follows a new
+        // touch at its hit test (D-131).
+        canvasView.onTouchHitTest = { [weak self] in self?.applyPenTool() }
         toolButtonHost.view.backgroundColor = .clear
         toolButtonHost.sizingOptions = .intrinsicContentSize
     }

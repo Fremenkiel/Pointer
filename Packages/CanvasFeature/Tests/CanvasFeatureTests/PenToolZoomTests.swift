@@ -80,6 +80,20 @@ struct PenToolZoomTests {
         controller.pencilEnded(at: time, isCancelled: true)
     }
 
+    @Test("The hit test of a new touch gives the pen the width of a pinch that still runs")
+    func hitTestDuringPinch() throws {
+        let (controller, _) = try makeSpring()
+        controller.cameraController.stopAnimation()
+        let center = Point(x: 200, y: 150)
+        controller.cameraController.beginPinch(centroid: center)
+        controller.cameraController.updatePinch(scale: 0.5, centroid: center)
+        let before = try toolWidth(of: controller)
+        _ = controller.canvasView.hitTest(CGPoint(x: 100, y: 100), with: HoverEvent())
+        #expect(try toolWidth(of: controller) == before, "A hover sets no tool")
+        _ = controller.canvasView.hitTest(CGPoint(x: 100, y: 100), with: TouchEvent())
+        #expect(try toolWidth(of: controller) == expectedWidth(of: controller))
+    }
+
     @Test("At the end of a spring, the pen gets the width of the zoom at rest")
     func springAtRest() throws {
         let (controller, start) = try makeSpring()
@@ -94,4 +108,15 @@ struct PenToolZoomTests {
         #expect(controller.camera.zoom == Limits.minZoom)
         #expect(try toolWidth(of: controller) == expectedWidth(of: controller))
     }
+}
+
+/// An event of the type of a touch, as UIKit hit-tests it at a new touch. A plain `UIEvent` has
+/// no type.
+private final class TouchEvent: UIEvent {
+    override var type: UIEvent.EventType { .touches }
+}
+
+/// An event of the type of a hover.
+private final class HoverEvent: UIEvent {
+    override var type: UIEvent.EventType { .hover }
 }
