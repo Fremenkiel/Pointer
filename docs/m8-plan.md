@@ -369,6 +369,8 @@ The product owner decided D-144 again on the same day: D-56 at most 8.5 s and 12
 
 ### 6.5 The button and the share sheet (tasks 3.1 to 3.3)
 
+Task 3.1, on 2026-10-23 on the iPad in Release: `DesignSystem.Icon.export` (`square.and.arrow.up`), the string "Export", and the third button of `HistoryButtons`, which is off while `HistoryControls.isExporting` is `true`. The iPad made the references of `HistoryButtonsSnapshotTests` again, 288 by 88 pixels, and I looked at them before the commit. A new case shows the export button off during an export. The 4 tests pass (`.build/Runs/T31-3.xcresult`).
+
 ### 6.6 Manual tests (task 4.1)
 
 ### 6.7 Close (phase 5)

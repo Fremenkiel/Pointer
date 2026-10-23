@@ -1,8 +1,8 @@
 import DesignSystem
 import SwiftUI
 
-/// The undo and redo buttons in the top right corner (UNDO-01). A button is off while its list
-/// is empty.
+/// The undo, redo, and export buttons in the top right corner (UNDO-01, EXP-01). Undo and redo
+/// are off while their list is empty. Export is off while an export runs.
 struct HistoryButtons: View {
     let controls: HistoryControls
 
@@ -13,6 +13,13 @@ struct HistoryButtons: View {
             }
             button(DesignSystem.Icon.redo, label: CanvasStrings.redo, isEnabled: controls.canRedo) {
                 controls.redo()
+            }
+            button(
+                DesignSystem.Icon.export,
+                label: CanvasStrings.export,
+                isEnabled: !controls.isExporting
+            ) {
+                controls.export()
             }
         }
     }

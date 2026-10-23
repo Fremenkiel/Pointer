@@ -51,6 +51,16 @@
         }
       }
     },
+    "Export": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export"
+          }
+        }
+      }
+    },
     "New card": {
       "localizations": {
         "en": {

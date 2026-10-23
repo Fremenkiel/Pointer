@@ -95,6 +95,8 @@ public enum DesignSystem {
         public static let undo = "arrow.uturn.backward"
         /// Redoes the last undone step (UNDO-01).
         public static let redo = "arrow.uturn.forward"
+        /// Exports the canvas as a PDF (EXP-01).
+        public static let export = "square.and.arrow.up"
         /// The pen tool (TOOL-01).
         public static let pen = "pencil.tip"
         /// The eraser tool (TOOL-01).

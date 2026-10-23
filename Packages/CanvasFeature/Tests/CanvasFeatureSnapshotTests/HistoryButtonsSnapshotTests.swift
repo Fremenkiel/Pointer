@@ -3,15 +3,20 @@ import Testing
 
 @testable import CanvasFeature
 
-/// The undo and redo buttons (UNDO-01, TEST-07). `ViewSnapshot` comes from the selector
-/// snapshots, which `PointerDeviceTests` compiles in the same target.
+/// The undo, redo, and export buttons (UNDO-01, EXP-01, TEST-07). `ViewSnapshot` comes from the
+/// selector snapshots, which `PointerDeviceTests` compiles in the same target.
 @MainActor
 @Suite("History button snapshots")
 struct HistoryButtonsSnapshotTests {
-    private func controls(canUndo: Bool, canRedo: Bool) -> HistoryControls {
+    private func controls(
+        canUndo: Bool,
+        canRedo: Bool,
+        isExporting: Bool = false
+    ) -> HistoryControls {
         let controls = HistoryControls()
         controls.canUndo = canUndo
         controls.canRedo = canRedo
+        controls.isExporting = isExporting
         return controls
     }
 
@@ -36,6 +41,14 @@ struct HistoryButtonsSnapshotTests {
         try ViewSnapshot.assertMatches(
             HistoryButtons(controls: controls(canUndo: true, canRedo: false)),
             named: "history-buttons-undo"
+        )
+    }
+
+    @Test("Export is off while an export runs")
+    func exportOff() throws {
+        try ViewSnapshot.assertMatches(
+            HistoryButtons(controls: controls(canUndo: true, canRedo: true, isExporting: true)),
+            named: "history-buttons-exporting"
         )
     }
 }
