@@ -57,6 +57,8 @@ public final class CanvasViewController: UIViewController {
     private var isCameraMoving = false
     /// True after `endSession()` kept the session.
     var hasEndedSession = false
+    /// The zoom of the pen tool of the live canvas, or `nil` before the first tool (D-131).
+    var penToolZoom: Double?
     /// The key commands of undo and redo, made once (C-05).
     lazy var historyKeyCommands = makeHistoryKeyCommands()
     /// The edit view, the running edit, and the move of the text boxes.
@@ -90,8 +92,6 @@ public final class CanvasViewController: UIViewController {
         cameraController = CameraController(camera, dependencies.level)
         renderer.camera = cameraController.camera
         canvasView = CanvasView(renderer: renderer)
-        // `applyCamera` sets the width only when the zoom changes, so a stored zoom needs it here.
-        canvasView.liveCanvas.tool = PenTool.inkingTool(zoom: renderer.camera.zoom)
         content = dependencies.content
         clock = dependencies.clock
         repository = dependencies.repository
@@ -112,6 +112,7 @@ public final class CanvasViewController: UIViewController {
             converter: converter
         )
         super.init(nibName: nil, bundle: nil)
+        applyPenTool()
         takeSession()
         // The fill content stays in memory and is never saved (D-55).
         add(dependencies.transientStrokes)
@@ -249,6 +250,7 @@ public final class CanvasViewController: UIViewController {
         }
         guard isCameraMoving, !isGestureActive, !cameraController.isAnimating else { return }
         isCameraMoving = false
+        applyPenTool()
         // A flight of a card or a pinch-out exit leaves the camera outside the zoom range, and
         // the device state stores cameras of the range only (D-53).
         let camera = cameraController.shownCamera
@@ -266,6 +268,7 @@ public final class CanvasViewController: UIViewController {
         hideHoverDot()
         palmGuard.pencilBegan()
         cameraController.stopAnimation()
+        applyPenTool()
         for recognizer in [panRecognizer, pinchRecognizer] where recognizer.state != .possible {
             recognizer.isEnabled = false
             recognizer.isEnabled = true
@@ -331,13 +334,11 @@ public final class CanvasViewController: UIViewController {
         return isAnimating
     }
 
-    /// Sends the camera to the renderer and the matching pen width to the live canvas.
+    /// Sends the camera to the renderer. The pen width follows at a pencil down and at rest,
+    /// because a new `PKInkingTool` at each zoom frame allocates (PERF-01, D-131).
     private func applyCamera() {
         let camera = cameraController.shownCamera
         if camera != renderer.camera { isCameraMoving = true }
-        if camera.zoom != renderer.camera.zoom {
-            canvasView.liveCanvas.tool = PenTool.inkingTool(zoom: camera.zoom)
-        }
         // During a flight, the render thread takes the camera from the flight itself (D-121).
         if cameraController.flightProgress == nil { renderer.camera = camera }
         textCameraDidChange(isPinching: isPinchActive)

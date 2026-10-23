@@ -141,6 +141,7 @@ Status values: Open, Decided, Replaced.
 | D-131 | The findings of the review before M7 | Three fixes in phase 0 of M7, one in M7, the rest in M10 | Decided (2026-10-22) |
 | D-132 | Warnings that `-warnings-as-errors` does not stop | Recommendation: `make build` fails on any warning line in the build output | Open |
 | D-133 | The eraser circle of the hover dot: an outline or a filled disc | An outline ring with a line width token | Decided (2026-10-22) |
+| D-134 | The measure of the frames in task 3.1 of M7 | The frames of the canvas screen in `ZoomFrameAllocationTests` decide. The `dense 20k zoom` loop is recorded only. | Decided (2026-10-23) |
 
 ## Details
 
@@ -1384,6 +1385,16 @@ Status values: Open, Decided, Replaced.
 - Facts: D-128 and architecture.md section 4.6 say that the eraser shows a gray circle with the eraser radius of 8 view points. They do not say whether the circle is an outline or a filled disc. A filled disc of 16 points covers the ink that the user wants to erase.
 - Options: (a) an outline ring, with its line width as a `DesignSystem` token. (b) A filled disc, in the style of the dot of the pen.
 - Decision: (a). The start width is 1 view point. The product owner tunes it in task 2.5 with the other tokens of the dot.
+
+### D-134 The measure of the frames in task 3.1 of M7
+
+- Decided by the product owner on 2026-10-23: (a), the recommendation. Raised on 2026-10-23 by task 3.1 of [m7-plan.md](m7-plan.md).
+- Facts: task 3.1 asks for the main-thread time of the `dense 20k zoom` frame loop, and it is done when the frame loops are not slower. `FrameLoopTests` is in `Rendering` and drives the renderer alone. It never runs `CanvasViewController.applyCamera()`, so it cannot show the cost of the pen tool, and its check cannot fail for this task. The new `ZoomFrameAllocationTests` steps the frame callback of a root canvas screen without ink. On the iPad on 2026-10-23, a frame of a spring zoom made 139 allocations at the median and took 26.6 to 31.8 µs on the main thread over 3 runs. A frame of a glide at one zoom made 0 and took 0.3 µs. The line `liveCanvas.tool = PenTool.inkingTool(zoom:)` alone made 139.
+- Options:
+  - (a) Record the `dense 20k zoom` loop as the plan says, and use the frames of `ZoomFrameAllocationTests` for "Done when": 0 allocations in a zoom frame, and a main-thread time that is not slower.
+  - (b) Keep the plan as written.
+  - (c) Add a frame loop of the canvas screen with the dense 20k content.
+- Recommendation: (a). It measures the code of the task, and it costs no new suite of long runs.
 
 ## Points in the request that conflict or are not complete
 

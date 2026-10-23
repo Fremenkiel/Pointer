@@ -114,4 +114,13 @@ extension CanvasViewController: UIPencilInteractionDelegate {
     /// `true` if a double tap and a squeeze act: the container shows this canvas, and no card
     /// flight runs on it (architecture.md 4.5, CARD-03, CARD-04).
     var takesPencilActions: Bool { isShownCanvas && !isInCardTransition }
+
+    /// Gives the live canvas the pen width of the shown zoom, if the zoom changed since the last
+    /// time (architecture.md 4.2).
+    func applyPenTool() {
+        let zoom = cameraController.shownCamera.zoom
+        guard zoom != penToolZoom else { return }
+        canvasView.liveCanvas.tool = PenTool.inkingTool(zoom: zoom)
+        penToolZoom = zoom
+    }
 }
