@@ -377,4 +377,14 @@ Tasks 3.2 and 3.3, on 2026-10-23 on the iPad in Release. `CanvasViewController+E
 
 ### 6.6 Manual tests (task 4.1)
 
+The product owner tested on 2026-10-23 with the iPad Pro 11-inch (M4) and a Mac, with the Release build of commit d2066dd, and reported:
+
+1. Acceptance 1, ink, zoom to 6400 %, select, and search: "stroke stays sharp and search works."
+2. A canvas with a card: "No cards shown"
+3. A page over 14,400 points: "Works"
+4. A text with an emoji: "OK"
+5. An empty canvas: "The dialog is shown"
+
+The product owner did not report the name of the PDF on the Mac.
+
 ### 6.7 Close (phase 5)
