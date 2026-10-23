@@ -324,7 +324,7 @@ The preview render of D-56 took 30.9 ms. The eraser frame took 0.12 ms on the CP
 
 ### 6.4 Manual tests (tasks 2.5 and 4.1)
 
-Task 2.5, on 2026-10-23 on the iPad with the Apple Pencil Pro, with the code of commit 3739e40. The product owner hovered with the pen, the eraser, and the text tool on the root canvas and reported: "Works as expected." Inside a card, and with "Show Hover Preview" off in Settings, the product owner reported: "It works in cards, and are correctly disabled when setting are disabled." The size and the gray of the tokens are not yet accepted.
+Task 2.5, on 2026-10-23 on the iPad with the Apple Pencil Pro, with the code of commit 3739e40. The product owner hovered with the pen, the eraser, and the text tool on the root canvas and reported: "Works as expected." Inside a card, and with "Show Hover Preview" off in Settings, the product owner reported: "It works in cards, and are correctly disabled when setting are disabled." On 2026-10-23, the product owner accepted the start tokens: "Yes, they are fine with me." The tokens stay: a dot radius of 2 view points, a ring width of 1 view point, and the gray of `chromeSecondary`. Task 2.5 is done.
 
 ### 6.5 Close (phase 5)
 
