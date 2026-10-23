@@ -138,14 +138,28 @@ struct HoverTests {
         #expect(controller.canvasView.hoverDot.shownCenter == nil)
     }
 
+    @Test("The delegate of the hover recognizer lets every pencil touch through (fix of task 2.2)")
+    func receivesPencilTouches() throws {
+        let controller = try makeController()
+        let recognizers = controller.canvasView.gestureRecognizers ?? []
+        let hover = try #require(recognizers.compactMap { $0 as? PencilHoverRecognizer }.first)
+        let delegate = try #require(hover.delegate)
+        // UIKit delivers a hover as a pencil touch, and a delegate that refuses pencil touches
+        // keeps every hover from the recognizer.
+        #expect(delegate !== controller)
+        #expect(
+            !delegate.responds(to: NSSelectorFromString("gestureRecognizer:shouldReceiveTouch:"))
+        )
+        #expect(
+            !delegate.responds(to: NSSelectorFromString("gestureRecognizer:shouldReceiveEvent:"))
+        )
+    }
+
     @Test("The hover recognizer takes the pencil only and recognizes with every recognizer")
     func recognizer() throws {
         let controller = try makeController()
         let recognizers = controller.canvasView.gestureRecognizers ?? []
-        let hover = try #require(
-            recognizers.compactMap { $0 as? UIHoverGestureRecognizer }
-                .first { $0.delegate === controller }
-        )
+        let hover = try #require(recognizers.compactMap { $0 as? PencilHoverRecognizer }.first)
         #expect(hover.allowedTouchTypes == [NSNumber(value: UITouch.TouchType.pencil.rawValue)])
         let others: [UIGestureRecognizer] =
             [
@@ -154,8 +168,7 @@ struct HoverTests {
                 controller.textEditing.pencilTap, controller.textEditing.fingerTap,
             ] + recognizers.filter { $0 !== hover }
         for other in others {
-            #expect(controller.gestureRecognizer(hover, shouldRecognizeSimultaneouslyWith: other))
+            #expect(hover.gestureRecognizer(hover, shouldRecognizeSimultaneouslyWith: other))
         }
-        #expect(controller.gestureRecognizerShouldBegin(hover))
     }
 }

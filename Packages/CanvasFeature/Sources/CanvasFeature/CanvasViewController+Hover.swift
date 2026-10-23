@@ -2,16 +2,9 @@ import UIKit
 
 /// The hover dot of the pencil (architecture.md 4.6, PEN-04, D-126, D-128).
 extension CanvasViewController {
-    /// Adds the hover recognizer of the pencil to the canvas view. It takes hover events only,
-    /// and it recognizes together with every other recognizer, also the hover recognizers of
-    /// UIKit and PencilKit, so it blocks no gesture of the canvas.
+    /// Adds the hover recognizer of the pencil to the canvas view.
     func installHover() {
-        let recognizer = UIHoverGestureRecognizer(
-            target: self,
-            action: #selector(handleHover(_:))
-        )
-        recognizer.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.pencil.rawValue)]
-        recognizer.delegate = self
+        let recognizer = PencilHoverRecognizer(target: self, action: #selector(handleHover(_:)))
         canvasView.addGestureRecognizer(recognizer)
     }
 
