@@ -25,6 +25,14 @@ public struct TextLayout: Sendable {
         }
     }
 
+    /// One line of a text, for the PDF export (D-140).
+    public struct Line {
+        /// The UTF-16 range of the line in the text.
+        public let range: Range<Int>
+        /// The Core Text line in `TextLayout.baseFont`, with the fallback fonts of Core Text.
+        public let line: CTLine
+    }
+
     /// The fonts of the glyphs at `TextStyle.fontSize`: SF Mono first, then fallback fonts.
     public let fonts: [UIFont]
     /// The glyphs, line by line.
@@ -69,21 +77,9 @@ public struct TextLayout: Sendable {
         // Each glyph comes from at least one UTF-16 unit in almost all text, so one reserve
         // holds the glyphs: a reserve per run copied the list at each line (review of M5).
         var builder = Builder(capacity: length)
-        let attributed = NSAttributedString(
-            string: text,
-            attributes: [.font: Self.baseFont]
-        )
-        let typesetter = CTTypesetterCreateWithAttributedString(attributed)
-        var start = 0
-        // Each line takes at least one UTF-16 unit, so the text bounds the loop (FLOW-03).
-        for _ in 0..<length where start < length {
-            let count = CTTypesetterSuggestLineBreak(typesetter, start, TextStyle.maxWidth)
-            assert(count > 0, "A line takes at least one unit")
-            let line = CTTypesetterCreateLine(typesetter, CFRange(location: start, length: count))
-            builder.append(line)
-            start += max(count, 1)
-        }
-        if length == 0 || text.hasSuffix("\n") || text.hasSuffix("\r") {
+        Self.breakLines(of: text) { _, line in builder.append(line) }
+        assert(length == 0 || builder.lineCount > 0, "A text of \(length) units has a line")
+        if Self.endsWithEmptyLine(text) {
             builder.appendEmptyLine()
         }
         fonts = builder.fonts
@@ -92,6 +88,55 @@ public struct TextLayout: Sendable {
         lineCount = builder.lineCount
         size = Size(width: builder.width, height: Double(builder.lineCount) * Self.lineHeight)
         assert(lineCount >= 1, "A layout has one line at least")
+    }
+
+    /// Returns the lines of a text, with the line breaks of `init(text:)`, for the PDF (D-140).
+    ///
+    /// The layout keeps no lines, because a canvas of D-56 holds 10,000 text boxes (D-93).
+    ///
+    /// - Precondition: The text has at most `Limits.maxTextLength` code points.
+    /// - Returns: `lineCount` lines of the layout of the same text. The ranges cover the text in
+    ///   order without a gap. The empty last line has an empty range at the end of the text.
+    public static func lines(of text: String) -> [Line] {
+        precondition(
+            text.unicodeScalars.count <= Limits.maxTextLength,
+            "A text box holds at most \(Limits.maxTextLength) code points"
+        )
+        let length = text.utf16.count
+        var lines: [Line] = []
+        breakLines(of: text) { range, line in
+            lines.append(Line(range: range.location..<range.location + range.length, line: line))
+        }
+        if endsWithEmptyLine(text) {
+            let empty = NSAttributedString(string: "", attributes: [.font: baseFont])
+            let line = CTLineCreateWithAttributedString(empty)
+            lines.append(Line(range: length..<length, line: line))
+        }
+        assert(lines.last?.range.upperBound == length, "The lines end at unit \(length)")
+        return lines
+    }
+
+    /// Breaks a text into lines at `TextStyle.maxWidth`, and calls `body` with the UTF-16 range
+    /// and the Core Text line of each, in order. The screen and the PDF share it (D-140).
+    private static func breakLines(of text: String, _ body: (CFRange, CTLine) -> Void) {
+        let length = text.utf16.count
+        let attributed = NSAttributedString(string: text, attributes: [.font: baseFont])
+        let typesetter = CTTypesetterCreateWithAttributedString(attributed)
+        var start = 0
+        // Each line takes at least one UTF-16 unit, so the text bounds the loop (FLOW-03).
+        for _ in 0..<length where start < length {
+            let count = CTTypesetterSuggestLineBreak(typesetter, start, TextStyle.maxWidth)
+            assert(count > 0, "A line takes at least one unit")
+            let range = CFRange(location: start, length: max(count, 1))
+            body(range, CTTypesetterCreateLine(typesetter, range))
+            start += max(count, 1)
+        }
+        assert(start >= length, "The lines cover the \(length) units of the text")
+    }
+
+    /// Whether the layout of a text ends with an empty line, as the edit view shows it.
+    private static func endsWithEmptyLine(_ text: String) -> Bool {
+        text.isEmpty || text.hasSuffix("\n") || text.hasSuffix("\r")
     }
 
     /// Collects the lines of a layout.

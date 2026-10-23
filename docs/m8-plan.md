@@ -331,6 +331,8 @@ The preview render of D-56 took 39.0 ms. The eraser frame took 0.13 ms on the CP
 
 Task 1.1, on 2026-10-23 on the Mac: `StrokeCurve.bezierSegment(at:)` gives a `BezierSegment`. For curves of 2, 3, and 300 points, the largest distance between the Bézier segments and `point(at:)` at 33 parameters per segment was below 1e-9 canvas points. The ends equal the end control points. Exit tests cover the preconditions of the segment index and of the Bézier parameter. All 40 Geometry tests pass, and the line coverage of `Geometry` is 90.88 % (518 of 570 lines).
 
+Task 1.2, on 2026-10-23 on the iPad in Release: `TextLayout.lines(of:)` gives the UTF-16 range and the `CTLine` of each line. It shares the private line-break loop `breakLines(of:_:)` with `init(text:)`, and the stored layout did not change. `TextLineTests` passes for the empty text, one line, a new line at the end, a long word, 10,000 code points, CJK, and emoji. `TextLayoutTests`, `TextRenderingTests`, and `TextAlignmentSnapshotTests` pass (result bundle `.build/Runs/T12-text-1.xcresult`). `TextLayoutPerformanceTests` laid out 5,000 boxes in a median of 54.6, 55.7, and 54.8 ms in three runs, against 57.6 ms in the baseline. The density of `Rendering` stays at 2.00 (237 functions, 474 checks).
+
 ### 6.3 The exporter (tasks 2.1 to 2.6)
 
 ### 6.4 The measures of an export (task 2.7)
