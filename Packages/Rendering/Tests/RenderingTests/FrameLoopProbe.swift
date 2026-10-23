@@ -59,6 +59,9 @@ final class FrameLoopCollector: FrameObserving {
         var gpu: [Double] = []
         var allocations: [Double] = []
         var renderThread: [Double] = []
+        var targets: [Double] = []
+        var gpuSpans: [(start: Double, end: Double)] = []
+        var dropped = 0
         var builds = 0
         var uncovered = 0
         var frames = 0
@@ -111,13 +114,17 @@ final class FrameLoopCollector: FrameObserving {
             let milliseconds = (buffer.gpuEndTime - buffer.gpuStartTime) * 1000
             state.withLock {
                 if $0.window.contains(buffer.gpuEndTime) { $0.gpu.append(milliseconds) }
+                $0.gpuSpans.append((buffer.gpuStartTime, buffer.gpuEndTime))
             }
         }
     }
 
     /// A presented time of 0 marks a frame that the display never showed.
     private func record(presentedAt time: Double) {
-        state.withLock { if time > 0 && $0.window.contains(time) { $0.presented.append(time) } }
+        state.withLock {
+            if time > 0 && $0.window.contains(time) { $0.presented.append(time) }
+            if time == 0 { $0.dropped += 1 }
+        }
     }
 
     func didRender(_ record: FrameRecord) {
@@ -129,6 +136,7 @@ final class FrameLoopCollector: FrameObserving {
             }
             state.frames += 1
             state.renderThread.append(record.cpuMilliseconds)
+            state.targets.append(record.targetTime)
             if record.front != state.lastFront { state.builds += 1 }
             state.lastFront = record.front
             guard let covered = record.frontRect else {
@@ -150,6 +158,10 @@ final class FrameLoopCollector: FrameObserving {
             report.gpu = state.gpu
             report.allocations = state.allocations
             report.renderThread = state.renderThread
+            report.presentedTimes = times
+            report.targetTimes = state.targets
+            report.droppedFrames = state.dropped
+            report.gpuSpans = state.gpuSpans.sorted { $0.start < $1.start }
             report.builds = state.builds
             report.uncoveredFrames = state.uncovered
             report.frames = state.frames

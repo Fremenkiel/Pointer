@@ -21,6 +21,14 @@ struct FrameLoopReport: CustomStringConvertible {
     var uncoveredFrames = 0
     /// The measured frames.
     var frames = 0
+    /// The presented times of the shown frames, in seconds, sorted.
+    var presentedTimes: [Double] = []
+    /// The target times of the rendered frames, in seconds, in the order of the frames.
+    var targetTimes: [Double] = []
+    /// The frames that the display never showed: a presented time of 0.
+    var droppedFrames = 0
+    /// The GPU start and end times of the measured frames, in seconds, sorted by the start.
+    var gpuSpans: [(start: Double, end: Double)] = []
 
     /// The frames per second over the measured time.
     var frameRate: Double {

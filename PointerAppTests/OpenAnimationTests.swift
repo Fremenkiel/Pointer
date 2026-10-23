@@ -249,7 +249,7 @@ final class OpenAnimationTests: XCTestCase {
             jump.move,
             jump.zoom,
             latePlaces(report)
-        )
+        ) + " " + startDetail(report)
     }
 
     /// The largest move of the screen center and the largest zoom ratio between two frames.

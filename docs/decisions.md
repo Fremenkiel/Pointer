@@ -144,6 +144,7 @@ Status values: Open, Decided, Replaced.
 | D-134 | The measure of the frames in task 3.1 of M7 | The frames of the canvas screen in `ZoomFrameAllocationTests` decide. The `dense 20k zoom` loop is recorded only. | Decided (2026-10-23) |
 | D-135 | A pencil down during a pinch past a zoom limit | The camera holds during the stroke and springs back after the lift | Decided (2026-10-23) |
 | D-136 | Late frames at the start of card flights in full runs | Trace the late frame now, before M7 closes | Decided (2026-10-23) |
+| D-137 | The wiring of new textures in the first frames of a leave | Measure which textures wire, then make them resident before the flight | Decided (2026-10-23) |
 
 ## Details
 
@@ -1417,6 +1418,16 @@ Status values: Open, Decided, Replaced.
   - (b) Keep the checks strict, and accept that `make check` fails in most full runs until M10.
   - (c) Trace the late frame now, before M7 closes.
 - Recommendation: (a). The late frame is older than M7, a strict check that fails in most runs hides new failures (the reason of D-125), and M10 already holds the trace.
+
+### D-137 The wiring of new textures in the first frames of a leave
+
+- Decided by the product owner on 2026-10-23: (a), the recommendation. Raised on 2026-10-23 by the trace of D-136.
+- Facts: the report of `OpenAnimationTests` now gives the first frames of each flight. In 4 full runs on 2026-10-23, every leave started the GPU work of frame 1 2 to 4 ms after the frame was due (10.3 to 12.3 ms for a target of 8.3 ms). Frame 0 and the frames from frame 2 on started on time. The render thread spent at most 1.1 ms on each of these frames. In the passing runs, frame 1 still showed at 16.7 ms. In the 2 failing runs, it missed by one refresh. A Metal System Trace of a full run (`.build/Traces/D136-full.trace`) showed 355 Pointer command buffers with 2 ms or more of CPU time in the driver. 283 of them wired 1 MiB or more of memory during that time, mostly 52 to 131 MiB at once. Of the 17,374 faster command buffers, 867 did. While a command buffer waits for the wiring, the GPU is idle. A committed texture takes 32.3 MB on this iPad (architecture.md 5.2). The late open of the empty card (D-125) is a different fault: the render thread skips a target.
+- Options:
+  - (a) Make each new large texture resident when it is made, before a flight needs it, for example with an `MTLResidencySet` and `requestResidency()`, or with a small use of the texture in a frame that is not shown.
+  - (b) Mark the late-frame check of the leaves as an expected failure that is not strict, as D-125 does, and move the fix to M10.
+  - (c) Keep the checks strict and change nothing now.
+- Recommendation: (a), after a measure of which textures wire at frame 1 of a leave. A residency request is in Rendering only, and it takes the wiring off the frames of the flight.
 
 ## Points in the request that conflict or are not complete
 

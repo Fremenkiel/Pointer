@@ -18,7 +18,26 @@ extension OpenAnimationTests {
         let childIntervals = child.intervals.map { String(format: "%.1f", $0) }
         return "(child late \(child.lateIntervals) of "
             + childIntervals.joined(separator: " ")
-            + ", parent late at " + latePlaces(parent) + ")"
+            + ", parent late at " + latePlaces(parent) + "; " + startDetail(parent) + ")"
+    }
+
+    /// The first frames of a report (D-136): the target and the presented times in
+    /// milliseconds after the first target, the render-thread times, and the frames that never
+    /// showed.
+    static func startDetail(_ report: FrameLoopReport) -> String {
+        let count = 5
+        guard let first = report.targetTimes.first else { return "no frames" }
+        let format = { (values: [Double]) in
+            values.prefix(count).map { String(format: "%.1f", ($0 - first) * 1000) }
+                .joined(separator: " ")
+        }
+        let render = report.renderThread.prefix(count).map { String(format: "%.2f", $0) }
+        let gpu = report.gpuSpans.filter { $0.end >= first }.prefix(count).map {
+            String(format: "%.1f-%.1f", ($0.start - first) * 1000, ($0.end - first) * 1000)
+        }
+        return "targets " + format(report.targetTimes) + ", presented "
+            + format(report.presentedTimes) + ", render ms " + render.joined(separator: " ")
+            + ", GPU " + gpu.joined(separator: " ") + ", dropped \(report.droppedFrames)"
     }
 
     /// The places and the lengths of the late intervals of a report: "2:16.7 9:25.0".
