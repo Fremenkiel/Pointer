@@ -144,7 +144,7 @@ Status values: Open, Decided, Replaced.
 | D-134 | The measure of the frames in task 3.1 of M7 | The frames of the canvas screen in `ZoomFrameAllocationTests` decide. The `dense 20k zoom` loop is recorded only. | Decided (2026-10-23) |
 | D-135 | A pencil down during a pinch past a zoom limit | The camera holds during the stroke and springs back after the lift | Decided (2026-10-23) |
 | D-136 | Late frames at the start of card flights in full runs | Trace the late frame now, before M7 closes | Decided (2026-10-23) |
-| D-137 | The wiring of new textures in the first frames of a leave | Measure which textures wire, then make them resident before the flight | Decided (2026-10-23) |
+| D-137 | The wiring of new textures in the first frames of a leave | The late-frame checks of the leaves become expected failures that are not strict. M10 traces the rest. | Decided again (2026-10-23) |
 
 ## Details
 
@@ -1428,6 +1428,13 @@ Status values: Open, Decided, Replaced.
   - (b) Mark the late-frame check of the leaves as an expected failure that is not strict, as D-125 does, and move the fix to M10.
   - (c) Keep the checks strict and change nothing now.
 - Recommendation: (a), after a measure of which textures wire at frame 1 of a leave. A residency request is in Rendering only, and it takes the wiring off the frames of the flight.
+- Measures after the first decision, 2026-10-23, each with `OpenAnimationTests` alone, 10 iterations, unless named otherwise:
+  1. A clear pass of the spare committed texture in the first frame of a layer moved the GPU start of frame 1 of the empty leave from 13.6 to 14.1 ms (9 of 10 iterations of the unchanged code) to 11.7 to 12.4 ms (9 of 10). It gains about 2 ms. Its effect on the late frames of full runs is not measured, and the first frame of every new canvas pays the wiring of both textures instead.
+  2. A clear pass of the preview atlas in its first frame gained nothing: 14.0 to 14.8 ms.
+  3. Four presented frames of the parent before the flight did not stop the wiring at the start of the flight (15.8 and 35.8 MiB). The GPU waits of frames 0 to 2 went from 2.73, 1.98, and 1.54 ms to 1.93, 1.86, and 1.38 ms (one traced run each).
+  4. With the canvas layers not opaque, backboardd sent no "Unwire Memory Request" at the start of the flight, and the wiring fell from about 51 MiB to 20 MiB. The GPU waits of frames 0 to 2 stayed at 1.22, 2.17, and 1.95 ms (one traced run). The unwiring of the hidden parent is real, but it is not the main cause of the wait.
+- None of the changes is in the code. The cause of the rest of the wait is not known.
+- Decided again by the product owner on 2026-10-23: (b). The late-frame checks of the leave of the D-56 card and of the empty card are expected failures that are not strict, and M10 traces the rest of the wait in Instruments. On the same day, the product owner put the late-frame check of the open with a blocked main thread under D-125, because it has the same skipped target at place 0.
 
 ## Points in the request that conflict or are not complete
 

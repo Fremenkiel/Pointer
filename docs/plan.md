@@ -183,6 +183,9 @@ Acceptance:
 - Accessibility: VoiceOver labels for every button, Dynamic Type in the chrome.
 - From the review before M7 (D-125, D-131):
   - Trace the late frame at place 0 of the open of an empty card on the render thread with Instruments. Fix it, and remove the expected failure of D-125.
+  - Trace the GPU wait of frames 0 to 2 of each leave in Instruments, with the thread states and the display queue (D-137). Fix it, and remove the expected failures of D-137 and the one of D-125 in `FlightStallTests`.
+  - `AppMessageTests` "A message shows while the palette is open" fails in each repetition after the first of `-test-iterations`, also on the code before M7, and it failed in 2 of about 17 full runs in M7. Make it independent of the presentations that are left on the shared test window (TEST-04).
+  - `testSnapshotOfTwentyThousandStrokesWithSaves` had a slowest save of 50.3 to 53.3 ms against its limit of 50 ms in 3 full runs in M7. M7 did not change `Persistence`. Measure it in alternating runs.
   - Delete the preview file of each canvas that the 30-day purge removes. `PreviewStore.remove(_:)` has no caller.
   - Measure the sets that the release preconditions of `Eraser.command` and `EraseStrokes.init` build at each erase, and move them to `assert` if the cost shows.
   - Read `isLoadingText`, `isLoadingCards`, and `isLoadingPreviews` of `RenderEngine` under one lock, or count the items in transit, so that no wait ends early.

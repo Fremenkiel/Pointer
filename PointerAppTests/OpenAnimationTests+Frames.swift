@@ -40,6 +40,17 @@ extension OpenAnimationTests {
             + ", GPU " + gpu.joined(separator: " ") + ", dropped \(report.droppedFrames)"
     }
 
+    /// Checks that a flight has no late frame, as an expected failure that is not strict: the
+    /// product owner accepted one late frame of `decision` in full runs, and M10 traces it
+    /// (D-125, D-137).
+    static func expectNoLateFrame(_ late: Int, _ text: String, accepted decision: String) {
+        let options = XCTExpectedFailure.Options()
+        options.isStrict = false
+        XCTExpectFailure("The accepted late frame of \(decision)", options: options) {
+            XCTAssertEqual(late, 0, text)
+        }
+    }
+
     /// The places and the lengths of the late intervals of a report: "2:16.7 9:25.0".
     static func latePlaces(_ report: FrameLoopReport) -> String {
         let late = FrameLoopReport.lateIntervalMilliseconds
