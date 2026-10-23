@@ -70,6 +70,7 @@ expect 1 coverage.swift coverage-low "TEST-02 Geometry: 89.00 % (89 of 100 lines
     "TEST-02 Rendering: 69.00 % (69 of 100 lines) is below 70 %"
 expect 1 coverage.swift coverage-missing "TEST-02 Rendering: no report at"
 expect_lint lint-violations
+expect_lint lint-pdf-context
 expect_lint lint-clean
 
 [ "$failures" -eq 0 ]

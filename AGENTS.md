@@ -46,7 +46,9 @@ pointer/
     Rendering/             Layer 1: Metal renderer and shaders
       Tests/RenderingTests/             part of PointerDeviceTests only (D-77)
         References/        reference PNGs of the snapshot tests, made on the iPad (TEST-07)
-    Export/                Layer 1: PDF export, no Tests/ yet
+    Export/                Layer 1: PDF export
+      Tests/ExportTests/   part of PointerDeviceTests only (D-77, D-140)
+        References/        reference PNGs of the snapshot tests, made on the iPad (TEST-07)
     DesignSystem/          Layer 1: tokens, no Tests/ yet
     CanvasFeature/         Layer 2: canvas screen
       Sources/CanvasFeature/Resources/      String Catalog of the canvas

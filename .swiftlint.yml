@@ -97,7 +97,7 @@ custom_rules:
 
   arch_04_pdf:
     name: "ARCH-04"
-    regex: '\bUIGraphicsPDFRenderer\b'
+    regex: '\bUIGraphicsPDFRenderer\b|\bCGContext\s*\(\s*consumer:|\bbeginPDFPage\b'
     excluded: 'Packages/Export/'
     match_kinds: [identifier, typeidentifier]
     message: "Only Export makes PDFs. Call PDFExporter instead."

@@ -12,6 +12,7 @@ let package = Package(
         .package(path: "../Geometry"),
         .package(path: "../InkEngine"),
         .package(path: "../Model"),
+        .package(path: "../Rendering"),
     ],
     targets: [
         .target(
@@ -20,9 +21,21 @@ let package = Package(
                 .product(name: "Geometry", package: "Geometry"),
                 .product(name: "InkEngine", package: "InkEngine"),
                 .product(name: "Model", package: "Model"),
+                .product(name: "Rendering", package: "Rendering"),
             ],
             swiftSettings: [.treatAllWarnings(as: .error)]
-        )
+        ),
+        .testTarget(
+            name: "ExportTests",
+            dependencies: [
+                "Export",
+                .product(name: "Geometry", package: "Geometry"),
+                .product(name: "Model", package: "Model"),
+                .product(name: "Rendering", package: "Rendering"),
+            ],
+            exclude: ["References"],
+            swiftSettings: [.treatAllWarnings(as: .error)]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

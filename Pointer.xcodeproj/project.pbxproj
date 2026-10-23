@@ -21,6 +21,7 @@
 		B0000000000000000000B012 /* WorkspaceFeature in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D012 /* WorkspaceFeature */; };
 		B0000000000000000000B013 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D013 /* Persistence */; };
 		B0000000000000000000B014 /* Geometry in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D014 /* Geometry */; };
+		B0000000000000000000B015 /* Export in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D015 /* Export */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -87,6 +88,11 @@
 			path = Packages/WorkspaceFeature/Tests/WorkspaceFeatureTests;
 			sourceTree = "<group>";
 		};
+		B0000000000000000000G011 /* Packages/Export/Tests/ExportTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Packages/Export/Tests/ExportTests;
+			sourceTree = "<group>";
+		};
 		B0000000000000000000G010 /* PointerAppTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = PointerAppTests;
@@ -120,6 +126,7 @@
 				B0000000000000000000B010 /* Rendering in Frameworks */,
 				B0000000000000000000B011 /* Persistence in Frameworks */,
 				B0000000000000000000B012 /* WorkspaceFeature in Frameworks */,
+				B0000000000000000000B015 /* Export in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -137,6 +144,7 @@
 				B0000000000000000000G008 /* Packages/CanvasFeature/Tests/CanvasFeatureSnapshotTests */,
 				B0000000000000000000G009 /* Packages/WorkspaceFeature/Tests/WorkspaceFeatureTests */,
 				B0000000000000000000G010 /* PointerAppTests */,
+				B0000000000000000000G011 /* Packages/Export/Tests/ExportTests */,
 				B0000000000000000000G003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -204,6 +212,7 @@
 				B0000000000000000000G008 /* Packages/CanvasFeature/Tests/CanvasFeatureSnapshotTests */,
 				B0000000000000000000G009 /* Packages/WorkspaceFeature/Tests/WorkspaceFeatureTests */,
 				B0000000000000000000G010 /* PointerAppTests */,
+				B0000000000000000000G011 /* Packages/Export/Tests/ExportTests */,
 			);
 			name = PointerDeviceTests;
 			packageProductDependencies = (
@@ -213,6 +222,7 @@
 				B0000000000000000000D010 /* Rendering */,
 				B0000000000000000000D011 /* Persistence */,
 				B0000000000000000000D012 /* WorkspaceFeature */,
+				B0000000000000000000D015 /* Export */,
 			);
 			productName = PointerDeviceTests;
 			productReference = B0000000000000000000F002 /* PointerDeviceTests.xctest */;
@@ -255,6 +265,7 @@
 				B0000000000000000000K006 /* XCLocalSwiftPackageReference "Packages/Rendering" */,
 				B0000000000000000000K007 /* XCLocalSwiftPackageReference "Packages/Geometry" */,
 				B0000000000000000000K008 /* XCLocalSwiftPackageReference "Packages/Persistence" */,
+				B0000000000000000000K009 /* XCLocalSwiftPackageReference "Packages/Export" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B0000000000000000000G003 /* Products */;
@@ -521,6 +532,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Persistence;
 		};
+		B0000000000000000000K009 /* XCLocalSwiftPackageReference "Packages/Export" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Export;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -579,6 +594,10 @@
 		B0000000000000000000D014 /* Geometry */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Geometry;
+		};
+		B0000000000000000000D015 /* Export */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Export;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
