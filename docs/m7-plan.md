@@ -359,6 +359,30 @@ Task 4.1, on 2026-10-23 on the iPad with the Apple Pencil Pro. The product owner
 
 ### 6.5 Close (phase 5)
 
+Measured on 2026-10-23 on the iPad in Release.
+
+Five full runs of `PointerDeviceTests` in a row with the code of commit 194959c (bundles `.build/Runs/P5-full1` to `P5-full5`) took 300 to 309 s. One run passed all 356 tests. Four runs failed 1 or 2 tests: a late frame at place 0 or 1 of the leave of the empty card (2 runs), of the open with a blocked main thread (2 runs), and of the leave of the D-56 card (1 run), and one save of 50.34 ms in `testSnapshotOfTwentyThousandStrokesWithSaves` against its limit of 50 ms. Alternating full runs gave the same late frame for the code before phase 1 (550aaef) in 1 of 2 runs, so M7 did not cause it (D-136). The trace of D-136 and D-137 found that frames 0 to 2 of each leave wait 1 to 4 ms for the GPU while the driver wires new memory. D-137 records the four experiments. No fix went into the code, and M10 traces the rest of the wait.
+
+The measures of the five runs, against the baseline of section 6.2. A value is the median of the five runs, and the range follows it.
+
+| Measure | Baseline | Phase 5 | Change |
+|---|---|---|---|
+| Erase, median | 25.62 ms | 20.86 ms (19.71 to 25.18) | 19 % faster |
+| Erase, slowest | 26.32 ms | 25.65 ms (22.51 to 29.05) | 3 % faster |
+| Undo, median | 17.69 ms | 18.17 ms (17.17 to 19.45) | 3 % slower |
+| Undo, slowest | 20.52 ms | 20.21 ms (19.05 to 21.12) | 2 % faster |
+| Redo, median | 22.88 ms | 20.27 ms (16.05 to 22.01) | 11 % faster |
+| Redo, slowest | 24.32 ms | 23.42 ms (18.97 to 25.99) | 4 % faster |
+| Open of the D-56 canvas, median | 256.3 ms | 258.5 ms (257.1 to 265.8) | 1 % slower |
+| Open of the D-56 canvas, slowest | 262.4 ms | 268.8 ms (266.6 to 284.0) | 2 % slower |
+| Memory of the open canvas, held | 339 MB | 353 MB (335 to 354) | 4 % more |
+
+Each frame loop of `FrameLoopTests` had 0 late frames in each run. The largest main-thread time of a frame was 0.09 ms, and the mean stayed at 0.00 to 0.01 ms. The transition memory held 223 to 224 MB for the parent, 349 MB at the peak of the open, 292 MB after the open, and 430 to 431 MB at the peak of the leave, and it freed the parent. No measure is more than 10 % slower than the baseline (code-of-code.md section 5, item 10).
+
+`AppMessageTests` "A message shows while the palette is open" failed in `make check` once and in one traced run. It fails in each repetition after the first of `-test-iterations`, also on the code before M7, so M7 did not cause it. M10 holds it.
+
+Close, with the code of commit 9aad697. After a touch of the changed Swift files, `make build` printed 0 lines with `warning:`. `make check` passed with the iPad: `analyze` with 0 findings, the Tier A tests, 356 of 356 tests of `PointerDeviceTests` in 323 s, 48 of 48 snapshots, and `format`, `lint`, `layers` with 0 findings, `density` with Rendering at 2.00, `self-test`, and `plist`. `make coverage` passed: Geometry 90.80 %, Model 90.80 %, InkEngine 92.73 %, Persistence 91.15 %, and Rendering 86.97 % (5,978 of 6,874 lines). Only `EraseUndoPerformanceTests` failed in its instrumented run, which the target ignores (D-120). No folder is new, so the context map of `AGENTS.md` stays (AGENT-07).
+
 ### 6.6 Navigation faults (tasks 0.2 to 0.4)
 
 Measured on 2026-10-22 on the iPad in Release. Each test ran first on the code before its fix and failed, then on the fixed code and passed. The tests are in `PointerAppTests/NavigationFailureTests.swift` and `PointerAppTests/PreviewStopTests.swift`.
