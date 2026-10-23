@@ -1,6 +1,6 @@
 # M8 work plan: PDF export
 
-This document breaks milestone M8 of [plan.md](plan.md) into tasks. The acceptance criteria stay in [plan.md](plan.md). The tasks build on EXP-01 to EXP-04, D-13, D-15, D-26, D-84, and D-138 to D-143.
+This document breaks milestone M8 of [plan.md](plan.md) into tasks. The acceptance criteria stay in [plan.md](plan.md). The tasks build on EXP-01 to EXP-04, D-13, D-15, D-26, D-84, and D-138 to D-144.
 
 Read [AGENTS.md](../AGENTS.md) and [code-of-code.md](code-of-code.md) before you start. All rules there apply. Do the phases in order. Inside a phase, do the tasks in order. Each task is one commit or a small set of commits (GIT-02). Each bug fix comes with a test that fails before the fix (TEST-03). Name the requirement, decision, and rule IDs in each commit body (GIT-03).
 
@@ -75,9 +75,10 @@ The product owner decided these on 2026-10-23. [decisions.md](decisions.md) give
 | D-140 | `TextLayout` gives the font and the lines. Export draws each line with `CTLineDraw`. | 1.2, 2.4 |
 | D-141 | The page bounds come from the strokes and the full text boxes, not the cards. `contentBounds` stays. | 2.1 |
 | D-142 | An empty canvas gives a message and no PDF. Emoji stay bitmaps. A page over 14,400 points scales as a whole. | 2.1, 2.2, 3.2 |
-| D-143 | Open: the file name of the shared PDF. | 3.2 |
+| D-143 | The item provider names the PDF after the title of the card, or of the workspace on the root canvas and for a card without a title. Characters that file names do not allow become "-". | 3.2 |
+| D-144 | An export of D-56 takes at most 8.5 s and 120 MB, and an export of 200,000 handwriting strokes at most 17 s and 370 MB. | 2.7 |
 
-Raise each new question as an open entry in [decisions.md](decisions.md) before the task that needs it. Do not decide it yourself (AGENT-04). D-143 must be decided before task 3.2.
+Raise each new question as an open entry in [decisions.md](decisions.md) before the task that needs it. Do not decide it yourself (AGENT-04). The product owner decided D-143 and D-144 on 2026-10-23.
 
 ## 4. Tasks
 
@@ -354,7 +355,17 @@ Measured on 2026-10-23 on the iPad in Release, with `ExportPerformanceTests` in 
 | 20,000 strokes of D-56 and 10,000 text boxes | 7.43 s, 7.52 s | 137 MB, 137 MB | 79.8 MB |
 | 200,000 handwriting strokes of `FrameLoopTests` | 14.77 s, 14.83 s | 277 MB, 235 MB | 226.4 MB |
 
-Task 2.7 names "the D-56 canvas (20,000 strokes and 10,000 text boxes)", but D-56 holds 5,000 cards and 5,000 text boxes. The test measures both. The strokes take almost all of the time: about 1.1 to 1.3 µs per Bézier segment, for 6.0 million segments in D-56 and 11.8 million in the handwriting. D-144 holds the question of a budget.
+Task 2.7 names "the D-56 canvas (20,000 strokes and 10,000 text boxes)", but D-56 holds 5,000 cards and 5,000 text boxes. The test measures both. The strokes take almost all of the time: about 1.1 to 1.3 µs per Bézier segment, for 6.0 million segments in D-56 and 11.8 million in the handwriting. The product owner decided D-144 on 2026-10-23: the recommendation, (a), with 160 MB for D-56 and 320 MB for the handwriting. With these budgets, the test failed: D-56 peaked at 261 MB in 3 of 6 runs (result bundles `.build/Runs/T27-3.xcresult` to `T27-6.xcresult`), and the handwriting at up to 331 MB. The reads every 2 ms missed short peaks. Two copies of the PDF caused them: the bridge from `NSMutableData` to `Data` copies the whole buffer (a probe on the Mac showed that `as Data` and `Data(referencing:)` do not share the bytes), and the growing buffer can move. The product owner chose to remove the copy first.
+
+After the fix, `PDFExporter.data(sharing:)` gives `Data` that shares the bytes of the buffer, and `PDFBufferTests` makes sure that the addresses match. The test reads the memory every 0.25 ms. Four runs (`T27-7.xcresult` to `T27-10.xcresult`):
+
+| Content | Time | Peak memory growth |
+|---|---|---|
+| D-56 | 6.97, 7.04, 7.25, 7.30 s | 100, 100, 100, 101 MB |
+| 20,000 strokes of D-56 and 10,000 text boxes | 7.49, 7.53, 7.65, 7.68 s | 121, 128, 136, 131 MB |
+| 200,000 handwriting strokes | 14.89, 14.92, 15.01, 15.06 s | 323, 276, 227, 220 MB |
+
+The product owner decided D-144 again on the same day: D-56 at most 8.5 s and 120 MB, and 200,000 handwriting strokes at most 17 s and 370 MB. `ExportPerformanceTests` fails above them. The first run with these budgets passed (`T27-11.xcresult`): D-56 6.98 s and 91 MB, 10,000 text boxes 7.50 s and 122 MB, and the handwriting 14.87 s and 320 MB.
 
 ### 6.5 The button and the share sheet (tasks 3.1 to 3.3)
 
