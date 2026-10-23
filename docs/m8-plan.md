@@ -1,0 +1,286 @@
+# M8 work plan: PDF export
+
+This document breaks milestone M8 of [plan.md](plan.md) into tasks. The acceptance criteria stay in [plan.md](plan.md). The tasks build on EXP-01 to EXP-04, D-13, D-15, D-26, D-84, and D-138 to D-143.
+
+Read [AGENTS.md](../AGENTS.md) and [code-of-code.md](code-of-code.md) before you start. All rules there apply. Do the phases in order. Inside a phase, do the tasks in order. Each task is one commit or a small set of commits (GIT-02). Each bug fix comes with a test that fails before the fix (TEST-03). Name the requirement, decision, and rule IDs in each commit body (GIT-03).
+
+## 1. How to work
+
+### 1.1 Device and build
+
+1. Use only the iPad Pro 11-inch (M4) with the UDID `00008132-000018993E8B801C`, in Release. Never use a simulator, and never make one (learned rule 1 of `AGENTS.md`).
+2. Before each device run, run `xcrun devicectl device info lockState --device 00008132-000018993E8B801C`. If it prints `passcodeRequired: true`, stop and ask the product owner to unlock the iPad.
+3. Run one device suite with this command. Replace `<Suite>` and `<Name>`.
+
+```
+xcodebuild test -project Pointer.xcodeproj -scheme PointerApp -configuration Release \
+  -destination 'id=00008132-000018993E8B801C' -derivedDataPath .build/DeviceData \
+  -allowProvisioningUpdates ENABLE_TESTABILITY=YES \
+  -only-testing:PointerDeviceTests/<Suite> -resultBundlePath .build/Runs/<Name>.xcresult
+```
+
+4. Give each run that you compare a `-resultBundlePath` under `.build/Runs`. Xcode keeps only the 5 newest bundles in `.build/DeviceData/Logs/Test`, so an older run without its own path is lost.
+5. Read the measures as in section 1.2 of [m6-fix-plan.md](m6-fix-plan.md). Compare two builds only with alternating runs (section 1.3 there).
+
+### 1.2 What a test can and cannot do
+
+1. Package tests cannot run on the iPad, so the tests of `Export` run in `PointerDeviceTests`, as the tests of `Rendering` do (D-77, D-140).
+2. A test can read a PDF back with PDFKit: `PDFDocument(data:)`, `PDFPage.string`, `PDFDocument.findString(_:withOptions:)`, and the media box. Preview on the Mac uses the same text extraction for selection and search.
+3. A test can render a PDF page into an image with `UIGraphicsImageRenderer` and `CGContext.drawPDFPage(_:)`, and compare it with a reference PNG (TEST-07).
+4. A test cannot open the share sheet and pick a target. Keep the button handler thin. Test the code behind it: the empty check, the end of a text edit, and the item provider that the share sheet gets.
+5. Only the product owner can open the PDF in Preview on a Mac and zoom to 6400 %.
+
+## 2. Facts from the code at the start of M8
+
+Read on 2026-10-23 on `main` at commit 55d43ea. Paths are under `Packages/` unless they start with `PointerApp/` or `Scripts/`.
+
+### 2.1 The Export package
+
+1. `Export/Sources/Export/Export.swift` holds only `public enum Export {}`. `Export/Package.swift` depends on `Geometry`, `InkEngine`, and `Model`, and has no test target.
+2. `Pointer.xcodeproj` does not link `Export`, and no feature package depends on it. `PointerDeviceTests` has no synchronized group for Export tests.
+3. `Scripts/coverage.swift` leaves out Export on purpose, and the `coverage` target of the `Makefile` reads only the framework of `Rendering`. TEST-02 asks for 70 % in Tier B.
+4. `Scripts/assertion-density.swift` already covers Export ("Export: no functions").
+5. The lint rule `arch_04_pdf` in `.swiftlint.yml` bans only `UIGraphicsPDFRenderer` outside `Packages/Export/` (D-139).
+
+### 2.2 Strokes
+
+1. `Stroke` has an `origin` in `Double` and points as `Float` offsets from it. `Stroke.canvasPoint(at:)` adds them in `Double`. `Stroke.curve` makes a `StrokeCurve` in canvas space (`Model/Sources/Model/Stroke.swift:92` and `:99`).
+2. `StrokeCurve` (`Geometry/Sources/Geometry/StrokeCurve.swift`) is the uniform cubic B-spline of D-26. It has `segmentCount`, `extendedControlPoint(at:)` with the phantom points at -1 and `count`, and `point(at:)`. It has no Bézier conversion.
+3. `Stroke.width` is a `Float` in canvas points. `Stroke.bounds` holds the control points plus half the width. The curve stays inside the convex hull of its control points.
+4. The canvas has no coordinate limit. M2 acceptance 3 tests strokes at (1,000,000, 1,000,000).
+
+### 2.3 Text
+
+1. `TextLayout` (`Rendering/Sources/Rendering/TextLayout.swift`) breaks the lines with `CTTypesetterSuggestLineBreak` at `TextStyle.maxWidth` (640 points), with `TextLayout.baseFont` (SF Mono at 17 points from `UIFont.monospacedSystemFont`). It keeps glyph IDs, positions, and font indices, not the text or the lines.
+2. The baseline of line `n` is at `n * TextLayout.lineHeight + TextLayout.ascent` from the top of the box (`TextLayout.Glyph.position`).
+3. An empty text and a text that ends with a new line count one more, empty line.
+4. The probe of D-140 showed that glyph IDs drawn into a PDF lose the text, and that `CTLineDraw` keeps it.
+
+### 2.4 The canvas screen
+
+1. `installHistoryButtons()` (`CanvasFeature/Sources/CanvasFeature/CanvasViewController+History.swift:254`) puts `HistoryButtons` into a `UIHostingController` in the top right corner. EXP-01 puts the export button next to undo and redo.
+2. `DesignSystem.Icon` holds the SF Symbol names of the chrome, for example `undo` and `redo`. It has no export icon.
+3. `CanvasDependencies.onMessage` shows a message. `CanvasStrings` reads the String Catalog of the canvas.
+4. A text edit keeps its text in the edit view until it ends (D-87). `content` holds the text of the box before the edit.
+5. `ParentLink.card` holds the card of a canvas inside a card, or `nil`. `Card.title` is optional. The screen does not know the title of its workspace (D-143).
+
+## 3. Decisions
+
+The product owner decided these on 2026-10-23. [decisions.md](decisions.md) gives the facts and the reasons.
+
+| ID | Decision | Tasks |
+|---|---|---|
+| D-138 | The exporter takes a `CanvasContent` value. | 2.5 |
+| D-139 | A Core Graphics PDF context writes the PDF. The lint rule bans it outside `Export`. | 0.2, 2.5 |
+| D-140 | `TextLayout` gives the font and the lines. Export draws each line with `CTLineDraw`. | 1.2, 2.4 |
+| D-141 | The page bounds come from the strokes and the full text boxes, not the cards. `contentBounds` stays. | 2.1 |
+| D-142 | An empty canvas gives a message and no PDF. Emoji stay bitmaps. A page over 14,400 points scales as a whole. | 2.1, 2.2, 3.2 |
+| D-143 | Open: the file name of the shared PDF. | 3.2 |
+
+Raise each new question as an open entry in [decisions.md](decisions.md) before the task that needs it. Do not decide it yourself (AGENT-04). D-143 must be decided before task 3.2.
+
+## 4. Tasks
+
+### Phase 0: preparation
+
+#### 0.1 Baseline
+
+1. Run the full `PointerDeviceTests` once, with a result bundle.
+2. Record the erase, undo, and redo steps in section 6. Also record the open of the D-56 canvas and its memory, and the frame loops. Also record the count of each allocation test and the times of `TextLayoutPerformanceTests`.
+
+Done when: section 6 holds the baseline. Phase 5 compares against it (code-of-code.md section 5, item 10).
+
+#### 0.2 The package, the tests, and the checks
+
+1. Add `Rendering` to the dependencies of `Export/Package.swift` (D-140). Add a test target `ExportTests` that depends on `Export`, `Geometry`, `Model`, and `Rendering`, and excludes `References`, as `Rendering/Package.swift` does.
+2. Add the folder `Export/Tests/ExportTests` as a synchronized group of `PointerDeviceTests` in `Pointer.xcodeproj`, as `Rendering/Tests/RenderingTests` is.
+3. Add `Export` to the dependencies of `CanvasFeature/Package.swift`, because the canvas screen starts the export.
+4. Extend `arch_04_pdf`: it also bans `CGContext(consumer:` and `beginPDFPage` outside `Packages/Export/` (D-139). Add one violation to the lint fixture of `Scripts/Fixtures`, and update the rule count that `Scripts/self-test.sh` expects.
+5. Update the context map of `AGENTS.md` (AGENT-07): Export gets `Tests/ExportTests/` and `References/`, part of `PointerDeviceTests` only.
+6. Leave the coverage of Export out until task 2.6, because a package without code has no report.
+
+Done when: `make build`, `make lint`, `make layers`, and `make self-test` pass, and an empty Swift Testing suite in `ExportTests` runs on the iPad.
+
+Rules: ARCH-02, ARCH-04, AGENT-07, D-77.
+
+### Phase 1: geometry and text
+
+#### 1.1 The Bézier segments of a stroke curve
+
+1. Add a function to `StrokeCurve` that returns the 4 Bézier points of segment `i`. Segment `i` uses the extended control points `P0` to `P3` at `i - 1` to `i + 2`. The points are `(P0 + 4 P1 + P2) / 6`, `(2 P1 + P2) / 3`, `(P1 + 2 P2) / 3`, and `(P1 + 4 P2 + P3) / 6`. This conversion of a uniform cubic B-spline is exact (D-26).
+2. Add Swift Testing tests (TEST-01, TEST-02) for curves of 2, 3, and 300 points. The Bézier curve of each segment matches `point(at:)` to within 1e-9 canvas points. Test 33 parameters per segment, the ends included. The first point of segment 0 is the first control point, and the last point of the last segment is the last control point.
+3. Add a parameterized test for the precondition of the segment index: 0, the last segment, and one past it (TEST-06).
+
+Done when: `swift test --package-path Packages/Geometry` passes, and the coverage of `Geometry` stays at 90 % or more.
+
+Rules: D-26, TEST-01, TEST-02, TEST-06, CONTRACT-02.
+
+#### 1.2 The lines of a text layout
+
+1. Add a function to `TextLayout` that gives the lines of a text: for each line, its UTF-16 range and its `CTLine` in `TextLayout.baseFont`. It must share the line-break loop of `init(text:)`, so that the screen and the PDF break at the same places. The stored layout of the screen must not grow, because the D-56 canvas holds 10,000 text boxes (D-93).
+2. Add tests on the iPad with these texts: empty, one line, a new line at the end, a long word, 10,000 code points, CJK, and emoji. For each text, the number of lines equals `lineCount`. The ranges cover the text without a gap. The glyphs of each `CTLine` equal the glyphs of that line in the layout.
+3. Run `TextLayoutTests`, `TextLayoutPerformanceTests`, `TextRenderingTests`, and `TextAlignmentSnapshotTests`. The performance test must not be more than 10 % slower than the baseline of task 0.1.
+
+Done when: the tests pass.
+
+Rules: D-84, D-140, PERF-01, TEST-06.
+
+### Phase 2: the exporter
+
+#### 2.1 The page bounds
+
+1. Add a function in `Export` that returns the page bounds of a `CanvasContent` (D-141). If the content has no stroke and no text box, it returns `nil` (D-142). The bounds are the union of `Stroke.bounds` and the rectangle of each text box from its origin and `TextLayout.size`, plus `PDFExporter.margin` of 48 points. Cards do not count.
+2. Add tests for strokes only, text only, and strokes and text. Add tests for cards only and for an empty canvas, which both give `nil`. Add a test for a stroke at (1,000,000, 1,000,000).
+
+Done when: the tests pass on the iPad.
+
+Rules: EXP-03, D-13, D-141, D-142.
+
+#### 2.2 The page size and the scale
+
+1. Add a function that returns the media box and the scale for page bounds. If the longer side is at most 14,400 points, the scale is 1. If not, the scale is 14,400 divided by the longer side, and the media box is the bounds times the scale (D-142). Put 14,400 in a named constant with its source, ISO 32000 Annex C (DOC-03).
+2. Add a parameterized test with a longer side of 3 points, 14,400 points, 14,401 points, and 2,000,000 points, in width and in height (TEST-06). No side of a media box is over 14,400 points.
+
+Done when: the tests pass.
+
+Rules: EXP-03, D-142, DOC-03, TEST-06.
+
+#### 2.3 The strokes
+
+1. Draw each stroke as one `CGPath` of the Bézier segments of task 1.1. Use black, the width of the stroke, `.round` caps, and `.round` joins. Compute each point relative to the page origin in `Double`, then convert it to `CGFloat`. Then a stroke at (1,000,000, 1,000,000) keeps its shape (M2 acceptance 3).
+2. Read the points with `Stroke.canvasPoint(at:)`. Do not keep a `StrokeCurve` of all strokes at once.
+3. Add tests for strokes of 2 and 300 points. The path has one `move` and `count - 1` curves. The first and the last point equal the end control points. The path of a stroke at (1,000,000, 1,000,000) equals the moved path of the same stroke at the origin.
+
+Done when: the tests pass.
+
+Rules: EXP-02, D-26, M2 acceptance 3.
+
+#### 2.4 The text
+
+1. Draw each text box with the lines of task 1.2 and `CTLineDraw`, in black, at the baselines of section 2.3. Flip the text matrix for the coordinate system of the PDF (D-140).
+2. Do not draw glyph IDs. The probe of D-140 shows that the PDF then loses the text.
+3. Add tests that read the PDF back with PDFKit. A search finds each word of each text box. The page text holds no title of a card. A text with emoji and CJK keeps its letters.
+
+Done when: the tests pass.
+
+Rules: EXP-02, D-84, D-140, D-142.
+
+#### 2.5 `PDFExporter`
+
+1. Add `PDFExporter` with one function that takes a `CanvasContent` and returns the PDF `Data`, or throws `ExportError` (SAFE-04). `ExportError` holds the case of an empty canvas and the case of a failed PDF context.
+2. Make the PDF with `CGContext(consumer:mediaBox:_:)`, one page, `beginPDFPage`, a white fill, the strokes, the text, `endPDFPage`, and `closePDF` (D-139). Apply the scale of task 2.2 to the whole page.
+3. The function is not bound to an actor, so that the canvas can run it off the main actor. It reads only its argument (TEST-04).
+4. Add an `OSSignposter` interval "Export" (PERF-03).
+5. Add tests. An empty canvas throws. A canvas gives one page with the media box of task 2.2. The PDF of an ink-only canvas holds no image, because the ink is vector paths (EXP-02). An export in a `Task.detached` gives the same page text and media box as on the main actor.
+
+Done when: the tests pass.
+
+Rules: EXP-02, EXP-03, D-138, D-139, SAFE-04, PERF-03, CONTRACT-01.
+
+#### 2.6 The snapshot of a PDF page and the coverage
+
+1. Add `PDFSnapshotTests` (acceptance 2). The content holds strokes, two text boxes, and a card with a title. Export it, render the page with `UIGraphicsImageRenderer` and `drawPDFPage`, and compare it with a reference PNG (TEST-07). The image shows a white page, black ink and text, and no card.
+2. The iPad makes the reference. Look at it before you commit it.
+3. Add the class to the `snapshots` target of the `Makefile`.
+4. Add `Export` with 70 % to `Scripts/coverage.swift`, and read the Export framework in the `coverage` target of the `Makefile`, as for `Rendering`. Update the comment that says Export has no tests.
+
+Done when: `make snapshots` and `make coverage` pass.
+
+Rules: TEST-02, TEST-07, D-13, D-120.
+
+#### 2.7 The measures of an export
+
+1. Add `ExportPerformanceTests`. Export the D-56 canvas (20,000 strokes and 10,000 text boxes) and the 200,000 handwriting strokes of `FrameLoopTests`. Record the time, the peak memory growth, and the size of the PDF of each.
+2. Record the measures in section 6. No budget exists for an export (architecture.md section 12). Raise D-144 with the measures and a recommended budget, and wait for the product owner.
+
+Done when: section 6 holds the measures, and D-144 is decided.
+
+Rules: PERF-03, AGENT-04.
+
+### Phase 3: the button and the share sheet
+
+#### 3.1 The export button
+
+1. Add `DesignSystem.Icon.export` with the SF Symbol `square.and.arrow.up` (STYLE-03). Add the string "Export" to the String Catalog of the canvas (STYLE-05).
+2. Add the button to `HistoryButtons`, next to undo and redo (EXP-01). It is off while an export runs.
+3. Make the references of `HistoryButtonsSnapshotTests` again on the iPad, and look at them before you commit them (TEST-07).
+
+Done when: `HistoryButtonsSnapshotTests` passes.
+
+Rules: EXP-01, STYLE-03, STYLE-05, TEST-07.
+
+#### 3.2 The export of the shown canvas
+
+1. The button ends a running text edit first, as a tool change does (D-87), so that the PDF holds the text of the edit.
+2. If the canvas has no stroke and no text box, show the message of D-142 and stop. Add the message to the String Catalog.
+3. Copy `content`, and run `PDFExporter` in a `Task` off the main actor. The task holds the canvas screen weakly.
+4. Give the PDF to `UIActivityViewController(activityItemsConfiguration:)` through an `NSItemProvider` with `UTType.pdf` and the name of D-143. Do not write a file (ARCH-04). Anchor the popover at the export button.
+5. A failure shows a message and writes a log entry without content (SAFE-06).
+
+Done when: the code passes the tests of task 3.3.
+
+Rules: EXP-01, EXP-04, D-87, D-142, D-143, ARCH-04, PERF-02.
+
+#### 3.3 Tests of the export action
+
+1. Test the code behind the button. An empty canvas and a canvas with only cards show the message. A running text edit ends, and its text is in the PDF. The item provider has the type PDF and the name of D-143. A second tap during an export starts no second export.
+2. Add a test that the canvas screen goes away after an export, as `CanvasLifetimeTests` checks after a leave.
+3. Run `TextEditTests`, `HistoryTests`, `CanvasLifetimeTests`, and `AppMessageTests`.
+
+Done when: the tests pass.
+
+Rules: TEST-03, TEST-04, EXP-04.
+
+### Phase 4: manual acceptance
+
+#### 4.1 The manual tests for the product owner
+
+1. Acceptance 1. Draw ink and write text with Scribble on a canvas. Export it, and send the PDF to the Mac. Open it in Preview. Zoom to 6400 %: the ink stays sharp. Select a line of text, and search a word.
+2. Export a canvas with a card. The PDF shows no card.
+3. Export a canvas with ink far apart, so that the page is over 14,400 points. Preview opens it, and the ink keeps its proportions.
+4. Write a text with an emoji and export it. The emoji shows, and a search finds the text around it.
+5. Export an empty canvas. The message shows, and no share sheet opens.
+6. Record each result in section 6.
+
+Done when: the product owner reports a pass for each test, or decides about a failure.
+
+Rules: EXP-01 to EXP-04, D-13, D-142.
+
+### Phase 5: close
+
+1. Run `make check` with the iPad, and `make coverage`.
+2. Run the full `PointerDeviceTests` 5 times in a row (D-79). Compare each measure with the baseline of task 0.1. A measure can be at most 10 % slower.
+3. Fill in section 6 of this plan, and the M8 status in [plan.md](plan.md).
+4. Update the context map of `AGENTS.md` if a folder is new (AGENT-07).
+
+Done when: each step passes, or the product owner accepts the failure.
+
+Rules: AGENT-05, DOC-06, D-79.
+
+## 5. Facts to keep in mind
+
+- `CanvasViewController` has a type body limit of 250 lines and a function body limit of 40 lines (SwiftLint). Put new code in an extension file, for example `CanvasViewController+Export.swift`.
+- The assertion density script needs 2.00 checks per function in Tier A and Tier B packages (CONTRACT-02, `make density`). `Export` is Tier B. `Rendering` is exactly at 2.00, so each new function there needs its two checks.
+- A test that keeps a canvas screen in a local constant keeps it alive until the end of the scope. Put the steps of a round in a function of their own (`CanvasLifetimeTests`).
+- A test helper that gives a closure to the composition must capture it weakly, or the composition stays alive after the test.
+- `#expect` cannot hold a call of a mutating method. Assign the result to a constant first.
+- `AppMessageTests` "A message shows while the palette is open" can fail in a full run, and `testSnapshotOfTwentyThousandStrokesWithSaves` can take just over 50 ms. Both are older than M8, and M10 holds them.
+- A new file in a synchronized group joins the next device build. Do not add files while `make check` runs.
+
+## 6. Results
+
+Fill in this section during the work.
+
+### 6.1 Baseline (task 0.1)
+
+### 6.2 Geometry and text (tasks 1.1 and 1.2)
+
+### 6.3 The exporter (tasks 2.1 to 2.6)
+
+### 6.4 The measures of an export (task 2.7)
+
+### 6.5 The button and the share sheet (tasks 3.1 to 3.3)
+
+### 6.6 Manual tests (task 4.1)
+
+### 6.7 Close (phase 5)

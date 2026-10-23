@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-114 to D-119 on 2026-10-22. D-115 replaced D-09 and D-100, and D-117 replaced D-08. The M6 fix plan raised D-120 to D-122 on 2026-10-22, and the product owner decided them on the same day, then D-123 and D-124. The review before M7 raised D-125 to D-131 on 2026-10-22, and the product owner decided them on the same day. D-130 replaced the rule of D-07.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-114 to D-119 on 2026-10-22. D-115 replaced D-09 and D-100, and D-117 replaced D-08. The M6 fix plan raised D-120 to D-122 on 2026-10-22, and the product owner decided them on the same day, then D-123 and D-124. The review before M7 raised D-125 to D-131 on 2026-10-22, and the product owner decided them on the same day. D-130 replaced the rule of D-07. The review after M7 raised D-138 to D-142 for M8 on 2026-10-23, and the product owner decided them with the recommendations on the same day. The M8 plan raised D-143 on the same day.
 
 Status values: Open, Decided, Replaced.
 
@@ -145,6 +145,12 @@ Status values: Open, Decided, Replaced.
 | D-135 | A pencil down during a pinch past a zoom limit | The camera holds during the stroke and springs back after the lift | Decided (2026-10-23) |
 | D-136 | Late frames at the start of card flights in full runs | Trace the late frame now, before M7 closes | Decided (2026-10-23) |
 | D-137 | The wiring of new textures in the first frames of a leave | The late-frame checks of the leaves become expected failures that are not strict. M10 traces the rest. | Decided again (2026-10-23) |
+| D-138 | The input of the PDF exporter | `CanvasContent`. The name `CanvasSnapshot` goes. | Decided (2026-10-23) |
+| D-139 | The API that writes the PDF | A Core Graphics PDF context, not `UIGraphicsPDFRenderer` | Decided (2026-10-23) |
+| D-140 | The text layout of the PDF | `TextLayout` of `Rendering` gives the font and the lines. Export draws each line with `CTLineDraw`. | Decided (2026-10-23) |
+| D-141 | The page bounds of the PDF | A function in `Export`: strokes and full text boxes, no cards. `contentBounds` stays. | Decided (2026-10-23) |
+| D-142 | An empty canvas, emoji, and pages over 14,400 points | A message and no PDF. Emoji as the system draws them. A uniform scale of the whole page. | Decided (2026-10-23) |
+| D-143 | The file name of the shared PDF | Recommendation: the title of the card or of the workspace, through `NSItemProvider.suggestedName` | Open |
 
 ## Details
 
@@ -1435,6 +1441,60 @@ Status values: Open, Decided, Replaced.
   4. With the canvas layers not opaque, backboardd sent no "Unwire Memory Request" at the start of the flight, and the wiring fell from about 51 MiB to 20 MiB. The GPU waits of frames 0 to 2 stayed at 1.22, 2.17, and 1.95 ms (one traced run). The unwiring of the hidden parent is real, but it is not the main cause of the wait.
 - None of the changes is in the code. The cause of the rest of the wait is not known.
 - Decided again by the product owner on 2026-10-23: (b). The late-frame checks of the leave of the D-56 card and of the empty card are expected failures that are not strict, and M10 traces the rest of the wait in Instruments. On the same day, the product owner put the late-frame check of the open with a blocked main thread under D-125, because it has the same skipped target at place 0.
+
+### D-138 The input of the PDF exporter
+
+- Decided by the product owner on 2026-10-23: the recommendation. Raised by the review after M7.
+- Facts: architecture.md section 9 names a `CanvasSnapshot` type, which does not exist. `CanvasContent` is a `Sendable` struct with all live strokes, text boxes, and cards of one canvas. Its dictionaries copy only on a change, and strokes share their points through `InkPoints`, so a copy is cheap (data-model.md section 7.4). The open path and `PreviewMaker` already take it. In storage.md, "snapshot" means a backup file.
+- Options: (a) `CanvasContent`. (b) A new `CanvasSnapshot` type.
+- Decision: (a). The exporter takes a `CanvasContent` value. The name `CanvasSnapshot` leaves architecture.md.
+
+### D-139 The API that writes the PDF
+
+- Decided by the product owner on 2026-10-23: the recommendation. Raised by the review after M7.
+- Facts: the exporter runs off the main actor (architecture.md section 9). Drawing into a Core Graphics context is thread-safe since iOS 4 (<https://steipete.me/posts/2016/investigating-thread-safety-of-uiimage>). The iOS 27.1 SDK marks the UIKit renderer classes neither as main actor nor as `Sendable`, so Swift 6 cannot check their use on another thread. An Apple forum thread reports crashes in `UIGraphicsPDFRendererContext` on a background thread (<https://developer.apple.com/forums/thread/695153>). Selectable text depends on the way the text is drawn, not on the renderer (<https://developer.apple.com/forums/thread/745459>). A probe on the Mac on 2026-10-23 made searchable PDFs of any page size with `CGContext(consumer:mediaBox:_:)`.
+- Options: (a) `CGContext(consumer:mediaBox:_:)` with `beginPDFPage` and `closePDF`. (b) `UIGraphicsPDFRenderer`.
+- Decision: (a). The lint rule `arch_04_pdf` also bans `CGContext(consumer:` and `beginPDFPage` outside `Export`.
+
+### D-140 The text layout of the PDF
+
+- Decided by the product owner on 2026-10-23: the recommendation. Raised by the review after M7.
+- Facts: `TextLayout` in `Rendering` lays out the text of the screen with `CTTypesetterSuggestLineBreak` at `TextStyle.maxWidth`, SF Mono from `UIFont.monospacedSystemFont`, and the fixed line height of that font (D-84). It keeps glyph IDs and positions only. A probe on the Mac on 2026-10-23 drew the same line in a PDF in three ways and read it back with PDFKit:
+  1. Glyph IDs with `CTFontDrawGlyphs`: the text read back as "e o a e s educe(0, )", and a search for "reduce" found nothing.
+  2. `CTLineDraw`: the whole line read back, and searches found "reduce" and the emoji.
+  3. `CTFramesetter`: the same text as `CTLineDraw`, and the same line breaks as the typesetter for a long text at 640 points. But the framesetter places the lines with its own paragraph spacing.
+  The fixed-pitch system font of Core Text on the Mac was Menlo, not SF Mono, so a second layout code can drift from the screen.
+- Options: (a) Export imports `Rendering`, and `TextLayout` gives the font, the line ranges, and the baselines. Export draws each line with `CTLineDraw`. (b) `CTFramesetter` in `Export`, as architecture.md section 9 said. (c) A copy of the layout code in `Export`.
+- Decision: (a). `TextLayout` also records the UTF-16 range of each line. Export tests run on the iPad in `PointerDeviceTests`, as the tests of `Rendering` do (D-77). The layer rule allows the import, because both packages are in layer 1.
+
+### D-141 The page bounds of the PDF
+
+- Decided by the product owner on 2026-10-23: the recommendation. Raised by the review after M7.
+- Facts: `CanvasContent.contentBounds` holds the frames of the cards and only the top-left corner of each text box, because `Model` has no text layout. The open camera of CARD-03 uses it. EXP-03 asks for the bounds of the ink and the text, without cards. `Stroke.bounds` already holds half the line width.
+- Options: (a) A function in `Export`: the union of `Stroke.bounds` and the rectangle of each text box from its origin and `TextLayout.size`, plus the margin of 48 points. (b) A change of `contentBounds`.
+- Decision: (a). `contentBounds` does not change.
+
+### D-142 An empty canvas, emoji, and pages over 14,400 points
+
+- Decided by the product owner on 2026-10-23: the recommendation. Raised by the review after M7.
+- Facts:
+  1. No document says what an export of a canvas without ink and text gives. The tldraw example of an export checks for zero shapes and shows "No shapes on the canvas" (<https://tldraw.dev/examples/export-canvas-as-image>).
+  2. In the probe of D-140, Core Graphics embedded color emoji as bitmap images, and a search still found them. Bitmap emoji lose sharpness at a high zoom (<https://github.com/foliojs/pdfkit/pull/1690>). The read-back text lost the skin-tone modifier of one emoji.
+  3. A PDF page side is at most 14,400 units (ISO 32000, Annex C, <https://kb.datalogics.com/article/how-large-can-a-pdf-document-be-in-inches-101.html>). The `UserUnit` entry allows larger pages, but `CGPDFContext.h` has no key for it. In the probe, Core Graphics wrote a page of 20,000 points without a warning. The canvas has no coordinate limit, so a large page is a normal case.
+- Decision:
+  1. A canvas without strokes and without text boxes gives no PDF. The canvas shows a message from the String Catalog. Cards alone count as empty, because the PDF does not show cards (D-13).
+  2. Emoji stay as the system draws them: bitmap images with searchable text. Acceptance 1 asks for sharp ink, not for sharp emoji.
+  3. If a side of the page with its margin is longer than 14,400 points, one uniform scale fits the whole page, the line widths included. No smallest line width applies.
+
+### D-143 The file name of the shared PDF
+
+- Open. Raised on 2026-10-23 by the M8 plan.
+- Facts: EXP-04 opens the share sheet with the PDF, but no document gives a file name. A temporary file needs `FileManager`, which only `Persistence` may use (ARCH-04). `NSItemProvider.suggestedName` (iOS 11) gives a name to data, and `UIActivityViewController(activityItemsConfiguration:)` (iOS 14) takes item providers, so the share sheet needs no file. A canvas screen inside a card holds that card in `ParentLink.card`, which can be `nil`. `Card.title` is optional. The screen does not know the title of its workspace, but `PointerApp` does.
+- Options:
+  - (a) The name that the user sees: the title of the card, or the title of the workspace on the root canvas and for a card without a title, plus ".pdf".
+  - (b) One fixed name from the String Catalog, for example "Pointer.pdf".
+  - (c) Data without a name. The share targets give their own name.
+- Recommendation: (a). The file says what it holds, and the user can still rename it in the share target. `PointerApp` gives the name to the canvas screen through `CanvasDependencies`. Characters that file names do not allow become "-".
 
 ## Points in the request that conflict or are not complete
 

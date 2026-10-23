@@ -21,7 +21,7 @@ This document describes how Pointer is built. It covers the modules, the input p
 | Chrome (top bars, workspace selector, palette) | SwiftUI views in `UIHostingController` children | Less code for lists, menus, and alerts. Not on the ink path. |
 | Text editing | `UITextView` (TextKit 2), only while you edit | Keyboard, Scribble, selection, and dictation come free. |
 | Frame timing | `CAMetalDisplayLink` on a render thread (D-42), and `UIUpdateLink` on the main thread for camera animations | The render thread gets each drawable without a block on the main thread (section 5.1). |
-| PDF | `UIGraphicsPDFRenderer`, Core Graphics, Core Text | Vector output and real text. |
+| PDF | Core Graphics PDF context, Core Text (D-139, D-140) | Vector output and real text. |
 | Storage | SQLite from the system (`import SQLite3`), no wrapper library | See [storage.md](storage.md). |
 | Logging | `os.Logger`, `OSSignposter` | Logging that is off has zero cost. Signposts feed the performance tests. |
 
@@ -48,7 +48,7 @@ Layer 0  Foundations      InkEngine ---- Model ---- Geometry
 | `InkEngine` | 0 | `Model`, `Geometry` | Eraser hit test and stroke split. |
 | `Persistence` | 1 | `Model`, `Geometry`, SQLite3 | `SQLiteLibraryRepository` (an actor), a small SQLite wrapper, row codecs, migrations, snapshots, restore. `PreviewStore`, which reads and writes the preview files as `Data` (D-107). |
 | `Rendering` | 1 | `Model`, `Geometry`, `InkEngine`, Metal, ImageIO | `CanvasRenderer`, the point arena, shaders, the committed texture cache, text layout, the glyph atlas (D-81). The card previews and their PNG code (D-107). |
-| `Export` | 1 | `Model`, `Geometry`, `InkEngine`, Core Graphics, Core Text | `PDFExporter`. |
+| `Export` | 1 | `Model`, `Geometry`, `InkEngine`, `Rendering` for `TextLayout` (D-140), Core Graphics, Core Text | `PDFExporter`. |
 | `DesignSystem` | 1 | SwiftUI, UIKit | Color, spacing, size, and icon tokens. |
 | `CanvasFeature` | 2 | Layer 0 and 1, PencilKit | `CanvasViewController`, `CanvasView`, the live `PKCanvasView`, `PencilKitStrokeConverter`, input routing, camera control, card navigation, text editing, top bars. |
 | `WorkspaceFeature` | 2 | Layer 0 and 1 | Workspace selector, create, rename, delete. |
@@ -382,17 +382,17 @@ In edit mode, the undo and redo of the buttons, the palette, and Command-Z go to
 
 ## 9. PDF export
 
-`PDFExporter` takes a `CanvasSnapshot` (all live strokes, text boxes, and cards of one canvas) and returns PDF `Data`.
+`PDFExporter` takes a `CanvasContent` value (all live strokes, text boxes, and cards of one canvas) and returns PDF `Data` (D-138).
 
-1. Compute the content bounds. Add a margin of 48 points.
-2. Make one page with the size of the bounds. If a side is longer than 14,400 points (the PDF page limit of 200 inches), scale the content down to fit.
+1. Compute the page bounds: the union of `Stroke.bounds` and the rectangle of each text box, from its origin and `TextLayout.size` (D-141). Add a margin of 48 points. Cards do not count. If no stroke and no text box exist, the export makes no PDF, and the canvas shows a message (D-142).
+2. Make one page with the size of the bounds in a Core Graphics PDF context, `CGContext(consumer:mediaBox:_:)` (D-139). If a side is longer than 14,400 points (the PDF page limit of 200 inches), one uniform scale fits the whole page, the line widths included (D-142).
 3. Fill the page white (decision D-13).
 4. Draw each stroke as one `CGPath` of cubic Bézier segments. The exporter converts each piece of the B-spline to one Bézier segment, which is exact (decision D-26). Use `setLineCap(.round)`, `setLineJoin(.round)`, the stroke width, and black.
-5. Draw each text box in black with `CTFramesetter` and `CTFrameDraw`. Flip the text matrix for the PDF coordinate system.
+5. Draw each text box in black. `TextLayout` gives the font, the line ranges, and the baselines, so the PDF has the lines of the screen. Draw each line with `CTLineDraw`, so that the PDF keeps the text and you can select and search it (D-140). Color emoji stay as the system draws them: bitmap images with searchable text (D-142). Flip the text matrix for the PDF coordinate system.
 
-The PDF contains no cards (decision D-13). The exporter does not draw card frames, titles, or child content. The content bounds in step 1 also ignore cards.
+The PDF contains no cards (decision D-13). The exporter does not draw card frames, titles, or child content.
 
-The exporter runs off the main actor. It reads a snapshot (a value copy), so it does not block drawing. The result goes to `UIActivityViewController`.
+The exporter runs off the main actor. It reads a copy of the content, so it does not block drawing. The result goes to `UIActivityViewController` through an `NSItemProvider`, without a file (D-143).
 
 ## 10. Limits
 
