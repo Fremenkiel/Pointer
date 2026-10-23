@@ -343,9 +343,19 @@ No test can make a pencil touch, so no test shows whether PencilKit reads its to
 
 Close of task 3.1, with the code of commit cab4bd9. After a touch of the changed Swift files, `make build` printed 0 lines with `warning:`. `make check` passed with the iPad: `analyze` with 0 findings, 350 of 350 tests of `PointerDeviceTests` in 319 s, 48 of 48 snapshots, and `format`, `lint`, `layers`, `density` with Rendering at 2.00, `self-test`, and `plist`. The full run gave erase 21.70 ms, undo 19.13 ms, and redo 19.27 ms at the median. `make coverage` passed: Geometry 90.80 %, Model 90.80 %, InkEngine 92.73 %, Persistence 91.15 %, and Rendering 86.98 %. Only `EraseUndoPerformanceTests` failed in its instrumented run, which the target ignores (D-120).
 
+Manual check of task 3.1, 2026-10-23. The product owner pinched, kept both fingers on the screen, drew a stroke, lifted, and drew a second stroke. The widths differed. The build before task 3.1 (commit 09044e4), installed for the check, also gave different widths past the smallest zoom, and the canvas sprang back while the line was drawn. Two faults came out:
+
+1. Past a zoom limit, `pencilBegan()` ends the pinch, and the end of the pinch started the spring back under the pencil. This fault is older than M7. The product owner decided D-135: the camera holds while the pencil draws, and the spring back starts after the handoff of the pen stroke, or at the lift for the other tools. Commit 436fe7b. `SpringHoldTests` failed without the hold with "The camera moves under the pencil" in 3 tests, and passed with it.
+2. Inside the zoom range, a stroke during a running pinch came out thicker. The product owner reported: "When starting at 1, zooming out within the range and drawing a line, then the line is thicker than the default." PencilKit takes its tool before `pencilBegan()` runs, so the stroke got the width of the last rest. This was a regression of commit cab4bd9, because the code before it set the tool at each pinch sample. `CanvasView.hitTest(_:with:)` now sets the pen width for each new touch, before any gesture recognizer gets it. Commit 194959c. The test `hitTestDuringPinch` failed before the fix and passed after it.
+
+A probe on the iPad gave `PKInkingTool.InkType.monoline.validWidthRange` as 0.5 to 4.0. The product owner drew at zoom 8 with the same width as at zoom 1, so PencilKit does not clamp the drawing at 4.0. After both fixes, the product owner repeated the checks inside the range, past the smallest zoom, and past the largest zoom, and reported: "That fixed it. Everything is at the same width."
+
+
 ### 6.4 Manual tests (tasks 2.5 and 4.1)
 
 Task 2.5, on 2026-10-23 on the iPad with the Apple Pencil Pro, with the code of commit 3739e40. The product owner hovered with the pen, the eraser, and the text tool on the root canvas and reported: "Works as expected." Inside a card, and with "Show Hover Preview" off in Settings, the product owner reported: "It works in cards, and are correctly disabled when setting are disabled." On 2026-10-23, the product owner accepted the start tokens: "Yes, they are fine with me." The tokens stay: a dot radius of 2 view points, a ring width of 1 view point, and the gray of `chromeSecondary`. Task 2.5 is done.
+
+Task 4.1, on 2026-10-23 on the iPad with the Apple Pencil Pro. The product owner ran acceptance 1 to 4 and reported: "1 - 4 is good." Acceptance 1, the double-tap settings, acceptance 2, the squeeze palette at the tip on the root canvas and inside a card, acceptance 3, the work with double tap and squeeze set to "Ignore", and acceptance 4, the haptics, all pass. The fifth check, the pen width after a zoom, is in section 6.3. It passes after commits 436fe7b and 194959c.
 
 ### 6.5 Close (phase 5)
 
