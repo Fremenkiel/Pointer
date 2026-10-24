@@ -375,3 +375,11 @@ extension CanvasViewController: PKCanvasViewDelegate {
         Task { await repository.requestSave() }
     }
 }
+
+extension CanvasViewController {
+    /// Returns when the library took all rows that the canvas sent before the call, also after
+    /// the canvas left the screen (D-149).
+    public func flushRows() async {
+        await rowChannel?.flush()
+    }
+}

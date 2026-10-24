@@ -277,7 +277,9 @@ public actor DeviceStateStore {
         return statements
     }
 
-    private func close() {
+    /// Closes the file, for the close of the app composition before a restore (task 2.1 of
+    /// docs/m9-plan.md). A read or a write after it fails until `open()` runs again.
+    public func close() {
         statements = nil
         connection = nil
     }

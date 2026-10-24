@@ -99,4 +99,17 @@ struct PreviewStoreTests {
         try await store.write(Data([3]), for: other)
         #expect(await store.read(other) == Data([3]))
     }
+
+    @Test("A closed store refuses a write and still removes all previews (D-157)")
+    func closedStore() async throws {
+        let folder = try TemporaryFolder()
+        let store = PreviewStore(folder: folder.url.appending(path: "previews"))
+        try await store.write(Data([1, 2, 3]), for: Values.canvas)
+        await store.close()
+        await #expect(throws: PersistenceError.self) {
+            try await store.write(Data([4]), for: Values.canvas)
+        }
+        try await store.removeAll()
+        #expect(await store.read(Values.canvas) == nil)
+    }
 }

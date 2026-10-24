@@ -71,6 +71,13 @@ public final class CanvasSessions {
         assert(order.count == sessions.count, "Each session has one place in the order")
     }
 
+    /// Removes all sessions, for the close of the app composition before a restore. An undo of
+    /// a step of the old library would write its rows into the restored one (D-150).
+    public func removeAll() {
+        sessions.removeAll()
+        order.removeAll()
+    }
+
     /// Keeps the session of a canvas and marks the canvas as the most recent one.
     func save(_ session: CanvasSession, for canvasID: CanvasID) {
         if sessions[canvasID] == nil, sessions.count == Self.capacity, let oldest = order.first {

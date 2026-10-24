@@ -298,6 +298,18 @@ extension SQLiteConnection {
     }
 }
 
+extension PersistenceError {
+    /// The low 8 bits of an extended result code hold the primary code
+    /// (<https://www.sqlite.org/rescode.html>).
+    private static let primaryCodeMask: Int32 = 0xFF
+
+    /// True if the error says that the disk is full: `diskFull`, or `SQLITE_FULL`.
+    var isDiskFull: Bool {
+        guard case .sqlite(let code, _) = self else { return self == .diskFull }
+        return code & Self.primaryCodeMask == SQLITE_FULL
+    }
+}
+
 /// The page count of the WAL of one connection. Only the WAL hook writes it, during a commit on
 /// the executor of the owner of the connection, and only that owner reads it.
 private final class WALCounter {

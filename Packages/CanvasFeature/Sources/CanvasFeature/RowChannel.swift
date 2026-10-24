@@ -8,18 +8,30 @@ import os
 /// one consumer task sends each list of rows and waits for it before it takes the next.
 @MainActor
 final class RowChannel {
-    private let continuation: AsyncStream<[LibraryChange]>.Continuation
+    /// One item of the channel: the rows of a step, or a flush that waits for the rows before
+    /// it.
+    private enum Item {
+        case rows([LibraryChange])
+        case flush(CheckedContinuation<Void, Never>)
+    }
+
+    private let continuation: AsyncStream<Item>.Continuation
     private let consumer: Task<Void, Never>
+    private var isFinished = false
 
     /// Starts the consumer task for `repository`.
     init(repository: any LibraryRepository) {
         let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Canvas")
-        let (stream, continuation) = AsyncStream.makeStream(of: [LibraryChange].self)
+        let (stream, continuation) = AsyncStream.makeStream(of: Item.self)
         self.continuation = continuation
         consumer = Task {
             do {
-                for await rows in stream {
+                for await item in stream {
                     try Task.checkCancellation()
+                    guard case .rows(let rows) = item else {
+                        if case .flush(let waiter) = item { waiter.resume() }
+                        continue
+                    }
                     do {
                         try await repository.send(rows)
                     } catch {
@@ -37,14 +49,24 @@ final class RowChannel {
     /// - Precondition: `rows` is not empty.
     func send(_ rows: [LibraryChange]) {
         precondition(!rows.isEmpty, "A send needs rows")
-        let result = continuation.yield(rows)
+        let result = continuation.yield(.rows(rows))
         if case .terminated = result {
             assertionFailure("Rows sent after the end of the canvas")
         }
     }
 
+    /// Returns when the library took all rows that came before the call (D-149). After
+    /// `finish()`, it waits for the consumer to end.
+    func flush() async {
+        guard !isFinished else { return await consumer.value }
+        await withCheckedContinuation { waiter in
+            if case .terminated = continuation.yield(.flush(waiter)) { waiter.resume() }
+        }
+    }
+
     /// Ends the channel. The consumer sends the queued rows and then ends.
     func finish() {
+        isFinished = true
         continuation.finish()
         assert(!consumer.isCancelled, "The consumer drains the queued rows")
     }

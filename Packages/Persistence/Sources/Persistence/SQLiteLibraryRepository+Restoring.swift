@@ -21,7 +21,10 @@ extension SQLiteLibraryRepository {
     /// The library is closed after the call, also after a failure. The app opens it again in a
     /// new composition, which runs the migrations of an older snapshot.
     ///
-    /// - Precondition: No row waits for a save, and the library is open and writable.
+    /// A closed library takes a restore too, for example after an open that failed on the
+    /// restored file: the restore then opens its own connection (task 2.2, item 4).
+    ///
+    /// - Precondition: No row waits for a save, and the library is not read-only.
     /// - Throws: `PersistenceError.restoreStopped` after a stop, `.diskFull` for a full disk,
     ///   and `.sqlite` for another fault. A stop and a fault roll the copy back, so the library
     ///   keeps its old content.
@@ -30,7 +33,7 @@ extension SQLiteLibraryRepository {
         stop: RestoreStop
     ) async throws(PersistenceError) {
         precondition(pending.isEmpty, "A restore drops \(pending.count) pending rows")
-        guard let connection, !isReadOnly else { preconditionFailure("The library is not open") }
+        precondition(!isReadOnly, "A read-only library takes no restore")
         scheduledSave?.cancel()
         scheduledSave = nil
         // The backup refuses a destination with an open read, and a send during the wait for
@@ -38,15 +41,22 @@ extension SQLiteLibraryRepository {
         statements = nil
         await checkpointRequest?.value
         defer { dropConnection() }
+        let destination = try openDestination()
         let source = try SQLiteConnection(
             path: snapshot.file.path(percentEncoded: false),
             mode: .untrustedReadOnly
         )
         let interval = signposter.beginInterval("Restore")
         defer { signposter.endInterval("Restore", interval) }
-        try copy(from: source, to: connection, steps: try maxSteps(of: snapshot), stop: stop)
-        try connection.checkpointTruncate()
+        try copy(from: source, to: destination, steps: try maxSteps(of: snapshot), stop: stop)
+        try destination.checkpointTruncate()
         assert(statements == nil, "No statement of the old library stays")
+    }
+
+    /// Returns the connection of the open library, or a new one to the file of a closed one.
+    private func openDestination() throws(PersistenceError) -> SQLiteConnection {
+        if let connection { return connection }
+        return try SQLiteConnection(path: configuration.databasePath, mode: .readWrite)
     }
 
     /// Returns the most steps of the copy of `snapshot`: its pages over the pages of one step.

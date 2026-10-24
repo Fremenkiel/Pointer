@@ -148,6 +148,19 @@ struct SnapshotNameTests {
         #expect(!SnapshotFiles.isDaily(name))
     }
 
+    @Test(
+        "SQLITE_FULL and diskFull count as a full disk, other errors do not",
+        arguments: [
+            (PersistenceError.sqlite(code: 13, message: "database or disk is full"), true),
+            (.diskFull, true),
+            (.sqlite(code: 10, message: "disk I/O error"), false),
+            (.fileFailed(reason: "rename"), false),
+        ]
+    )
+    func diskFull(error: PersistenceError, isFull: Bool) {
+        #expect(error.isDiskFull == isFull)
+    }
+
     private static func names(in folder: URL) throws -> [String] {
         guard FileManager().fileExists(atPath: folder.path(percentEncoded: false)) else {
             return []

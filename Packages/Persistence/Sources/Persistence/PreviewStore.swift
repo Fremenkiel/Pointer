@@ -18,6 +18,9 @@ public actor PreviewStore {
     private let files = FileManager()
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Persistence")
     private let queue = DispatchSerialQueue(label: "dk.saarikivi.pointer.previews")
+    /// True after `close()`. A render that ends after the close of the composition must not
+    /// write a preview of the old library into the cleared cache (D-157).
+    private var isClosed = false
 
     /// The executor of the store: its own serial queue.
     public nonisolated var unownedExecutor: UnownedSerialExecutor {
@@ -64,6 +67,7 @@ public actor PreviewStore {
     /// - Throws: `PersistenceError.fileFailed` if the data is empty or larger than
     ///   `maxFileSize`, or if the folder, the write, or the rename fails.
     public func write(_ data: Data, for canvas: CanvasID) throws(PersistenceError) {
+        guard !isClosed else { throw .fileFailed(reason: "the preview store is closed") }
         guard !data.isEmpty, data.count <= Self.maxFileSize else {
             throw .fileFailed(reason: "preview of \(data.count) bytes is outside the limit")
         }
@@ -95,6 +99,13 @@ public actor PreviewStore {
             throw .fileFailed(reason: "cannot remove preview \(canvas.rawValue): \(error)")
         }
         assert(!files.fileExists(atPath: url.path(percentEncoded: false)), "The preview went")
+    }
+
+    /// Refuses each later write, for the close of the app composition before a restore. The
+    /// writes that came before the close are done when it returns, because the store is an
+    /// actor (D-157).
+    public func close() {
+        isClosed = true
     }
 
     /// Removes all previews, for the restore of M9 (storage.md section 7.5).

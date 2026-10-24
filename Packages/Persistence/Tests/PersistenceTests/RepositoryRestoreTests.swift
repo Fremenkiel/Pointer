@@ -52,6 +52,23 @@ struct RepositoryRestoreTests {
         await repository.close()
     }
 
+    @Test("A closed library after a failed open takes a restore (task 2.2, item 4)")
+    func restoreIntoClosedLibrary() async throws {
+        let source = try await Self.sourceLibrary()
+        let target = try RepositoryHarness()
+        let first = try await target.open()
+        await first.close()
+        let writer = try SQLiteConnection(path: target.path, mode: .readWrite)
+        try writer.execute("UPDATE library SET value = 'damaged' WHERE key = 'lastTimestamp'")
+        let repository = target.make()
+        await #expect(throws: ModelError.self) { _ = try await repository.open { _ in } }
+        let checked = try await Self.checkedSnapshot(of: source, into: target)
+        try await repository.restore(from: checked, stop: RestoreStop())
+        #expect(try Self.differences(target, checked) == 0)
+        _ = try await repository.open { _ in }
+        await repository.close()
+    }
+
     @Test("A stop before the first step keeps the old library")
     func stopBeforeStart() async throws {
         let source = try await Self.sourceLibrary()

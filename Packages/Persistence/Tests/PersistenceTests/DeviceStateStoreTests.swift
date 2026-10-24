@@ -53,6 +53,21 @@ struct DeviceStateStoreTests {
         #expect(launch.camera == camera)
     }
 
+    @Test("A closed store refuses a write and keeps its rows for the next open")
+    func closeAndOpenAgain() async throws {
+        let folder = try TemporaryFolder()
+        let store = Self.store(folder)
+        let first = try await store.open()
+        try await store.save(lastWorkspace: Values.workspaceID, navigationPath: [])
+        await store.close()
+        await #expect(throws: PersistenceError.self) {
+            try await store.save(lastWorkspace: nil, navigationPath: [])
+        }
+        let second = try await store.open()
+        #expect(second.state.deviceID == first.state.deviceID)
+        #expect(second.state.lastWorkspace == Values.workspaceID)
+    }
+
     @Test("A cleared last workspace and an empty path load as cleared")
     func clearedState() async throws {
         let folder = try TemporaryFolder()

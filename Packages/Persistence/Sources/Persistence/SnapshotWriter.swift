@@ -154,7 +154,7 @@ public actor SnapshotWriter {
             // A full disk leaves a file of 0 bytes, and a second run with its name fails
             // (<https://www.sqlite.org/lang_vacuum.html#vacuuminto>, D-155).
             removePartial(partial)
-            throw error
+            throw error.isDiskFull ? .diskFull : error
         }
         logger.info("Wrote a snapshot")
         assert(url.lastPathComponent == name, "The snapshot has another name than \(name)")
