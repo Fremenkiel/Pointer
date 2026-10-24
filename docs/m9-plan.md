@@ -428,3 +428,35 @@ The D-56 preview render of `FrameLoopTests` took 37.7 ms.
 | `HoverSampleAllocationTests` | pen and eraser: hover 0, bare move 0 |
 | `TextEditFrameAllocationTests` | glide: Pointer max 0; spring: 0 before the last frame |
 | `ZoomFrameAllocationTests` | spring median 0, max 140; glide max 0 |
+
+### 6.2 The measures for the budgets (task 0.2)
+
+Measured on 2026-10-24 on the iPad in Release with a temporary test in `PersistenceDeviceTests`, 5 runs per library, with raw SQLite calls (`M9-budget-2.xcresult`). Each step ran in a detached task after 1.5 s of steady memory, and the test read `os_proc_available_memory` every 0.25 ms. The iPad reports SQLite 3.51.0, not 3.54 as section 2.3 expected. The first run (`M9-budget-1.xcresult`) does not count: it closed the destination after the backup, and that close moved the WAL before the `TRUNCATE` step.
+
+| Step | D-56 library, 97 MB | 200,000 strokes of 300 points, 949 MB |
+|---|---|---|
+| `VACUUM INTO` | 0.153 to 0.167 s | 1.719 to 1.851 s |
+| File copy of the snapshot | 0.019 to 0.023 s | 0.016 to 0.023 s |
+| `integrity_check` on the untrusted connection | 0.311 to 0.335 s | 2.945 to 3.077 s |
+| Backup in steps of 1,024 pages | 0.120 to 0.135 s, WAL 98 MB | 1.041 to 1.055 s, WAL 954 MB |
+| `TRUNCATE` checkpoint | 0.055 to 0.057 s, WAL 0 bytes after | 0.539 to 0.551 s, WAL 0 bytes after |
+| Peak memory growth of each step | at most 11 MB | at most 11 MB |
+
+The file copy on one APFS volume is a clone, so it costs no time for its size. A file of a provider that is not on the iPad yet adds its download.
+
+The parts of the flows, from these measures:
+
+- "Back up now" is a save and a `VACUUM INTO`: about 0.17 s for D-56 and 1.8 s for the largest library.
+- A restore is the copy, the checks, the pre-restore snapshot, the backup, and the checkpoint: about 0.7 s for D-56 and 6.5 s for the largest library. The open of the new composition comes after it.
+- Both stay far below the 30 s of `beginBackgroundTask`, so option (a) of D-164 holds.
+
+Recommended budgets, for the product owner (D-165):
+
+| Measure | Recommended budget |
+|---|---|
+| "Back up now" of the D-56 library, from the tap to the item of the share sheet | under 0.5 s, peak memory growth under 50 MB |
+| Restore of the D-56 library, from the tap of the alert to the close of the repository | under 1.5 s, peak memory growth under 50 MB |
+| "Back up now" and restore of 200,000 strokes | recorded, no budget, as D-145 does for the export of the same content |
+
+The temporary test is deleted. The budgets wait for the decision of the product owner.
+
