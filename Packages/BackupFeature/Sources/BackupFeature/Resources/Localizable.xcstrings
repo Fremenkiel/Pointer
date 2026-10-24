@@ -1,7 +1,86 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-
+  "sourceLanguage": "en",
+  "strings": {
+    "Pointer could not save your work, so nothing changed. Try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pointer could not save your work, so nothing changed. Try again."
+          }
+        }
+      }
+    },
+    "The iPad has no room for this. Free some space, and try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The iPad has no room for this. Free some space, and try again."
+          }
+        }
+      }
+    },
+    "The restore did not finish. Your library stays as it was.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The restore did not finish. Your library stays as it was."
+          }
+        }
+      }
+    },
+    "The restored library did not open, so Pointer put back your library from before the restore.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The restored library did not open, so Pointer put back your library from before the restore."
+          }
+        }
+      }
+    },
+    "This file comes from a newer version of Pointer. Update Pointer, and then restore the file again. Your library stays as it is.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file comes from a newer version of Pointer. Update Pointer, and then restore the file again. Your library stays as it is."
+          }
+        }
+      }
+    },
+    "This file is an incomplete copy of a library. Pick a snapshot from the Backups folder. Your library stays as it is.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file is an incomplete copy of a library. Pick a snapshot from the Backups folder. Your library stays as it is."
+          }
+        }
+      }
+    },
+    "This file is damaged. Your library stays as it is.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file is damaged. Your library stays as it is."
+          }
+        }
+      }
+    },
+    "This file is not a Pointer library. Your library stays as it is.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file is not a Pointer library. Your library stays as it is."
+          }
+        }
+      }
+    }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

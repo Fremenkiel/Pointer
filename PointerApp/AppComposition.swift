@@ -1,3 +1,4 @@
+import BackupFeature
 import CanvasFeature
 import Geometry
 import Model
@@ -48,23 +49,54 @@ final class AppComposition {
     var loadTask: Task<Void, Never>?
     /// Runs with the canvas of each load that starts. Only the tests set it (F-13).
     var onLoadStarted: ((CanvasID) -> Void)?
+    /// The places of the files that `start()` opens, or `nil` for the folders of the app. Tests
+    /// give a temporary folder.
+    let fileLocations: AppFiles?
+    /// The files that `start()` opened, or `nil` before the launch.
+    var openedFiles: AppFiles?
+    /// Hands the app to a new composition after a restore (D-148).
+    var onReplace: ((Handoff) -> Void)?
+    /// The extra time in the background for a restore (D-164). Tests give their own.
+    var backgroundTime: any BackgroundTime = SystemBackgroundTime()
+    /// The running daily snapshot, or `nil`. The close waits for it.
+    var snapshotTask: Task<Void, Never>?
+    /// True while the share sheet of "Back up now" shows. No idle snapshot starts then.
+    var isSharing = false
+    /// The snapshot that the share sheet shows, or `nil`.
+    var sharedSnapshot: URL?
 
-    /// Makes the composition. `start()` opens the files.
-    init(window: InputTrackingWindow, container: AppViewController, defaults: UserDefaults) {
+    /// Makes the composition. `start(after:)` opens the files.
+    init(
+        window: InputTrackingWindow,
+        container: AppViewController,
+        defaults: UserDefaults,
+        files: AppFiles? = nil
+    ) {
         self.window = window
         self.container = container
         self.defaults = defaults
+        fileLocations = files
     }
 
     /// Opens the files, makes the clock, and opens the last workspace at its last camera
-    /// (WS-04). A failure shows a message and leaves the empty screen.
-    func start() async {
+    /// (WS-04). After a restore, `handoff` gives the clock of the old composition (D-152), a
+    /// message, and the way back if the restored library does not open (D-20). A failure
+    /// shows a message and leaves the empty screen.
+    func start(after handoff: Handoff? = nil) async {
         do {
-            let files = try AppFiles.make(FileManager.default)
+            let files = try fileLocations ?? AppFiles.make(FileManager.default)
+            openedFiles = files
             previewStore = PreviewStore(folder: files.previews)
             let device = try await openDeviceState(files)
-            let library = try await openLibrary(files, device: device.state.deviceID)
-            makeClock(device: device.state.deviceID, last: library.lastTimestamp)
+            guard
+                let library = try await openLibrary(
+                    files,
+                    device: device.state.deviceID,
+                    handoff: handoff
+                )
+            else { return }
+            let last = [library.lastTimestamp, handoff?.lastClock].compactMap { $0 }.max()
+            makeClock(device: device.state.deviceID, last: last)
             isReadOnly = library.isReadOnly
             if isReadOnly { container.showMessage(AppStrings.readOnly) }
             if let workspace = device.state.lastWorkspace {
@@ -76,6 +108,7 @@ final class AppComposition {
                 if let camera = device.camera { launchCamera = (stored.currentCanvas, camera) }
             }
             await startSelector(lastWorkspace: device.state.lastWorkspace)
+            if let message = handoff?.message { container.showMessage(message) }
         } catch {
             logger.fault("The launch failed: \(error)")
             container.showMessage(AppStrings.libraryFailed)
@@ -97,6 +130,28 @@ final class AppComposition {
         )
         deviceStore = store
         return try await store.open()
+    }
+
+    /// Opens the library. If a restored library does not open, it restores the pre-restore
+    /// snapshot of `handoff`, which hands the app to a new composition (task 2.2, item 4).
+    ///
+    /// - Returns: The launch, or `nil` after the way back.
+    private func openLibrary(
+        _ files: AppFiles,
+        device: DeviceID,
+        handoff: Handoff?
+    ) async throws -> LibraryLaunch? {
+        do {
+            return try await openLibrary(files, device: device)
+        } catch {
+            guard let handoff, let fallback = handoff.fallback else { throw error }
+            logger.fault("The restored library did not open: \(error)")
+            await deviceStore?.close()
+            guard await undoRestore(from: fallback, files: files, handoff: handoff) else {
+                throw error
+            }
+            return nil
+        }
     }
 
     private func openLibrary(_ files: AppFiles, device: DeviceID) async throws -> LibraryLaunch {

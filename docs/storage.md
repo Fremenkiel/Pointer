@@ -249,7 +249,10 @@ To back up, the user copies the newest snapshot file from the Files app to any p
 
 1. The repository writes all pending rows.
 2. The snapshot writer makes a new daily snapshot with `writeSnapshotNow()` (D-155). It counts in the 7 daily snapshots of section 7.2. It is the newest, so the rotation keeps it.
-3. The app opens the share sheet with the snapshot file. The user picks a destination.
+3. The app opens the share sheet with the snapshot file, in a popover at the workspace selector (D-160). The user picks a destination.
+4. Until the share sheet closes, no idle snapshot starts, so the rotation cannot delete the shared file.
+
+Before step 1, and before a restore, the app ends a running text edit, places a pending card, and waits until the canvas sent all its rows (D-149). If the save fails, nothing else runs, and the app shows a message.
 
 ### 7.5 Restore
 

@@ -20,17 +20,36 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             preconditionFailure("Scene \(session.persistentIdentifier) is not a UIWindowScene")
         }
         let window = InputTrackingWindow(windowScene: windowScene)
+        self.window = window
+        startComposition(in: window, after: nil)
+        window.makeKeyAndVisible()
+    }
+
+    /// Makes a composition with a new root view and starts it. After a restore, the new
+    /// composition replaces the old one and opens the files again, as at launch (D-148).
+    private func startComposition(
+        in window: InputTrackingWindow,
+        after handoff: AppComposition.Handoff?
+    ) {
         let container = AppViewController()
         window.rootViewController = container
-        window.makeKeyAndVisible()
-        self.window = window
         let composition = AppComposition(
             window: window,
             container: container,
             defaults: .standard
         )
+        composition.onReplace = { [weak self, weak window] handoff in
+            guard let self, let window else { return }
+            startComposition(in: window, after: handoff)
+        }
         self.composition = composition
-        Task { await composition.start() }
+        Task {
+            await composition.start(after: handoff)
+            // At launch, the scene becomes active after the start and starts the timer.
+            if handoff != nil, UIApplication.shared.applicationState == .active {
+                composition.startIdleTimer()
+            }
+        }
     }
 
     /// Starts the check for an idle moment for the daily snapshot.

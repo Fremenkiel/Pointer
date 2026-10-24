@@ -94,6 +94,21 @@ final class AppViewController: UIViewController {
         )
     }
 
+    /// Removes the shown canvas and its buttons, for the close of the composition before a
+    /// restore (task 2.1 of docs/m9-plan.md).
+    func removeCanvas() {
+        guard let old = canvas else { return }
+        canvas = nil
+        Self.remove(old)
+        if let button = toolButton {
+            button.willMove(toParent: nil)
+            button.view.removeFromSuperview()
+            button.removeFromParent()
+            toolButton = nil
+        }
+        showUpButton(nil)
+    }
+
     /// Removes a canvas screen from the container.
     private static func remove(_ old: CanvasViewController) {
         old.willMove(toParent: nil)

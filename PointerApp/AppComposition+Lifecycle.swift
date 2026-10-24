@@ -103,12 +103,12 @@ extension AppComposition {
     /// pending rows. The writer makes a snapshot only if the newest one is older than 24 hours.
     private func checkIdle() {
         let quiet = ProcessInfo.processInfo.systemUptime - window.lastInputTime
-        guard quiet >= Self.idleInterval, !isSnapshotRunning, let repository, let writer else {
-            return
-        }
+        guard quiet >= Self.idleInterval, !isSnapshotRunning, !isSharing, let repository,
+            let writer
+        else { return }
         isSnapshotRunning = true
         let logger = logger
-        Task {
+        snapshotTask = Task {
             if await repository.pendingCount == 0 {
                 do {
                     try await writer.appIsIdle()
