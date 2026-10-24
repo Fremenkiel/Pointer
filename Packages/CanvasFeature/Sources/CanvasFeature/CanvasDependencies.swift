@@ -23,7 +23,7 @@ public struct CanvasDependencies {
     public var onCameraRest: @MainActor (Camera) -> Void = { _ in }
     /// Shows a short message, for example at a limit (architecture.md section 10).
     public var onMessage: @MainActor (String) -> Void = { _ in }
-    /// Opens a card after a double tap on it (CARD-03, D-09).
+    /// Opens a card after a tap on it (CARD-03, D-115).
     public var onOpenCard: @MainActor (Card) -> Void = { _ in }
     /// Gives the title of the workspace of this canvas for the name of an exported PDF, or `nil`
     /// (D-143).

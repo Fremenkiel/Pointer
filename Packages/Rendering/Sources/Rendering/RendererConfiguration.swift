@@ -2,7 +2,7 @@
 public struct RendererConfiguration: Sendable {
     /// The largest size of the point arena. 192 MB holds 12 million control points.
     public var arenaByteBudget: Int
-    /// The size of the point arena at the start, in slabs of 256 KB.
+    /// The size of the point arena at the start, in slabs of 128 KB.
     public var initialArenaSlabs: Int
     /// The draw instances that one frame can spend on a committed texture build. This is the
     /// fixed GPU time per frame of D-28. With the rebuild policy of phase 2, most frames build

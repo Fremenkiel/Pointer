@@ -9,7 +9,7 @@ import UIKit
 extension CanvasViewController {
     /// Starts the open of a card (architecture.md 6.2, D-98): the camera flies until the card
     /// covers the screen at the scale k = max(W / w, H / h), and the parent fades out under the
-    /// card. Input is off until the end, so a second double tap does nothing. `onEnd` runs once
+    /// card. Input is off until the end, so a second tap does nothing. `onEnd` runs once
     /// at the end of the flight.
     public func beginOpen(of card: Card, onEnd: @escaping @MainActor () -> Void) {
         guard cardTransition == nil, viewSize.width > 0, viewSize.height > 0 else { return }

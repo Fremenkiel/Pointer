@@ -8,7 +8,7 @@ The app has three tools only: a white pen, text boxes, and an eraser. It stores 
 
 ## Status
 
-Milestones M0 and M1 are done. M0 gave the Xcode project, the empty packages, and the check tools. The app shows a black screen. M1 compared three latency prototypes. The custom input path trailed the pencil, so Pointer uses a hybrid: PencilKit draws the live stroke, and a Metal renderer draws the finished ink (decisions D-02 and D-33). The next milestone is M2, ink on one canvas. See [docs/plan.md](docs/plan.md).
+Milestones M0 to M8 are done: ink, storage and workspaces, the eraser and undo, text boxes, cards and navigation, the Apple Pencil interactions, and PDF export. PencilKit draws the live stroke, and a Metal renderer draws the finished ink (decisions D-02 and D-33). The next milestone is M9, backup and restore. See [docs/plan.md](docs/plan.md).
 
 ## Build
 

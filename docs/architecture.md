@@ -47,8 +47,8 @@ Layer 0  Foundations      InkEngine ---- Model ---- Geometry
 | `Model` | 0 | `Geometry` | Value types: `Workspace`, `Card`, `TextBox`, `Stroke`, IDs, `HybridClock`, `FractionalIndex`. Commands and `History`. Protocol `LibraryRepository`. |
 | `InkEngine` | 0 | `Model`, `Geometry` | Eraser hit test and stroke split. |
 | `Persistence` | 1 | `Model`, `Geometry`, SQLite3 | `SQLiteLibraryRepository` (an actor), `WALCheckpointer` (an actor with a second connection, D-146), a small SQLite wrapper, row codecs, migrations, snapshots, restore. `PreviewStore`, which reads and writes the preview files as `Data` (D-107). |
-| `Rendering` | 1 | `Model`, `Geometry`, `InkEngine`, Metal, ImageIO | `CanvasRenderer`, the point arena, shaders, the committed texture cache, text layout, the glyph atlas (D-81). The card previews and their PNG code (D-107). |
-| `Export` | 1 | `Model`, `Geometry`, `InkEngine`, `Rendering` for `TextLayout` (D-140), Core Graphics, Core Text | `PDFExporter`. |
+| `Rendering` | 1 | `Model`, `Geometry`, Metal, ImageIO | `CanvasRenderer`, the point arena, shaders, the committed texture cache, text layout, the glyph atlas (D-81). The card previews and their PNG code (D-107). |
+| `Export` | 1 | `Model`, `Geometry`, `Rendering` for `TextLayout` (D-140), Core Graphics, Core Text | `PDFExporter`. |
 | `DesignSystem` | 1 | SwiftUI, UIKit | Color, spacing, size, and icon tokens. |
 | `CanvasFeature` | 2 | Layer 0 and 1, PencilKit | `CanvasViewController`, `CanvasView`, the live `PKCanvasView`, `PencilKitStrokeConverter`, input routing, camera control, card navigation, text editing, top bars. |
 | `WorkspaceFeature` | 2 | Layer 0 and 1 | Workspace selector, create, rename, delete. |
@@ -224,9 +224,9 @@ The live pen stroke does not use this frame loop (section 4.2). The eraser of M4
 
 Each frame draws these passes:
 
-1. The committed layer: all finished strokes, text, and cards that are visible. Cards share the green channel with the text (D-96). This layer is a texture with the size of the drawable. The renderer reuses it while the camera and the content do not change.
+1. The committed layer: all finished strokes, text, and cards that are visible. Cards share the green channel with the text (D-96). This layer is a texture with twice the size of the drawable in each direction, as described below. The renderer reuses it while the camera and the content do not change.
 2. The eraser mask, while an eraser gesture runs. The renderer makes the mask texture when the eraser becomes the tool and drops it when another tool becomes the tool, after the last gesture ends (D-78). A `.r8Unorm` texture of the size of the committed texture holds the eraser circles of the gesture. The composite pass hides the ink under them. At the pencil lift, the renderer redraws the area of the change in the committed texture and clears the mask (D-66). The mask uses the mapping of the front texture. If the front texture changes during a gesture, the next frame stamps all samples again.
-3. Overlays: the selection outline. The hover dot is a layer of Core Animation, not a pass of the renderer (section 4.6, D-126).
+3. Overlays: none. The hover dot is a layer of Core Animation, not a pass of the renderer (section 4.6, D-126).
 
 The live pen stroke is not a pass of the renderer. The `PKCanvasView` on top draws it (section 4.2). While you draw, the renderer draws a frame only at the handoff of a stroke.
 
@@ -283,7 +283,7 @@ The renderer draws text from a glyph atlas (D-29, D-81). `TextLayout` in `Render
 
 The text boxes of a load are laid out off the render thread, in up to 8 chunks on several threads (D-92). The first frame with the strokes does not wait for them, and the text shows a few frames later. An edit of a box during that time wins over the loaded box. A build draws the ink first and then the text, in the same time budget per frame (`RendererConfiguration.buildTimeBudget`). A frame writes at most `RendererConfiguration.glyphCapacity` (65,536) glyph quads. A change of a text box clears the green channel of its old and its new bounds and draws the text boxes there again.
 
-While a text box is in edit mode, the renderer hides it. A `UITextView` sits at the same place, with the same font at 17 points times the zoom, and without a scale transform (D-85). A camera change moves it, and a zoom change lays out its text again. During a pinch, it uses a scale transform from its last layout. At the end of the pinch, it lays out the text at the new size.
+While a text box is in edit mode, the renderer hides it. A `UITextView` sits at the same place, with the same font at 17 points times the zoom, and without a scale transform (D-85). A camera change moves it, and a zoom change lays out its text again. During a pinch, it uses a scale transform from its last layout. A spring back to a zoom limit after the pinch counts as a part of the pinch. When the pinch and its spring end, it lays out the text at the new size.
 
 Text does not join the eraser mask (D-66, D-82). The committed textures hold the ink in their red channel and the text in their green channel. The eraser mask hides the red channel only.
 
@@ -424,10 +424,10 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 
 - Swift 6 language mode with complete strict concurrency in every target.
 - UI types and the canvas run on the main actor. The renderer encodes its frames on a render thread (D-42, section 5.1). The main actor sends values to it and never waits for a frame.
-- `SQLiteLibraryRepository` is an actor. It owns the only database connection that writes. All SQL goes through it. The actor has a custom serial executor on a `DispatchSerialQueue` (SE-0392), so the blocking SQLite calls run on their own thread and never hold a thread of the shared pool (review A-13).
+- `SQLiteLibraryRepository` is an actor. It owns the connection that writes the rows, and all SQL of the library goes through it. `WALCheckpointer`, an actor with a second connection, runs only the passive checkpoints (D-146). The actor has a custom serial executor on a `DispatchSerialQueue` (SE-0392), so the blocking SQLite calls run on their own thread and never hold a thread of the shared pool (review A-13).
 - The canvas sends the changed rows to the repository, in order through one channel (F-11), and the change of a step to the renderer: the IDs of the removed strokes, the added `Stroke` values, and the area to redraw (`CanvasRenderer.change(removing:adding:area:)`). It never shares mutable state (see [data-model.md](data-model.md) section 8).
 - PDF export runs in a `Task` off the main actor. Snapshots run in `SnapshotWriter`, an actor with its own read-only connection and its own serial executor, so saves continue while a snapshot runs (D-32). Both report progress to the main actor.
-- `DeviceStateStore` owns `device.sqlite` with its own connection and its own serial executor (D-53). Thus three actors touch SQLite, each on its own queue, and none of them on the shared pool.
+- `DeviceStateStore` owns `device.sqlite` with its own connection and its own serial executor (D-53). Thus four actors touch SQLite, each on its own queue, and none of them on the shared pool.
 - At launch, `PointerApp` opens the device state, the snapshot writer, and the library in this order, and then makes the one clock of the app (data-model.md section 4). At the move to the background, it writes the pending rows and the device state with extra time from `UIApplication.beginBackgroundTask`. A custom `UIWindow` notes the time of the last touch. After 5 seconds without a touch and with no pending rows, the app sends the idle signal to the snapshot writer (storage.md section 7.2).
 - No code on the main actor waits for disk.
 

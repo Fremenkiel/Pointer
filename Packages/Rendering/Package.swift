@@ -10,7 +10,6 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Geometry"),
-        .package(path: "../InkEngine"),
         .package(path: "../Model"),
     ],
     targets: [
@@ -18,7 +17,6 @@ let package = Package(
             name: "Rendering",
             dependencies: [
                 .product(name: "Geometry", package: "Geometry"),
-                .product(name: "InkEngine", package: "InkEngine"),
                 .product(name: "Model", package: "Model"),
             ],
             resources: [.process("Shaders.metal")],

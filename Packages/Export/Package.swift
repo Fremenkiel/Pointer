@@ -10,7 +10,6 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Geometry"),
-        .package(path: "../InkEngine"),
         .package(path: "../Model"),
         .package(path: "../Rendering"),
     ],
@@ -19,7 +18,6 @@ let package = Package(
             name: "Export",
             dependencies: [
                 .product(name: "Geometry", package: "Geometry"),
-                .product(name: "InkEngine", package: "InkEngine"),
                 .product(name: "Model", package: "Model"),
                 .product(name: "Rendering", package: "Rendering"),
             ],
