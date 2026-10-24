@@ -364,3 +364,67 @@ Rules: AGENT-05, DOC-06, D-79.
 ## 6. Results
 
 The tasks fill in this section.
+
+### 6.1 Baseline (task 0.1)
+
+Measured on 2026-10-24 on the iPad Pro 11-inch (M4) in Release, with the code of commit c420681 in the worktree `.build/Base/tree`.
+
+1. `make check` failed in 7 minutes 53 seconds (`M9-check-base.log`). All steps before `make test` passed: build, analyze, and the Tier A tests on the Mac. In `PointerDeviceTests`, `StrokeStoreMemoryTests.testStoreOfTwoHundredThousandHandwritingStrokes` failed: "store 80.7 MB" against the limit of 75 MB. This is the fault of review section 1.7: the test reads the heap of the whole process, and a library that an earlier test deleted while SQLite held it still ran work. Up to 14 test cases still delete a library folder without a close (review section 3.2, item 1). Task 1.1 removes that cause, and the run at the end of phase 1 must show the test pass.
+2. The full run of `PointerDeviceTests` passed: 398 tests, one of them the expected failure of D-137 (`M9-base-full.xcresult`). The store test measured 69.1 MB in this run.
+3. `make coverage` passed: Geometry 90.88 %, Model 90.80 %, InkEngine 92.67 %, Persistence 90.87 %, Rendering 86.94 %, and Export 87.20 % (`M9-coverage-base.log`). In the instrumented run, `EraseUndoPerformanceTests` failed, as the `coverage` target expects.
+
+The measures of the full run:
+
+| Measure | Baseline |
+|---|---|
+| Erase, median and slowest of 5 | 24.66 ms, 25.67 ms |
+| Undo, median and slowest of 5 | 18.76 ms, 19.91 ms |
+| Redo, median and slowest of 5 | 17.78 ms, 25.23 ms |
+| Open of D-56 to the first frame, median and slowest of 10 | 257.6 ms, 269.4 ms (load 71.9 to 84.7 ms) |
+| Memory of the open D-56 canvas | held 337 MB, peak 350 MB |
+| Transition between two D-56 canvases | parent 223 MB, open peak 354 MB, after the open 297 MB, leave peak 435 MB, parent freed |
+| Store of 200,000 handwriting strokes | 69.1 MB |
+| `SnapshotPerformanceTests`, snapshot with saves | 95 MB in 196 ms; 654 saves, median 0.25 ms, p99 0.79 ms, slowest 11.18 ms |
+| `SnapshotPerformanceTests`, saves without a snapshot | 640 saves, median 0.28 ms, p99 0.63 ms, slowest 25.83 ms |
+| `PreviewMakerPerformanceTests`, preview of D-56 | 0.189 s, peak memory growth 148 MB |
+| `LibrarySavePerformanceTests` | 10 strokes: median 0.11 ms; 240 strokes: median 2.25 ms, slowest 3.58 ms |
+| Export of D-56 | 6.90 s, 146 MB |
+| Export of 200,000 handwriting strokes | 14.76 s, 277 MB |
+| Eraser frame | CPU p50 0.14 ms, max 0.30 ms; GPU p50 0.41 ms, max 1.55 ms |
+| Text layout of 5,000 boxes | median 57.4 ms |
+| Text pass of 300 boxes | median 0.839 ms |
+
+| Card flight | Time | Frames | Late |
+|---|---|---|---|
+| Open of the D-56 card | 467 ms to the child | 56 | 0 |
+| Leave of the D-56 card | 590 ms | 2 child, 42 parent | 0 |
+| Open of the empty card | 472 ms to the child | 56 | 0 |
+| Leave of the empty card | 493 ms | 2 child, 43 parent | 1, the accepted late frame of D-137 |
+
+| Frame loop | fps | Late | Render ms p50 / max | GPU ms p50 / max | Allocations p50 / p99 / max |
+|---|---|---|---|---|---|
+| few pan | 120.0 | 0 | 0.18 / 0.29 | 0.35 / 1.55 | 17 / 29 / 37 |
+| dense 20k pan | 120.0 | 0 | 0.20 / 2.82 | 0.35 / 2.35 | 17 / 2,455 / 2,641 |
+| dense 20k fast pan | 120.0 | 0 | 0.21 / 2.85 | 0.35 / 2.59 | 17 / 2,198 / 2,609 |
+| dense 20k zoom | 120.0 | 0 | 0.20 / 2.88 | 0.35 / 2.09 | 17 / 2,103 / 2,678 |
+| handwriting 200k pan | 120.0 | 0 | 0.20 / 2.18 | 0.35 / 5.01 | 17 / 2,167 / 2,168 |
+| handwriting 200k zoom | 120.0 | 0 | 0.19 / 2.65 | 0.35 / 4.33 | 23 / 2,160 / 2,169 |
+| D-56 text pan | 119.5 | 2 | 2.23 / 3.54 | 0.83 / 2.51 | 50 / 2,160 / 4,432 |
+| D-56 text zoom | 119.7 | 1 | 2.18 / 3.46 | 0.84 / 3.24 | 50 / 4,368 / 5,662 |
+| D-56 cards pan | 120.0 | 0 | 0.50 / 3.97 | 0.64 / 4.99 | 242 / 8,586 / 9,859 |
+| D-56 cards pan at zoom 1 | 120.0 | 0 | 0.13 / 2.45 | 0.78 / 7.33 | 89 / 2,613 / 2,621 |
+| D-56 cards zoom | 120.0 | 0 | 0.43 / 3.32 | 0.65 / 5.55 | 221 / 6,413 / 8,065 |
+
+The D-56 preview render of `FrameLoopTests` took 37.7 ms.
+
+| Allocation test | Count |
+|---|---|
+| `FrameAllocationTests` | frame p50 15, bare Metal frame p50 15 |
+| `TransitionAllocationTests` | flight frame p50 15, open frame p50 15, bare frame p50 15 |
+| `PreviewAllocationTests` | card pass p50 2, bare pass p50 2 |
+| `TextPassAllocationTests` | text pass p50 2, bare pass p50 2 |
+| `TextMoveAllocationTests` | move step median 6 |
+| `EditAllocationTests` | `FrameRenderer.apply`: erase 14, undo 2, redo 1 |
+| `HoverSampleAllocationTests` | pen and eraser: hover 0, bare move 0 |
+| `TextEditFrameAllocationTests` | glide: Pointer max 0; spring: 0 before the last frame |
+| `ZoomFrameAllocationTests` | spring median 0, max 140; glide max 0 |
