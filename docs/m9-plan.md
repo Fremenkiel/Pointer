@@ -495,3 +495,11 @@ The test harness first showed its container from a view of the test host, withou
 
 The changes of tasks 2.1 to 2.4 share `AppComposition`, so they are two commits: the parts in `Persistence` and `CanvasFeature`, and the app composition with its tests.
 
+### 6.5 The interface (tasks 3.1 to 3.3)
+
+Measured on 2026-10-24 on the iPad in Release.
+
+1. Task 3.1: `WorkspaceSelectorView` takes a list of `LibraryCommand` values from the app and shows them below the workspaces. `LibraryCommand` is a type of `WorkspaceFeature` with a title, an SF Symbol, and an action, so the selector knows no type of `BackupFeature` (ARCH-02). `BackupCommand` gives "Back up now" and "Restore from a snapshot" with texts from the String Catalog of `BackupFeature` and the icons `DesignSystem.Icon.backUp` and `.restore`. The app composes the two in `AppComposition+Commands.swift`.
+2. Task 3.2: `RestoreAlert` asks before a restore and names the pre-restore snapshot in `Backups`. `SnapshotPicker` opens the type `dk.saarikivi.pointer.snapshot` with `asCopy: false`. `BackupMessage` has the seven messages of the plan and one more, `restoreUndone`, for the way back of task 2.2, item 4. `BackupFeatureTests` covers the message of each refusal reason, the texts, the alert, the picker, and the share sheet.
+3. Task 3.3: `BackupFeatureSnapshotTests` compares the alert and the 8 messages with reference images, and `WorkspaceSelectorSnapshotTests` the list with the commands (`M9-snap-1.xcresult`, `M9-snap-2.xcresult`). The references are images of the iPad, reviewed before the copy into `References`. `make snapshots` runs the new suite and passes (`M9-snapshots-phase3.log`). An XCTest class keeps no attachment of Swift Testing, so the alert test adds an XCTest attachment that stays only on a failure.
+

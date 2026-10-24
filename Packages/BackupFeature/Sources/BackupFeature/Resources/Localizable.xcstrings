@@ -1,12 +1,62 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "Back up now": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back up now"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Choose a snapshot": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a snapshot"
+          }
+        }
+      }
+    },
     "Pointer could not save your work, so nothing changed. Try again.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Pointer could not save your work, so nothing changed. Try again."
+          }
+        }
+      }
+    },
+    "Restore from a snapshot": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore from a snapshot"
+          }
+        }
+      }
+    },
+    "Restore from a snapshot?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore from a snapshot?"
           }
         }
       }
@@ -37,6 +87,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The restored library did not open, so Pointer put back your library from before the restore."
+          }
+        }
+      }
+    },
+    "The snapshot replaces all workspaces on this iPad. Pointer first saves your current library as a pre-restore snapshot in the Backups folder.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The snapshot replaces all workspaces on this iPad. Pointer first saves your current library as a pre-restore snapshot in the Backups folder."
           }
         }
       }

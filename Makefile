@@ -61,7 +61,8 @@ snapshots:
 		-only-testing:PointerDeviceTests/UpButtonSnapshotTests \
 		-only-testing:PointerDeviceTests/CardMenuSnapshotTests \
 		-only-testing:PointerDeviceTests/HoverDotSnapshotTests \
-		-only-testing:PointerDeviceTests/PDFSnapshotTests
+		-only-testing:PointerDeviceTests/PDFSnapshotTests \
+		-only-testing:PointerDeviceTests/BackupFeatureSnapshotTests
 	@echo "snapshots: done"
 
 # TEST-02, D-120: the line coverage of the Tier A packages and of Rendering and Export. The device run builds

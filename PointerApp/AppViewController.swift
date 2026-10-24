@@ -94,6 +94,12 @@ final class AppViewController: UIViewController {
         )
     }
 
+    /// The frame of the selector button in the root view, the anchor of the share sheet of
+    /// "Back up now" (D-160).
+    var selectorFrame: CGRect {
+        selector.map { $0.view.convert($0.view.bounds, to: view) } ?? .zero
+    }
+
     /// Removes the shown canvas and its buttons, for the close of the composition before a
     /// restore (task 2.1 of docs/m9-plan.md).
     func removeCanvas() {
@@ -210,9 +216,11 @@ final class AppViewController: UIViewController {
     }
 
     /// Shows the workspace selector in the top left corner.
-    func showSelector(_ model: WorkspaceSelectorModel) {
+    func showSelector(_ model: WorkspaceSelectorModel, commands: [LibraryCommand] = []) {
         precondition(selector == nil, "The selector shows already")
-        let host = UIHostingController(rootView: WorkspaceSelectorView(model: model))
+        let host = UIHostingController(
+            rootView: WorkspaceSelectorView(model: model, commands: commands)
+        )
         host.view.backgroundColor = .clear
         host.sizingOptions = .intrinsicContentSize
         addChild(host)

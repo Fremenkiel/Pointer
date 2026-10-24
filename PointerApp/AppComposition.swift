@@ -210,7 +210,7 @@ final class AppComposition {
             )
         )
         selector = model
-        container.showSelector(model)
+        container.showSelector(model, commands: libraryCommands())
         await model.start(lastWorkspace: lastWorkspace)
     }
 

@@ -12,6 +12,10 @@ struct WorkspaceList: View {
     let onCreate: () -> Void
     let onRename: (Workspace) -> Void
     let onDelete: (Workspace) -> Void
+    /// The commands of the library below the workspaces, from the app (D-160).
+    var commands: [LibraryCommand] = []
+    /// Runs a command of the library.
+    var onCommand: (LibraryCommand) -> Void = { _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -26,6 +30,10 @@ struct WorkspaceList: View {
             .fixedSize(horizontal: false, vertical: true)
             Divider()
             createRow
+            if !commands.isEmpty {
+                Divider()
+                commandRows
+            }
         }
         .frame(width: DesignSystem.Size.selectorListWidth)
         .foregroundStyle(DesignSystem.Color.chromeForeground)
@@ -65,6 +73,27 @@ struct WorkspaceList: View {
             }
         }
         .accessibilityAddTraits(isCurrent ? .isSelected : [])
+    }
+
+    private var commandRows: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(commands) { command in
+                Button {
+                    onCommand(command)
+                } label: {
+                    Label(command.title, systemImage: command.systemImage)
+                        .font(DesignSystem.Font.chromeRow)
+                        .frame(
+                            maxWidth: .infinity,
+                            minHeight: DesignSystem.Size.tapTarget,
+                            alignment: .leading
+                        )
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, DesignSystem.Spacing.medium)
     }
 
     private var createRow: some View {

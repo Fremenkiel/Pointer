@@ -43,6 +43,36 @@ struct WorkspaceSelectorSnapshotTests {
         )
     }
 
+    @Test("The list shows the commands of the library below the workspaces (D-160)")
+    func listWithCommands() throws {
+        let workspaces = try Self.three()
+        let commands = [
+            LibraryCommand(
+                id: "backUpNow",
+                title: "Back up now",
+                systemImage: "externaldrive.badge.checkmark"
+            ) {},
+            LibraryCommand(
+                id: "restore",
+                title: "Restore from a snapshot",
+                systemImage: "clock.arrow.circlepath"
+            ) {},
+        ]
+        try ViewSnapshot.assertMatches(
+            WorkspaceList(
+                workspaces: workspaces,
+                currentID: workspaces[1].id,
+                canCreate: true,
+                onSelect: { _ in },
+                onCreate: {},
+                onRename: { _ in },
+                onDelete: { _ in },
+                commands: commands
+            ),
+            named: "workspace-list-commands"
+        )
+    }
+
     /// Three workspaces with fixed IDs and clock values.
     static func three() throws -> [Workspace] {
         let device = DeviceID(

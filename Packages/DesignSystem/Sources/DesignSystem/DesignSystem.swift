@@ -107,5 +107,9 @@ public enum DesignSystem {
         public static let card = "rectangle.badge.plus"
         /// Leaves the current card for its parent canvas (CARD-04).
         public static let up = "arrow.up.left"
+        /// Writes a snapshot and shares it: "Back up now" (STO-04, D-160).
+        public static let backUp = "externaldrive.badge.checkmark"
+        /// Restores the library from a snapshot (D-20, D-160).
+        public static let restore = "clock.arrow.circlepath"
     }
 }

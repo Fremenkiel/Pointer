@@ -21,14 +21,16 @@ public struct WorkspaceSelectorView: View {
     }
 
     @Bindable private var model: WorkspaceSelectorModel
+    private let commands: [LibraryCommand]
     @State private var isListShown = false
     @State private var editor: Editor?
     @State private var title = ""
     @State private var pendingDelete: Workspace?
 
-    /// Makes the selector of `model`.
-    public init(model: WorkspaceSelectorModel) {
+    /// Makes the selector of `model`. The list shows `commands` below the workspaces (D-160).
+    public init(model: WorkspaceSelectorModel, commands: [LibraryCommand] = []) {
         self.model = model
+        self.commands = commands
     }
 
     /// The button, the list, and the dialogs.
@@ -72,7 +74,13 @@ public struct WorkspaceSelectorView: View {
                 title = workspace.title
                 editor = .rename(workspace)
             },
-            onDelete: { workspace in pendingDelete = workspace }
+            onDelete: { workspace in pendingDelete = workspace },
+            commands: commands,
+            onCommand: { command in
+                // The command shows an alert or a sheet, which can come only after the list.
+                isListShown = false
+                Task { @MainActor in command.action() }
+            }
         )
     }
 
