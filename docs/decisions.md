@@ -1698,10 +1698,11 @@ Status values: Open, Decided, Replaced.
 - Raised by the M9 research of 2026-10-24. Decided by the product owner on 2026-10-24: the recommendation.
 - Facts: architecture.md section 12 has no budget for either. On the Mac, the steps of a restore of 98.6 MB took under 0.5 s together. The iPad has slower storage.
 - Recommendation: measure the D-56 library on the iPad in phase 0 of M9, then set the budgets with the measures, as D-144 did for the export.
+- Measured in task 0.2 ([m9-plan.md](m9-plan.md) section 6.2): about 0.17 s for "Back up now" and 0.7 s for a restore of the D-56 library, at most 11 MB of peak memory growth per step. The product owner set the recommended budgets on 2026-10-24: "Back up now" of the D-56 library under 0.5 s from the tap to the item of the share sheet, a restore of the D-56 library under 1.5 s from the tap of the alert to the close of the repository, each with a peak memory growth under 50 MB. The largest library is recorded without a budget, as D-145 does for the export.
 
 ### D-166 The settings of D-162 that need `sqlite3_db_config`
 
-- Open. Raised by task 1.3 of [m9-plan.md](m9-plan.md) on 2026-10-24.
+- Raised by task 1.3 of [m9-plan.md](m9-plan.md) on 2026-10-24. Decided by the product owner on 2026-10-24: the recommendation, (a).
 - Facts: D-162 and task 1.3, item 3 turn on `SQLITE_DBCONFIG_DEFENSIVE` and turn off `SQLITE_DBCONFIG_TRUSTED_SCHEMA`, triggers, and views. All four settings go through `sqlite3_db_config(sqlite3*, int op, ...)`, a C variadic function. Swift does not import it: the compiler says "'sqlite3_db_config' is unavailable: Variadic function is unavailable" (Xcode 27, Swift 6.4). SQLite has no `va_list` form of it. A call through a pointer of another function type breaks the arm64 call rules of Apple, which put variadic arguments on the stack.
 - Measured on the Mac with SQLite 3.51: an open of `file:<path>?immutable=1` with `SQLITE_OPEN_READONLY | SQLITE_OPEN_URI` works. `PRAGMA trusted_schema = OFF`, `PRAGMA query_only = ON`, `PRAGMA cell_size_check = ON`, and `PRAGMA mmap_size = 0` take their values. An `INSERT` fails with "attempt to write a readonly database".
 - What each missing setting protects against, from <https://www.sqlite.org/security.html> and <https://www.sqlite.org/c3ref/c_dbconfig_defensive.html>:

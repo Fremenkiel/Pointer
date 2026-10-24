@@ -260,7 +260,7 @@ Before step 1, and before a restore, the app ends a running text edit, places a 
 2. `SnapshotImport` in `Persistence` calls `startAccessingSecurityScopedResource()` on the URL. It copies the file with a coordinated read of `NSFileCoordinator` into `tmp/<uuid>.sqlite.partial`, and calls `stopAccessingSecurityScopedResource()`. The coordinated read downloads a file of a provider first. The launch deletes a copy that stays.
 3. `SnapshotImport` checks the copy, in this order (D-162). A copy that fails a check goes at once, and the error names the reason:
    - The 100 header bytes, in Swift: the SQLite magic text, page size 4096, rollback mode (bytes 18 and 19 are 1, not 2 of WAL mode), a `user_version` from 1 to the current version, and a file size of whole pages. A newer version gives its own error (D-153).
-   - An open with the mode `untrustedReadOnly`: `SQLITE_OPEN_READONLY` with `immutable=1`, `trusted_schema` off, `query_only` on, `cell_size_check` on, and `mmap_size` 0. The settings of `sqlite3_db_config` are open question D-166.
+   - An open with the mode `untrustedReadOnly`: `SQLITE_OPEN_READONLY` with `immutable=1`, `trusted_schema` off, `query_only` on, `cell_size_check` on, and `mmap_size` 0. Swift cannot call `sqlite3_db_config`, so the pragmas stand in for its settings, and the schema compare refuses each view and trigger (D-166).
    - A full `PRAGMA integrity_check`, which must give the single row `ok`.
    - A compare of all rows of `sqlite_schema` (tables, columns, indexes, views, and triggers, with their SQL) with the schema that the migrations up to that version make in a database in memory. No `application_id` (D-163).
 4. The app writes the pre-restore snapshot of section 7.1 (D-154).

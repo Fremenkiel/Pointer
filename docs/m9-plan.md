@@ -92,7 +92,8 @@ The product owner decided these on 2026-10-24. [decisions.md](decisions.md) give
 | D-162 | Check the header in Swift, open the file read-only with the hardened settings of SQLite, run a full `integrity_check`, and compare the schema. | 1.3 |
 | D-163 | No `application_id` in M9. | 1.3 |
 | D-164 | `beginBackgroundTask` for the copy. At the expiry, stop and roll back. | 2.3 |
-| D-165 | Measure in phase 0, then the product owner sets the budgets. | 0.2, 4.3 |
+| D-165 | Measure in phase 0, then the product owner sets the budgets. Set on 2026-10-24: "Back up now" of D-56 under 0.5 s, a restore of D-56 under 1.5 s, each under 50 MB of peak memory growth. | 0.2, 4.3 |
+| D-166 | The settings of D-162 that need `sqlite3_db_config` come from pragmas, an immutable read-only connection, and the refusal of views and triggers by the schema compare. Decided on 2026-10-24. | 1.3 |
 
 ## 4. Tasks
 
@@ -458,7 +459,7 @@ Recommended budgets, for the product owner (D-165):
 | Restore of the D-56 library, from the tap of the alert to the close of the repository | under 1.5 s, peak memory growth under 50 MB |
 | "Back up now" and restore of 200,000 strokes | recorded, no budget, as D-145 does for the export of the same content |
 
-The temporary test is deleted. The budgets wait for the decision of the product owner.
+The temporary test is deleted. The product owner set the recommended budgets on 2026-10-24 (D-165), and decided D-166 with its recommendation on the same day.
 
 ### 6.3 Persistence and the grid (tasks 1.1 to 1.5)
 
