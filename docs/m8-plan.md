@@ -438,3 +438,11 @@ Measured on 2026-10-23 on the iPad in Release.
 
 D-145, decided on 2026-10-24. A try of the malloc count in a run alone (`.build/Runs/D145-alone-1.xcresult`) read 228 MB for D-56, 228 MB for 10,000 text boxes, and 539 MB for the handwriting, whose free memory grew only 198 MB, and the handwriting export took 16.04 s. The product owner then chose time budgets only. `ExportPerformanceTests` records the free-memory growth after the steady wait and fails only above 8.5 s for D-56 and 17 s for the handwriting.
 
+The third `make check`, on 2026-10-24 after D-145, passed all steps except `make test`: 392 of 395 tests of `PointerDeviceTests` passed (`.build/Runs/P5-check3.log`). The three export measures passed their time budgets: D-56 6.79 s, 10,000 text boxes 7.26 s, and the handwriting 14.43 s. Three older tests failed:
+
+1. `AppMessageTests.messageOverPalette`: the message did not show over the palette. Section 5 lists this failure as older than M8, and M10 holds it.
+2. `TextEditFrameAllocationTests.testGlideFramesWithALongText`: edit frame max 5 against bare move max 4. Item 6 above shows the same failure on the base build.
+3. `SnapshotPerformanceTests.testSameSavesWithoutSnapshot`: one save of 205.07 ms against 50 ms. In the 6 earlier full runs, its slowest save was at most 9.25 ms. M8 changed nothing in `Persistence`.
+
+Three runs of these three suites alone then passed (`.build/Runs/P5-recheck-1.xcresult` to `P5-recheck-3.xcresult`): the slowest save was 8.19 to 8.80 ms, and each glide frame made at most 4 allocations. The close waits for the product owner to accept the three failures (phase 5, "Done when").
+

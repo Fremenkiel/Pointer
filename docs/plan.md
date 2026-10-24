@@ -163,6 +163,8 @@ Acceptance:
 
 The tasks are in [m8-plan.md](m8-plan.md). The product owner decided D-138 to D-144 on 2026-10-23 and D-145 on 2026-10-24.
 
+Status on 2026-10-24: phases 0 to 4 of the M8 plan are done on branch `m8`. The export button, the share sheet without a file, the snapshot of a PDF page, and the budgets of D-144 and D-145 are in place. The product owner reported a pass of all 5 manual tests on 2026-10-23, acceptance 1 among them. Acceptance 2 passes with `PDFSnapshotTests`. `make coverage` passes, with Export at 87.20 %. The erase, undo, and redo steps are within 10 % of the base build in 6 alternating pairs. The last `make check` failed 3 older flaky tests that passed in 3 runs alone, and their acceptance waits for the product owner. Section 6 of the M8 plan holds the results.
+
 Acceptance:
 
 1. The exported PDF opens in Preview on a Mac. Ink stays sharp at 6400% zoom. Text can be selected and searched.
