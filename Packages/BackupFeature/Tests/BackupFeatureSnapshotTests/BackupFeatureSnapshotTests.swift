@@ -16,6 +16,8 @@ final class BackupFeatureSnapshotTests: XCTestCase {
     private static let windowSize = CGSize(width: 600, height: 400)
     /// The time for the system to lay out and draw the alert.
     private static let settle = Duration.milliseconds(800)
+    /// The longest wait for the end of a presentation.
+    private static let presentationTimeout = Duration.seconds(5)
 
     /// The alert asks before a restore and names the pre-restore snapshot.
     func testRestoreAlert() async throws {
@@ -49,6 +51,13 @@ final class BackupFeatureSnapshotTests: XCTestCase {
             previous?.makeKey()
         }
         root.present(alert, animated: false)
+        // An alert fades in also without an animation. Under the load of a full run the fade
+        // took longer than 0.8 s, so the capture waits until the presentation ends.
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: Self.presentationTimeout)
+        while Self.isPresenting(alert, from: root), clock.now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
         try await Task.sleep(for: Self.settle)
         let frame = alert.view.convert(alert.view.bounds, to: window).insetBy(dx: -8, dy: -8)
         let image = Self.draw(window, in: frame)
@@ -59,6 +68,14 @@ final class BackupFeatureSnapshotTests: XCTestCase {
         attachment.lifetime = .deleteOnSuccess
         add(attachment)
         try ViewSnapshot.assertMatches(image: image, named: name)
+    }
+
+    /// True while the presentation of `alert` from `root` runs.
+    private static func isPresenting(
+        _ alert: UIAlertController,
+        from root: UIViewController
+    ) -> Bool {
+        alert.isBeingPresented || alert.view.window == nil || root.transitionCoordinator != nil
     }
 
     /// Draws `rect` of the windows of the scene, the lowest window first, so that a window of
