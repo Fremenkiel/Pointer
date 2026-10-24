@@ -163,7 +163,7 @@ Acceptance:
 
 The tasks are in [m8-plan.md](m8-plan.md). The product owner decided D-138 to D-144 on 2026-10-23 and D-145 on 2026-10-24.
 
-Status on 2026-10-24: phases 0 to 4 of the M8 plan are done on branch `m8`. The export button, the share sheet without a file, the snapshot of a PDF page, and the budgets of D-144 and D-145 are in place. The product owner reported a pass of all 5 manual tests on 2026-10-23, acceptance 1 among them. Acceptance 2 passes with `PDFSnapshotTests`. `make coverage` passes, with Export at 87.20 %. The erase, undo, and redo steps are within 10 % of the base build in 6 alternating pairs. The last `make check` failed 3 older flaky tests that passed in 3 runs alone, and their acceptance waits for the product owner. Section 6 of the M8 plan holds the results.
+Status on 2026-10-24: done on branch `m8`. The export button, the share sheet without a file, the snapshot of a PDF page, and the budgets of D-144 and D-145 are in place. The product owner reported a pass of all 5 manual tests on 2026-10-23, acceptance 1 among them. Acceptance 2 passes with `PDFSnapshotTests`. The [M8 fix plan](m8-fix-plan.md) fixed the causes of three flaky device tests and of the slow save at the end of a snapshot (D-146, D-147). `make check` and `make coverage` pass, and five full runs of `PointerDeviceTests` passed. Section 6 of the M8 plan and of the fix plan hold the results.
 
 Acceptance:
 

@@ -130,3 +130,19 @@ The test presented a palette on the root screen of the test host, showed a messa
 For one run, the fault F-12 was back: `showMessage` presented the alert on the app screen instead of on the top presentation. The test failed (`.build/Runs/F-msg-inject.xcresult`).
 
 ## 6. Results
+
+Measured on 2026-10-24 on the iPad in Release, with the code of commit 3a307cd.
+
+1. `make check` passed: 0 analyzer findings, format, lint, layers, density, self-test, plist, and all tests on the Mac and the iPad (`.build/Runs/G-check.log`).
+2. `make coverage` passed: Geometry 90.88 %, Model 90.80 %, InkEngine 92.73 %, Persistence 90.91 %, Rendering 86.85 %, and Export 87.20 % (`.build/Runs/G-coverage.log`).
+3. Five full runs of `PointerDeviceTests` passed, with 396 tests each (`.build/Runs/G-full-1.xcresult` to `G-full-5.xcresult`). Runs 1, 2, and 5 had the expected failure of D-137, which is not strict.
+
+| Test | Five full runs |
+|---|---|
+| `TextEditFrameAllocationTests`, both glides | Pointer allocations 0 in each run, system at most 4, once 5 |
+| `SnapshotPerformanceTests.testSameSavesWithoutSnapshot` | slowest save 24.7 to 26.0 ms, p99 0.58 to 0.82 ms |
+| `SnapshotPerformanceTests.testSnapshotOfTwentyThousandStrokesWithSaves` | slowest save 10.5 to 24.6 ms, p99 0.76 to 0.87 ms |
+| `AppMessageTests.messageOverPalette` | passed |
+
+The other measures stay near the baseline of section 6.1 of [m8-plan.md](m8-plan.md): erase median 20.25 to 24.89 ms, undo 16.93 to 19.55 ms, redo 15.81 to 20.06 ms, open of D-56 251.5 to 255.9 ms, memory of the open 318 to 335 MB held, and the allocation counts equal.
+

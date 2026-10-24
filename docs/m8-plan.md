@@ -446,3 +446,5 @@ The third `make check`, on 2026-10-24 after D-145, passed all steps except `make
 
 Three runs of these three suites alone then passed (`.build/Runs/P5-recheck-1.xcresult` to `P5-recheck-3.xcresult`): the slowest save was 8.19 to 8.80 ms, and each glide frame made at most 4 allocations. The close waits for the product owner to accept the three failures (phase 5, "Done when").
 
+The product owner did not accept the three failures on 2026-10-24 and asked for a fix of each cause (learned rule 2 of `AGENTS.md`). [m8-fix-plan.md](m8-fix-plan.md) holds the causes, the sources, the benchmarks, and the fixes (D-146, D-147). After the fixes, `make check`, `make coverage`, and five full runs of `PointerDeviceTests` passed (section 6 of the fix plan).
+
