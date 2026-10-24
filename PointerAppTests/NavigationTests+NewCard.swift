@@ -35,7 +35,7 @@ extension NavigationTests {
     @Test("A card of the card button, dragged into place in a child, stays after a leave")
     func newCardInChild() async throws {
         let tree = try await Self.makeTree(depth: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try Self.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)
@@ -56,7 +56,7 @@ extension NavigationTests {
     @Test("A pending card of the card button joins the child at a leave (D-123)")
     func pendingCardAtLeave() async throws {
         let tree = try await Self.makeTree(depth: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try Self.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)

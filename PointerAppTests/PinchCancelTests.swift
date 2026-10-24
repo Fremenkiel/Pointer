@@ -70,7 +70,7 @@ struct PinchCancelTests {
         let (tree, composition) = try await Self.child()
         defer {
             composition.container.view.removeFromSuperview()
-            tree.remove()
+            await tree.remove()
         }
         let child = try #require(composition.container.canvas)
         #expect(child.camera.zoom == Limits.standardZoom)
@@ -99,7 +99,7 @@ struct PinchCancelTests {
         let (tree, composition) = try await Self.child()
         defer {
             composition.container.view.removeFromSuperview()
-            tree.remove()
+            await tree.remove()
         }
         let child = try #require(composition.container.canvas)
         // A pan moves the child away from the camera of the open, which the preview shows.

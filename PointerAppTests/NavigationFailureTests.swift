@@ -77,7 +77,7 @@ struct NavigationFailureTests {
     @Test("A failed open keeps the session of the parent across a workspace switch (D-131)")
     func failedOpenKeepsSession() async throws {
         let tree = try await NavigationTests.makeTree(depth: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let other = try Workspace(
             id: tree.clock.makeIdentifier(),
             meta: RecordMeta(created: tree.clock.now()),
@@ -108,7 +108,7 @@ struct NavigationFailureTests {
     @Test("A leave whose parent has no card of the child ends with a message (D-131)")
     func leaveWithoutParentCard() async throws {
         let tree = try await NavigationTests.makeTree(depth: 2)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try NavigationTests.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)
@@ -140,7 +140,7 @@ struct NavigationFailureTests {
     @Test("An open whose screen is not made ends with a message (D-131)")
     func openWithoutScreen() async throws {
         let tree = try await NavigationTests.makeTree(depth: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try NavigationTests.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)

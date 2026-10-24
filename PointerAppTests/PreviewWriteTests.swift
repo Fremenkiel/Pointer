@@ -76,7 +76,7 @@ struct PreviewWriteTests {
         let setup = try await Self.openChild()
         defer {
             setup.composition.container.view.removeFromSuperview()
-            setup.tree.remove()
+            await setup.tree.remove()
         }
         let before = try #require(await setup.store.read(CanvasID(setup.tree.chain[0])))
         let child = try #require(setup.composition.container.canvas)

@@ -50,8 +50,16 @@ struct D56Library {
         return library
     }
 
-    /// Removes the folder of the library, about 95 MB (D-60).
-    func remove() {
+    /// Saves the rows that wait, closes the repository, and removes the folder of the library,
+    /// about 95 MB (D-60). SQLite must not hold the files at the delete, or a late checkpoint
+    /// runs into the next test (task 1.1 of docs/m9-plan.md).
+    func remove() async {
+        do {
+            try await repository.saveNow()
+        } catch {
+            XCTFail("The last save of the test library failed: \(error)")
+        }
+        await repository.close()
         do {
             // swiftlint:disable:next arch_04_file_system
             try FileManager().removeItem(at: folder)

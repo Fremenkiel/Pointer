@@ -12,11 +12,11 @@ struct RepositoryCheckpointTests {
     /// The control points of one test stroke: about 2 pages of 4,096 bytes per stroke.
     private static let pointsPerStroke = 300
     /// The strokes of one save.
-    private static let strokesPerSave = 50
+    static let strokesPerSave = 50
     /// The most saves of one test.
     private static let maxSaves = 400
 
-    private static func strokes(_ save: Int) -> [LibraryChange] {
+    static func strokes(_ save: Int) -> [LibraryChange] {
         let points = InkPoints(
             (0..<pointsPerStroke).map {
                 InkPoint(x: Float($0), y: Float($0 % 7), force: 1, time: 0)
@@ -42,7 +42,7 @@ struct RepositoryCheckpointTests {
     }
 
     /// Saves until the WAL holds at least `pages` pages, and returns the saves.
-    private static func fill(
+    static func fill(
         _ repository: SQLiteLibraryRepository,
         toPages pages: Int
     ) async throws -> Int {

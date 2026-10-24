@@ -15,7 +15,7 @@ final class CanvasMemoryPerformanceTests: XCTestCase {
     func testMemoryOfTwentyThousandStrokesAndTenThousandNodes() async throws {
         let host = try OnScreenCanvas.host()
         let library = try await D56Library.make()
-        defer { library.remove() }
+        defer { await library.remove() }
         let open = try await OnScreenCanvas.open(library, in: host)
         let line = String(
             format: "memory of the open canvas: held %.0f MB, peak %.0f MB",

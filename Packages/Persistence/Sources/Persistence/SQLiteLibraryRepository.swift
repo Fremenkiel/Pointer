@@ -128,7 +128,7 @@ public actor SQLiteLibraryRepository: LibraryRepository {
     /// the tombstones older than 30 days (D-18), and gives free pages back. The partial snapshot
     /// files of a stopped snapshot are deleted first.
     ///
-    /// - Precondition: The repository is not open yet.
+    /// - Precondition: The repository is not open: new, closed, or after a failed open.
     /// - Throws: `ModelError.storageFailed` if the file does not open or migrate.
     public func open(snapshot: PreMigrationSnapshot) async throws(ModelError) -> LibraryLaunch {
         precondition(connection == nil, "The library is open already")
@@ -153,6 +153,7 @@ public actor SQLiteLibraryRepository: LibraryRepository {
             }
             lastTimestamp = try LibraryMaintenance.lastTimestamp(on: connection)
         } catch {
+            dropConnection()
             throw .storageFailed(reason: "\(error)")
         }
         return LibraryLaunch(isReadOnly: isReadOnly, lastTimestamp: lastTimestamp)

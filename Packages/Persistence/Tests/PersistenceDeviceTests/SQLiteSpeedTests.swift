@@ -64,6 +64,8 @@ final class SQLiteSpeedTests: XCTestCase {
                 )
             ) { _ in }
             _ = try await repository.open { _ in }
+            // SQLite must not hold the files at the delete (task 1.1 of docs/m9-plan.md).
+            defer { await repository.close() }
             best = min(
                 best,
                 try await run(repository, CanvasID(rawValue: UUID())) / .milliseconds(1)

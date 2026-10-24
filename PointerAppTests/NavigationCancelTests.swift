@@ -25,7 +25,7 @@ struct NavigationCancelTests {
     )
     func switchDuringOpen(at moment: Moment) async throws {
         let tree = try await NavigationTests.makeTree(depth: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let other = try Workspace(
             id: tree.clock.makeIdentifier(),
             meta: RecordMeta(created: tree.clock.now()),

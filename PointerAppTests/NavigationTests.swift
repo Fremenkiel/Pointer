@@ -30,7 +30,15 @@ struct NavigationTests {
         let workspace: Workspace
         let chain: [CardID]
 
-        func remove() {
+        /// Saves the rows that wait, closes the repository, and removes the folder. SQLite must
+        /// not hold the files at the delete (task 1.1 of docs/m9-plan.md).
+        func remove() async {
+            do {
+                try await repository.saveNow()
+            } catch {
+                Issue.record("The last save of the test library failed: \(error)")
+            }
+            await repository.close()
             // swiftlint:disable:next arch_04_file_system
             try? FileManager().removeItem(at: folder)
         }
@@ -161,7 +169,7 @@ struct NavigationTests {
     @Test("A tap opens a card at the camera of CARD-03, and up leaves at CARD-04")
     func openAndLeave() async throws {
         let tree = try await Self.makeTree(depth: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try Self.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)
@@ -187,7 +195,7 @@ struct NavigationTests {
     @Test("A launch with a path of 3 cards opens level 3")
     func launchIntoPath() async throws {
         let tree = try await Self.makeTree(depth: 3)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try Self.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         composition.launchPath = try NavigationPath(workspace: tree.workspace.id, cards: tree.chain)
@@ -201,7 +209,7 @@ struct NavigationTests {
     @Test("A launch with a deleted card in the path opens the canvas above it (D-112)")
     func launchWithDeletedCard() async throws {
         let tree = try await Self.makeTree(depth: 3, deleted: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try Self.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         composition.launchPath = try NavigationPath(workspace: tree.workspace.id, cards: tree.chain)
@@ -213,7 +221,7 @@ struct NavigationTests {
     @Test("A child keeps its history after a leave and a new open (UNDO-02, D-12)")
     func childHistory() async throws {
         let tree = try await Self.makeTree(depth: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try Self.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)
@@ -239,7 +247,7 @@ struct NavigationTests {
     @Test("A tap on a card during the fade of a leave does not block later opens")
     func tapDuringLeaveFade() async throws {
         let tree = try await Self.makeTree(depth: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try Self.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)

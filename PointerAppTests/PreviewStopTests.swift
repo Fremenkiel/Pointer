@@ -28,7 +28,7 @@ struct PreviewStopTests {
     @Test("A preview render whose render thread stops calls its completion")
     func stoppedRenderThread() async throws {
         let tree = try await NavigationTests.makeTree(depth: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try NavigationTests.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)

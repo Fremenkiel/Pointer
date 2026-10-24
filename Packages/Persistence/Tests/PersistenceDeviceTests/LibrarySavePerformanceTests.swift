@@ -55,6 +55,8 @@ final class LibrarySavePerformanceTests: XCTestCase {
             )
             let repository = SQLiteLibraryRepository(configuration: configuration) { _ in }
             _ = try await repository.open { _ in }
+            // SQLite must not hold the files at the delete (task 1.1 of docs/m9-plan.md).
+            defer { await repository.close() }
             let canvas = CanvasID(rawValue: UUID())
             let clock = ContinuousClock()
             var times: [Double] = []

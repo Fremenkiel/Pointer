@@ -21,7 +21,7 @@ final class FlightStallTests: XCTestCase {
 
     func testOpenWithBlockedMainThreadHasNoLateFrame() async throws {
         let tree = try await NavigationTests.makeTree(depth: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try NavigationTests.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)
@@ -54,7 +54,7 @@ final class FlightStallTests: XCTestCase {
 
     func testLeaveWithBlockedMainThreadHasNoLateFrame() async throws {
         let tree = try await NavigationTests.makeTree(depth: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try NavigationTests.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)

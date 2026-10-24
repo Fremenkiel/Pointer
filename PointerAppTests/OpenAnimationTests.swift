@@ -48,7 +48,7 @@ final class OpenAnimationTests: XCTestCase {
         let host = try OnScreenCanvas.host()
         let window = try XCTUnwrap(host.view.window as? InputTrackingWindow)
         let library = try await D56Library.make()
-        defer { library.remove() }
+        defer { await library.remove() }
         let container = AppViewController()
         let composition = try await Self.composition(of: library, window: window, in: container)
         let hostViews = host.view.subviews
@@ -118,7 +118,7 @@ final class OpenAnimationTests: XCTestCase {
         let host = try OnScreenCanvas.host()
         let window = try XCTUnwrap(host.view.window as? InputTrackingWindow)
         let library = try await D56Library.make()
-        defer { library.remove() }
+        defer { await library.remove() }
         let container = AppViewController()
         let composition = try await Self.composition(of: library, window: window, in: container)
         let hostViews = host.view.subviews

@@ -13,7 +13,7 @@ final class CanvasOpenPerformanceTests: XCTestCase {
     func testOpenOfTwentyThousandStrokesAndTenThousandNodes() async throws {
         let host = try OnScreenCanvas.host()
         let library = try await D56Library.make()
-        defer { library.remove() }
+        defer { await library.remove() }
         var times: [Double] = []
         for _ in 0..<Self.openCount {
             let open = try await OnScreenCanvas.open(library, in: host)

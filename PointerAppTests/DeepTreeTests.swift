@@ -40,7 +40,7 @@ struct DeepTreeTests {
     @Test("Opens each level from the root, draws at each, is refused at 32, and leaves to the root")
     func openAndLeave() async throws {
         let tree = try await NavigationTests.makeTree(depth: Limits.maxDepth)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try NavigationTests.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)
@@ -80,7 +80,7 @@ struct DeepTreeTests {
     @Test("A launch with the path of 32 cards opens level 32")
     func launch() async throws {
         let tree = try await NavigationTests.makeTree(depth: Limits.maxDepth)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try NavigationTests.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         composition.launchPath = try NavigationPath(workspace: tree.workspace.id, cards: tree.chain)

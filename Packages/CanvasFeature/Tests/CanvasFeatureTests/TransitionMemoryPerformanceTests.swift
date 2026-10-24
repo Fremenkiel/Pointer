@@ -14,7 +14,7 @@ final class TransitionMemoryPerformanceTests: XCTestCase {
     func testMemoryPeakOfAnOpenAndALeaveBetweenD56Canvases() async throws {
         let host = try OnScreenCanvas.host()
         let library = try await D56Library.make()
-        defer { library.remove() }
+        defer { await library.remove() }
         let measure = try await OnScreenCanvas.transition(library, in: host)
         let line = String(
             format: "transition memory: parent held %.0f MB, open peak %.0f MB, held after the "

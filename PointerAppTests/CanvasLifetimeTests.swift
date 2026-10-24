@@ -38,7 +38,7 @@ final class CanvasLifetimeTests: XCTestCase {
 
     func testLeftCanvasesGoAwayWithTheirRenderers() async throws {
         let tree = try await NavigationTests.makeTree(depth: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try NavigationTests.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)
@@ -89,7 +89,7 @@ final class CanvasLifetimeTests: XCTestCase {
 
     func testCompositionOfATestGoesAway() async throws {
         let tree = try await NavigationTests.makeTree(depth: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         weak var weakComposition: AppComposition?
         weak var weakCanvas: CanvasViewController?
         do {

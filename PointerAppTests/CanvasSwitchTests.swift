@@ -19,7 +19,7 @@ struct CanvasSwitchTests {
         let host = try OnScreenCanvas.host()
         let window = try #require(host.view.window as? InputTrackingWindow)
         let library = try await D56Library.make()
-        defer { library.remove() }
+        defer { await library.remove() }
         let clock = Fixtures.clock()
         let workspaces = try await Self.makeWorkspaces(in: library, clock: clock)
         let composition = AppComposition(
@@ -57,7 +57,7 @@ struct CanvasSwitchTests {
         let host = try OnScreenCanvas.host()
         let window = try #require(host.view.window as? InputTrackingWindow)
         let library = try await D56Library.make()
-        defer { library.remove() }
+        defer { await library.remove() }
         let clock = Fixtures.clock(device: library.device)
         let workspaces = try await Self.makeWorkspaces(in: library, clock: clock)
         let composition = AppComposition(

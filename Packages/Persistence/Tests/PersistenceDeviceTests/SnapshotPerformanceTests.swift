@@ -142,17 +142,16 @@ final class SnapshotPerformanceTests: XCTestCase {
         return try await run(body, in: folder)
     }
 
-    /// Runs `body` on a new filled library in `folder`, and waits for its last checkpoint. The
-    /// repository goes when the function returns.
+    /// Runs `body` on a new filled library in `folder`, and closes the repository, which waits
+    /// for its last checkpoint (task 1.1 of docs/m9-plan.md).
     private static func run<Result>(
         _ body: (SQLiteLibraryRepository, String, URL) async throws -> Result,
         in folder: URL
     ) async throws -> Result {
         let path = folder.appending(path: "library.sqlite").path(percentEncoded: false)
         let repository = try await filledRepository(path: path, folder: folder)
-        let result = try await body(repository, path, folder)
-        await repository.waitForCheckpoint()
-        return result
+        defer { await repository.close() }
+        return try await body(repository, path, folder)
     }
 
     private static func filledRepository(

@@ -17,7 +17,7 @@ struct PencilFlightTests {
     @Test("A double tap and a squeeze change nothing on both screens during the open of a card")
     func duringOpen() async throws {
         let tree = try await NavigationTests.makeTree(depth: 1)
-        defer { tree.remove() }
+        defer { await tree.remove() }
         let composition = try NavigationTests.composition(for: tree)
         defer { composition.container.view.removeFromSuperview() }
         await composition.selector?.start(lastWorkspace: tree.workspace.id)
