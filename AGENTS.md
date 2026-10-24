@@ -39,7 +39,7 @@ pointer/
     Geometry/              Layer 0: Double geometry, camera math, spatial grid
     Model/                 Layer 0: value types, IDs, clock, commands, history, limits
     InkEngine/             Layer 0: eraser hit test and stroke split
-    Persistence/           Layer 1: SQLite repository, migrations, snapshots (restore comes in M9)
+    Persistence/           Layer 1: SQLite repository, migrations, snapshots, import, and restore
       Sources/PersistenceCrashHelper/   helper process that the crash test stops (D-54)
       Tests/PersistenceTests/Fixtures/  fixture database and its SQL per schema version (TEST-08)
       Tests/PersistenceDeviceTests/     device performance tests, part of PointerDeviceTests only

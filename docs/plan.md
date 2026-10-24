@@ -182,6 +182,8 @@ Acceptance:
 2. A restore from a snapshot gives a library with the same rows.
 3. A snapshot restores after the app is deleted and installed again, with a new device ID, and the app shows the same workspaces and canvases (D-51, D-161).
 
+Status on 2026-10-24: done on branch `m9`. All three acceptance criteria pass. The product owner reported a pass of acceptance 1 and acceptance 3 on the iPad, and of the other manual tests of task 5.1. `D56RestoreTests` restores the D-56 library with 0 rows that differ (acceptance 2). "Back up now" and a restore of D-56 stay under the budgets of D-165. `make check` and `make coverage` pass, and five full runs of `PointerDeviceTests` passed, each measure within 10 % of the baseline. Section 6 of [m9-plan.md](m9-plan.md) holds the results.
+
 ## M10: Hardening
 
 - Limits: each limit in [architecture.md](architecture.md) section 10 has a test at the limit and at the limit plus one.

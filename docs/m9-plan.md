@@ -522,3 +522,38 @@ The check at the end of phase 3 failed in `StrokeStoreMemoryTests` (82.7 MB agai
 Task 5.1 ran on 2026-10-24 on the iPad. The product owner reported a pass of each of the five tests: the integrity check of a backup on the Mac (M9 acceptance 1), the wait for a download from iCloud Drive, the refusal of a file that is not a Pointer library, a move to the background during a restore, and the undo of a restore with the pre-restore snapshot.
 
 Task 5.2 ran on 2026-10-24 on the iPad. The product owner made two workspaces, tapped "Back up now", saved the file outside the Pointer folder, and deleted the app. The app was installed again in Release with `devicectl`, and it started with a new library and a new device ID. The product owner restored the file, and the app showed the same workspaces and canvases. A new stroke stayed after a force quit. The product owner reported a pass (M9 acceptance 3, D-161).
+
+### 6.8 Close (phase 6)
+
+Measured on 2026-10-24 on the iPad in Release, with commit 51593a4.
+
+1. `make check` passed with 422 device tests, 53 snapshot tests, and 0 failures (`M9-check-phase4.xcresult`). The code did not change after this run, so it counts for step 1 of phase 6 too.
+2. `make coverage` passed: Geometry 90.12 %, Model 90.80 %, InkEngine 92.70 %, Persistence 90.28 %, Rendering 86.84 %, and Export 87.20 % (`M9-coverage-phase4.log`). In the instrumented run, `EraseUndoPerformanceTests` failed, as in the baseline and as D-120 expects.
+3. Five full runs of `PointerDeviceTests` of M9 alternated with five runs of the baseline (`M9-close-new-1` to `-5`, `M9-close-base-1` to `-5`). All five M9 runs passed with 423 tests. Run 5 had the expected failure of D-137. Two baseline runs failed in `StrokeStoreMemoryTests`, the fault that D-167 removed.
+
+Each measure stays within 10 % of the baseline. The table gives the median of the five runs of each build.
+
+| Measure | Baseline | M9 | Change |
+|---|---|---|---|
+| Erase, median | 23.48 ms | 20.98 ms | -10.6 % |
+| Undo, median | 16.95 ms | 18.26 ms | +7.7 % |
+| Redo, median | 20.32 ms | 19.65 ms | -3.3 % |
+| Open of D-56 to the first frame, median and slowest | 254.0 ms, 263.8 ms | 256.3 ms, 267.6 ms | +0.9 %, +1.4 % |
+| Memory of the open D-56 canvas, held and peak | 337 MB, 350 MB | 338 MB, 350 MB | +0.3 %, 0 % |
+| Transition, open peak and leave peak | 351 MB, 434 MB | 353 MB, 434 MB | +0.6 %, 0 % |
+| Export of D-56 | 7.01 s | 7.06 s | +0.7 % |
+| Export of 200,000 handwriting strokes | 14.94 s | 14.93 s | -0.1 % |
+| Eraser frame, CPU p50 and GPU p50 | 0.14 ms, 0.41 ms | 0.15 ms, 0.40 ms | +7.1 %, -2.4 % |
+| Text layout of 5,000 boxes | 57.2 ms | 57.7 ms | +0.9 % |
+| Text pass of 300 boxes | 0.84 ms | 0.85 ms | +1.8 % |
+| Save of 240 strokes, median | 2.20 ms | 2.13 ms | -3.2 % |
+| Snapshot of D-56 with saves | 180.5 ms | 170.0 ms | -5.8 % |
+| Device state launch read, median | 1.24 ms | 1.23 ms | -0.8 % |
+| D-56 preview render of `FrameLoopTests` | 37.7 ms | 38.8 ms | +2.9 % |
+| `PreviewMakerPerformanceTests`, preview of D-56 | 0.197 s, 160 MB | 0.033 s, 77 MB | -83 % |
+| Open and leave of the D-56 card | 465 ms, 598 ms | 465 ms, 595 ms | 0 %, -0.5 % |
+| Late frames of the D-56 text pan and zoom | 2, 2 | 1, 1 | |
+| D-56 cards pan, render p50 | 0.51 ms | 0.42 ms | -17.6 % |
+| Heap growth of the store test | 74.8 MB | 72.5 MB | -3.1 % |
+
+The eraser CPU p50 changes by one step of 0.01 ms. The store of `StrokeStoreMemoryTests` held 59.1 to 67.1 MB in the M9 runs, against the limit of 75 MB. "Back up now" of D-56 took 0.157 to 0.161 s and 3 to 11 MB, and a restore took 0.586 to 0.619 s and 4 to 7 MB, against the budgets of D-165. The 100 previews after a restore took 0.29 to 0.31 s.
