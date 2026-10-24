@@ -166,4 +166,25 @@ struct RepositoryCheckpointTests {
         try await repository.saveNow()
         #expect(await repository.writeConnectionCheckpoints == before)
     }
+
+    @Test("A damaged card of a stored path leaves no read open, so the WAL restarts")
+    func damagedPathCardLeavesNoRead() async throws {
+        let harness = try RepositoryHarness()
+        let repository = try await harness.open()
+        try await repository.send([.card(try Values.card(11)), .card(try Values.card(12))])
+        try await repository.saveNow()
+        let writer = try SQLiteConnection(path: harness.path, mode: .readWrite)
+        try writer.execute("PRAGMA ignore_check_constraints = ON")
+        try writer.execute("UPDATE card SET canvas_id = zeroblob(15)")
+        let path: [CardID] = [Values.id(11), Values.id(12)]
+        await #expect(throws: ModelError.self) {
+            _ = try await repository.validPath(path, in: WorkspaceID(rawValue: UUID()))
+        }
+        _ = try await Self.fill(repository, toPages: SQLiteLibraryRepository.checkpointPages)
+        await repository.waitForCheckpoint()
+        try await repository.send(Self.strokes(Self.maxSaves))
+        try await repository.saveNow()
+        // An open read pins the WAL, so the checkpoint copies nothing, and the WAL grows on.
+        #expect(await repository.walPageCount < SQLiteLibraryRepository.checkpointPages)
+    }
 }

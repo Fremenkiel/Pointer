@@ -120,6 +120,9 @@ extension SQLiteLibraryRepository {
     ) throws(PersistenceError) -> [CardID: CanvasID] {
         precondition(path.count <= Limits.maxDepth, "A path of \(path.count) cards is too long")
         var binder = try RowBinder(statement)
+        // A row that does not decode throws in the middle of the rows. The reset ends the read
+        // also then, because an open read pins the WAL file (D-146).
+        defer { resetAfterRead(statement) }
         for card in path {
             try binder.bind(card)
         }
@@ -134,7 +137,6 @@ extension SQLiteLibraryRepository {
             let id: CardID = try reader.identifier()
             parents[id] = try reader.identifier()
         }
-        try statement.reset()
         assert(parents.count <= path.count, "The read gave \(parents.count) cards")
         return parents
     }
@@ -152,6 +154,9 @@ extension SQLiteLibraryRepository {
         precondition(query.limit > 0, "A query of \(query.table) needs a positive limit")
         let statement = query.statement
         var binder = try RowBinder(statement)
+        // The reset ends the read transaction, also after a failed step, so the WAL file can be
+        // checkpointed.
+        defer { resetAfterRead(statement) }
         if let canvas = query.canvas { try binder.bind(canvas) }
         var rows = 0
         var skipped = 0
@@ -164,10 +169,17 @@ extension SQLiteLibraryRepository {
                 logger.error("Skipped a row of \(query.table): \(error)")
             }
         }
-        // The reset ends the read transaction, so the WAL file can be checkpointed.
-        try statement.reset()
         assert(skipped <= rows, "Skipped \(skipped) of \(rows) rows")
         if skipped > 0 { report(.rowsSkipped(table: query.table, count: skipped)) }
+    }
+
+    /// Resets a read, so the WAL file can be checkpointed. A failed reset is only logged.
+    private func resetAfterRead(_ statement: SQLiteStatement) {
+        do {
+            try statement.reset()
+        } catch {
+            logger.error("Reset of a library read failed: \(error)")
+        }
     }
 }
 
