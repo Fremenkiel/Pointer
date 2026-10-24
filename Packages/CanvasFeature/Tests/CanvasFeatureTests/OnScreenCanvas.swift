@@ -105,11 +105,8 @@ enum OnScreenCanvas {
         in host: UIViewController
     ) async throws -> OpenMeasurement {
         let clock = ContinuousClock()
-        // The test host shows a canvas of its own in the same process. Its drawables come and go
-        // with its frames, by 48 MB, so it leaves the window during the measure (D-93).
-        let hostViews = host.view.subviews
-        hostViews.forEach { $0.removeFromSuperview() }
-        defer { hostViews.forEach { host.view.addSubview($0) } }
+        let restoreHost = clear(host)
+        defer { restoreHost() }
         try await waitForSteadyMemory()
         let available = os_proc_available_memory()
         var lowest = available
@@ -158,9 +155,8 @@ enum OnScreenCanvas {
         _ library: D56Library,
         in host: UIViewController
     ) async throws -> TransitionMeasurement {
-        let hostViews = host.view.subviews
-        hostViews.forEach { $0.removeFromSuperview() }
-        defer { hostViews.forEach { host.view.addSubview($0) } }
+        let restoreHost = clear(host)
+        defer { restoreHost() }
         try await waitForSteadyMemory()
         var watch = MemoryWatch(base: os_proc_available_memory())
         // The open runs in its own function, so no local value keeps the closed parent alive,
@@ -308,6 +304,24 @@ enum OnScreenCanvas {
         canvas.willMove(toParent: nil)
         canvas.view.removeFromSuperview()
         canvas.removeFromParent()
+    }
+
+    /// Takes the views of `host` out of the window. The test host shows a canvas of its own in
+    /// the same process, and its drawables come and go with its frames, by 48 MB (D-93).
+    ///
+    /// - Returns: The step that closes each canvas that the measure left on `host`, for example
+    ///   after a timeout, and puts the views of the host back.
+    private static func clear(_ host: UIViewController) -> @MainActor () -> Void {
+        let views = host.view.subviews
+        let children = host.children
+        views.forEach { $0.removeFromSuperview() }
+        return {
+            for child in host.children where !children.contains(child) {
+                guard let canvas = child as? CanvasViewController else { continue }
+                close(canvas)
+            }
+            views.forEach { host.view.addSubview($0) }
+        }
     }
 
     private static func megabytes(_ bytes: Int) -> Double {
