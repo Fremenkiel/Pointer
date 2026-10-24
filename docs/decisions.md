@@ -1699,6 +1699,20 @@ Status values: Open, Decided, Replaced.
 - Facts: architecture.md section 12 has no budget for either. On the Mac, the steps of a restore of 98.6 MB took under 0.5 s together. The iPad has slower storage.
 - Recommendation: measure the D-56 library on the iPad in phase 0 of M9, then set the budgets with the measures, as D-144 did for the export.
 
+### D-166 The settings of D-162 that need `sqlite3_db_config`
+
+- Open. Raised by task 1.3 of [m9-plan.md](m9-plan.md) on 2026-10-24.
+- Facts: D-162 and task 1.3, item 3 turn on `SQLITE_DBCONFIG_DEFENSIVE` and turn off `SQLITE_DBCONFIG_TRUSTED_SCHEMA`, triggers, and views. All four settings go through `sqlite3_db_config(sqlite3*, int op, ...)`, a C variadic function. Swift does not import it: the compiler says "'sqlite3_db_config' is unavailable: Variadic function is unavailable" (Xcode 27, Swift 6.4). SQLite has no `va_list` form of it. A call through a pointer of another function type breaks the arm64 call rules of Apple, which put variadic arguments on the stack.
+- Measured on the Mac with SQLite 3.51: an open of `file:<path>?immutable=1` with `SQLITE_OPEN_READONLY | SQLITE_OPEN_URI` works. `PRAGMA trusted_schema = OFF`, `PRAGMA query_only = ON`, `PRAGMA cell_size_check = ON`, and `PRAGMA mmap_size = 0` take their values. An `INSERT` fails with "attempt to write a readonly database".
+- What each missing setting protects against, from <https://www.sqlite.org/security.html> and <https://www.sqlite.org/c3ref/c_dbconfig_defensive.html>:
+  - The defensive mode blocks writes that can damage the file, for example through `writable_schema` or shadow tables. The check connection writes nothing: it is read-only, immutable, and `query_only`.
+  - A trigger runs only at a write, and the check connection writes nothing.
+  - A view runs only in a query that names it. The check runs `integrity_check` and reads `sqlite_schema` and `pragma_table_info` of the expected tables only. The schema compare of task 1.3, item 5 refuses a file with a view or a trigger.
+- Options:
+  - (a) Use the pragmas above instead: `trusted_schema = OFF` through its pragma, the connection read-only, immutable, and `query_only`, and a refusal of each view and trigger by the schema compare.
+  - (b) Add a small C target to `Persistence` with a function without variadic arguments that calls `sqlite3_db_config`. This changes ARCH-03, which lets `Persistence` import only `Foundation`, `os`, `SQLite3`, and Tier A packages, and it adds C code outside the rules of code-of-code.md.
+- Recommendation: (a). It gives the same protection for a connection that never writes and never reads a view, without a rule change.
+
 ## Points in the request that conflict or are not complete
 
 1. "Only three tools" and "drawing data structures": cards need a way in (D-08), and diagrams need a way to move things (D-10).

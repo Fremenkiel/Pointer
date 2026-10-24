@@ -1,3 +1,4 @@
+import Foundation
 import SQLite3
 import os
 
@@ -13,6 +14,12 @@ final class SQLiteConnection {
         case readWrite
         /// Read only. The file must exist.
         case readOnly
+        /// Read only for a file of unknown source, for example a picked snapshot (D-162). The
+        /// file opens as immutable, and the settings of
+        /// <https://www.sqlite.org/security.html> section 1.2 apply that a pragma can set.
+        case untrustedReadOnly
+        /// A database in memory, without a file. It holds the expected schema of a check.
+        case memory
     }
 
     /// The page size of each library file (storage.md section 7.5).
@@ -38,9 +45,8 @@ final class SQLiteConnection {
     init(path: String, mode: Mode) throws(PersistenceError) {
         precondition(!path.isEmpty, "A database path must not be empty")
         var opened: OpaquePointer?
-        let access =
-            mode == .readWrite ? SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE : SQLITE_OPEN_READONLY
-        let code = sqlite3_open_v2(path, &opened, access | SQLITE_OPEN_EXRESCODE, nil)
+        let (name, access) = Self.target(path: path, mode: mode)
+        let code = sqlite3_open_v2(name, &opened, access | SQLITE_OPEN_EXRESCODE, nil)
         guard code == SQLITE_OK, let opened else {
             let message =
                 opened.map { String(cString: sqlite3_errmsg($0)) }
@@ -51,6 +57,28 @@ final class SQLiteConnection {
         }
         handle = opened
         try configure(mode)
+    }
+
+    /// The path of `Mode.memory`.
+    static let memoryPath = ":memory:"
+
+    /// Returns the name that `sqlite3_open_v2` takes and the open flags of `mode`. An untrusted
+    /// file opens through a URI with `immutable=1`, so SQLite takes no lock and reads no `-wal`
+    /// file (<https://www.sqlite.org/uri.html>).
+    private static func target(path: String, mode: Mode) -> (String, Int32) {
+        precondition(mode != .memory || path == memoryPath, "A memory database has no path")
+        // A relative path would resolve against the working folder of the process.
+        precondition(mode != .untrustedReadOnly || path.hasPrefix("/"), "\(path) is relative")
+        return switch mode {
+        case .readWrite: (path, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE)
+        case .readOnly: (path, SQLITE_OPEN_READONLY)
+        case .memory: (path, SQLITE_OPEN_READWRITE | SQLITE_OPEN_MEMORY)
+        case .untrustedReadOnly:
+            (
+                URL(filePath: path).absoluteString + "?immutable=1",
+                SQLITE_OPEN_READONLY | SQLITE_OPEN_URI
+            )
+        }
     }
 
     deinit {
@@ -189,7 +217,10 @@ final class SQLiteConnection {
     }
 
     private func configure(_ mode: Mode) throws(PersistenceError) {
-        guard mode == .readWrite else {
+        switch mode {
+        case .readWrite: break
+        case .untrustedReadOnly: return try configureUntrusted()
+        case .readOnly, .memory:
             try execute(
                 "PRAGMA synchronous = NORMAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 2000;"
             )
@@ -216,6 +247,29 @@ final class SQLiteConnection {
             PRAGMA auto_vacuum = INCREMENTAL; PRAGMA busy_timeout = 2000;
             """
         )
+    }
+}
+
+extension SQLiteConnection {
+    /// Applies the settings of D-162 that a pragma can set (D-166): no functions with side
+    /// effects in the schema, no writes, a check of each cell size, and no memory map.
+    ///
+    /// - Throws: `PersistenceError.settingRefused` if a setting does not take its value.
+    fileprivate func configureUntrusted() throws(PersistenceError) {
+        try execute(
+            """
+            PRAGMA trusted_schema = OFF; PRAGMA query_only = ON;
+            PRAGMA cell_size_check = ON; PRAGMA mmap_size = 0;
+            """
+        )
+        let trusted = try integer("PRAGMA trusted_schema")
+        guard trusted == 0 else {
+            throw .settingRefused(name: "trusted_schema", value: "\(trusted)")
+        }
+        let queryOnly = try integer("PRAGMA query_only")
+        guard queryOnly == 1 else {
+            throw .settingRefused(name: "query_only", value: "\(queryOnly)")
+        }
     }
 }
 

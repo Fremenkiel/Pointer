@@ -15,4 +15,25 @@ public enum PersistenceError: Error, Equatable, Sendable {
     case unknownSchema
     /// A file operation of a snapshot failed, for example the rename into `Backups/`.
     case fileFailed(reason: String)
+    /// The disk has no room for the copy of a picked file or for a restore.
+    case diskFull
+    /// A picked file is not a SQLite database: it is too short, or its header lacks the magic
+    /// text (D-162).
+    case notADatabase
+    /// A picked file has another page size than the 4,096 bytes of each library (storage.md
+    /// section 7.5).
+    case wrongPageSize(bytes: Int)
+    /// A picked file is in WAL mode. A copy without its `-wal` file loses rows (D-162).
+    case walMode
+    /// A picked file has schema version 0 or less, so it is no Pointer library.
+    case unknownVersion(Int64)
+    /// A picked file comes from a newer version of Pointer (D-153).
+    case newerSchema(version: Int64)
+    /// The size of a picked file is not a whole number of pages, so the copy is incomplete.
+    case incompleteFile(byteCount: Int)
+    /// `PRAGMA integrity_check` found a fault in a picked file. The reason is its first row.
+    case integrityFailed(reason: String)
+    /// The tables, columns, indexes, views, or triggers of a picked file differ from the
+    /// schema of its version (D-162, D-163). The reason names the first difference.
+    case schemaMismatch(reason: String)
 }
