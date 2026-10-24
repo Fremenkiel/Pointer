@@ -449,6 +449,10 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 | Frame with 4 new eraser samples | Under 3 ms CPU, under 4 ms GPU | `EraserFramePerformanceTests` |
 | PDF export of the D-56 canvas | Under 8.5 s on the 11-inch iPad, off the main actor (D-144). The memory is recorded and has no budget (D-145). | `ExportPerformanceTests`: the time of `PDFExporter.pdfData(of:)` in a detached task, and the peak growth of `os_proc_available_memory` after 1.5 s of steady memory |
 | PDF export of 200,000 handwriting strokes | Under 17 s on the 11-inch iPad (D-144, D-145) | The same test |
+| "Back up now" of the D-56 library | Under 0.5 s from the tap to the item of the share sheet, peak memory growth under 50 MB (D-165) | `BackupBudgetTests`: the save and `writeSnapshotNow()` in a detached task, after 1.5 s of steady memory, with reads of `os_proc_available_memory` every 0.25 ms |
+| Restore of the D-56 library | Under 1.5 s from the tap of the alert to the close of the repository, peak memory growth under 50 MB (D-165) | `BackupBudgetTests`: the copy and the checks, the pre-restore snapshot, the backup, and the `TRUNCATE` checkpoint |
+| "Back up now" and restore of 200,000 strokes | Recorded, no budget (D-165): about 1.8 s and 6.5 s on the 11-inch iPad | The measures of task 0.2 of [m9-plan.md](m9-plan.md) |
+| Previews of a screen of cards after a restore | Recorded, no budget (D-157) | `PreviewsAfterRestoreTests`: 100 offscreen previews of children with 2,000 strokes, with one `PreviewMaker` |
 | Erase, undo, or redo of 1,000 strokes in one gesture | Under 33 ms, 16 ms as a goal (D-75) | `EraseUndoPerformanceTests`: from the lift or the call until the GPU completes the first frame that holds the result (D-74) |
 
 Performance tests run on a real iPad. If a measure is more than 10% worse than its baseline, the test fails.

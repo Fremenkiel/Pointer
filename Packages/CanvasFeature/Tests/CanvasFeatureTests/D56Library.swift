@@ -24,7 +24,7 @@ struct D56Library {
     let canvas: CanvasID
     /// The device of the library. A write needs a clock of this device.
     let device: DeviceID
-    private let folder: URL
+    let folder: URL
 
     /// Makes the folder, opens the library, and fills the canvas.
     ///
