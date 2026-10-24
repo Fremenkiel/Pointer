@@ -1714,6 +1714,22 @@ Status values: Open, Decided, Replaced.
   - (b) Add a small C target to `Persistence` with a function without variadic arguments that calls `sqlite3_db_config`. This changes ARCH-03, which lets `Persistence` import only `Foundation`, `os`, `SQLite3`, and Tier A packages, and it adds C code outside the rules of code-of-code.md.
 - Recommendation: (a). It gives the same protection for a connection that never writes and never reads a view, without a rule change.
 
+### D-167 The heap measure of `StrokeStoreMemoryTests`
+
+- Open. Raised at the end of phase 3 of [m9-plan.md](m9-plan.md) on 2026-10-24.
+- Facts: `StrokeStoreMemoryTests.testStoreOfTwoHundredThousandHandwritingStrokes` failed in the baseline `make check` (80.7 MB) and in 4 of 10 later full runs (76.9 to 84.3 MB) against its limit of 75 MB. It passed in the others at 63.1 to 72.7 MB. The test takes the growth of `size_in_use` of all malloc zones while it adds 200,000 strokes.
+- Measured on the iPad in full runs (`M9-probe-*`, `M9-relief-*`, `M9-reserve-*`, `M9-parts-*`):
+  - Other threads allocate 0.0 MB during the build. The growth comes from the main thread alone.
+  - `malloc_zone_pressure_relief` gives back 0.0 MB after the build.
+  - Without a reserve, the final capacity of the arrays of the store depends on the blocks that libmalloc gives back: the list of draw data held 263,850 to 655,700 slots for 200,000 strokes.
+  - With a reserve of each list for the whole load (`StrokeStore.add(contentsOf:)`, now the load path of `FrameRenderer.load`), the collections hold the same 50.9 to 51.7 MB in each run: the bounds table of the grid 15.0 MB, the cell lists 12.7 MB, the draw data 9.2 to 10.0 MB, the slot table 9.0 MB, and the rest 5 MB. The heap still grew by 66.4 to 76.9 MB, and one of 6 runs failed at 76.9 MB.
+- Reading: libmalloc can serve a large request from a freed block that is larger than the request. An array takes the real size as its capacity, but a dictionary keeps its bucket count, so the rest of the block shows only in the heap total. That total depends on the blocks that the tests before the store test freed. The reading fits the numbers, but no measure shows it directly.
+- Options:
+  - (a) Keep the reserve, and let the test assert the bytes of the collections of the store against 75 MB, as their capacities give them (51.7 MB at most). The heap growth stays in the report, without a limit.
+  - (b) Keep the heap measure and the reserve, and move the heap test into a run of its own, where no earlier test frees large blocks (alone it measured 63.1 to 70.1 MB).
+  - (c) Keep the test, and replace the two dictionaries keyed by slot (the bounds of the grid and the slot table) with arrays indexed by slot, which take their real block size as capacity. This is a change of `SpatialGrid` and `StrokeStore` beyond M9, for M10.
+- Recommendation: (a). It measures what the store keeps in a way that does not depend on the state of the allocator, and the reserve lowers the store by its doubling slack.
+
 ## Points in the request that conflict or are not complete
 
 1. "Only three tools" and "drawing data structures": cards need a way in (D-08), and diagrams need a way to move things (D-10).
