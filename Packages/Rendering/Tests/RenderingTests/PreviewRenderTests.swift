@@ -111,7 +111,7 @@ struct PreviewRenderTests {
         try content.add(line)
         let camera = content.openCamera
         let screen = try await render(renderer, layer: layer, camera: camera, aspect: 1.25)
-        let offscreen = try PreviewMaker.render(
+        let offscreen = try await PreviewMaker().render(
             content,
             camera: camera,
             cardAspect: 1.25,

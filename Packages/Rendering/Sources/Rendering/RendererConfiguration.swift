@@ -70,6 +70,13 @@ public struct RendererConfiguration: Sendable {
     ///
     /// - Precondition: A multiple of 1 MB, so that the blocks of 512 pixels fill whole rows.
     public var previewAtlasByteBudget = 8 << 20
+    /// The byte budget of the point arena of one pass of an offscreen preview (D-157). A preview
+    /// whose strokes need more draws them in more passes. 32 MB hold about 1.8 million control
+    /// points beside the 33 slabs that the size classes can leave partly empty. A preview of a
+    /// D-56 child took a peak memory growth of 148 MB with one arena for all of its points.
+    ///
+    /// - Precondition: At least `PreviewPasses.minimumByteBudget`, so that each stroke fits.
+    public var previewArenaByteBudget = 32 << 20
     /// The preview requests that wait for the loader at most (m6-plan.md section 4, rule 5).
     public var previewRequestLimit = 16
     /// The glyph quads per frame. A text box holds at most `Limits.maxTextLength` glyphs, so a

@@ -460,3 +460,25 @@ Recommended budgets, for the product owner (D-165):
 
 The temporary test is deleted. The budgets wait for the decision of the product owner.
 
+### 6.3 Persistence and the grid (tasks 1.1 to 1.5)
+
+Measured on 2026-10-24, on the Mac for the package tests and on the iPad in Release for the device run.
+
+1. Task 1.1 (commit 1c52107): `SQLiteLibraryRepository.close()` and the close of each test helper that deletes a library folder. `RepositoryCloseTests` shows an open, a close, and a second open, a failed open that leaves the repository closed, and a close during a running checkpoint. `failedOpenWritesNothing` failed with the old code: "an error was expected but none was thrown", and the stroke count was 1. A full run of `PointerDeviceTests` after task 1.5 logged "vnode unlinked while in use" 0 times, against 187 times in the baseline run (`M9-full-11.xcresult`). All 400 tests passed. `StrokeStoreMemoryTests` measured 63.1 MB.
+2. Task 1.2 (commit 5d4629a): `writeSnapshotNow()`, the counter names, `writePreRestoreSnapshot()`, and the delete of a failed partial file. `SnapshotNameTests` covers two snapshots in one second, a `VACUUM INTO` into a folder that refuses the write, the rotation of 7 with counter names, and one pre-restore snapshot after two. With the old code, the second snapshot of a second failed with "output file already exists". The first form of the counter took the lowest free name. After the rotation deleted the oldest name of a second, the next snapshot took it, sorted as the oldest, and the rotation deleted it at once. The counter now follows the highest one of the second.
+3. Task 1.3 (commit f2e5ed0): `SnapshotImport`, `SnapshotHeader`, the mode `untrustedReadOnly`, and the fixtures of `make-snapshot-fixtures.sh`. Each fixture gives its error, and the good snapshot passes. `sqlite3_db_config` is a C variadic function that Swift does not import, so the untrusted mode sets its settings through pragmas (D-166, open). Persistence line coverage: 90.44 %.
+4. Task 1.4 (commit b9895b9): `restore(from:stop:)`, `SQLiteBackup+Unsafe.swift`, and `RestoreStop`. `RepositoryRestoreTests` passes: the rows of the snapshot after a restore over another library, the old library after a stop in the middle and before the first step, the migration of an older version at the next open, a `-wal` file of 0 bytes, and a restore with the checkpointer connection open. Without the `TRUNCATE` checkpoint, the `-wal` test fails.
+5. Task 1.5 (commit bde5c5a): `Limits.maxGridCellsPerItem` is 4,096 cells of 512 points. The largest item that the app can make is a text box of 10,000 line breaks: 10,001 lines of 20.02 points, at most 393 rows by 3 columns, 1,179 cells. The readers of strokes and cards refuse a larger item. A text box needs no check at the load, because its text length and `TextStyle.maxWidth` bound it, so the plan item for the text box reader is not needed. A stroke row 10,000,000 points wide is one skipped row: the load took under 1 s on the Mac, and the test passes in 0.03 s. With the old code, the stroke loaded and the test failed at `content.strokes.isEmpty`.
+6. Task 1.6: `PreviewMaker` is an actor that the app keeps once, with one `FrameRenderer` and one `InkResources` for all previews. It draws only the items in the region of the placement, and the strokes in passes whose arena keeps `RendererConfiguration.previewArenaByteBudget` (32 MB). Alternating runs of `PreviewMakerPerformanceTests` for the preview of a D-56 child:
+
+| Run | Time | Peak memory growth |
+|---|---|---|
+| Base 1 (`M9-preview-base-1.xcresult`) | 0.187 s | 202 MB |
+| New 1 (`M9-preview-new-1.xcresult`) | 0.029 s | 90 MB |
+| Base 2 (`M9-preview-base-2.xcresult`) | 0.189 s | 202 MB |
+| New 2 (`M9-preview-new-2.xcresult`) | 0.029 s | 96 MB |
+| New 3, first preview of a maker (`M9-preview-new-3.xcresult`) | 0.037 s | 90 MB |
+| New 3, second preview of the same maker | 0.032 s | 66 MB |
+
+`PreviewRenderTests` passes, with the compare of the offscreen preview and the preview of the screen. `PreviewPassesTests` covers no stroke, one pass, a stroke of the point limit per pass at the smallest budget, and the budget of each pass. In run new 1, the budget test failed, because its strokes fit one pass at twice the smallest budget. The test now uses the smallest budget.
+

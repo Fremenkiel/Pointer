@@ -41,6 +41,9 @@ final class AppComposition {
     var backgroundTask = UIBackgroundTaskIdentifier.invalid
     /// The card previews of the child canvases (D-97), or `nil` before the launch.
     var previewStore: PreviewStore?
+    /// The one offscreen renderer of the previews of all canvases, so that they share one
+    /// `InkResources` (D-157).
+    let previewMaker = PreviewMaker()
     /// The load of the canvas of the last switch, or `nil`.
     var loadTask: Task<Void, Never>?
     /// Runs with the canvas of each load that starts. Only the tests set it (F-13).

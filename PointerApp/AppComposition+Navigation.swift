@@ -256,7 +256,12 @@ extension AppComposition {
             renderer: try CanvasRenderer(
                 configuration: CanvasComposition.rendererConfiguration(defaults),
                 previews: previewStore.map { store in
-                    PreviewFiles(store: store, repository: repository, viewSize: screenSize)
+                    PreviewFiles(
+                        store: store,
+                        repository: repository,
+                        maker: previewMaker,
+                        viewSize: screenSize
+                    )
                 }
             ),
             clock: clock,

@@ -68,54 +68,13 @@ extension FrameRenderer {
         return RenderedImage(width: width, height: height, pixels: readPixels(of: output))
     }
 
-    /// Renders a preview of strokes, text boxes, and cards at `placement`, with the passes of
-    /// `renderImage`. Cards show their frames and titles without previews. It blocks until the
-    /// GPU completes (m6-plan.md task 3.3, item 6).
-    ///
-    /// - Throws: `RenderingError` if a Metal object fails.
-    /// - Returns: The gray image of the placement.
-    func renderPreviewImage(
-        strokes: [Stroke],
-        textBoxes: [TextBox],
-        cards: [Card],
-        placement: PreviewRenderer.Placement
-    ) throws(RenderingError) -> PreviewImage {
-        precondition(cards.count + textBoxes.count <= Limits.maxNodesPerCanvas, "Too many nodes")
-        let preview = try PreviewRenderer(resources: resources)
-        guard let commandBuffer = resources.queue.makeCommandBuffer() else {
-            throw .resourceUnavailable("command buffer")
-        }
-        let target = InkTarget(texture: preview.coverage, camera: placement.camera, displayScale: 1)
-        let ink = try encodeStrokes(strokes, target: target, commandBuffer: commandBuffer)
-        let text = try encodeText(
-            textBoxes,
-            cards: cards,
-            target: target,
-            commandBuffer: commandBuffer
-        )
-        let size = placement.image.size
-        let readback = try encodeReadback(
-            of: preview,
-            image: placement.image,
-            commandBuffer: commandBuffer
-        )
-        commandBuffer.commit()
-        commandBuffer.waitUntilCompleted()
-        withExtendedLifetime((ink, text)) {}
-        let image = PreviewRenderer.readImage(of: readback, width: size.width, height: size.height)
-        guard let image else {
-            throw .resourceUnavailable("preview readback")
-        }
-        return image
-    }
-
     /// Encodes the resolve of the preview targets and the copy of the image into a new shared
     /// buffer of the image size.
     ///
     /// - Precondition: The image lies inside the targets.
     /// - Throws: `RenderingError.resourceUnavailable` if Metal gives no buffer or no encoder.
     /// - Returns: The buffer that holds the image after the GPU completes `commandBuffer`.
-    private func encodeReadback(
+    func encodeReadback(
         of preview: PreviewRenderer,
         image: MTLRegion,
         commandBuffer: any MTLCommandBuffer
@@ -156,11 +115,12 @@ extension FrameRenderer {
     }
 
     /// Draws all strokes in one pass with a store of their own. The encoder must live until the
-    /// GPU completes, because it owns the arena.
-    private func encodeStrokes(
+    /// GPU completes, because it owns the arena. The pass clears the target if `clear` is set.
+    func encodeStrokes(
         _ strokes: [Stroke],
         target: InkTarget,
-        commandBuffer: any MTLCommandBuffer
+        commandBuffer: any MTLCommandBuffer,
+        clear: Bool = true
     ) throws(RenderingError) -> InkEncoder {
         let points = strokes.reduce(0) { $0 + $1.points.count }
         // A block holds at most twice its points, and each size class can leave one partial slab.
@@ -179,7 +139,7 @@ extension FrameRenderer {
         let encoder = InkEncoder(resources: resources, store: store, ring: ring)
         let context = FrameContext(commandBuffer: commandBuffer, frame: 1)
         encoder.beginFrame(context)
-        let options = InkPassOptions(clear: true, instanceBudget: .max)
+        let options = InkPassOptions(clear: clear, instanceBudget: .max)
         let cursor = encoder.encodePass(
             context,
             target: target,
@@ -193,13 +153,15 @@ extension FrameRenderer {
         return encoder
     }
 
-    /// Draws all text boxes and cards in one pass with stores, an atlas, and a glyph buffer of
-    /// their own. The encoder must live until the GPU completes, because it owns the buffer.
-    private func encodeText(
+    /// Draws the text boxes and cards in one pass with stores, an atlas, and a glyph buffer of
+    /// their own. With a `region`, only the items that touch it draw. The encoder must live
+    /// until the GPU completes, because it owns the buffer.
+    func encodeText(
         _ boxes: [TextBox],
         cards: [Card],
         target: InkTarget,
-        commandBuffer: any MTLCommandBuffer
+        commandBuffer: any MTLCommandBuffer,
+        region: Rect? = nil
     ) throws(RenderingError) -> TextEncoder {
         precondition(boxes.count <= Limits.maxNodesPerCanvas, "Too many text boxes")
         let store = TextStore()
@@ -227,7 +189,7 @@ extension FrameRenderer {
             fillCoverage: configuration.cardFillCoverage
         )
         encoder.beginFrame()
-        let ids = cards.map { GreenItem.card($0.id) } + boxes.map { GreenItem.textBox($0.id) }
+        let ids = Self.greenItems(cards: cardStore, boxes: store, order: (cards, boxes), in: region)
         let context = FrameContext(commandBuffer: commandBuffer, frame: 1)
         let cursor = encoder.encodePass(
             context,
@@ -240,6 +202,22 @@ extension FrameRenderer {
             throw .resourceUnavailable("glyph buffer for \(ids.count) text boxes and cards")
         }
         return encoder
+    }
+
+    /// Returns the cards and the text boxes to draw: all of them in the given order, or with a
+    /// `region`, the ones whose bounds touch it.
+    private static func greenItems(
+        cards: CardStore,
+        boxes: TextStore,
+        order: ([Card], [TextBox]),
+        in region: Rect?
+    ) -> [GreenItem] {
+        var ids = order.0.map { GreenItem.card($0.id) } + order.1.map { .textBox($0.id) }
+        guard let region else { return ids }
+        ids.removeAll(keepingCapacity: true)
+        cards.grid.forEachItem(touching: region) { ids.append(.card($0)) }
+        boxes.grid.forEachItem(touching: region) { ids.append(.textBox($0)) }
+        return ids
     }
 
     private func encodeCopy(

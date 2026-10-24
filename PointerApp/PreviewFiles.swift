@@ -12,17 +12,13 @@ import os
 /// preview offscreen, writes the file, and frees the content (m6-plan.md task 3.3, item 6). The
 /// loader of the renderer asks for one preview at a time, so one such load runs at a time.
 struct PreviewFiles: PreviewSource {
-    /// The queue of the offscreen render. The render blocks until the GPU completes, so it runs
-    /// here and not on the shared pool of Swift concurrency.
-    private static let renderQueue = DispatchQueue(
-        label: "dk.saarikivi.pointer.preview-render",
-        qos: .utility
-    )
-
     /// The store of the preview files.
     let store: PreviewStore
     /// The library, for the content of a child canvas without a preview.
     let repository: any LibraryRepository
+    /// The offscreen renderer that the app shares among all canvases (D-157). It blocks on its
+    /// own serial queue until the GPU completes, not on the shared pool.
+    let maker: PreviewMaker
     /// The size of the canvas screen, for the region of the open camera (D-98).
     let viewSize: Size
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "App")
@@ -42,21 +38,16 @@ struct PreviewFiles: PreviewSource {
             logger.error("The child canvas of a preview did not load: \(String(describing: error))")
             return nil
         }
-        let viewSize = viewSize
-        let png = await withCheckedContinuation { continuation in
-            Self.renderQueue.async {
-                do {
-                    let image = try PreviewMaker.render(
-                        content,
-                        camera: content.openCamera,
-                        cardAspect: cardAspect,
-                        viewSize: viewSize
-                    )
-                    continuation.resume(returning: image.pngData())
-                } catch {
-                    continuation.resume(returning: nil)
-                }
-            }
+        let png: Data?
+        do {
+            png = try await maker.render(
+                content,
+                camera: content.openCamera,
+                cardAspect: cardAspect,
+                viewSize: viewSize
+            ).pngData()
+        } catch {
+            png = nil
         }
         guard let png else {
             logger.error("The preview of a child canvas did not render")

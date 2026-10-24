@@ -19,11 +19,18 @@ final class PreviewMakerPerformanceTests: XCTestCase {
             textBoxes: ExportPerformanceTests.textBoxes(count: 5_000),
             cards: ExportPerformanceTests.cards(count: 5_000)
         )
-        try await measure(content, name: "D-56")
+        // The app keeps one maker, so the second preview shows the cost without the Metal setup.
+        let maker = PreviewMaker()
+        try await measure(content, name: "D-56, first of a maker", maker: maker)
+        try await measure(content, name: "D-56, second of the maker", maker: maker)
     }
 
     /// Renders the preview in a detached task and records the time and the memory growth.
-    private func measure(_ content: CanvasContent, name: String) async throws {
+    private func measure(
+        _ content: CanvasContent,
+        name: String,
+        maker: PreviewMaker
+    ) async throws {
         try await OnScreenCanvas.waitForSteadyMemory()
         let available = os_proc_available_memory()
         var lowest = available
@@ -32,7 +39,7 @@ final class PreviewMakerPerformanceTests: XCTestCase {
         let isDone = OSAllocatedUnfairLock(initialState: false)
         let task = Task.detached {
             defer { isDone.withLock { $0 = true } }
-            return try PreviewMaker.render(
+            return try await maker.render(
                 content,
                 camera: content.openCamera,
                 cardAspect: 4.0 / 3.0,
