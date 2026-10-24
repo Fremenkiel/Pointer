@@ -57,5 +57,26 @@
 	</array>
 	<key>UIUserInterfaceStyle</key>
 	<string>Dark</string>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>dk.saarikivi.pointer.snapshot</string>
+			<key>UTTypeDescription</key>
+			<string>Pointer snapshot</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.database</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>sqlite</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

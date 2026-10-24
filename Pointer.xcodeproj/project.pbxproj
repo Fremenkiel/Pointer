@@ -22,6 +22,7 @@
 		B0000000000000000000B013 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D013 /* Persistence */; };
 		B0000000000000000000B014 /* Geometry in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D014 /* Geometry */; };
 		B0000000000000000000B015 /* Export in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D015 /* Export */; };
+		B0000000000000000000B016 /* BackupFeature in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D016 /* BackupFeature */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -98,6 +99,16 @@
 			path = PointerAppTests;
 			sourceTree = "<group>";
 		};
+		B0000000000000000000G012 /* Packages/BackupFeature/Tests/BackupFeatureTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Packages/BackupFeature/Tests/BackupFeatureTests;
+			sourceTree = "<group>";
+		};
+		B0000000000000000000G013 /* Packages/BackupFeature/Tests/BackupFeatureSnapshotTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Packages/BackupFeature/Tests/BackupFeatureSnapshotTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,6 +138,7 @@
 				B0000000000000000000B011 /* Persistence in Frameworks */,
 				B0000000000000000000B012 /* WorkspaceFeature in Frameworks */,
 				B0000000000000000000B015 /* Export in Frameworks */,
+				B0000000000000000000B016 /* BackupFeature in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -145,6 +157,8 @@
 				B0000000000000000000G009 /* Packages/WorkspaceFeature/Tests/WorkspaceFeatureTests */,
 				B0000000000000000000G010 /* PointerAppTests */,
 				B0000000000000000000G011 /* Packages/Export/Tests/ExportTests */,
+				B0000000000000000000G012 /* Packages/BackupFeature/Tests/BackupFeatureTests */,
+				B0000000000000000000G013 /* Packages/BackupFeature/Tests/BackupFeatureSnapshotTests */,
 				B0000000000000000000G003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -213,6 +227,8 @@
 				B0000000000000000000G009 /* Packages/WorkspaceFeature/Tests/WorkspaceFeatureTests */,
 				B0000000000000000000G010 /* PointerAppTests */,
 				B0000000000000000000G011 /* Packages/Export/Tests/ExportTests */,
+				B0000000000000000000G012 /* Packages/BackupFeature/Tests/BackupFeatureTests */,
+				B0000000000000000000G013 /* Packages/BackupFeature/Tests/BackupFeatureSnapshotTests */,
 			);
 			name = PointerDeviceTests;
 			packageProductDependencies = (
@@ -223,6 +239,7 @@
 				B0000000000000000000D011 /* Persistence */,
 				B0000000000000000000D012 /* WorkspaceFeature */,
 				B0000000000000000000D015 /* Export */,
+				B0000000000000000000D016 /* BackupFeature */,
 			);
 			productName = PointerDeviceTests;
 			productReference = B0000000000000000000F002 /* PointerDeviceTests.xctest */;
@@ -598,6 +615,10 @@
 		B0000000000000000000D015 /* Export */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Export;
+		};
+		B0000000000000000000D016 /* BackupFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BackupFeature;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

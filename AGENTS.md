@@ -60,7 +60,10 @@ pointer/
       Tests/WorkspaceFeatureTests/          part of PointerDeviceTests only (D-77)
       Tests/WorkspaceFeatureSnapshotTests/  view snapshots, part of PointerDeviceTests only (D-77)
         References/        reference PNGs of the snapshot tests, made on the iPad (TEST-07)
-    BackupFeature/         Layer 2: backup command and restore, no Tests/ yet
+    BackupFeature/         Layer 2: backup commands and restore flow
+      Sources/BackupFeature/Resources/      String Catalog of the backup commands and messages
+      Tests/BackupFeatureTests/             part of PointerDeviceTests only (D-77)
+      Tests/BackupFeatureSnapshotTests/     view snapshots, part of PointerDeviceTests only (D-77)
   Scripts/                 check-layers.swift, assertion-density.swift, coverage.swift, self-test.sh
     Fixtures/              small trees that the self-test runs the check scripts on
 ```

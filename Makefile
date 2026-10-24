@@ -112,7 +112,17 @@ self-test:
 	Scripts/self-test.sh
 
 # STO-02, STO-03: the Files app shows Documents/ only with both keys set to true.
+# D-156: the document picker of a restore shows only files of the snapshot type.
+SNAPSHOT_TYPE := UTImportedTypeDeclarations.0
 plist:
 	plutil -extract UIFileSharingEnabled raw PointerApp/Info.plist | grep -qx true
 	plutil -extract LSSupportsOpeningDocumentsInPlace raw PointerApp/Info.plist | grep -qx true
-	@echo "plist: Files app keys present"
+	plutil -extract $(SNAPSHOT_TYPE).UTTypeIdentifier raw PointerApp/Info.plist \
+		| grep -qx dk.saarikivi.pointer.snapshot
+	plutil -extract $(SNAPSHOT_TYPE).UTTypeTagSpecification json -o - PointerApp/Info.plist \
+		| grep -q '"public.filename-extension":\["sqlite"\]'
+	plutil -extract $(SNAPSHOT_TYPE).UTTypeConformsTo json -o - PointerApp/Info.plist \
+		| grep -q '"public.database"'
+	plutil -extract $(SNAPSHOT_TYPE).UTTypeConformsTo json -o - PointerApp/Info.plist \
+		| grep -q '"public.data"'
+	@echo "plist: Files app keys and the snapshot type present"
