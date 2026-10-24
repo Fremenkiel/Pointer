@@ -44,6 +44,27 @@ The old test compared the largest count of the glide frames with the largest cou
 
 ## 4. The save stall
 
+### 4.1 Cause
+
+The library uses WAL mode with `synchronous = NORMAL` (storage.md section 3) and the automatic checkpoint of SQLite. The SQLite documentation says that the automatic checkpoint runs "by the same thread that does the COMMIT that pushes the WAL over its size limit" of 1,000 pages, and that with `synchronous = NORMAL` "the checkpoint is the only operation to issue an I/O barrier or sync operation" (<https://sqlite.org/wal.html>). So one save in about every 80 runs a checkpoint and waits for a sync. If another writer of the process syncs at the same time, as in a full run, that save waits for the disk.
+
+A temporary benchmark on the iPad copied the save pattern of the control run with raw SQLite: 20,000 rows of 4,800 bytes, then 640 saves of 10 rows. A WAL hook marked each save that ran a checkpoint. A disk stress thread wrote 1 MB blocks with `F_FULLFSYNC`, to copy the disk load of a full run. With the automatic checkpoint, the checkpoint saves took about 6 ms when quiet and 31 to 155 ms under stress (`.build/Runs/F-save-bench-2.xcresult`). That matches the 205 ms of the full run.
+
+A connection has only one WAL hook, and `sqlite3_wal_autocheckpoint` replaces it. The first benchmark run thus ran without any checkpoint and is not valid (`F-save-bench-1.xcresult`). It showed one more fact: without checkpoints, the WAL grows, and a save that grows the WAL file can also wait 190 to 460 ms under stress.
+
+### 4.2 Solutions
+
+The SQLite documentation names the fix: "disable automatic checkpointing and run the periodic checkpoints in a separate thread". The benchmark compared it with the automatic checkpoint, with one save every 20 ms, 50 times faster than the save interval of 1 s of the app (`F-save-bench-3.xcresult`, 3 runs each):
+
+| Variant | Quiet, slowest save | Under stress, slowest save | WAL, most pages |
+|---|---|---|---|
+| (a) Automatic checkpoint (now) | 18.1 to 18.7 ms, 8 saves over 10 ms | 178 to 306 ms, 10 to 13 saves over 10 ms | 1,013 |
+| (b) No automatic checkpoint, a passive checkpoint on a second connection in a thread of its own at 1,000 pages | 1.1 to 1.4 ms, 0 over 10 ms | 10.7 ms, and about 300 ms once at save 1 | 1,084 to 1,112 |
+
+The stall at save 1 came in both variants, when the stress thread started its first file, so it does not come from the checkpoint. Without a pause between saves, the checkpointer of (b) did not catch up, and the WAL grew to 9,035 pages (`F-save-bench-2.xcresult`). The app pauses at least 1 s between timed saves, so the checkpointer catches up there.
+
+D-146 holds the decision, because (b) changes the storage design.
+
 ## 5. The message over the palette
 
 ### 5.1 Cause
