@@ -1,9 +1,10 @@
 import Foundation
 import Geometry
 import Model
-import Persistence
 import XCTest
 import os
+
+@testable import Persistence
 
 /// The time of a snapshot of a large library on the device, and the time of the saves that run
 /// during it (D-32). The times are valid on a device only.
@@ -26,29 +27,21 @@ final class SnapshotPerformanceTests: XCTestCase {
         #if targetEnvironment(simulator)
             throw XCTSkip("Snapshot times are valid on a device only.")
         #else
-            let files = FileManager()
-            let folder = files.temporaryDirectory.appending(
-                path: "Snapshot-\(UUID().uuidString)",
-                directoryHint: .isDirectory
-            )
-            try files.createDirectory(at: folder, withIntermediateDirectories: true)
-            defer { Self.removeFolder(folder, files) }
-            let path = folder.appending(path: "library.sqlite").path(percentEncoded: false)
-            let repository = try await Self.filledRepository(path: path, folder: folder)
-            let writer = SnapshotWriter(
-                configuration: SnapshotWriter.Configuration(
-                    databasePath: path,
-                    temporaryFolder: folder,
-                    backupsFolder: folder.appending(path: "Backups"),
-                    wallClock: SystemWallClock(),
-                    timeZone: .current
+            let run = try await Self.withFilledLibrary { repository, path, folder in
+                let writer = SnapshotWriter(
+                    configuration: SnapshotWriter.Configuration(
+                        databasePath: path,
+                        temporaryFolder: folder,
+                        backupsFolder: folder.appending(path: "Backups"),
+                        wallClock: SystemWallClock(),
+                        timeZone: .current
+                    )
                 )
-            )
-            let run = try await Self.snapshotWithSaves(writer, repository)
-            let url = run.url
+                return try await Self.snapshotWithSaves(writer, repository)
+            }
             let snapshotTime = run.snapshotMilliseconds
             let saveTimes = run.saveMilliseconds
-            let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+            let size = run.bytes
             let line = String(
                 format: "snapshot of %d strokes, %d MB: %.0f ms; saves: %@",
                 Self.strokeCount,
@@ -66,21 +59,15 @@ final class SnapshotPerformanceTests: XCTestCase {
         #if targetEnvironment(simulator)
             throw XCTSkip("Save times are valid on a device only.")
         #else
-            let files = FileManager()
-            let folder = files.temporaryDirectory.appending(
-                path: "Control-\(UUID().uuidString)",
-                directoryHint: .isDirectory
-            )
-            try files.createDirectory(at: folder, withIntermediateDirectories: true)
-            defer { Self.removeFolder(folder, files) }
-            let path = folder.appending(path: "library.sqlite").path(percentEncoded: false)
-            let repository = try await Self.filledRepository(path: path, folder: folder)
-            let clock = ContinuousClock()
-            var saveTimes: [Double] = []
-            for save in 0..<Self.controlSaves {
-                try await repository.send(Self.rows(save, count: Self.strokesPerSave))
-                let duration = try await clock.measure { try await repository.saveNow() }
-                saveTimes.append(duration / .milliseconds(1))
+            let saveTimes = try await Self.withFilledLibrary { repository, _, _ in
+                let clock = ContinuousClock()
+                var saveTimes: [Double] = []
+                for save in 0..<Self.controlSaves {
+                    try await repository.send(Self.rows(save, count: Self.strokesPerSave))
+                    let duration = try await clock.measure { try await repository.saveNow() }
+                    saveTimes.append(duration / .milliseconds(1))
+                }
+                return saveTimes
             }
             let line = "no snapshot: saves: " + Self.summary(saveTimes)
             XCTContext.runActivity(named: line) { _ in }
@@ -108,7 +95,7 @@ final class SnapshotPerformanceTests: XCTestCase {
     }
 
     private struct SnapshotRun {
-        let url: URL
+        let bytes: Int
         let snapshotMilliseconds: Double
         let saveMilliseconds: [Double]
     }
@@ -133,10 +120,39 @@ final class SnapshotPerformanceTests: XCTestCase {
         }
         let url = try await snapshot.value
         return SnapshotRun(
-            url: url,
+            bytes: try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0,
             snapshotMilliseconds: start.duration(to: clock.now) / .milliseconds(1),
             saveMilliseconds: saveTimes
         )
+    }
+
+    /// Runs `body` on a filled library in a folder of its own. The last checkpoint ends and the
+    /// repository goes before the folder goes. A checkpoint after the delete failed with a disk
+    /// I/O error and ran into the measures of the next suite (TEST-04).
+    private static func withFilledLibrary<Result>(
+        _ body: (SQLiteLibraryRepository, String, URL) async throws -> Result
+    ) async throws -> Result {
+        let files = FileManager()
+        let folder = files.temporaryDirectory.appending(
+            path: "Snapshot-\(UUID().uuidString)",
+            directoryHint: .isDirectory
+        )
+        try files.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { removeFolder(folder, files) }
+        return try await run(body, in: folder)
+    }
+
+    /// Runs `body` on a new filled library in `folder`, and waits for its last checkpoint. The
+    /// repository goes when the function returns.
+    private static func run<Result>(
+        _ body: (SQLiteLibraryRepository, String, URL) async throws -> Result,
+        in folder: URL
+    ) async throws -> Result {
+        let path = folder.appending(path: "library.sqlite").path(percentEncoded: false)
+        let repository = try await filledRepository(path: path, folder: folder)
+        let result = try await body(repository, path, folder)
+        await repository.waitForCheckpoint()
+        return result
     }
 
     private static func filledRepository(
