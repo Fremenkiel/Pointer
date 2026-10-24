@@ -8,7 +8,7 @@ The app has three tools only: a white pen, text boxes, and an eraser. It stores 
 
 ## Status
 
-Milestones M0 to M8 are done: ink, storage and workspaces, the eraser and undo, text boxes, cards and navigation, the Apple Pencil interactions, and PDF export. PencilKit draws the live stroke, and a Metal renderer draws the finished ink (decisions D-02 and D-33). The next milestone is M9, backup and restore. See [docs/plan.md](docs/plan.md).
+Milestones M0 to M9 are done: ink, storage and workspaces, the eraser and undo, text boxes, cards and navigation, the Apple Pencil interactions, PDF export, and backup and restore. PencilKit draws the live stroke, and a Metal renderer draws the finished ink (decisions D-02 and D-33). The next milestone is M10, hardening. See [docs/plan.md](docs/plan.md).
 
 ## Build
 
@@ -33,6 +33,7 @@ Read the documents in this order:
 7. [docs/plan.md](docs/plan.md) gives the build order and the acceptance criteria per milestone.
 8. [docs/decisions.md](docs/decisions.md) lists the open decisions for the product owner.
 9. [docs/review-2026-10-17.md](docs/review-2026-10-17.md) gives the design review and the source check of the research.
+10. [docs/review-2026-10-24.md](docs/review-2026-10-24.md) and [docs/review-2026-10-24-m9.md](docs/review-2026-10-24-m9.md) give the code reviews after M8 and after M9.
 
 [AGENTS.md](AGENTS.md) is the entry point for AI coding agents.
 

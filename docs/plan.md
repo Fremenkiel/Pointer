@@ -184,6 +184,8 @@ Acceptance:
 
 Status on 2026-10-24: done on branch `m9`. All three acceptance criteria pass. The product owner reported a pass of acceptance 1 and acceptance 3 on the iPad, and of the other manual tests of task 5.1. `D56RestoreTests` restores the D-56 library with 0 rows that differ (acceptance 2). "Back up now" and a restore of D-56 stay under the budgets of D-165. `make check` and `make coverage` pass, and five full runs of `PointerDeviceTests` passed, each measure within 10 % of the baseline. Section 6 of [m9-plan.md](m9-plan.md) holds the results.
 
+Review after M9, 2026-10-24: [review-2026-10-24-m9.md](review-2026-10-24-m9.md). It fixed two crashes of the restore and three crashes from values of a damaged or restored file. It also fixed a crash of a pinch during a card flight and the frames of a frozen parent. The product owner decided D-168 to D-171 for it. `make check` with the iPad passed 440 device tests on branch `review-m9`.
+
 ## M10: Hardening
 
 - Limits: each limit in [architecture.md](architecture.md) section 10 has a test at the limit and at the limit plus one.
@@ -202,7 +204,10 @@ Status on 2026-10-24: done on branch `m9`. All three acceptance criteria pass. T
   - `CanvasRenderer.deliver(upTo:)` and `deliverCompletions(upTo:time:)` copy their arrays at each handoff, because a slice of the array lives during `removeFirst`.
   - Add allocation tests that drive `PencilTouchObserver`, `handlePan`, and `handlePinch` through UIKit events.
   - The undo of an erase accepts up to `Limits.maxStrokesAfterErase` (D-159).
-  - From the review after M8: the open items of sections 3.2 to 3.4 of [review-2026-10-24.md](review-2026-10-24.md) that M9 does not take.
+  - From the review after M8: the open items of sections 3.2 to 3.4 of [review-2026-10-24.md](review-2026-10-24.md) that M9 does not take. The review after M9 fixed item 3 of section 3.2.
+  - From the review after M8, section 3.1: the message at the stroke limit (item 4), and the history of the shown canvas outside the budget of D-76 (item 5).
+  - From the review after M9 ([review-2026-10-24-m9.md](review-2026-10-24-m9.md)): the open items of sections 3.2 to 3.4.
+  - From the review after M9, section 3.1: the product owner decides items 1 to 4 before M10 starts. Items 5 to 8 need a decision before their task. They are the restore after a stop of the process, the grid budget per canvas of D-170, the rebalance of sort keys, and the history budget in bytes.
   - Read the contract checks of each Tier A and Tier B package by hand. Each package has an average of exactly 2.00 (CONTRACT-02), so remove checks that test nothing.
 
 Acceptance:

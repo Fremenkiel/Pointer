@@ -49,7 +49,7 @@ Rules:
 
 - The app makes new IDs as UUID version 7 (decision D-31). A version 7 UUID starts with the wall-clock time in milliseconds, so new keys land at the end of the database index. Foundation has no version 7 function, so `Model` makes the UUID from an injected clock and random bytes (RFC 9562, section 5.7).
 - An ID is never an array index, a row number (`rowid`), or a title.
-- The database stores an ID as a 16-byte BLOB. File names (for previews) use the lowercase string form.
+- The database stores an ID as a 16-byte BLOB. File names (for previews) use the uppercase string form of `UUID.uuidString`.
 
 Each entity has its own wrapper ID type, not a type alias (decision D-17). The compiler then refuses a `StrokeID` where a `CardID` is needed. The code above shows aliases for brevity only.
 
@@ -72,7 +72,7 @@ struct HybridTimestamp: Comparable, Codable, Sendable {
 3. Otherwise, use the last `wallMillis` with `counter + 1`.
 4. Store the last value in the `library` table, in the same transaction as the rows that use it (see [storage.md](storage.md) section 3.3). The clock then never goes back after a restart or a crash (review A-18).
 
-The app has one clock, `AppClock` in `CanvasFeature`. The canvas and the workspace selector share it, so the clock values of one iPad grow across all records. At launch, `PointerApp` makes it from the `lastTimestamp` of the library, with the `DeviceID` of this iPad. After a restore from another iPad, the clock keeps the wall time and the counter of `lastTimestamp` and takes the device ID of this iPad.
+The app has one clock, `AppClock` in `CanvasFeature`. The canvas and the workspace selector share it, so the clock values of one iPad grow across all records. At launch, `PointerApp` makes it from the `lastTimestamp` of the library, with the `DeviceID` of this iPad. After a restore from another iPad, the clock keeps the wall time and the counter of `lastTimestamp` and takes the device ID of this iPad. After a restore, the clock continues after the larger of the restored `lastTimestamp` and the last value of the running clock (D-152). A full counter moves the clock to the next millisecond. The library refuses a stored time past the 48 bits of `UUIDVersion7.maxMillis` as a damaged value, and the clock never passes that time (D-170).
 
 Comparison order: `wallMillis`, then `counter`, then `device`.
 
@@ -109,7 +109,7 @@ struct FractionalIndex: Hashable, Comparable, Sendable {
 
 - `FractionalIndex.between(_:_:)` returns a key that sorts between two keys. Either argument can be `nil` for "start" or "end".
 - If two devices make the same key, the record ID breaks the tie.
-- The key length has a limit of 64 characters (`Limits.maxSortKeyLength`). If a new key needs more, `between` throws `ModelError.sortKeyNeedsRebalance`. A longer key triggers a rebalance of all keys on that canvas, in one command.
+- The key length has a limit of 64 characters (`Limits.maxSortKeyLength`). If a new key needs more, `between` throws `ModelError.sortKeyNeedsRebalance`. A longer key must trigger a rebalance of all keys on that canvas, in one command. The rebalance is not built yet: the new card and the new text box then take the last key again, and the record ID breaks the tie in the hit tests (review after M9, M10).
 - A key never ends with the digit "0". Thus a key always fits between two different keys.
 - Between two keys, `between` takes the midpoint of David Greenspan ("Implementing Fractional Indexing", 2020). At an end of the list, it adds one to the first digit that can grow, or takes one from the first digit above 1. A list that grows at one end then needs a new digit only every 60 keys.
 
@@ -148,7 +148,7 @@ struct Card: Identifiable, Hashable, Sendable {
 Rules:
 
 - `frame.size` is at least 64 by 48 canvas points.
-- `canvasID` never equals `id`. A move of a card to a different parent must not make a cycle. The `Model` function that moves a card walks the parent chain with a depth limit of `Limits.maxDepth` and refuses a cycle.
+- `canvasID` never equals `id`. Version 1 moves a card only inside its canvas (CARD-07, `MoveNode`), so no move makes a cycle. A later move to a different parent must walk the parent chain with a depth limit of `Limits.maxDepth` and refuse a cycle.
 - A delete of a card marks only the card. The child content stays on disk for 30 days and comes back with an undo (decision D-18). After 30 days, the repository removes the card and its subtree at launch.
 
 ### 7.3 Text box
@@ -231,7 +231,7 @@ struct CanvasContent: Sendable {
 
 `strokes` holds the live strokes only. An erase, or an undo of an added stroke, removes the stroke from `strokes`. The command keeps the `Stroke` value for a later undo or redo (D-68). `erased` holds only the erase records of the current session. A new load of a canvas reads no erase record, so the canvas takes the records of its session back with `adoptSessionRecords(_:)` (D-12). The repository loads live strokes only, so the erased strokes of earlier sessions never reach memory or the point arena (review A-07). An undo can only reach an erase of the current session, because the history lives in memory (D-12).
 
-`CanvasContent` is the input and the output of commands. Only the canvas controller holds it (review A-03). The canvas also holds the `History` of the canvas while it shows. When it leaves, it gives the history and the erase records of its session to `CanvasSessions` in `PointerApp`, and the next open of the canvas takes them out again, so one holder at a time owns them (D-12, M-03). Swift copies a dictionary at the first change after a copy exists. With a second holder, the main actor then copies up to 200,000 entries at a pencil lift.
+`CanvasContent` is the input and the output of commands. Only the canvas controller holds it (review A-03). The canvas also holds the `History` of the canvas while it shows. When it leaves, it gives the history and the erase records of its session to `CanvasSessions` of `CanvasFeature`, which `PointerApp` holds, and the next open of the canvas takes them out again, so one holder at a time owns them (D-12, M-03). Swift copies a dictionary at the first change after a copy exists. With a second holder, the main actor then copies up to 200,000 entries at a pencil lift.
 
 - The renderer receives deltas: the IDs of the removed strokes, the added `Stroke` values, and the area to redraw. It keeps its own GPU state.
 - The repository receives the changed rows as `LibraryChange` values through the protocol `LibraryRepository` (see [storage.md](storage.md) section 4).

@@ -171,12 +171,12 @@ A stroke of 300 points takes 4.8 KB. The layout matches `InkPoint` in memory. Th
 
 ## 4. Write path
 
-`SQLiteLibraryRepository` is an actor. It owns the one connection that writes rows. It is the only code that runs SQL, together with its checkpointer.
+`SQLiteLibraryRepository` is an actor. It owns the one connection that writes rows. It is the only code that writes the rows of the library. Its checkpointer, the snapshot writer, the launch cleanup, the migrations, and the checks of a picked file run SQL of their own (sections 6, 7, and 10).
 
 1. A command changes `CanvasContent` on the main actor.
 2. The canvas controller sends a value copy of the changed rows to the repository.
 3. The repository adds the rows to its pending set.
-4. The repository throttles the writes (D-27). If the pending set is not empty and the last write is older than 1 second, it writes all pending rows in one transaction (`BEGIN IMMEDIATE` ... `COMMIT`). It uses prepared statements and `INSERT ... ON CONFLICT (id) DO UPDATE`.
+4. The repository throttles the writes (D-27). If the pending set is not empty and the last write is older than 1 second, it writes all pending rows in one transaction (`BEGIN IMMEDIATE` ... `COMMIT`). It uses prepared statements and `INSERT ... ON CONFLICT (id) DO UPDATE`. A stroke never changes, so its insert uses `ON CONFLICT (id) DO NOTHING`, and an erase record uses `ON CONFLICT (stroke_id)`.
 5. At pencil lift, the canvas asks the repository to save. If the last write is older than 1 second, the repository writes at once. Otherwise, the throttle of step 4 writes at the end of the second.
 6. When the scene goes to the background, the repository writes all pending rows at once. It asks for extra time with `UIApplication.beginBackgroundTask` for this step.
 
@@ -263,11 +263,11 @@ Before step 1, and before a restore, the app ends a running text edit, places a 
    - An open with the mode `untrustedReadOnly`: `SQLITE_OPEN_READONLY` with `immutable=1`, `trusted_schema` off, `query_only` on, `cell_size_check` on, and `mmap_size` 0. Swift cannot call `sqlite3_db_config`, so the pragmas stand in for its settings, and the schema compare refuses each view and trigger (D-166).
    - A full `PRAGMA integrity_check`, which must give the single row `ok`.
    - A compare of all rows of `sqlite_schema` (tables, columns, indexes, views, and triggers, with their SQL) with the schema that the migrations up to that version make in a database in memory. No `application_id` (D-163).
-4. The app writes the pre-restore snapshot of section 7.1 (D-154).
-5. `SQLiteLibraryRepository.restore(from:stop:)` needs an empty pending set. It waits for the running checkpoint and drops all statements, so that no read is open, because `sqlite3_backup_init` refuses a destination with an open read. Then it copies the checked file into the live database with the SQLite online backup API, in steps of 1,024 pages (`sqlite3_backup_init`, `sqlite3_backup_step`, `sqlite3_backup_finish`). A step that meets a lock tries again, at most 200 times, 10 ms apart.
+4. The app writes the pre-restore snapshot of section 7.1 (D-154). From the start of the restore to its end, the screen takes no input, and the canvas takes no edit (D-169).
+5. `SQLiteLibraryRepository.restore(from:stop:)` needs an empty pending set. A library of a newer schema, which opens read-only, takes the restore too: the restore drops its read-only connection and opens one that writes (D-168). It waits for the running checkpoint and drops all statements, so that no read is open, because `sqlite3_backup_init` refuses a destination with an open read. Then it copies the checked file into the live database with the SQLite online backup API, in steps of 1,024 pages (`sqlite3_backup_init`, `sqlite3_backup_step`, `sqlite3_backup_finish`). A step that meets a lock tries again, at most 200 times, 10 ms apart.
 6. Between two steps, the restore reads a stop flag. At the end of the extra time in the background, the app sets it, and `sqlite3_backup_finish` rolls the copy back, so the library keeps its old content (D-164).
-7. The backup does not call the WAL hook, so after the copy the WAL holds the whole library. A `TRUNCATE` checkpoint copies it and cuts the `-wal` file to 0 bytes. Then the repository closes.
-8. The app builds a new composition, as at launch (D-148). Its repository opens the library and runs the migrations of section 6, because the snapshot can have an older `user_version`. The app clears the preview cache (D-97, D-157) and reloads all workspaces.
+7. The backup does not call the WAL hook, so after the copy the WAL holds the whole library. A `TRUNCATE` checkpoint copies it and cuts the `-wal` file to 0 bytes. Then the repository closes. A failed checkpoint is only logged, because the copy is complete in the WAL, and the next open copies it back. A reader can hold the checkpoint for the 2 s of `busy_timeout`.
+8. The app builds a new composition, as at launch (D-148). Its repository opens the library and runs the migrations of section 6, because the snapshot can have an older `user_version`. The app clears the preview cache before the copy of step 5, so that a stop of the process after the copy does not show the previews of the old library (D-97, D-157). The new composition reloads all workspaces.
 
 The live database and each snapshot use a page size of 4,096 bytes. The repository sets `PRAGMA page_size = 4096` before the first table exists. If the page sizes of the source and the WAL destination differ, `sqlite3_backup_step` returns `SQLITE_READONLY` (review A-21, item 7). Thus the header check refuses a picked file with another page size.
 
