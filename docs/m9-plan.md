@@ -519,4 +519,6 @@ The check at the end of phase 3 failed in `StrokeStoreMemoryTests` (82.7 MB agai
 
 ### 6.7 Manual acceptance (tasks 5.1 and 5.2)
 
+Task 5.1 ran on 2026-10-24 on the iPad. The product owner reported a pass of each of the five tests: the integrity check of a backup on the Mac (M9 acceptance 1), the wait for a download from iCloud Drive, the refusal of a file that is not a Pointer library, a move to the background during a restore, and the undo of a restore with the pre-restore snapshot.
+
 Task 5.2 ran on 2026-10-24 on the iPad. The product owner made two workspaces, tapped "Back up now", saved the file outside the Pointer folder, and deleted the app. The app was installed again in Release with `devicectl`, and it started with a new library and a new device ID. The product owner restored the file, and the app showed the same workspaces and canvases. A new stroke stayed after a force quit. The product owner reported a pass (M9 acceptance 3, D-161).
