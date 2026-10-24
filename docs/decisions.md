@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-114 to D-119 on 2026-10-22. D-115 replaced D-09 and D-100, and D-117 replaced D-08. The M6 fix plan raised D-120 to D-122 on 2026-10-22, and the product owner decided them on the same day, then D-123 and D-124. The review before M7 raised D-125 to D-131 on 2026-10-22, and the product owner decided them on the same day. D-130 replaced the rule of D-07. The review after M7 raised D-138 to D-142 for M8 on 2026-10-23, and the product owner decided them with the recommendations on the same day. The M8 plan raised D-143 on the same day. Task 2.7 raised D-144 on the same day. The product owner decided D-143 and D-144 with the recommendations on the same day. The close of M8 raised D-145 on the same day, and the product owner decided it on 2026-10-24. The M8 fix plan raised D-146 on 2026-10-24, and the product owner decided it on the same day. The M8 fix plan raised D-147 on the same day, and the product owner decided it on the same day.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-114 to D-119 on 2026-10-22. D-115 replaced D-09 and D-100, and D-117 replaced D-08. The M6 fix plan raised D-120 to D-122 on 2026-10-22, and the product owner decided them on the same day, then D-123 and D-124. The review before M7 raised D-125 to D-131 on 2026-10-22, and the product owner decided them on the same day. D-130 replaced the rule of D-07. The review after M7 raised D-138 to D-142 for M8 on 2026-10-23, and the product owner decided them with the recommendations on the same day. The M8 plan raised D-143 on the same day. Task 2.7 raised D-144 on the same day. The product owner decided D-143 and D-144 with the recommendations on the same day. The close of M8 raised D-145 on the same day, and the product owner decided it on 2026-10-24. The M8 fix plan raised D-146 on 2026-10-24, and the product owner decided it on the same day. The M8 fix plan raised D-147 on the same day, and the product owner decided it on the same day. The review after M8 raised D-148 to D-161 on 2026-10-24 ([review-2026-10-24.md](review-2026-10-24.md)).
 
 Status values: Open, Decided, Replaced.
 
@@ -155,6 +155,20 @@ Status values: Open, Decided, Replaced.
 | D-145 | The memory measure of an export in a full run | Time budgets only. The test records the memory and does not fail on it. | Decided (2026-10-24) |
 | D-146 | The checkpoint of the library database | No automatic checkpoint, a passive checkpoint on a second connection at 1,000 pages, and a checkpoint on the write connection at 8,000 pages | Decided (2026-10-24) |
 | D-147 | The hard-limit checkpoint after a pinned WAL | An idle checkpointer gets the checkpoint also past the hard limit. The write connection waits only when the checkpointer falls behind. | Decided (2026-10-24) |
+| D-148 | How a restore replaces the running library | Recommendation: restore in place with the backup API, then build the app composition again as at launch | Open |
+| D-149 | Unsaved work at the start of a restore | Recommendation: end the text edit, place a pending card, save, and stop the restore if the save fails | Open |
+| D-150 | Undo histories and navigation paths after a restore | Recommendation: drop them all | Open |
+| D-151 | Device state after a restore | Recommendation: keep the device ID, clear the path and the cameras, keep the last workspace if it exists | Open |
+| D-152 | The clock after a restore | Recommendation: the larger of the clock and the restored `lastTimestamp`, with the device ID of this iPad | Open |
+| D-153 | A snapshot with a newer schema version | Recommendation: refuse it with a message | Open |
+| D-154 | Name and rotation of the snapshot before a restore | Recommendation: its own name, outside the 7 daily snapshots, keep the newest one | Open |
+| D-155 | The file of "Back up now" | Recommendation: a daily snapshot with seconds and a counter in the name, and a failed snapshot deletes its partial file | Open |
+| D-156 | Picker mode and file type of a restore | Recommendation: open in place with a security scope, copy into `tmp/`, and declare the `.sqlite` type | Open |
+| D-157 | Preview cache and the offscreen preview after a restore | Recommendation: clear the cache, and cut the offscreen render to its region with a bounded arena | Open |
+| D-158 | Bounds of the items that a load accepts | Recommendation: a named bound on the cells of one item in `SpatialGrid`, and refuse a larger item as a damaged row | Open |
+| D-159 | The undo of an erase above 200,000 strokes | Recommendation: the undo accepts up to `Limits.maxStrokesAfterErase`, as the erase does | Open |
+| D-160 | Place of "Back up now" and restore | Recommendation: a menu of the workspace selector, and an alert before a restore | Open |
+| D-161 | The second iPad of M9 acceptance 3 | Recommendation: the product owner names the second iPad | Open |
 
 ## Details
 
@@ -1552,6 +1566,102 @@ Status values: Open, Decided, Replaced.
 - Options: (a) hand off first: an idle checkpointer gets the checkpoint also past the hard limit, and the write connection checkpoints itself only when the checkpointer falls behind. (b) Pace the saves of the test. (c) Raise the hard limit to 32,000 pages.
 - Decision: (a). A first form took "the checkpointer is busy" as falling behind. The checkpointer was then busy with the backlog that it had just started, and the save waited for it: 52 to 55 ms in 5 of 5 runs. The final rule: the checkpointer falls behind if the WAL grows by 1,000 pages or more while one of its checkpoints runs. Only then, from 8,000 pages, the write connection waits for it, for at most 2 s, because SQLite gives `SQLITE_BUSY` at once to a second checkpoint and calls no busy handler (<https://sqlite.org/c3ref/wal_checkpoint_v2.html>).
 - The product owner accepted this meaning of "falls behind" on 2026-10-24 ("falls behind it okay").
+
+### D-148 How a restore replaces the running library
+
+- Raised by the review of 2026-10-24 ([review-2026-10-24.md](review-2026-10-24.md) section 4). Open.
+- Facts: storage.md section 7.5 copies the picked file into the live database with the backup API. The repository has no close or reopen, and `open` has the precondition `connection == nil`. The clock, the selector, and the device state start once, in `AppComposition.start()`.
+- Options: (a) restore in place and update each part of the running app. (b) restore in place, then build the app composition again, as at launch. (c) copy the file and ask the user to start the app again.
+- Recommendation: (b). It uses the tested path of the launch, also for the clock of data-model.md section 4. (c) goes against D-20.
+
+### D-149 Unsaved work at the start of a restore
+
+- Raised by the review of 2026-10-24. Open.
+- Facts: an open text edit, a pending card (D-123), and the pending rows of the repository are not in the library yet.
+- Options: (a) end the text edit, place the pending card, save, and make the snapshot before the restore. If the save fails, stop the restore with a message. (b) drop them.
+- Recommendation: (a). The snapshot before the restore then holds all work (STO-06).
+
+### D-150 Undo histories and navigation paths after a restore
+
+- Raised by the review of 2026-10-24. Open.
+- Facts: `CanvasSessions` holds the undo histories of the canvases (D-12). An undo after a restore writes the rows of the old library into the restored one.
+- Options: (a) drop all histories and all navigation paths of the run. (b) keep the histories of canvases that exist in both libraries.
+- Recommendation: (a).
+
+### D-151 Device state after a restore
+
+- Raised by the review of 2026-10-24. Open.
+- Facts: `device.sqlite` holds the device ID, the last workspace, the navigation path, and the cameras (D-53). A snapshot never carries it (storage.md section 10). `DeviceStateStore` has no API to clear rows.
+- Options: (a) keep all rows: the selector falls back to the first workspace, D-112 cuts the path, and the LRU trim drops old cameras over time. (b) keep the device ID, clear the path and the cameras, and keep the last workspace only if it exists.
+- Recommendation: (b). Never take the device ID of the other iPad.
+
+### D-152 The clock after a restore
+
+- Raised by the review of 2026-10-24. Open.
+- Facts: data-model.md section 4 continues the clock after `lastTimestamp` at launch only. A snapshot of a second iPad can hold newer clock values. `HybridClock` has `init` and `now()` only.
+- Options: (a) the new clock starts after the larger of the clock and the restored `lastTimestamp`, with the device ID of this iPad. (b) the clock stays.
+- Recommendation: (a). With D-148 (b), the launch path does this already.
+
+### D-153 A snapshot with a newer schema version
+
+- Raised by the review of 2026-10-24. Open.
+- Options: (a) refuse the file with a message. (b) restore it and open the library read-only, as storage.md section 5 does at launch.
+- Recommendation: (a). The user keeps a library that the app can change.
+
+### D-154 Name and rotation of the snapshot before a restore
+
+- Raised by the review of 2026-10-24. Open.
+- Facts: storage.md section 7.5 makes a snapshot of the current library before a restore. `SnapshotFiles` knows only the daily and the pre-migration names.
+- Options: (a) its own name, for example `Pointer-pre-restore-<stamp>.sqlite`, outside the 7 daily snapshots, and keep only the newest one. (b) a daily snapshot.
+- Recommendation: (a). A daily rotation can delete it while the user still needs it.
+
+### D-155 The file of "Back up now"
+
+- Raised by the review of 2026-10-24. Open.
+- Facts: a snapshot name has seconds. A second snapshot in the same second fails at the rename and leaves a partial file of library size in `tmp/`. storage.md section 7.1 keeps a partial file after a failure until the next launch.
+- Options: (a) a daily snapshot that counts in the 7, with a counter in the name if the name exists, and a failed snapshot deletes its partial file. (b) a file of its own outside `Backups/`.
+- Recommendation: (a). A full disk is the most likely failure, and then a partial file makes it worse.
+
+### D-156 Picker mode and file type of a restore
+
+- Raised by the review of 2026-10-24. Open.
+- Facts: storage.md section 7.5 opens the picked file with a security scope. A file of a provider can change during the read. The app declares no type for `.sqlite`.
+- Options: (a) open in place with a security scope, copy into `tmp/` in `Persistence`, and check the copy. (b) the picker copies the file (`asCopy: true`), without a security scope.
+- Recommendation: (a), with a `UTImportedTypeDeclarations` entry for `.sqlite`. Update storage.md section 7.5 to match.
+
+### D-157 Preview cache and the offscreen preview after a restore
+
+- Raised by the review of 2026-10-24. Open.
+- Facts: D-97 clears the preview cache at a restore, but storage.md section 7.5 has no such step. Without a file, `PreviewMaker` draws the whole child canvas. For a D-56 child, one preview took 0.184 s and 206 MB of peak memory growth on the iPad.
+- Options: (a) clear the cache, and cut the offscreen render to its region with an arena of a bounded size, before M9 ends. (b) clear the cache and keep the render.
+- Recommendation: (a). After a restore, each visible card renders this way.
+
+### D-158 Bounds of the items that a load accepts
+
+- Raised by the review of 2026-10-24. Open.
+- Facts: `SpatialGrid.insert` visits each cell of the bounds of an item. An item 10,000,000 points wide took 96 s on the Mac. The pen cannot make it, but a damaged row or a restored snapshot can, because the checks test only that values are finite. data-model.md says that the canvas has no coordinate limit.
+- Options: (a) a named bound on the cells of one item, and the load refuses a larger item as a damaged row. (b) a coordinate and size limit in `Limits`.
+- Recommendation: (a). It keeps the canvas without edges (FLOW-03).
+
+### D-159 The undo of an erase above 200,000 strokes
+
+- Raised by the review of 2026-10-24. Open.
+- Facts: `EraseStrokes.apply` accepts up to `Limits.maxStrokesAfterErase` (D-73), and `revert` up to `Limits.maxStrokesPerCanvas`. Two erases near the limit make an undo that fails at each try, so the history cannot go back past it.
+- Options: (a) `revert` accepts up to `maxStrokesAfterErase`. (b) keep the rule.
+- Recommendation: (a). The state that the undo gives back existed one step before.
+
+### D-160 Place of "Back up now" and restore
+
+- Raised by the review of 2026-10-24. Open.
+- Facts: STO-04 and D-20 do not place the commands. `BackupFeature` cannot import `WorkspaceFeature` (ARCH-02), so `PointerApp` composes them.
+- Options: (a) a menu in the workspace selector, and an alert before a restore that names the snapshot of section 7.5. (b) a button of its own in the chrome.
+- Recommendation: (a).
+
+### D-161 The second iPad of M9 acceptance 3
+
+- Raised by the review of 2026-10-24. Open.
+- Facts: acceptance 3 restores a snapshot of one iPad on a second iPad (D-51). Learned rule 1 of AGENTS.md allows only the connected iPad.
+- Recommendation: the product owner names the second iPad and its UDID.
 
 ## Points in the request that conflict or are not complete
 

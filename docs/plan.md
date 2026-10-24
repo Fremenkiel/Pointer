@@ -174,6 +174,8 @@ Acceptance:
 
 - `BackupFeature`: "Back up now" and restore (D-20). No App Intent (D-14).
 
+Before M9 starts, the product owner decides D-148 to D-161, and an `m9-plan.md` breaks the milestone into tasks. Section 4 of [review-2026-10-24.md](review-2026-10-24.md) lists what the code lacks.
+
 Acceptance:
 
 1. A snapshot from "Back up now" opens with `sqlite3` on a Mac and passes `PRAGMA integrity_check`.
@@ -197,6 +199,7 @@ Acceptance:
   - From the review after M7: a text-box drag and a card drag make 1 to 2 allocations at each sample, from the array of the moved item and from `RenderInbox.reset()`, which drops the capacity of the edit lists. Keep the lists, and post one item without an array (PERF-01).
   - `CanvasRenderer.deliver(upTo:)` and `deliverCompletions(upTo:time:)` copy their arrays at each handoff, because a slice of the array lives during `removeFirst`.
   - Add allocation tests that drive `PencilTouchObserver`, `handlePan`, and `handlePinch` through UIKit events.
+  - From the review after M8: the open items of sections 3.2 to 3.4 of [review-2026-10-24.md](review-2026-10-24.md) that M9 does not take.
   - Read the contract checks of each Tier A and Tier B package by hand. Each package has an average of exactly 2.00 (CONTRACT-02), so remove checks that test nothing.
 
 Acceptance:
