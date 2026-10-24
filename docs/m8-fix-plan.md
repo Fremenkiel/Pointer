@@ -85,6 +85,26 @@ Without stress, the p99 of `testSameSavesWithoutSnapshot` dropped from 8.1 to 8.
 
 The one slow save of the new build is the hard limit (`.build/Runs/F-save-why-1.xcresult`). The saves of the test come back to back, about every 5 ms. Under the stress, one checkpoint takes longer than that, so the checkpointer does not catch up, and the WAL reaches 8,000 pages. The write connection then runs the checkpoint, and that save waits for the sync: 135 ms in one run and 253 ms in the other. The app saves at most once per second, so it does not reach the hard limit this way. Full runs of `PointerDeviceTests` decide whether the test passes under the real load of a full run (section 6).
 
+### 4.5 The end of a snapshot
+
+Five full runs with the change of section 4.3 passed `make check` and 4 runs. Run 1 failed `SnapshotPerformanceTests.testSnapshotOfTwentyThousandStrokesWithSaves` with 54.58 ms, always at the last save of the snapshot run (`.build/Runs/F-full-1.xcresult`). Before the change, that save took 40 to 43 ms, and after it 44 to 55 ms.
+
+A temporary device test split the last saves into phases with the `beforeCommit` hook of the repository and the `beforeRename` hook of the snapshot writer (`.build/Runs/F-snap-diag-1.xcresult`). The last save starts within 1 ms of the end of `VACUUM INTO`. It reaches `COMMIT` at once and then waits 31 to 45 ms. During the snapshot, the WAL grew to 18,000 to 26,000 pages, because `VACUUM INTO` pins it. The first commit after the snapshot ran the hard-limit checkpoint of D-146 on the write connection, which copied the whole backlog and synced it.
+
+The product owner chose to hand the checkpoint off first (D-147). Benchmarks with 5 runs each:
+
+| Rule | Last save of the snapshot run | Slowest save of the control run |
+|---|---|---|
+| D-146 | 44.7 to 45.4 ms | 10.9 to 12.8 ms |
+| Hand off, wait when the checkpointer is busy | 52.0 to 55.3 ms, 5 of 5 failed | 23.2 to 24.2 ms |
+| Hand off, wait when the checkpointer falls behind | 10.5 to 23.0 ms in the diagnosis, 0.9 to 23.9 ms in the test | 1.1 to 27.1 ms |
+
+`.build/Runs/F-handoff-1.xcresult`, `F-handoff-2.xcresult`, and `F-behind-1.xcresult` hold the runs. In the second rule, the checkpointer was busy with the backlog that it had just started, so the save waited for it (own checkpoint 1, busy before yes, in `F-handoff-2.xcresult`).
+
+The one slow save of the control run, 25 to 27 ms at about save 75, is the bound of D-147 working (`.build/Runs/F-early-1.xcresult`). The 20 prefill saves of 1,000 strokes leave the checkpointer busy with a WAL of 7,000 to 9,000 pages, and the first control saves add 1,000 pages during that checkpoint. Under the artificial disk stress, the same save took 98 to 195 ms in 3 of 5 runs.
+
+`RepositoryCheckpointTests` has two more tests: an idle checkpointer gets the checkpoint past the hard limit after a pinned WAL, and a save does not wait for a checkpoint that just started past the hard limit. All 108 Persistence tests pass, and the line coverage of `Persistence` is 90.94 %.
+
 ## 5. The message over the palette
 
 ### 5.1 Cause

@@ -2,6 +2,7 @@ import Foundation
 import Geometry
 import Model
 import Testing
+import os
 
 @testable import Persistence
 
@@ -96,5 +97,73 @@ struct RepositoryCheckpointTests {
         let reader = try harness.reader()
         let count = try reader.integer("SELECT count(*) FROM stroke")
         #expect(count == Int64(saves * Self.strokesPerSave))
+    }
+
+    @Test("An idle checkpointer gets the checkpoint also past the hard limit")
+    func idleCheckpointerTakesTheHardLimit() async throws {
+        let harness = try RepositoryHarness()
+        let repository = try await harness.open()
+        // A read transaction pins the WAL, as a snapshot does, so the WAL passes the hard limit.
+        let reader = try harness.reader()
+        try reader.execute("BEGIN")
+        _ = try reader.integer("SELECT count(*) FROM stroke")
+        _ = try await Self.fill(
+            repository,
+            toPages: SQLiteLibraryRepository.checkpointHardLimitPages
+        )
+        try reader.execute("COMMIT")
+        await repository.waitForCheckpoint()
+        let before = await repository.writeConnectionCheckpoints
+        try await repository.send(Self.strokes(Self.maxSaves))
+        try await repository.saveNow()
+        #expect(await repository.writeConnectionCheckpoints == before)
+        await repository.waitForCheckpoint()
+        try await repository.send(Self.strokes(Self.maxSaves + 1))
+        try await repository.saveNow()
+        #expect(await repository.walPageCount < SQLiteLibraryRepository.checkpointPages)
+    }
+
+    @Test("The write connection checkpoints past the hard limit while the checkpointer is busy")
+    func busyCheckpointerLeavesTheHardLimitToTheWriter() async throws {
+        let harness = try RepositoryHarness()
+        let gate = DispatchSemaphore(value: 0)
+        let repository = harness.make(beforeCheckpoint: { gate.wait() })
+        _ = try await repository.open { _ in }
+        defer { gate.signal() }
+        let limit = SQLiteLibraryRepository.checkpointHardLimitPages
+        _ = try await Self.fill(repository, toPages: limit)
+        #expect(await repository.writeConnectionCheckpoints >= 1)
+        try await repository.send(Self.strokes(Self.maxSaves))
+        try await repository.saveNow()
+        #expect(await repository.walPageCount < limit)
+    }
+
+    @Test("A save does not wait for a checkpoint that just started past the hard limit")
+    func justStartedCheckpointDoesNotBlock() async throws {
+        let harness = try RepositoryHarness()
+        let isBlocked = OSAllocatedUnfairLock(initialState: false)
+        let gate = DispatchSemaphore(value: 0)
+        let repository = harness.make(beforeCheckpoint: {
+            if isBlocked.withLock({ $0 }) { gate.wait() }
+        })
+        _ = try await repository.open { _ in }
+        defer { gate.signal() }
+        let reader = try harness.reader()
+        try reader.execute("BEGIN")
+        _ = try reader.integer("SELECT count(*) FROM stroke")
+        _ = try await Self.fill(
+            repository,
+            toPages: SQLiteLibraryRepository.checkpointHardLimitPages
+        )
+        try reader.execute("COMMIT")
+        await repository.waitForCheckpoint()
+        isBlocked.withLock { $0 = true }
+        // The first save starts a checkpoint that stays busy, as after the end of a snapshot.
+        try await repository.send(Self.strokes(Self.maxSaves))
+        try await repository.saveNow()
+        let before = await repository.writeConnectionCheckpoints
+        try await repository.send(Self.strokes(Self.maxSaves + 1))
+        try await repository.saveNow()
+        #expect(await repository.writeConnectionCheckpoints == before)
     }
 }

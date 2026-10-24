@@ -16,6 +16,8 @@ actor WALCheckpointer {
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Persistence")
     /// The checkpoints that ran without an error.
     private(set) var completed = 0
+    /// A test hook that runs before each checkpoint.
+    private let beforeCheckpoint: (@Sendable () -> Void)?
 
     /// The executor of the checkpointer: its own serial queue.
     nonisolated var unownedExecutor: UnownedSerialExecutor {
@@ -26,15 +28,20 @@ actor WALCheckpointer {
     ///
     /// - Precondition: `path` is not empty.
     /// - Throws: `PersistenceError` if the file does not open.
-    init(path: String) throws(PersistenceError) {
+    init(
+        path: String,
+        beforeCheckpoint: (@Sendable () -> Void)? = nil
+    ) throws(PersistenceError) {
         precondition(!path.isEmpty, "The checkpointer needs a file path")
         connection = try SQLiteConnection(path: path, mode: .readWrite)
+        self.beforeCheckpoint = beforeCheckpoint
     }
 
     /// Runs one passive checkpoint. A failure is only logged: the next save asks again, and the
     /// hard limit of the repository bounds the WAL (D-146).
     func checkpoint() {
         let before = completed
+        beforeCheckpoint?()
         do {
             _ = try connection.checkpointPassive()
             completed += 1

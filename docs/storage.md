@@ -184,8 +184,8 @@ A write never waits for a pause in the input. Thus the data loss after a crash i
 
 The write connection runs no automatic checkpoint, because the commit that passes 1,000 pages of WAL would run the checkpoint and wait for its sync (D-146, <https://sqlite.org/wal.html>). A WAL hook counts the pages of the WAL after each commit:
 
-- At 1,000 pages or more, the repository asks `WALCheckpointer` for a passive checkpoint. The checkpointer owns a second connection on its own serial queue, so the save does not wait.
-- At 8,000 pages or more, the write connection runs the passive checkpoint itself. This bounds the WAL when the checkpointer falls behind, for example when saves come back to back under a heavy disk load. That save waits for the sync.
+- At 1,000 pages or more, the repository asks an idle `WALCheckpointer` for a passive checkpoint, also past 8,000 pages. The checkpointer owns a second connection on its own serial queue, so the save does not wait.
+- The checkpointer falls behind if the WAL grows by 1,000 pages or more while one of its checkpoints runs. Then, at 8,000 pages or more, the write connection waits for the checkpointer and runs a passive checkpoint itself, for at most 2 s. This bounds the WAL, for example when saves come back to back under a heavy disk load. That save waits for the sync (D-147).
 - The next commit after a checkpoint that copied all pages starts the WAL again from the beginning.
 
 If a transaction fails, the repository rolls it back and keeps the rows in the pending set. It logs the error and tries again at the end of the throttle interval of 1 second. This holds also for the write at the move to the background (F-09 of [m4-fix-plan.md](m4-fix-plan.md)). After three failures in a row, the app shows a message and stops new edits until the next save works. It never drops changes in silence.

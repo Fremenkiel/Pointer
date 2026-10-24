@@ -74,6 +74,12 @@ public actor SQLiteLibraryRepository: LibraryRepository {
     var checkpointRequest: Task<Void, Never>?
     /// `false` in a test of the hard limit, which needs a library without a checkpointer.
     let usesCheckpointer: Bool
+    /// A test hook that runs before each checkpoint of the checkpointer.
+    let beforeCheckpoint: (@Sendable () -> Void)?
+    /// The checkpoints that the write connection ran at the hard limit (D-147).
+    var writeConnectionCheckpoints = 0
+    /// The WAL pages when the running checkpoint of the checkpointer started (D-147).
+    var checkpointStartPages = 0
 
     /// The executor of the repository: its own serial queue.
     public nonisolated var unownedExecutor: UnownedSerialExecutor {
@@ -91,7 +97,8 @@ public actor SQLiteLibraryRepository: LibraryRepository {
         onFault: @escaping FaultHandler,
         beforeCommit: (@Sendable () throws(PersistenceError) -> Void)?,
         migrations: [Migration] = Migration.library,
-        usesCheckpointer: Bool = true
+        usesCheckpointer: Bool = true,
+        beforeCheckpoint: (@Sendable () -> Void)? = nil
     ) {
         precondition(!configuration.databasePath.isEmpty, "The library needs a file path")
         precondition(!migrations.isEmpty, "The library needs at least one migration")
@@ -111,6 +118,7 @@ public actor SQLiteLibraryRepository: LibraryRepository {
         self.beforeCommit = beforeCommit
         self.migrations = migrations
         self.usesCheckpointer = usesCheckpointer
+        self.beforeCheckpoint = beforeCheckpoint
     }
 
     /// Opens the library, creates or migrates its schema, and cleans up (storage.md sections 5
@@ -132,7 +140,10 @@ public actor SQLiteLibraryRepository: LibraryRepository {
             if !isReadOnly {
                 connection.trackWALPages()
                 if usesCheckpointer {
-                    checkpointer = try WALCheckpointer(path: configuration.databasePath)
+                    checkpointer = try WALCheckpointer(
+                        path: configuration.databasePath,
+                        beforeCheckpoint: beforeCheckpoint
+                    )
                 }
                 try writeCreationRows(on: connection)
                 try LibraryMaintenance.removeTombstones(

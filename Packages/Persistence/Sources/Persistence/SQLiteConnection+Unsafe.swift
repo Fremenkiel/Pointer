@@ -88,14 +88,25 @@ final class SQLiteConnection {
         )
     }
 
+    /// The outcome of a passive checkpoint.
+    enum CheckpointOutcome: Equatable {
+        /// The checkpoint copied all pages of the WAL.
+        case complete
+        /// The checkpoint copied some pages: a reader holds older pages, or new pages came.
+        case partial
+        /// Another connection runs a checkpoint, so this one did not run.
+        case busy
+    }
+
     /// Runs a passive checkpoint: it copies the pages of the WAL into the database without a wait
     /// for readers or writers, and syncs (<https://sqlite.org/c3ref/wal_checkpoint_v2.html>).
+    /// SQLite gives `SQLITE_BUSY` at once if another connection holds the checkpoint lock, and
+    /// calls no busy handler then.
     ///
     /// - Precondition: The connection can write.
-    /// - Returns: `true` if the checkpoint copied all pages of the WAL, `false` if another
-    ///   checkpoint ran or new pages came during it.
+    /// - Returns: Whether the checkpoint copied all pages, some pages, or did not run.
     /// - Throws: `PersistenceError.sqlite` if the checkpoint fails.
-    func checkpointPassive() throws(PersistenceError) -> Bool {
+    func checkpointPassive() throws(PersistenceError) -> CheckpointOutcome {
         precondition(
             sqlite3_db_readonly(handle, "main") == 0,
             "Only a write connection checkpoints"
@@ -109,11 +120,10 @@ final class SQLiteConnection {
             &logPages,
             &copiedPages
         )
-        // Another connection runs a checkpoint now, which does the same work.
-        guard code != SQLITE_BUSY else { return false }
+        guard code != SQLITE_BUSY else { return .busy }
         try check(code, expected: SQLITE_OK)
         assert(copiedPages <= logPages, "A checkpoint copies at most the WAL")
-        return copiedPages == logPages
+        return copiedPages == logPages ? .complete : .partial
     }
 
     /// Runs SQL without parameters and without result rows, for example a pragma or a schema.
