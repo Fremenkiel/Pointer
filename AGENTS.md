@@ -99,3 +99,4 @@ make coverage    # line coverage of TEST-02, a separate device run (D-120)
 Corrections from the product owner go here as numbered rules (AGENT-06).
 
 1. Run the tests on the connected iPad, never on a simulator, and do not make a simulator (product owner, 2026-10-20). Package tests cannot run on a device, so run the Mac parts of `make check` and all of `PointerDeviceTests` on the iPad. Keep the iPad unlocked during a device run.
+2. Do not ask the product owner to accept a failed test, also one older than the task (product owner, 2026-10-24). Define the behavior that the test expects and the way it fails. Research the cause in reliable sources, benchmark the possible solutions on the iPad, and fix the cause.

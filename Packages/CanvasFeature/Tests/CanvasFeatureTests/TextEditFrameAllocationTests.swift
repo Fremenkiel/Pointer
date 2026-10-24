@@ -8,9 +8,11 @@ import XCTest
 @testable import Rendering
 
 /// A glide frame with an open text edit makes no new text layout (PERF-01). The work of UIKit
-/// to move a view does not count, as the Metal work does not count (D-43), so the test compares
-/// the frames with a bare move of a text view. Before the fix, a frame laid out the text again
-/// and set the frame of the edit view: 73 allocations with 5 characters and 218 with 984.
+/// to move a view does not count, as the Metal work does not count (D-43), so the test counts
+/// each allocation by its caller with `AllocationTracer`. Before the fix, a frame laid out the
+/// text again and set the frame of the edit view: 73 allocations with 5 characters and 218 with
+/// 984. An earlier form compared the largest count with a bare move of a text view, and failed
+/// when UIKit made one extra allocation (m8-fix-plan.md section 3).
 @MainActor
 final class TextEditFrameAllocationTests: XCTestCase {
     /// The frame time of the display at 120 Hz.
@@ -26,7 +28,15 @@ final class TextEditFrameAllocationTests: XCTestCase {
         try checkGlide(text: String(repeating: "let value = items.map { $0 * 2 }\n", count: 24))
     }
 
-    /// Counts the glide frames with an open edit of `text`, and a bare move of a text view.
+    func testTracerCountsAnAllocationOfPointerCode() throws {
+        let result = try XCTUnwrap(
+            AllocationTracer.trace { withExtendedLifetime(Self.makeArray()) {} }
+        )
+        XCTAssertEqual(result.pointer, 1, "The array of the test is a Pointer allocation")
+        XCTAssertEqual(result.unrecorded, 0)
+    }
+
+    /// Counts the allocations of the glide frames with an open edit of `text`.
     private func checkGlide(text: String) throws {
         let canvas = try Self.makeCanvas(text: text)
         let box = try XCTUnwrap(canvas.content.textBoxes.values.first)
@@ -36,30 +46,33 @@ final class TextEditFrameAllocationTests: XCTestCase {
         canvas.cameraController.endPan(velocity: Vector(dx: 3_000, dy: 0))
         var time = CACurrentMediaTime()
         _ = onFrame(time)
-        var counts: [Int] = []
-        while counts.count < Self.maxFrames, canvas.cameraController.isAnimating {
+        var results: [AllocationTracer.Result] = []
+        while results.count < Self.maxFrames, canvas.cameraController.isAnimating {
             time += Self.frameTime
-            counts.append(try XCTUnwrap(AllocationCounter.countMainThread { _ = onFrame(time) }))
+            results.append(try XCTUnwrap(AllocationTracer.trace { _ = onFrame(time) }))
         }
         let corner = canvas.camera.viewPoint(fromCanvas: box.origin, viewSize: canvas.viewSize)
         let frame = canvas.textEditing.view.frame
         XCTAssertEqual(frame.minX, corner.x, accuracy: 1e-6, "The edit view follows the box")
         XCTAssertEqual(frame.minY, corner.y, accuracy: 1e-6, "The edit view follows the box")
-        let bare = UITextView(frame: canvas.textEditing.view.frame)
-        canvas.canvasView.addSubview(bare)
-        var bareCounts: [Int] = []
-        for index in 0..<counts.count {
-            let center = CGPoint(x: Double(index), y: 100)
-            let count = AllocationCounter.countMainThread { bare.center = center }
-            bareCounts.append(try XCTUnwrap(count))
-        }
-        let edit = counts.max() ?? 0
-        let move = bareCounts.max() ?? 0
-        let summary = "\(counts.count) frames, edit frame max \(edit), bare move max \(move)"
+        let pointer = results.map(\.pointer).max() ?? 0
+        let system = results.map(\.system).max() ?? 0
+        let unrecorded = results.map(\.unrecorded).max() ?? 0
+        let summary =
+            "\(results.count) frames, Pointer allocations max \(pointer), system max \(system)"
         XCTContext.runActivity(named: summary) { _ in }
-        XCTAssertGreaterThan(counts.count, 10, summary)
+        XCTAssertGreaterThan(results.count, 10, summary)
         XCTAssertTrue(canvas.textEditing.isEditing, summary)
-        XCTAssertLessThanOrEqual(edit, move, "Pointer code allocated in a glide frame: \(summary)")
+        // The move of the edit view allocates in UIKit, so 0 here means that the trace failed.
+        XCTAssertGreaterThan(system, 0, "The trace saw no allocation: \(summary)")
+        XCTAssertEqual(unrecorded, 0, summary)
+        XCTAssertEqual(pointer, 0, "Pointer code allocated in a glide frame: \(summary)")
+    }
+
+    /// Makes an array on the heap in the code of the test.
+    @inline(never)
+    private static func makeArray() -> [Int] {
+        Array(repeating: 7, count: 64)
     }
 
     /// A shown root canvas of 400 x 300 points at zoom 1, with one box of `text` at the origin.
