@@ -396,7 +396,7 @@ The product owner tested on 2026-10-23 with the iPad Pro 11-inch (M4) and a Mac,
 4. A text with an emoji: "OK"
 5. An empty canvas: "The dialog is shown"
 
-The product owner did not report the name of the PDF on the Mac.
+The product owner did not report the name of the PDF on the Mac at first. On 2026-10-24, the product owner reported: "the filename is okay".
 
 ### 6.7 Close (phase 5)
 

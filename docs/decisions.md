@@ -1499,6 +1499,7 @@ Status values: Open, Decided, Replaced.
   - (b) One fixed name from the String Catalog, for example "Pointer.pdf".
   - (c) Data without a name. The share targets give their own name.
 - Recommendation: (a). The file says what it holds, and the user can still rename it in the share target. `PointerApp` gives the name to the canvas screen through `CanvasDependencies`. Characters that file names do not allow become "-".
+- Addition of task 3.2: a name over 255 UTF-8 bytes, the name limit of APFS, loses characters at its end. The product owner accepted it on 2026-10-24 ("Cut name is okay") and confirmed the name on the Mac ("the filename is okay").
 
 ### D-144 A budget for the time and the memory of an export
 
@@ -1550,6 +1551,7 @@ Status values: Open, Decided, Replaced.
 - Facts: during a snapshot, `VACUUM INTO` pins the WAL, so no checkpoint can restart it. The back-to-back saves of `SnapshotPerformanceTests` grew the WAL to 18,000 to 26,000 pages. With D-146, the first commit after the snapshot ran the hard-limit checkpoint on the write connection, which copied the backlog of about 100 MB and synced it: 31 to 55 ms in that save, against the budget of 50 ms. The old automatic checkpoint did the same, at 30 to 42 ms. In the app, a snapshot starts only when the app is idle with no pending rows (section 7.2 of storage.md).
 - Options: (a) hand off first: an idle checkpointer gets the checkpoint also past the hard limit, and the write connection checkpoints itself only when the checkpointer falls behind. (b) Pace the saves of the test. (c) Raise the hard limit to 32,000 pages.
 - Decision: (a). A first form took "the checkpointer is busy" as falling behind. The checkpointer was then busy with the backlog that it had just started, and the save waited for it: 52 to 55 ms in 5 of 5 runs. The final rule: the checkpointer falls behind if the WAL grows by 1,000 pages or more while one of its checkpoints runs. Only then, from 8,000 pages, the write connection waits for it, for at most 2 s, because SQLite gives `SQLITE_BUSY` at once to a second checkpoint and calls no busy handler (<https://sqlite.org/c3ref/wal_checkpoint_v2.html>).
+- The product owner accepted this meaning of "falls behind" on 2026-10-24 ("falls behind it okay").
 
 ## Points in the request that conflict or are not complete
 
