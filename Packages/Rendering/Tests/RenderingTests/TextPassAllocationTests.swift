@@ -9,6 +9,9 @@ import XCTest
 /// draw (PERF-01, D-43, task 2.2 of docs/m5-plan.md).
 @MainActor
 final class TextPassAllocationTests: XCTestCase {
+    /// The bytes of the zero buffer of the bare pass, more than one quad and its uniforms.
+    private static let zeroBytes = 256
+
     /// A text encoder with one box of 200 characters, and a target at zoom 1.
     private struct Rig {
         let encoder: TextEncoder
@@ -56,6 +59,9 @@ final class TextPassAllocationTests: XCTestCase {
         let texture = target.texture
         var ours: [Int] = []
         var bare: [Int] = []
+        // The bare pass binds zeros for the quads and the uniforms, so that API validation
+        // passes. A draw with no bound buffer reads memory that the test does not own.
+        let zeros = try XCTUnwrap(resources.device.makeBuffer(length: Self.zeroBytes))
         for frame in 1...20 {
             let buffer = try XCTUnwrap(resources.queue.makeCommandBuffer())
             let context = FrameContext(commandBuffer: buffer, frame: UInt64(frame))
@@ -73,23 +79,37 @@ final class TextPassAllocationTests: XCTestCase {
             if frame > 1, let count { ours.append(count) }
             buffer.commit()
             buffer.waitUntilCompleted()
-            let other = try XCTUnwrap(resources.queue.makeCommandBuffer())
-            let pass = MTLRenderPassDescriptor()
-            pass.colorAttachments[0].texture = texture
-            pass.colorAttachments[0].loadAction = .load
-            let bareCount = AllocationCounter.countMainThread {
-                guard let made = other.makeRenderCommandEncoder(descriptor: pass) else { return }
-                made.setRenderPipelineState(resources.glyphPipeline)
-                made.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
-                made.endEncoding()
+            if let bareCount = try barePass(resources, texture: texture, zeros: zeros) {
+                bare.append(bareCount)
             }
-            if let bareCount { bare.append(bareCount) }
-            other.commit()
-            other.waitUntilCompleted()
         }
         let median = { (values: [Int]) in values.sorted()[values.count / 2] }
         let line = "text pass allocations p50 \(median(ours)), bare pass p50 \(median(bare))"
         XCTContext.runActivity(named: line) { _ in }
         XCTAssertLessThanOrEqual(median(ours), median(bare), line)
+    }
+
+    /// A render pass with the one draw of the text pass, and its allocation count.
+    private func barePass(
+        _ resources: InkResources,
+        texture: any MTLTexture,
+        zeros: any MTLBuffer
+    ) throws -> Int? {
+        let other = try XCTUnwrap(resources.queue.makeCommandBuffer())
+        let pass = MTLRenderPassDescriptor()
+        pass.colorAttachments[0].texture = texture
+        pass.colorAttachments[0].loadAction = .load
+        let count = AllocationCounter.countMainThread {
+            guard let made = other.makeRenderCommandEncoder(descriptor: pass) else { return }
+            made.setRenderPipelineState(resources.glyphPipeline)
+            made.setVertexBuffer(zeros, offset: 0, index: 0)
+            made.setVertexBuffer(zeros, offset: 0, index: 1)
+            made.setFragmentBuffer(zeros, offset: 0, index: 1)
+            made.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+            made.endEncoding()
+        }
+        other.commit()
+        other.waitUntilCompleted()
+        return count
     }
 }

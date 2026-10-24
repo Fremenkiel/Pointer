@@ -9,6 +9,9 @@ import XCTest
 /// bare render pass with the same draws (PERF-01, D-43, m6-plan.md task 3.3).
 @MainActor
 final class PreviewAllocationTests: XCTestCase {
+    /// The bytes of the zero buffer of the bare pass, more than one quad and its uniforms.
+    private static let zeroBytes = 256
+
     private struct Rig {
         let encoder: TextEncoder
         let target: InkTarget
@@ -99,8 +102,15 @@ final class PreviewAllocationTests: XCTestCase {
         let pass = MTLRenderPassDescriptor()
         pass.colorAttachments[0].texture = rig.target.texture
         pass.colorAttachments[0].loadAction = .load
+        // Zeros for the quads and the uniforms, so that API validation passes. A draw with no
+        // bound buffer reads memory that the test does not own.
+        let zeros = try XCTUnwrap(rig.resources.device.makeBuffer(length: Self.zeroBytes))
         let count = AllocationCounter.countMainThread {
             guard let made = other.makeRenderCommandEncoder(descriptor: pass) else { return }
+            made.setVertexBuffer(zeros, offset: 0, index: 0)
+            made.setVertexBuffer(zeros, offset: 0, index: 1)
+            made.setFragmentBuffer(zeros, offset: 0, index: 0)
+            made.setFragmentBuffer(zeros, offset: 0, index: 1)
             made.setRenderPipelineState(rig.resources.cardBorderPipeline)
             made.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
             made.setRenderPipelineState(rig.resources.glyphPipeline)
