@@ -68,7 +68,7 @@ enum StrokeRow {
             throw reader.corrupt("point count \(storedCount)")
         }
         let points = try reader.inkPoints(count: count)
-        return Stroke(
+        let stroke = Stroke(
             id: id,
             canvasID: canvasID,
             created: created,
@@ -76,5 +76,7 @@ enum StrokeRow {
             width: width,
             points: points
         )
+        try reader.checkGridBound(stroke.bounds)
+        return stroke
     }
 }

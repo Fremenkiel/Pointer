@@ -1,4 +1,5 @@
 import Foundation
+import Geometry
 import Model
 
 /// Reads the columns of the current row of a statement in order, from column 0.
@@ -129,6 +130,22 @@ struct RowReader {
         let isFinite = points.allSatisfy { $0.x.isFinite && $0.y.isFinite }
         guard isFinite else { throw corrupt("point is not finite") }
         return InkPoints(points)
+    }
+
+    /// Refuses an item whose bounds are not finite or touch more than
+    /// `Limits.maxGridCellsPerItem` grid cells, as a damaged row (D-158). Without the check, an
+    /// item 10,000,000 points wide made the grid of the renderer visit 381 million cells.
+    ///
+    /// - Throws: `PersistenceError.corruptRow` for bounds past the limit.
+    func checkGridBound(_ bounds: Rect) throws(PersistenceError) {
+        let size = bounds.size
+        guard bounds.origin.isFinite, size.width.isFinite, size.height.isFinite else {
+            throw corrupt("bounds are not finite")
+        }
+        let cells = GridCell.count(covering: bounds, cellSize: Limits.gridCellSize)
+        guard cells <= Limits.maxGridCellsPerItem else {
+            throw corrupt("bounds touch \(cells) grid cells")
+        }
     }
 
     /// Returns the error for a row of this table.

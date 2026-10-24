@@ -12,7 +12,7 @@ struct SpatialGridTests {
 
     @Test("A query finds the items that touch the rectangle, each one once")
     func query() {
-        var grid = SpatialGrid<Int>(cellSize: 512)
+        var grid = SpatialGrid<Int>(cellSize: 512, maxCellsPerItem: 4_096)
         grid.insert(1, bounds: Rect(minX: 0, minY: 0, maxX: 10, maxY: 10))
         grid.insert(2, bounds: Rect(minX: -600, minY: 100, maxX: 1500, maxY: 120))
         grid.insert(3, bounds: Rect(minX: 5000, minY: 5000, maxX: 5010, maxY: 5010))
@@ -27,7 +27,7 @@ struct SpatialGridTests {
 
     @Test("A query larger than the occupied cells gives the same result")
     func largeQuery() {
-        var grid = SpatialGrid<Int>(cellSize: 512)
+        var grid = SpatialGrid<Int>(cellSize: 512, maxCellsPerItem: 4_096)
         grid.insert(1, bounds: Rect(minX: 0, minY: 0, maxX: 2000, maxY: 10))
         grid.insert(
             2,
@@ -39,7 +39,7 @@ struct SpatialGridTests {
 
     @Test("A removed item is not found, and its cells are freed")
     func remove() {
-        var grid = SpatialGrid<Int>(cellSize: 512)
+        var grid = SpatialGrid<Int>(cellSize: 512, maxCellsPerItem: 4_096)
         grid.insert(1, bounds: Rect(minX: 0, minY: 0, maxX: 1100, maxY: 10))
         grid.insert(2, bounds: Rect(minX: 0, minY: 0, maxX: 10, maxY: 10))
         #expect(grid.count == 2)
@@ -56,7 +56,7 @@ struct SpatialGridTests {
 
     @Test("Negative coordinates land in negative cells")
     func negativeCells() {
-        let grid = SpatialGrid<Int>(cellSize: 512)
+        let grid = SpatialGrid<Int>(cellSize: 512, maxCellsPerItem: 4_096)
         #expect(grid.cell(containing: Point(x: -1, y: 511.9)) == GridCell(column: -1, row: 0))
         #expect(
             grid.cell(containing: Point(x: 1e300, y: -1e300)).column
@@ -69,7 +69,7 @@ struct SpatialGridTests {
 struct SpatialGridReserveTests {
     @Test("A reserve keeps the grid empty and lets the items in", arguments: [0, 1, 5_000])
     func reserve(count: Int) {
-        var grid = SpatialGrid<Int>(cellSize: 512)
+        var grid = SpatialGrid<Int>(cellSize: 512, maxCellsPerItem: 4_096)
         grid.reserveCapacity(count)
         #expect(grid.count == 0)
         for id in 0..<count {

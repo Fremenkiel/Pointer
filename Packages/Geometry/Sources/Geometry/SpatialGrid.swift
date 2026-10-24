@@ -18,8 +18,11 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
 
     /// The side length of a cell, in canvas points.
     public let cellSize: Double
+    /// The most cells that one item can touch. It bounds the loops of `insert` and `remove`
+    /// (FLOW-03, D-158).
+    public let maxCellsPerItem: Int
     /// The largest cell coordinate. Coordinates further out land in the edge cells.
-    public static var maxCellCoordinate: Int { 1 << 30 }
+    public static var maxCellCoordinate: Int { GridCell.maxCoordinate }
 
     // The removal is inlinable, so that a caller in another module gets code for its own ID
     // type. Unspecialized, 2,000 removals took 72 ms on the Mac (M4 task 3.8).
@@ -28,13 +31,15 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
 
     /// Makes an empty grid.
     ///
-    /// - Precondition: `cellSize` is greater than zero.
-    public init(cellSize: Double) {
+    /// - Precondition: `cellSize` and `maxCellsPerItem` are greater than zero.
+    public init(cellSize: Double, maxCellsPerItem: Int) {
         precondition(
             cellSize > 0 && cellSize.isFinite,
             "Grid cell size must be positive, got \(cellSize)"
         )
+        precondition(maxCellsPerItem > 0, "A grid item touches a cell, got \(maxCellsPerItem)")
         self.cellSize = cellSize
+        self.maxCellsPerItem = maxCellsPerItem
     }
 
     /// The number of items in the grid.
@@ -57,13 +62,18 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
 
     /// Adds an item.
     ///
-    /// - Precondition: The grid does not hold `id`, and `bounds` is finite.
+    /// - Precondition: The grid does not hold `id`, `bounds` is finite, and `bounds` touches
+    ///   at most `maxCellsPerItem` cells.
     @inlinable
     public mutating func insert(_ id: ID, bounds: Rect) {
         precondition(boundsByID[id] == nil, "Grid already holds \(id)")
         precondition(bounds.origin.isFinite, "Grid bounds of \(id) are not finite")
-        boundsByID[id] = bounds
         let range = cellRange(for: bounds)
+        precondition(
+            range.cellCount <= maxCellsPerItem,
+            "Grid item \(id) touches \(range.cellCount) cells, more than \(maxCellsPerItem)"
+        )
+        boundsByID[id] = bounds
         assert(range.cellCount >= 1, "Bounds of \(id) cover no cell")
         let entry = Entry(id: id, bounds: bounds)
         for row in range.rows {
@@ -87,6 +97,7 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     public mutating func remove(_ id: ID) -> Bool {
         guard let bounds = boundsByID.removeValue(forKey: id) else { return false }
         let range = cellRange(for: bounds)
+        precondition(range.cellCount <= maxCellsPerItem, "Grid item \(id) has too many cells")
         for row in range.rows {
             for column in range.columns {
                 removeEntry(id, from: GridCell(column: column, row: row))
@@ -168,9 +179,7 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
 
     @inlinable
     func coordinate(_ value: Double) -> Int {
-        let limit = Double(Self.maxCellCoordinate)
-        let scaled = (value / cellSize).rounded(.down)
-        return Int(min(max(scaled, -limit), limit))
+        GridCell.coordinate(value, cellSize: cellSize)
     }
 
     @inlinable

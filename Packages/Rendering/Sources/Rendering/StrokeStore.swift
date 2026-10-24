@@ -9,7 +9,7 @@ import os
 /// points in again from `InkPoints`.
 final class StrokeStore {
     /// The side length of a grid cell, in canvas points (architecture.md 5.6).
-    static let gridCellSize = 512.0
+    static let gridCellSize = Limits.gridCellSize
     /// A stroke that a frame drew stays in the arena for this many frames, because the GPU can
     /// still read it. The draw-list ring lets at most this many frames wait for the GPU.
     static let framesInFlight = UInt64(DrawListRing.bufferCount)
@@ -42,7 +42,10 @@ final class StrokeStore {
     static let releasedPoints = InkPoints([
         InkPoint(x: 0, y: 0, force: 0, time: 0), InkPoint(x: 0, y: 0, force: 0, time: 0),
     ])
-    private(set) var grid = SpatialGrid<Int>(cellSize: gridCellSize)
+    private(set) var grid = SpatialGrid<Int>(
+        cellSize: gridCellSize,
+        maxCellsPerItem: Limits.maxGridCellsPerItem
+    )
     /// The slots of the strokes with an arena block, in no order. The clock sweep walks it.
     private var residentSlots: [Int] = []
     /// The position of the clock hand in `residentSlots`.

@@ -24,7 +24,10 @@ final class TextStore {
 
     private(set) var entries: [TextBoxID: Entry] = [:]
     /// The grid of the text boxes, with the cell size of the strokes (architecture.md 5.6).
-    private(set) var grid = SpatialGrid<TextBoxID>(cellSize: StrokeStore.gridCellSize)
+    private(set) var grid = SpatialGrid<TextBoxID>(
+        cellSize: StrokeStore.gridCellSize,
+        maxCellsPerItem: Limits.maxGridCellsPerItem
+    )
 
     /// The number of text boxes.
     var count: Int { entries.count }

@@ -68,6 +68,7 @@ enum CardRow {
         let title = try reader.optionalString()
         let sortKey = try reader.sortKey()
         let meta = try reader.meta()
+        try reader.checkGridBound(frame)
         return try reader.make { () throws(ModelError) in
             try Card(
                 id: id,

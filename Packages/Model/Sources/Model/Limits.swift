@@ -39,6 +39,25 @@ public enum Limits {
     /// curve continues without a gap (architecture.md 4.2).
     public static let strokeOverlapPoints = 3
 
+    /// The side length of a cell of the grids of the strokes, the text boxes, and the cards of a
+    /// canvas, in canvas points (architecture.md 5.6).
+    public static let gridCellSize = 512.0
+    /// The most cells of `gridCellSize` that one item of a canvas can touch. It bounds the loops
+    /// of the grids, and a load refuses a larger item as a damaged row (FLOW-03, D-158).
+    ///
+    /// The largest items that the app can make:
+    /// - A text box of `maxTextLength` line breaks: 10,001 lines of 20.02 points (SF Mono at
+    ///   17 points, measured on the Mac), about 200,200 points high, at most 393 rows. At
+    ///   `TextStyle.maxWidth` (640 points), at most 3 columns: at most 1,179 cells.
+    /// - A stroke of `maxPointsPerStroke` points drawn across the 13-inch screen (1,376 by
+    ///   1,032 points) at `minZoom`: 5,504 by 4,128 canvas points, at most 12 by 10 cells.
+    /// - A card of `Card.defaultSize` (320 by 224 points), which keeps its size (D-102): 4 cells.
+    ///
+    /// The bound is about 3.5 times the text box. An insert of 4,096 cells takes microseconds.
+    /// An item 10,000,000 points wide touched 381 million cells and took 96 s on the Mac
+    /// (review of 2026-10-24, section 3.1, item 2).
+    public static let maxGridCellsPerItem = 4_096
+
     /// The allowed camera zoom range.
     public static var zoomRange: ClosedRange<Double> { minZoom...maxZoom }
 }

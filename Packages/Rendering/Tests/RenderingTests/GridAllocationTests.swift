@@ -7,7 +7,7 @@ import XCTest
 /// main thread, so the count takes the main thread only: other tests run at the same time.
 final class GridAllocationTests: XCTestCase {
     func testThousandRemovalsMakeNoAllocation() throws {
-        var grid = SpatialGrid<Int>(cellSize: 512)
+        var grid = SpatialGrid<Int>(cellSize: 512, maxCellsPerItem: 4_096)
         for index in 0..<20_000 {
             let x = Double(index % 200) * 40 - 4_000
             let y = Double(index / 200) * 40 - 2_000

@@ -415,6 +415,8 @@ All limits live in one type, `Limits`, in `Model`. Code uses the names, never th
 | `maxHistoryPointsInSessions` | 16,000,000 | Control points in the histories of all sessions, about 270 MB (D-76). |
 | `strokeOverlapPoints` | 3 | Control points that two neighbor strokes of one long path share, so that the curve continues without a gap (section 4.2). |
 | `minZoom`, `maxZoom`, `standardZoom` | 0.25, 8.0, 1.0 | Camera (CAN-04). |
+| `gridCellSize` | 512 | The side of a cell of the grids of strokes, text boxes, and cards, in canvas points (section 5.6). |
+| `maxGridCellsPerItem` | 4,096 | The most grid cells that one item can touch. It bounds the loops of `SpatialGrid.insert` and `remove` (FLOW-03). The load refuses a stroke or a card past it as a damaged row (D-158). The largest item that the app can make is a text box of 10,000 line breaks, at most 1,179 cells. A text box needs no check at the load, because its text length and `TextStyle.maxWidth` bound its size. |
 
 The split of an erase has two bounds of its own in `Eraser`, because only the split uses them: `minimumChunk` (64), the fewest candidates of one thread, and `maxChunks` (8), the most threads. The iPad Pro (M4) has 4 performance cores.
 

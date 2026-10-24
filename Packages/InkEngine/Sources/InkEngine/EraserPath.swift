@@ -43,7 +43,10 @@ public struct EraserPath: Sendable {
                 .expanded(by: radius)
         }
         bounds = Rect.bounding(samples).expanded(by: radius)
-        var grid = SpatialGrid<Int>(cellSize: radius * Self.cellSizeInRadii)
+        var grid = SpatialGrid<Int>(
+            cellSize: radius * Self.cellSizeInRadii,
+            maxCellsPerItem: Limits.maxGridCellsPerItem
+        )
         for (index, bounds) in bandBounds.enumerated() {
             grid.insert(index, bounds: bounds)
         }

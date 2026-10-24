@@ -32,7 +32,10 @@ final class CardStore {
 
     private(set) var entries: [CardID: Entry] = [:]
     /// The grid of the cards, with the cell size of the strokes (architecture.md 5.6).
-    private(set) var grid = SpatialGrid<CardID>(cellSize: StrokeStore.gridCellSize)
+    private(set) var grid = SpatialGrid<CardID>(
+        cellSize: StrokeStore.gridCellSize,
+        maxCellsPerItem: Limits.maxGridCellsPerItem
+    )
 
     /// The loads whose title layouts still run off the render thread (D-92).
     var loadsInFlight = 0
