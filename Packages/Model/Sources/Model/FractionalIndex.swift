@@ -20,7 +20,8 @@ public struct FractionalIndex: Hashable, Comparable, Sendable {
     /// - Throws: `ModelError.invalidSortKey` if the key is empty, is longer than
     ///   `Limits.maxSortKeyLength`, has a character that is not a base-62 digit, or ends with "0".
     public init(rawValue: String) throws(ModelError) {
-        let bytes = Array(rawValue.utf8)
+        // The view needs no copy of the bytes, which a load of 10,000 nodes made 10,000 times.
+        let bytes = rawValue.utf8
         guard !bytes.isEmpty, bytes.count <= Limits.maxSortKeyLength else {
             throw .invalidSortKey(reason: "length \(bytes.count)")
         }
