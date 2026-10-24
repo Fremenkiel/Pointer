@@ -17,6 +17,8 @@ enum ValueCodec {
     private static let hexDigitsPerByte = 2
 
     /// Returns the 28-byte big-endian form of `timestamp`. The byte order equals the clock order.
+    ///
+    /// - Precondition: The wall time fits into 48 bits, as each value of `HybridClock` does.
     static func data(_ timestamp: HybridTimestamp) -> Data {
         var data = Data(capacity: timestampByteCount)
         appendBigEndian(timestamp.wallMillis, byteCount: wallByteCount, to: &data)
@@ -37,6 +39,10 @@ enum ValueCodec {
         let bytes = Array(data)
         let counterEnd = wallByteCount + counterByteCount
         let wall = bigEndian(bytes[0..<wallByteCount])
+        // A larger time stops the clock at its first value, because it passes 48 bits (D-170).
+        guard wall <= UUIDVersion7.maxMillis else {
+            throw .corruptValue(reason: "clock time \(wall) past 48 bits")
+        }
         let counter = UInt32(truncatingIfNeeded: bigEndian(bytes[wallByteCount..<counterEnd]))
         let device = DeviceID(rawValue: try uuid(Data(bytes[counterEnd...])))
         return HybridTimestamp(wallMillis: wall, counter: counter, device: device)

@@ -76,7 +76,7 @@ enum StrokeRow {
             width: width,
             points: points
         )
-        try reader.checkGridBound(stroke.bounds)
+        try reader.checkBounds(stroke.bounds)
         return stroke
     }
 }

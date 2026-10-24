@@ -54,6 +54,13 @@ struct HybridClockTests {
         #expect(clock.last.wallMillis == 6)
     }
 
+    @Test("A wall time past 48 bits gives the largest time that a UUID holds (D-170)")
+    func wallPastClockBound() {
+        var clock = HybridClock(device: Fixtures.device, wallClock: FixedWallClock(millis: .max))
+        #expect(clock.now().wallMillis == UUIDVersion7.maxMillis)
+        #expect(clock.now().counter == 1)
+    }
+
     @Test("Timestamps compare by wall time, counter, then device")
     func comparison() {
         let other = DeviceID(rawValue: UUID(uuid: (9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)))

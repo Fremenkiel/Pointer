@@ -48,6 +48,8 @@ enum TextBoxRow {
         let id: TextBoxID = try reader.identifier()
         let canvasID: CanvasID = try reader.identifier()
         let origin = Point(x: try reader.double(), y: try reader.double())
+        // The text length and `TextStyle.maxWidth` bound the size, so the origin is enough.
+        try reader.checkBounds(Rect(origin: origin, size: .zero))
         let text = try reader.string()
         let sortKey = try reader.sortKey()
         let meta = try reader.meta()

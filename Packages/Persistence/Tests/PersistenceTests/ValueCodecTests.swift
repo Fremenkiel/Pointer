@@ -11,7 +11,11 @@ struct ValueCodecTests {
         arguments: [
             HybridTimestamp(wallMillis: 0, counter: 0, device: Values.device),
             Values.early,
-            HybridTimestamp(wallMillis: .max, counter: .max, device: Values.device),
+            HybridTimestamp(
+                wallMillis: UUIDVersion7.maxMillis,
+                counter: .max,
+                device: Values.device
+            ),
         ]
     )
     func timestampRoundTrip(timestamp: HybridTimestamp) throws {
@@ -23,12 +27,12 @@ struct ValueCodecTests {
     @Test("The 28 bytes are big-endian wall time, counter, and device")
     func timestampLayout() {
         let timestamp = HybridTimestamp(
-            wallMillis: 0x0102_0304_0506_0708,
+            wallMillis: 0x0000_0304_0506_0708,
             counter: 0x0A0B_0C0D,
             device: Values.device
         )
         let expected = Data(
-            [1, 2, 3, 4, 5, 6, 7, 8, 0x0A, 0x0B, 0x0C, 0x0D, 1] + Array(repeating: 0, count: 15)
+            [0, 0, 3, 4, 5, 6, 7, 8, 0x0A, 0x0B, 0x0C, 0x0D, 1] + Array(repeating: 0, count: 15)
         )
         #expect(ValueCodec.data(timestamp) == expected)
     }
@@ -53,6 +57,19 @@ struct ValueCodecTests {
     func timestampLength(count: Int) {
         #expect(throws: PersistenceError.corruptValue(reason: "clock value of \(count) bytes")) {
             try ValueCodec.timestamp(Data(count: count))
+        }
+    }
+
+    @Test(
+        "A clock time past 48 bits throws, because the clock cannot continue it (D-170)",
+        arguments: [UUIDVersion7.maxMillis + 1, .max]
+    )
+    func timestampPastClockBound(wall: UInt64) {
+        // The encoder makes no such value, so the test writes the big-endian bytes itself.
+        let wallBytes = (0..<8).reversed().map { UInt8(truncatingIfNeeded: wall >> ($0 * 8)) }
+        let data = Data(wallBytes + [0, 0, 0, 0]) + ValueCodec.data(Values.device)
+        #expect(throws: PersistenceError.corruptValue(reason: "clock time \(wall) past 48 bits")) {
+            try ValueCodec.timestamp(data)
         }
     }
 

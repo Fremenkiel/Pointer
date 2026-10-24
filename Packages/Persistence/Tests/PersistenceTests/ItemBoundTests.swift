@@ -64,6 +64,55 @@ struct ItemBoundTests {
         await repository.close()
     }
 
+    @Test("A card whose title reaches past the grid bound is one skipped row (D-170)")
+    func cardTitlePastBound() async throws {
+        let harness = try RepositoryHarness()
+        let repository = try await harness.open()
+        try await repository.send([.card(try Values.card(3))])
+        try await repository.saveNow()
+        // The frame touches 4,096 cells, and the renderer adds the title and a margin.
+        let writer = try SQLiteConnection(path: harness.path, mode: .readWrite)
+        try writer.execute("UPDATE card SET x = 1, y = 1, width = 32760, height = 32760")
+        let content = try await repository.content(of: Values.canvas)
+        try #require(content.cards.isEmpty)
+        var faults = harness.faults.makeAsyncIterator()
+        #expect(await faults.next() == .rowsSkipped(table: "card", count: 1))
+        await repository.close()
+    }
+
+    @Test(
+        "A stroke inside the canvas bound loads, and one past it is skipped (D-170)",
+        arguments: [(Limits.maxCanvasCoordinate - 20, true), (Limits.maxCanvasCoordinate, false)]
+    )
+    func strokeAtCanvasBound(x: Double, loads: Bool) async throws {
+        let harness = try RepositoryHarness()
+        let repository = try await harness.open()
+        try await repository.send([.stroke(Self.stroke(4, offset: 10))])
+        try await repository.saveNow()
+        let writer = try SQLiteConnection(path: harness.path, mode: .readWrite)
+        let update = try writer.prepare("UPDATE stroke SET origin_x = ?")
+        try update.bind(x, at: 1)
+        try LibraryStatements.run(update)
+        let content = try await repository.content(of: Values.canvas)
+        #expect((content.strokes.count == 1) == loads)
+        await repository.close()
+    }
+
+    @Test("A text box past the canvas bound is one skipped row (D-170)")
+    func textBoxPastCanvasBound() async throws {
+        let harness = try RepositoryHarness()
+        let repository = try await harness.open()
+        try await repository.send([.textBox(try Values.textBox(5))])
+        try await repository.saveNow()
+        let writer = try SQLiteConnection(path: harness.path, mode: .readWrite)
+        try writer.execute("UPDATE text_box SET y = -1e308")
+        let content = try await repository.content(of: Values.canvas)
+        try #require(content.textBoxes.isEmpty)
+        var faults = harness.faults.makeAsyncIterator()
+        #expect(await faults.next() == .rowsSkipped(table: "text_box", count: 1))
+        await repository.close()
+    }
+
     /// A stroke at (10, 10) from its origin to `offset` points to the right.
     private static func stroke(_ byte: UInt8, offset: Float) -> Stroke {
         Stroke(

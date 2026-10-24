@@ -132,16 +132,21 @@ struct RowReader {
         return InkPoints(points)
     }
 
-    /// Refuses an item whose bounds are not finite or touch more than
-    /// `Limits.maxGridCellsPerItem` grid cells, as a damaged row (D-158). Without the check, an
-    /// item 10,000,000 points wide made the grid of the renderer visit 381 million cells.
+    /// Refuses an item whose bounds are not finite, reach past `Limits.maxCanvasCoordinate`, or
+    /// touch more than `Limits.maxGridCellsPerItem` grid cells, as a damaged row (D-158, D-170).
+    /// Without the check, an item 10,000,000 points wide made the grid of the renderer visit 381
+    /// million cells.
     ///
-    /// - Throws: `PersistenceError.corruptRow` for bounds past the limit.
-    func checkGridBound(_ bounds: Rect) throws(PersistenceError) {
+    /// - Throws: `PersistenceError.corruptRow` for bounds past a limit.
+    func checkBounds(_ bounds: Rect) throws(PersistenceError) {
         let size = bounds.size
         guard bounds.origin.isFinite, size.width.isFinite, size.height.isFinite else {
             throw corrupt("bounds are not finite")
         }
+        let limit = Limits.maxCanvasCoordinate
+        guard bounds.minX >= -limit, bounds.minY >= -limit, bounds.maxX <= limit,
+            bounds.maxY <= limit
+        else { throw corrupt("bounds reach past the canvas bound") }
         let cells = GridCell.count(covering: bounds, cellSize: Limits.gridCellSize)
         guard cells <= Limits.maxGridCellsPerItem else {
             throw corrupt("bounds touch \(cells) grid cells")

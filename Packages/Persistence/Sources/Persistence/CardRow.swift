@@ -68,7 +68,8 @@ enum CardRow {
         let title = try reader.optionalString()
         let sortKey = try reader.sortKey()
         let meta = try reader.meta()
-        try reader.checkGridBound(frame)
+        // The renderer holds the card with its title in its grid (D-170).
+        try reader.checkBounds(frame.expanded(by: Limits.cardTitleReach))
         return try reader.make { () throws(ModelError) in
             try Card(
                 id: id,

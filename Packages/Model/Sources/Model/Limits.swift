@@ -58,6 +58,22 @@ public enum Limits {
     /// (review of 2026-10-24, section 3.1, item 2).
     public static let maxGridCellsPerItem = 4_096
 
+    /// The largest absolute canvas coordinate of an item, in canvas points. A load refuses an
+    /// item past it as a damaged row, so that sizes and the bounds of a PDF page stay finite: two
+    /// strokes at x = -1e308 and x = 1e308 made a page width of infinity (D-170). The pen cannot
+    /// reach it, because the camera stops at `maxCameraCoordinate`.
+    public static let maxCanvasCoordinate = 1_000_000_000.0
+    /// The largest absolute coordinate of the camera center, half of `maxCanvasCoordinate`. Each
+    /// item that the pen or a drag makes on the screen thus stays inside the canvas bound
+    /// (D-170).
+    public static let maxCameraCoordinate = maxCanvasCoordinate / 2
+    /// How far the title of a card and the margin of its bounds reach past its frame, in canvas
+    /// points. A title of `maxTitleLength` line breaks has 121 lines of 20.02 points, about
+    /// 2,422 points, above the frame, and a title is at most `TextStyle.maxWidth` wide. A load
+    /// checks the frame with this reach, because the grid of the renderer holds the card with
+    /// its title (D-170).
+    public static let cardTitleReach = 4_096.0
+
     /// The allowed camera zoom range.
     public static var zoomRange: ClosedRange<Double> { minZoom...maxZoom }
 }

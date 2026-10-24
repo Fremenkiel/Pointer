@@ -11,10 +11,15 @@ public struct HybridClock: Sendable {
 
     /// Makes a clock that continues after `last`.
     ///
-    /// - Precondition: `last` belongs to `device`.
+    /// - Precondition: `last` belongs to `device`, and its time fits into the 48 bits of
+    ///   `UUIDVersion7.maxMillis`. The library refuses a larger stored time (D-170).
     public init(device: DeviceID, wallClock: any WallClock, last: HybridTimestamp? = nil) {
         let start = last ?? HybridTimestamp(wallMillis: 0, counter: 0, device: device)
         precondition(start.device == device, "Clock of \(device) cannot continue \(start.device)")
+        precondition(
+            start.wallMillis <= UUIDVersion7.maxMillis,
+            "Clock time \(start.wallMillis) does not fit into 48 bits"
+        )
         self.device = device
         self.wallClock = wallClock
         self.last = start
@@ -22,7 +27,7 @@ public struct HybridClock: Sendable {
 
     /// Returns a new value that is greater than each value before it.
     public mutating func now() -> HybridTimestamp {
-        let wall = wallClock.nowMillis()
+        let wall = min(wallClock.nowMillis(), UUIDVersion7.maxMillis)
         let next: HybridTimestamp
         if wall > last.wallMillis {
             next = HybridTimestamp(wallMillis: wall, counter: 0, device: device)
