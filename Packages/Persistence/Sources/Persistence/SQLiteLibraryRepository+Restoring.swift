@@ -22,24 +22,27 @@ extension SQLiteLibraryRepository {
     /// new composition, which runs the migrations of an older snapshot.
     ///
     /// A closed library takes a restore too, for example after an open that failed on the
-    /// restored file: the restore then opens its own connection (task 2.2, item 4).
+    /// restored file: the restore then opens its own connection (task 2.2, item 4). A read-only
+    /// library of a newer schema takes it with a connection that writes (D-168).
     ///
-    /// - Precondition: No row waits for a save, and the library is not read-only.
+    /// - Precondition: No row waits for a save.
     /// - Throws: `PersistenceError.restoreStopped` after a stop, `.diskFull` for a full disk,
-    ///   and `.sqlite` for another fault. A stop and a fault roll the copy back, so the library
-    ///   keeps its old content.
+    ///   and `.sqlite` for another fault. A stop and a fault before the end of the copy roll it
+    ///   back, so the library keeps its old content. After the end of the copy, the library
+    ///   holds the snapshot, and a failed checkpoint is only logged.
     public func restore(
         from snapshot: CheckedSnapshot,
         stop: RestoreStop
     ) async throws(PersistenceError) {
         precondition(pending.isEmpty, "A restore drops \(pending.count) pending rows")
-        precondition(!isReadOnly, "A read-only library takes no restore")
         scheduledSave?.cancel()
         scheduledSave = nil
         // The backup refuses a destination with an open read, and a send during the wait for
         // the checkpoint must fail. Statements of the old schema must not stay either.
         statements = nil
         await checkpointRequest?.value
+        // The connection of a newer schema opens read-only, so the copy needs its own (D-168).
+        if isReadOnly { connection = nil }
         defer { dropConnection() }
         let destination = try openDestination()
         let source = try SQLiteConnection(
@@ -49,7 +52,13 @@ extension SQLiteLibraryRepository {
         let interval = signposter.beginInterval("Restore")
         defer { signposter.endInterval("Restore", interval) }
         try copy(from: source, to: destination, steps: try maxSteps(of: snapshot), stop: stop)
-        try destination.checkpointTruncate()
+        do {
+            try destination.checkpointTruncate()
+        } catch {
+            // The copy is in the WAL, so the library holds the snapshot. A reader can hold the
+            // checkpoint for the 2 s of `busy_timeout`, and the next open copies the WAL back.
+            logger.error("The checkpoint after the restore failed: \(error)")
+        }
         assert(statements == nil, "No statement of the old library stays")
     }
 

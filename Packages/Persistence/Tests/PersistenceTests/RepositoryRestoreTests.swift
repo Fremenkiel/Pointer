@@ -139,7 +139,7 @@ struct RepositoryRestoreTests {
     }
 
     /// A library with two strokes, a card, and a workspace.
-    private static func sourceLibrary() async throws -> RepositoryHarness {
+    static func sourceLibrary() async throws -> RepositoryHarness {
         let source = try RepositoryHarness()
         let repository = try await source.open()
         try await repository.create(try Values.workspace())
@@ -152,7 +152,7 @@ struct RepositoryRestoreTests {
     }
 
     /// Writes a snapshot of `source` and copies it into the folder of `target` with its checks.
-    private static func checkedSnapshot(
+    static func checkedSnapshot(
         of source: RepositoryHarness,
         into target: RepositoryHarness
     ) async throws -> CheckedSnapshot {
@@ -161,7 +161,7 @@ struct RepositoryRestoreTests {
     }
 
     /// Counts the rows that differ between the library of `target` and the snapshot.
-    private static func differences(
+    static func differences(
         _ target: RepositoryHarness,
         _ snapshot: CheckedSnapshot
     ) throws -> Int64 {

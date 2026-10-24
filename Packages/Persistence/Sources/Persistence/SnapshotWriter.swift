@@ -99,14 +99,19 @@ public actor SnapshotWriter {
     /// "Back up now" (D-155). If the name of this second exists, a counter joins it:
     /// `Pointer-<stamp>-2.sqlite`.
     ///
-    /// - Returns: The snapshot in `Backups/`.
+    /// - Returns: The snapshot in `Backups/`. A failed delete of an old snapshot is only logged,
+    ///   because the new snapshot exists, and the next snapshot deletes it.
     /// - Throws: `PersistenceError.sqlite` if `VACUUM INTO` fails, and
     ///   `PersistenceError.fileFailed` if the rename fails. `Backups/` then holds no new file,
     ///   and `tmp/` holds no partial file.
     public func writeSnapshotNow() throws(PersistenceError) -> URL {
         let date = now()
         let url = try write(as: files.freeDailyName(at: date), at: date)
-        try files.removeOldSnapshots()
+        do {
+            try files.removeOldSnapshots()
+        } catch {
+            logger.error("An old snapshot stays: \(error)")
+        }
         assert(files.exists(url.lastPathComponent), "The new snapshot is missing")
         return url
     }
@@ -114,12 +119,17 @@ public actor SnapshotWriter {
     /// Writes the snapshot before a restore, `Pointer-pre-restore-<stamp>.sqlite`, and then
     /// deletes the older pre-restore snapshots (D-154). The daily rotation does not count it.
     ///
-    /// - Returns: The snapshot in `Backups/`.
+    /// - Returns: The snapshot in `Backups/`. A failed delete of an older pre-restore snapshot
+    ///   is only logged, because the new snapshot exists.
     /// - Throws: `PersistenceError` if the snapshot fails. The older snapshots then stay.
     public func writePreRestoreSnapshot() throws(PersistenceError) -> URL {
         let date = now()
         let url = try write(as: files.freePreRestoreName(at: date), at: date)
-        try files.removePreRestoreSnapshots(except: url.lastPathComponent)
+        do {
+            try files.removePreRestoreSnapshots(except: url.lastPathComponent)
+        } catch {
+            logger.error("An older pre-restore snapshot stays: \(error)")
+        }
         assert(SnapshotFiles.isPreRestore(url.lastPathComponent), "Not a pre-restore name")
         return url
     }
