@@ -173,8 +173,12 @@ func swiftFiles(in folder: URL) -> [URL] {
 }
 
 let importKinds = "typealias|struct|class|enum|protocol|let|var|func"
+/// An access level before `import`, as Swift 6 allows (SE-0409).
+let importAccess = "public|package|internal|fileprivate|private"
 let importPattern = try NSRegularExpression(
-    pattern: #"^\s*(?:@\w+(?:\([^)]*\))?\s+)*import\s+(?:(?:"#
+    pattern: #"^\s*(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:"#
+        + importAccess
+        + #")\s+)?import\s+(?:(?:"#
         + importKinds
         + #")\s+)?(\w+)"#
 )

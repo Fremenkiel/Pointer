@@ -60,6 +60,8 @@ expect 1 check-layers.swift layers-third-party \
     "BUILD-03 CanvasFeature has the binary target Prebuilt" \
     "BUILD-03 CanvasFeature depends on .*Vendor/Library, which is not a Pointer package" \
     "1 packages, 5 findings"
+expect 1 check-layers.swift layers-access-import \
+    "ARCH-02 Model (layer 0) depends on Persistence (layer 1)"
 expect 0 check-layers.swift layers-clean "2 packages, 0 findings"
 expect 1 assertion-density.swift density-low "1 functions, 1 checks, average 1.00 is below 2.0"
 expect 1 assertion-density.swift density-syntax "3 functions, 4 checks, average 1.33 is below 2.0"
