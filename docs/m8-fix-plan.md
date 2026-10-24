@@ -46,4 +46,26 @@ The old test compared the largest count of the glide frames with the largest cou
 
 ## 5. The message over the palette
 
+### 5.1 Cause
+
+The test presented a palette on the root screen of the test host, showed a message, and dismissed the palette at the end. A state report in the failure message showed the chain `AppViewController`, `UIViewController`, `UIAlertController`: an old palette with an alert was still on the root screen. The new palette did not show, and `showMessage` found an alert on top and showed nothing.
+
+1. With 5 iterations of the test alone, 1 passed and 4 failed (`.build/Runs/F-msg-2.xcresult`). With the suites that also present on the window of the host, 9 of 10 failed (`F-msg-1.xcresult`). So the test left its own palette and alert behind.
+2. The wait loop of the test read `isBeingPresented`. Apple documents `transitionCoordinator` as the object of "a currently active transition", or `nil` if no transition is in progress (<https://developer.apple.com/documentation/uikit/uiviewcontroller/transitioncoordinator>). The loop ended while the animated presentation of the alert still ran. The `dismiss(animated: false)` of the test then came during that transition and did not dismiss.
+3. In a full run, the test runs once, so its own leak cannot make it fail. Other suites run at the same time (<https://developer.apple.com/documentation/testing/parallelization>), and their screens present on the same window. A presentation that another test leaves or makes on the root screen has the same effect as the leak.
+
+### 5.2 Solutions
+
+| Solution | Alone, 10 runs | With the neighbor suites, 10 runs |
+|---|---|---|
+| Before the fix | 4 of 5 failed | 9 of 10 failed |
+| (a) Wait on `transitionCoordinator` of the screen and of each presentation above it, and make sure that the dismissal ended | 0 failed | 0 failed |
+| (b) As (a), and the test makes a window of its own with its own `AppViewController` | 0 failed | 0 failed |
+
+(b) is taken. (a) fixes the leak, but the test still depends on the root screen that other suites use. (b) shares nothing with them (TEST-04). The window does not become the key window, which other tests use. The neighbor suites are `PencilFlightTests`, `NavigationFailureTests`, `DeepTreeTests`, `CardMenuSnapshotTests`, and `NavigationCancelTests`.
+
+### 5.3 Control
+
+For one run, the fault F-12 was back: `showMessage` presented the alert on the app screen instead of on the top presentation. The test failed (`.build/Runs/F-msg-inject.xcresult`).
+
 ## 6. Results
