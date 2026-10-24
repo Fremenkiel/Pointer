@@ -1,6 +1,6 @@
 # M8 work plan: PDF export
 
-This document breaks milestone M8 of [plan.md](plan.md) into tasks. The acceptance criteria stay in [plan.md](plan.md). The tasks build on EXP-01 to EXP-04, D-13, D-15, D-26, D-84, and D-138 to D-144.
+This document breaks milestone M8 of [plan.md](plan.md) into tasks. The acceptance criteria stay in [plan.md](plan.md). The tasks build on EXP-01 to EXP-04, D-13, D-15, D-26, D-84, and D-138 to D-145.
 
 Read [AGENTS.md](../AGENTS.md) and [code-of-code.md](code-of-code.md) before you start. All rules there apply. Do the phases in order. Inside a phase, do the tasks in order. Each task is one commit or a small set of commits (GIT-02). Each bug fix comes with a test that fails before the fix (TEST-03). Name the requirement, decision, and rule IDs in each commit body (GIT-03).
 
@@ -76,9 +76,10 @@ The product owner decided these on 2026-10-23. [decisions.md](decisions.md) give
 | D-141 | The page bounds come from the strokes and the full text boxes, not the cards. `contentBounds` stays. | 2.1 |
 | D-142 | An empty canvas gives a message and no PDF. Emoji stay bitmaps. A page over 14,400 points scales as a whole. | 2.1, 2.2, 3.2 |
 | D-143 | The item provider names the PDF after the title of the card, or of the workspace on the root canvas and for a card without a title. Characters that file names do not allow become "-". | 3.2 |
-| D-144 | An export of D-56 takes at most 8.5 s and 180 MB, and an export of 200,000 handwriting strokes at most 17 s and 370 MB. | 2.7 |
+| D-144 | An export of D-56 takes at most 8.5 s, and an export of 200,000 handwriting strokes at most 17 s. The memory budgets of D-144 went under D-145. | 2.7 |
+| D-145 | The export test records the memory and fails only on the time budgets. | Phase 5 |
 
-Raise each new question as an open entry in [decisions.md](decisions.md) before the task that needs it. Do not decide it yourself (AGENT-04). The product owner decided D-143 and D-144 on 2026-10-23.
+Raise each new question as an open entry in [decisions.md](decisions.md) before the task that needs it. Do not decide it yourself (AGENT-04). The product owner decided D-143 and D-144 on 2026-10-23, and D-145 on 2026-10-24.
 
 ## 4. Tasks
 
@@ -434,4 +435,6 @@ Measured on 2026-10-23 on the iPad in Release.
 | New | 24.83, 25.15, 22.84, 25.76, 24.03, 25.03 ms (mean 24.61) | 20.32, 16.94, 17.60, 19.14, 19.09, 19.94 ms (mean 18.84) | 21.78, 17.56, 21.17, 21.04, 20.58, 19.99 ms (mean 20.35) |
 
    The new build is 5.6 % slower on erase (slower in 5 of 6 pairs), 4.7 % slower on undo, and 5.6 % faster on redo. Each is under the limit of 10 % (code-of-code.md section 5, item 10). The glide check failed in 1 of 6 base runs and in 2 of 6 new runs, always with an edit frame of 5 against 4, so the failure is older than M8.
+
+D-145, decided on 2026-10-24. A try of the malloc count in a run alone (`.build/Runs/D145-alone-1.xcresult`) read 228 MB for D-56, 228 MB for 10,000 text boxes, and 539 MB for the handwriting, whose free memory grew only 198 MB, and the handwriting export took 16.04 s. The product owner then chose time budgets only. `ExportPerformanceTests` records the free-memory growth after the steady wait and fails only above 8.5 s for D-56 and 17 s for the handwriting.
 

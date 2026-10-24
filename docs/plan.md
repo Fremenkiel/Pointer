@@ -161,7 +161,7 @@ Acceptance:
 
 - `Export`: `PDFExporter`, export button, share sheet.
 
-The tasks are in [m8-plan.md](m8-plan.md). The product owner decided D-138 to D-144 on 2026-10-23.
+The tasks are in [m8-plan.md](m8-plan.md). The product owner decided D-138 to D-144 on 2026-10-23 and D-145 on 2026-10-24.
 
 Acceptance:
 

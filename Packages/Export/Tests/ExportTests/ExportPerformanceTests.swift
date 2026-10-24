@@ -6,23 +6,18 @@ import XCTest
 import os
 
 /// The time, the peak memory growth, and the size of an export of large canvases (M8 task 2.7,
-/// PERF-03). The budgets of D-144 are the highest measures of task 2.7 plus about 15 %. The
-/// content with 10,000 text boxes has no budget, and the test records it only.
+/// PERF-03). The test fails above the time budgets of D-144. It records the memory but does not
+/// fail on it, because the free memory of the process does not give a reliable peak of one
+/// export (D-145). The content with 10,000 text boxes has no budget, and the test records it only.
 ///
 /// Each test exports once. The memory of the export goes back to the allocator of the process,
 /// not to the system, so a second export in the same test shows too little growth.
 @MainActor
 final class ExportPerformanceTests: XCTestCase {
-    /// The budget of one export (D-144).
-    struct Budget {
-        let seconds: Double
-        let megabytes: Double
-    }
-
-    /// The budget of the export of D-56 (D-144).
-    private static let d56Budget = Budget(seconds: 8.5, megabytes: 180)
-    /// The budget of the export of 200,000 handwriting strokes (D-144).
-    private static let handwritingBudget = Budget(seconds: 17, megabytes: 370)
+    /// The time budget of the export of D-56 in seconds (D-144).
+    private static let d56Seconds = 8.5
+    /// The time budget of the export of 200,000 handwriting strokes in seconds (D-144).
+    private static let handwritingSeconds = 17.0
 
     /// The time between two reads of the available memory during an export.
     /// A copy of a PDF of 80 MB takes a few milliseconds, so a longer interval misses its peak
@@ -40,7 +35,7 @@ final class ExportPerformanceTests: XCTestCase {
         try await measure(
             content,
             name: "D-56: 20,000 strokes, 5,000 cards, 5,000 text boxes",
-            budget: Self.d56Budget
+            budget: Self.d56Seconds
         )
     }
 
@@ -59,16 +54,16 @@ final class ExportPerformanceTests: XCTestCase {
         try await measure(
             content,
             name: "200,000 handwriting strokes",
-            budget: Self.handwritingBudget
+            budget: Self.handwritingSeconds
         )
     }
 
     /// Exports the content in a detached task, as the canvas does, records the measures, and
-    /// fails above the budget.
+    /// fails above the time budget.
     private func measure(
         _ content: CanvasContent,
         name: String,
-        budget: Budget? = nil
+        budget: Double? = nil
     ) async throws {
         // Other tests of a full run free and take memory, so the measure starts at steady memory,
         // as the open of the canvas does (D-93). `OnScreenCanvas` is in the same test bundle.
@@ -101,7 +96,6 @@ final class ExportPerformanceTests: XCTestCase {
         )
         XCTContext.runActivity(named: line) { _ in }
         guard let budget else { return }
-        XCTAssertLessThanOrEqual(seconds, budget.seconds, line)
-        XCTAssertLessThanOrEqual(megabytes, budget.megabytes, line)
+        XCTAssertLessThanOrEqual(seconds, budget, line)
     }
 }
