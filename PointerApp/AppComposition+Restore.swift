@@ -16,6 +16,8 @@ extension AppComposition {
         case refused(BackupMessage)
         /// The copy did not finish and rolled back. A new composition opens the old library.
         case stopped(BackupMessage)
+        /// A restore or "Back up now" ran already, so this restore did nothing (D-169).
+        case ignored
     }
 
     /// Restores the library from a picked file (D-148).
@@ -26,9 +28,13 @@ extension AppComposition {
     /// the copy, a new composition opens the library as at launch, and it shows the message
     /// of a stop.
     ///
+    /// The screen takes no input from the start to the end (D-169). A library of a newer
+    /// schema takes the restore too (D-168).
+    ///
     /// - Returns: The outcome. A refusal shows its message at once.
     @discardableResult  // The command needs no result. The tests read it.
     func restore(from picked: URL) async -> RestoreOutcome {
+        guard beginLibraryWork() else { return .ignored }
         guard let repository, let writer, let files = openedFiles else {
             return refuse(.restoreStopped)
         }
@@ -66,9 +72,12 @@ extension AppComposition {
         into repository: SQLiteLibraryRepository
     ) async -> RestoreOutcome {
         await closeScreens()
+        // The cache goes before the copy, so that a stop of the process after the copy does
+        // not show the previews of the old library (D-157, review after M9).
+        await clearPreviews()
         let stop = RestoreStop()
-        let task = backgroundTime.begin("Restore") { stop.stop() }
-        defer { backgroundTime.end(task) }
+        let extraTime = ExtraTime("Restore", time: backgroundTime) { stop.stop() }
+        defer { extraTime.end() }
         do throws(PersistenceError) {
             try await repository.restore(from: checked, stop: stop)
             return .restored
@@ -80,7 +89,7 @@ extension AppComposition {
 
     /// Shows the message of a refused restore and lets the canvas take edits again.
     private func refuse(_ message: BackupMessage) -> RestoreOutcome {
-        resumeEditing()
+        endLibraryWork()
         container.showMessage(message.text)
         return .refused(message)
     }

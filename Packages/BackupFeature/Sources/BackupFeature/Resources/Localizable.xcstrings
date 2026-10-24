@@ -41,6 +41,16 @@
         }
       }
     },
+    "Pointer could not write the snapshot. Your library stays as it is. Try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pointer could not write the snapshot. Your library stays as it is. Try again."
+          }
+        }
+      }
+    },
     "Restore from a snapshot": {
       "localizations": {
         "en": {

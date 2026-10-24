@@ -32,7 +32,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         after handoff: AppComposition.Handoff?
     ) {
         let container = AppViewController()
-        window.rootViewController = container
+        AppViewController.install(container, in: window)
         let composition = AppComposition(
             window: window,
             container: container,
@@ -45,10 +45,14 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         self.composition = composition
         Task {
             await composition.start(after: handoff)
-            // At launch, the scene becomes active after the start and starts the timer.
-            if handoff != nil, UIApplication.shared.applicationState == .active {
-                composition.startIdleTimer()
+            // At launch, the scene becomes active after the start and starts the timer. The way
+            // back of a failed restore replaces the composition inside `start`, and a replaced
+            // composition starts no timer (review after M9).
+            let isShown = self.composition === composition
+            guard handoff != nil, isShown, UIApplication.shared.applicationState == .active else {
+                return
             }
+            composition.startIdleTimer()
         }
     }
 

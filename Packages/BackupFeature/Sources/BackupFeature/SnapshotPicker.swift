@@ -10,23 +10,20 @@ public final class SnapshotPicker: NSObject, UIDocumentPickerDelegate {
     public static let snapshotType = UTType(importedAs: "dk.saarikivi.pointer.snapshot")
 
     private let onPick: @MainActor (URL) -> Void
-    /// The picker keeps its delegate until a pick or a cancel, because UIKit holds it weakly.
-    private var keepsItself: SnapshotPicker?
 
     /// Makes a picker. `onPick` runs with the URL of the picked file.
     public init(onPick: @escaping @MainActor (URL) -> Void) {
         self.onPick = onPick
     }
 
-    /// Returns the picker view of one snapshot file, with this object as its delegate.
+    /// Returns the picker view of one snapshot file, with this object as its delegate. The view
+    /// keeps the delegate, because UIKit holds a delegate weakly. Both thus go with the view,
+    /// also after a dismiss without a pick or a cancel (review after M9).
     public func controller() -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(
-            forOpeningContentTypes: [Self.snapshotType],
-            asCopy: false
-        )
+        let picker = PickerController(forOpeningContentTypes: [Self.snapshotType], asCopy: false)
         picker.allowsMultipleSelection = false
         picker.delegate = self
-        keepsItself = self
+        picker.owner = self
         return picker
     }
 
@@ -35,13 +32,15 @@ public final class SnapshotPicker: NSObject, UIDocumentPickerDelegate {
         _ controller: UIDocumentPickerViewController,
         didPickDocumentsAt urls: [URL]
     ) {
-        keepsItself = nil
         guard let url = urls.first else { return }
         onPick(url)
     }
 
     /// Ends the pick without a file.
-    public func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-        keepsItself = nil
-    }
+    public func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {}
+}
+
+/// A document picker that keeps its delegate for its own lifetime.
+private final class PickerController: UIDocumentPickerViewController {
+    var owner: SnapshotPicker?
 }

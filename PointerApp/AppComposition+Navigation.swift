@@ -19,7 +19,8 @@ extension AppComposition {
     /// card covers the screen, the child loads at the camera of CARD-03 in the same time, and
     /// the child fades in when both are done (architecture.md 6.2, D-99).
     func openChild(_ card: Card) {
-        guard let path, let parent = container.canvas, opening == nil, !container.isSwapping,
+        guard !isLibraryBusy, let path, let parent = container.canvas, opening == nil,
+            !container.isSwapping,
             !parent.isInCardTransition, parent.canvasID == path.currentCanvas,
             card.canvasID == path.currentCanvas
         else { return }
@@ -90,7 +91,8 @@ extension AppComposition {
     /// the child flies to the camera of its open while the parent loads below it, showing the
     /// card alone. Then the child fades out, and the parent flies to the camera of CARD-04.
     func leave() {
-        guard let path, let child = container.canvas, let card = path.cards.last, opening == nil,
+        guard !isLibraryBusy, let path, let child = container.canvas, let card = path.cards.last,
+            opening == nil,
             !container.isSwapping, !child.isInCardTransition,
             child.canvasID == path.currentCanvas
         else { return }
@@ -285,7 +287,7 @@ extension AppComposition {
         dependencies.onPinchLeave = { [weak self] in self?.leaveByPinch() }
         container.canvas?.endSession()
         let canvas = CanvasViewController(dependencies: dependencies)
-        canvas.isEditingEnabled = !isReadOnly && !areSavesFailing
+        canvas.isEditingEnabled = canEdit
         return canvas
     }
 

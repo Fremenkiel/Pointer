@@ -27,12 +27,14 @@ extension AppComposition {
             switch await backUpNow() {
             case .success(let url): share(url, at: container.selectorFrame)
             case .failure(let message): container.showMessage(message.text)
+            case nil: break
             }
         }
     }
 
     /// Asks before a restore, then opens the picker (D-156, D-160).
     private func askForRestore() {
+        guard !isLibraryBusy else { return }
         let alert = RestoreAlert.controller { [weak self] in self?.pickSnapshot() }
         container.present(alert, animated: true)
     }

@@ -13,7 +13,7 @@ struct BackUpNowTests {
     func backUpAndShare() async throws {
         let harness = try await AppHarness.start()
         defer { await harness.remove() }
-        let url = try await harness.composition.backUpNow().get()
+        let url = try #require(await harness.composition.backUpNow()).get()
         #expect(url.deletingLastPathComponent().path == harness.files.backups.path)
         #expect(SnapshotFiles.isDaily(url.lastPathComponent))
         let reader = try SQLiteConnection(path: url.path(percentEncoded: false), mode: .readOnly)
@@ -23,7 +23,11 @@ struct BackUpNowTests {
         // The sheet loads its activities before it shows.
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: AppHarness.timeout)
-        while !(harness.presented is UIActivityViewController), clock.now < deadline {
+        // The flag follows when the presentation ends.
+        let isShown = {
+            harness.presented is UIActivityViewController && harness.composition.isSharing
+        }
+        while !isShown(), clock.now < deadline {
             try await Task.sleep(for: .milliseconds(20))
         }
         #expect(harness.presented is UIActivityViewController)

@@ -263,6 +263,22 @@ final class AppViewController: UIViewController {
         top.present(alert, animated: true)
     }
 
+    /// Presents `controller` above the presentations of the container, for example above the
+    /// palette popover, so that UIKit does not refuse it. `completion` runs after it shows.
+    func presentOnTop(_ controller: UIViewController, completion: @escaping () -> Void) {
+        topPresentedController().present(controller, animated: true, completion: completion)
+    }
+
+    /// Makes `container` the root view controller of `window`. The presentations of the old
+    /// root go first, so that an alert or a sheet does not keep the old composition on the
+    /// screen after a restore (review after M9).
+    static func install(_ container: AppViewController, in window: UIWindow) {
+        if let old = window.rootViewController, old.presentedViewController != nil {
+            old.dismiss(animated: false)
+        }
+        window.rootViewController = container
+    }
+
     /// The most presentations on top of each other that the app makes: a popover and an alert.
     private static let maxPresentationDepth = 4
 

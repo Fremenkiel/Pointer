@@ -22,6 +22,14 @@ public enum BackupMessage: Error, Equatable, Sendable, CaseIterable {
     /// The restored library did not open, so Pointer put the library before the restore back
     /// (D-20, task 2.2 of docs/m9-plan.md).
     case restoreUndone
+    /// "Back up now" did not write its snapshot (D-171).
+    case backUpFailed
+
+    /// Returns the message of a failed "Back up now": a full disk, or else `backUpFailed`
+    /// (D-171).
+    public init(backUp error: PersistenceError) {
+        if case .diskFull = error { self = .diskFull } else { self = .backUpFailed }
+    }
 
     /// Returns the message of a refused or failed restore.
     ///
@@ -87,6 +95,14 @@ public enum BackupMessage: Error, Equatable, Sendable, CaseIterable {
                 localized: """
                     The restored library did not open, so Pointer put back your library from \
                     before the restore.
+                    """,
+                bundle: .module
+            )
+        case .backUpFailed:
+            String(
+                localized: """
+                    Pointer could not write the snapshot. Your library stays as it is. Try \
+                    again.
                     """,
                 bundle: .module
             )

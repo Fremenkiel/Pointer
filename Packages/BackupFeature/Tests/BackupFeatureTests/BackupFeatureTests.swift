@@ -29,6 +29,21 @@ struct BackupFeatureTests {
         #expect(BackupMessage(error) == message)
     }
 
+    @Test(
+        "A failed back-up gives its own message, or the message of a full disk (D-171)",
+        arguments: [
+            (
+                PersistenceError.sqlite(code: 10, message: "disk I/O error"),
+                BackupMessage.backUpFailed
+            ),
+            (.fileFailed(reason: "rename"), .backUpFailed),
+            (.diskFull, .diskFull),
+        ]
+    )
+    func backUpMessage(error: PersistenceError, message: BackupMessage) {
+        #expect(BackupMessage(backUp: error) == message)
+    }
+
     @Test("Each message and each command has a text from the String Catalog")
     func texts() {
         let texts = BackupMessage.allCases.map(\.text) + BackupCommand.allCases.map(\.title)
@@ -58,6 +73,21 @@ struct BackupFeatureTests {
         let url = URL(filePath: "/tmp/Pointer-2026-10-24-120000.sqlite")
         picker.documentPicker(controller, didPickDocumentsAt: [url])
         #expect(picked == [url])
+    }
+
+    @Test("A picker goes with its view, also without a pick or a cancel (review after M9)")
+    func pickerGoesWithItsView() {
+        weak var weakPicker: SnapshotPicker?
+        var controller: UIDocumentPickerViewController?
+        do {
+            let picker = SnapshotPicker { _ in }
+            weakPicker = picker
+            controller = picker.controller()
+        }
+        #expect(controller?.delegate === weakPicker, "The view keeps its delegate")
+        #expect(weakPicker != nil)
+        controller = nil
+        #expect(weakPicker == nil, "A dismissed picker keeps no delegate and no closure")
     }
 
     @Test("The share sheet takes the snapshot file")

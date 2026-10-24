@@ -39,7 +39,12 @@ final class AppComposition {
     var hasFilled = false
     var idleTimer: Timer?
     var isSnapshotRunning = false
-    var backgroundTask = UIBackgroundTaskIdentifier.invalid
+    /// True while a restore or "Back up now" runs. The screen then takes no input, and no
+    /// edit, command, open, or leave starts (D-169).
+    var isLibraryBusy = false
+    /// True after `closeScreens()`. A closed composition starts no idle timer, also when the
+    /// scene becomes active during a restore (review after M9).
+    var isClosed = false
     /// The card previews of the child canvases (D-97), or `nil` before the launch.
     var previewStore: PreviewStore?
     /// The one offscreen renderer of the previews of all canvases, so that they share one

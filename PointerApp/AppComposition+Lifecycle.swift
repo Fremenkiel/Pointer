@@ -31,7 +31,7 @@ extension AppComposition {
             container.showMessage(AppStrings.savesFailing)
         case .savesRecovered:
             areSavesFailing = false
-            container.canvas?.isEditingEnabled = !isReadOnly
+            container.canvas?.isEditingEnabled = canEdit
         case .rowsSkipped:
             container.showMessage(AppStrings.rowsSkipped)
         }
@@ -45,14 +45,8 @@ extension AppComposition {
         // A pending card joins the canvas, so that its row joins the save too (D-123).
         container.canvas?.placePendingCard()
         stopIdleTimer()
-        endBackgroundTask()
-        let expire: @Sendable () -> Void = { [weak self] in
-            MainActor.assumeIsolated { self?.endBackgroundTask() }
-        }
-        backgroundTask = UIApplication.shared.beginBackgroundTask(
-            withName: "Final save",
-            expirationHandler: expire
-        )
+        // Each save has its own grant, so the end of an earlier save does not end it.
+        let extraTime = ExtraTime("Final save", time: backgroundTime)
         let repository = repository
         let deviceStore = deviceStore
         let workspace = selector?.current?.id
@@ -69,20 +63,13 @@ extension AppComposition {
             } catch {
                 logger.error("The final save failed: \(error)")
             }
-            endBackgroundTask()
+            extraTime.end()
         }
-    }
-
-    /// Ends the extra time of the final save, if it runs.
-    private func endBackgroundTask() {
-        guard backgroundTask != .invalid else { return }
-        UIApplication.shared.endBackgroundTask(backgroundTask)
-        backgroundTask = .invalid
     }
 
     /// Starts the check for an idle moment while the app is active (storage.md section 7.2).
     func startIdleTimer() {
-        guard idleTimer == nil else { return }
+        guard idleTimer == nil, !isClosed else { return }
         let tick: @Sendable (Timer) -> Void = { [weak self] _ in
             MainActor.assumeIsolated { self?.checkIdle() }
         }
@@ -103,8 +90,8 @@ extension AppComposition {
     /// pending rows. The writer makes a snapshot only if the newest one is older than 24 hours.
     private func checkIdle() {
         let quiet = ProcessInfo.processInfo.systemUptime - window.lastInputTime
-        guard quiet >= Self.idleInterval, !isSnapshotRunning, !isSharing, let repository,
-            let writer
+        guard quiet >= Self.idleInterval, !isSnapshotRunning, !isSharing, !isLibraryBusy,
+            let repository, let writer
         else { return }
         isSnapshotRunning = true
         let logger = logger

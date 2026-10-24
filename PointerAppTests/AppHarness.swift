@@ -76,7 +76,7 @@ final class AppHarness {
 
     /// Puts the container of `composition` on the screen and connects its replacement.
     private func install(_ composition: AppComposition) {
-        window.rootViewController = composition.container
+        AppViewController.install(composition.container, in: window)
         composition.backgroundTime = background
         composition.onReplace = { [weak self] handoff in self?.replace(after: handoff) }
     }
@@ -245,16 +245,30 @@ final class FakeBackgroundTime: BackgroundTime {
     private(set) var begun = 0
     private(set) var ended = 0
 
+    /// The tasks that ended, in their order. A task that ends twice is in it twice.
+    private(set) var endedTasks: [UIBackgroundTaskIdentifier] = []
+    /// The expiry handlers of the tasks that did not end yet.
+    private var handlers: [UIBackgroundTaskIdentifier: @MainActor @Sendable () -> Void] = [:]
+
     func begin(
         _ name: String,
         onExpiry: @escaping @MainActor @Sendable () -> Void
     ) -> UIBackgroundTaskIdentifier {
         begun += 1
         if expiresAtOnce { onExpiry() }
-        return UIBackgroundTaskIdentifier(rawValue: begun)
+        let task = UIBackgroundTaskIdentifier(rawValue: begun)
+        handlers[task] = onExpiry
+        return task
     }
 
     func end(_ task: UIBackgroundTaskIdentifier) {
         ended += 1
+        endedTasks.append(task)
+        handlers[task] = nil
+    }
+
+    /// Runs out the time of each running task, as the system does after about 30 s.
+    func expireAll() {
+        for handler in handlers.values { handler() }
     }
 }
