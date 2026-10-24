@@ -101,7 +101,7 @@ private struct Probe {
         // The segment stays inside the convex hull of its 4 points, and a band is convex. If one
         // band holds all 4 points, it holds the whole segment, which then needs no samples.
         if isHullCovered(segment: segment, hull: hull) {
-            if start == nil { start = low }
+            if start == nil { start = Self.open(at: low, after: &ranges) }
             return
         }
         // An open range ends at a covered point, which lies in this hull, so it has bands. The
@@ -114,7 +114,7 @@ private struct Probe {
         var previous = low
         var wasCovered = isCovered(low, hull: hull)
         assert(start == nil || wasCovered, "Range open at a free start of segment \(segment)")
-        if wasCovered, start == nil { start = low }
+        if wasCovered, start == nil { start = Self.open(at: low, after: &ranges) }
         for step in 1...steps {
             let parameter = low + Double(step) / Double(steps)
             let covered = isCovered(parameter, hull: hull)
@@ -126,7 +126,7 @@ private struct Probe {
                     startCovered: wasCovered
                 )
                 if covered {
-                    start = cut
+                    start = Self.open(at: cut, after: &ranges)
                 } else if let open = start {
                     ranges.append(open...cut)
                     start = nil
@@ -136,6 +136,19 @@ private struct Probe {
             wasCovered = covered
         }
         assert(steps >= 1, "A segment takes at least one step")
+    }
+
+    /// Returns the start of a range that opens at `parameter`. If the last range ends there, the
+    /// free point between them has no length, so the last range opens again and the ranges stay
+    /// apart, as the split needs.
+    private static func open(
+        at parameter: Double,
+        after ranges: inout [ClosedRange<Double>]
+    ) -> Double {
+        guard let last = ranges.last, last.upperBound >= parameter else { return parameter }
+        ranges.removeLast()
+        assert(last.lowerBound <= parameter, "A range opens before the last one")
+        return last.lowerBound
     }
 
     /// Returns `true` if one band holds the 4 points that shape the segment.

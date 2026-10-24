@@ -32,6 +32,27 @@ struct StrokeSplitterTests {
         #expect(abs(right.point(at: Double(right.segmentCount)).x - 100) < 1e-4)
     }
 
+    @Test(
+        "Two eraser legs that cover the stroke up to one free point give one range",
+        arguments: [30.0, 70.0]
+    )
+    func touchingRanges(center: Double) throws {
+        var factory = InkFixtures.factory()
+        let stroke = InkFixtures.line(from: 0, to: 100, spacing: 1, factory: &factory)
+        // The reach is 4 + 1 = 5, so the point at `center` lies at exactly the reach of both
+        // legs and is free, while its neighbors are covered. The scan closed a range there and
+        // opened the next one at the same parameter, and the split trapped on them.
+        let legs = [
+            Point(x: center - 5, y: 0), Point(x: center - 5, y: -500),
+            Point(x: center + 5, y: -500), Point(x: center + 5, y: 0),
+        ]
+        let path = EraserPath(samples: legs, radius: 4)
+        let ranges = StrokeHitTest.coveredRanges(of: stroke, by: path)
+        #expect(ranges.count == 1)
+        let parts = try #require(erase(stroke, at: legs, radius: 4, factory: &factory))
+        #expect(parts.count == 2)
+    }
+
     @Test("Erasing the end of a stroke leaves one part")
     func end() throws {
         var factory = InkFixtures.factory()
