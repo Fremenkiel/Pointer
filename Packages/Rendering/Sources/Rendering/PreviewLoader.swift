@@ -55,6 +55,8 @@ final class PreviewLoader: Sendable {
     }
 
     deinit {
+        // The waiting requests go, so a loader of a canvas that went loads no more child canvas.
+        shared.state.withLock { $0.queue.removeAll() }
         signal.finish()
         task.cancel()
     }
@@ -97,7 +99,9 @@ final class PreviewLoader: Sendable {
             }
             // A signal can stand for several requests, and the limit bounds them (FLOW-03).
             for _ in 0..<limit {
-                guard let (request, area) = take(from: shared) else { break }
+                // A cancel ends the loop before the next request: each one can load a whole
+                // child canvas (review after M9).
+                guard !Task.isCancelled, let (request, area) = take(from: shared) else { break }
                 let interval = signposter.beginInterval("PreviewDecode")
                 let result = await load(request, area: area, source: source, decoder: &decoder)
                 signposter.endInterval("PreviewDecode", interval)

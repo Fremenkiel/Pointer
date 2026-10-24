@@ -47,10 +47,13 @@ struct PreviewFiles: PreviewSource {
                 viewSize: viewSize
             ).pngData()
         } catch {
-            png = nil
+            logger.error(
+                "The preview of a child canvas did not render: \(String(describing: error))"
+            )
+            return nil
         }
         guard let png else {
-            logger.error("The preview of a child canvas did not render")
+            logger.error("The preview of a child canvas did not encode")
             return nil
         }
         do {

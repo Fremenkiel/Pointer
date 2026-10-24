@@ -21,4 +21,7 @@ struct FrameTransition {
     let freezes: Bool
     /// The frozen copy of the parent frame, or `nil` before the freeze and in a leave (D-109).
     var frozen: InkTarget?
+    /// `true` after the first frame of an open froze the parent, also without a shown image.
+    /// The frames after it change only with the flight, the weight, or a preview.
+    var isFrozen = false
 }

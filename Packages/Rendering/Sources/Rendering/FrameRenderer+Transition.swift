@@ -17,7 +17,7 @@ extension FrameRenderer {
         encoder.beginFrame(context)
         // The preview of the opened card can still arrive (D-97).
         uploadPreviews(context)
-        if transition?.frozen == nil {
+        if transition?.isFrozen == false {
             freeze(drawableSize: drawableSize, commandBuffer: commandBuffer)
         }
         RenderSignpost.begin("NextDrawable")
@@ -63,6 +63,7 @@ extension FrameRenderer {
                 logger.error("The frozen copy failed: \(String(describing: error))")
             }
         }
+        current.isFrozen = true
         transition = current
         releaseCommittedLayer()
         assert(layer == nil, "An open frees the committed textures")

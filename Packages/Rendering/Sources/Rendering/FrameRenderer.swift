@@ -129,7 +129,15 @@ final class FrameRenderer {
     ///
     /// Before the first frame has a texture, the renderer still needs a frame. Otherwise an
     /// early frame without a drawable size ends the frame loop, and the screen stays black.
+    ///
+    /// An open frees the committed layer, so its frames need only the freeze and the previews.
+    /// The flight and the inbox wake the frames of the camera and the weight. Without this
+    /// rule, the frozen parent drew a frame at each update of the display link until the swap
+    /// (review after M9).
     var needsMoreFrames: Bool {
+        if let transition, transition.freezes {
+            return !transition.isFrozen || !(previews?.pending.isEmpty ?? true)
+        }
         guard let layer, !needsNewLayer else { return viewSize.width > 0 && viewSize.height > 0 }
         return layer.isBuilding || layer.isSettling || layer.isRedrawing || !pendingSlots.isEmpty
             || waitingHandoff > 0 || dirtyArea != nil || eraserMask.hasNewSamples

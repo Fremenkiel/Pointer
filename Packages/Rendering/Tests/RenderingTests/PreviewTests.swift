@@ -9,6 +9,28 @@ import UIKit
 
 @testable import Rendering
 
+/// A preview source whose calls wait until the test opens the gate.
+final class GatedPreviews: PreviewSource {
+    private let calls = Mutex(0)
+    private let gate: AsyncStream<Void>
+    /// Opens the gate for each call, the waiting one and the later ones.
+    let open: AsyncStream<Void>.Continuation
+
+    init() {
+        (gate, open) = AsyncStream.makeStream()
+    }
+
+    /// The number of calls so far.
+    var callCount: Int { calls.withLock { $0 } }
+
+    func preview(of canvas: CanvasID, cardAspect: Double) async -> Data? {
+        calls.withLock { $0 += 1 }
+        var waiting = gate.makeAsyncIterator()
+        _ = await waiting.next()
+        return nil
+    }
+}
+
 /// A preview source with one image for each canvas. It counts its reads.
 final class FakePreviews: PreviewSource {
     let data: Data?
@@ -147,6 +169,43 @@ struct PreviewTests {
         #expect(image.pixels.contains { $0 > 200 })
         #expect(decoder.decode(Data([0x89, 0x50, 0x4E, 0x47, 1, 2, 3]), step: 128) == nil)
         #expect(decoder.decode(Data(), step: 128) == nil)
+    }
+
+    @Test("A loader that goes serves no waiting request after the running one (review after M9)")
+    func goneLoaderStops() async throws {
+        let source = GatedPreviews()
+        var loader: PreviewLoader? = PreviewLoader(source: source, limit: 8) { _ in }
+        let area = Rect(origin: .zero, size: Size(width: 10_000, height: 10_000))
+        let requests = (1...8).map { byte in
+            PreviewRequest(
+                card: Self.card(byte),
+                bounds: Rect(origin: Point(x: 10, y: 10), size: Size(width: 64, height: 48)),
+                step: 128,
+                cardAspect: 4.0 / 3.0
+            )
+        }
+        loader?.request(requests, area: area)
+        for _ in 0..<2_000 where source.callCount == 0 {
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        try #require(source.callCount == 1)
+        loader = nil
+        source.open.finish()
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(source.callCount == 1, "Each waiting request loads a whole child canvas")
+    }
+
+    @Test(
+        "A preview render that the GPU did not complete throws (review after M9)",
+        arguments: [MTLCommandBufferStatus.error, .notEnqueued, .committed]
+    )
+    func incompleteRenderThrows(status: MTLCommandBufferStatus) {
+        #expect(throws: RenderingError.self) {
+            try FrameRenderer.checkCompleted(status: status, error: nil)
+        }
+        #expect(throws: Never.self) {
+            try FrameRenderer.checkCompleted(status: .completed, error: nil)
+        }
     }
 
     @Test("The loader drops a request whose card left the texture area, before its read")

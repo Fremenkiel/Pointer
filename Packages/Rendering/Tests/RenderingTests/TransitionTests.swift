@@ -105,6 +105,26 @@ struct TransitionTests {
         Snapshot.assertMatches(end, named: "open-end")
     }
 
+    @Test("A frozen parent draws no frame at rest after the start of an open (review after M9)")
+    func frozenParentRests() async throws {
+        let parent = try await parent()
+        let (renderer, layer, card) = (parent.renderer, parent.layer, parent.card)
+        renderer.beginOpen(of: card.id)
+        renderer.setParentWeight(0)
+        _ = try capture(renderer, layer: layer)
+        let drawable = try #require(layer.nextDrawable())
+        let outcome = renderer.engine.renderFrame(
+            drawableSize: layer.drawableSize,
+            deadline: nil,
+            drawable: .drawable(drawable)
+        )
+        #expect(
+            !outcome.didDraw,
+            "A frame without a change of the flight, the weight, or a preview"
+        )
+        #expect(!outcome.needsMore)
+    }
+
     @Test("A leave grows the parent from the card back to the live parent")
     func leave() async throws {
         let parent = try await parent()

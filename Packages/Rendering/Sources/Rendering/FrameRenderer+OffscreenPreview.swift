@@ -26,9 +26,11 @@ extension FrameRenderer {
         guard let commandBuffer = resources.queue.makeCommandBuffer() else {
             throw .resourceUnavailable("command buffer")
         }
+        // The title of a card lies above and beside its frame, as in the grid of the screen.
+        let cardRegion = region.expanded(by: Limits.cardTitleReach)
         let text = try encodeText(
             content.textBoxes.values.filter { Self.mayTouch($0, region) },
-            cards: content.cards.values.filter { $0.frame.intersects(region) },
+            cards: content.cards.values.filter { $0.frame.intersects(cardRegion) },
             target: target,
             commandBuffer: commandBuffer,
             region: region
@@ -42,6 +44,7 @@ extension FrameRenderer {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         withExtendedLifetime(text) {}
+        try Self.checkCompleted(commandBuffer)
         let image = PreviewRenderer.readImage(of: readback, width: size.width, height: size.height)
         guard let image else { throw .resourceUnavailable("preview readback") }
         return image
@@ -69,8 +72,29 @@ extension FrameRenderer {
             commandBuffer.commit()
             commandBuffer.waitUntilCompleted()
             withExtendedLifetime(ink) {}
+            try Self.checkCompleted(commandBuffer)
         }
         assert(passes.joined().count == strokes.count, "Each stroke draws in one pass")
+    }
+
+    /// Throws if the GPU did not complete `commandBuffer`, for example because the app went to
+    /// the background. The readback buffer then holds no image, and a black preview must not
+    /// reach the cache (review after M9).
+    private static func checkCompleted(
+        _ commandBuffer: any MTLCommandBuffer
+    ) throws(RenderingError) {
+        try checkCompleted(status: commandBuffer.status, error: commandBuffer.error)
+    }
+
+    /// Throws for a `status` other than `.completed`, with the text of `error`.
+    static func checkCompleted(
+        status: MTLCommandBufferStatus,
+        error: (any Error)?
+    ) throws(RenderingError) {
+        guard status == .completed else {
+            let reason = error.map { String(describing: $0) } ?? "no error"
+            throw .resourceUnavailable("preview render, status \(status.rawValue), \(reason)")
+        }
     }
 
     /// The preview targets of the offscreen renders. The first render makes them, and later
