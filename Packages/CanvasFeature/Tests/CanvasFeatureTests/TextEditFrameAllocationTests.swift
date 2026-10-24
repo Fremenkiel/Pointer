@@ -69,6 +69,43 @@ final class TextEditFrameAllocationTests: XCTestCase {
         XCTAssertEqual(pointer, 0, "Pointer code allocated in a glide frame: \(summary)")
     }
 
+    func testSpringFramesWithALongText() throws {
+        try checkSpring(text: String(repeating: "let value = items.map { $0 * 2 }\n", count: 24))
+    }
+
+    /// Counts the allocations of the spring frames after a pinch past the zoom limit with an open
+    /// edit of `text`. The spring ends the pinch, so the text lays out once, in the last frame
+    /// (D-85). Before the fix, each spring frame laid out the text again: up to 231 allocations
+    /// and 14.57 ms per frame with 984 characters.
+    private func checkSpring(text: String) throws {
+        let canvas = try Self.makeCanvas(text: text, zoom: 8)
+        let box = try XCTUnwrap(canvas.content.textBoxes.values.first)
+        canvas.startTextEdit(of: box)
+        let onFrame = try XCTUnwrap(canvas.canvasView.inkView.onFrame)
+        let centroid = Point(x: 200, y: 150)
+        canvas.cameraController.beginPinch(centroid: centroid)
+        canvas.cameraController.updatePinch(scale: 1.5, centroid: centroid)
+        _ = canvas.cameraController.endPinch()
+        XCTAssertTrue(canvas.cameraController.isSpringing, "The zoom springs back")
+        var time = CACurrentMediaTime()
+        _ = onFrame(time)
+        var results: [AllocationTracer.Result] = []
+        while results.count < Self.maxFrames, canvas.cameraController.isAnimating {
+            time += Self.frameTime
+            results.append(try XCTUnwrap(AllocationTracer.trace { _ = onFrame(time) }))
+        }
+        let spring = results.dropLast()
+        let pointer = spring.map(\.pointer).max() ?? 0
+        let summary = "\(results.count) frames, Pointer allocations max \(pointer) before the last"
+        XCTContext.runActivity(named: summary) { _ in }
+        XCTAssertGreaterThan(results.count, 10, summary)
+        XCTAssertEqual(spring.map(\.unrecorded).max() ?? 0, 0, summary)
+        XCTAssertEqual(pointer, 0, "Pointer code allocated in a spring frame: \(summary)")
+        let view = canvas.textEditing.view
+        XCTAssertEqual(view.layoutZoom, 8, "The text lays out at the limit at the end")
+        XCTAssertTrue(view.transform.isIdentity, "The edit view has no scale at the end")
+    }
+
     /// Makes an array on the heap in the code of the test.
     @inline(never)
     private static func makeArray() -> [Int] {
@@ -76,7 +113,7 @@ final class TextEditFrameAllocationTests: XCTestCase {
     }
 
     /// A shown root canvas of 400 x 300 points at zoom 1, with one box of `text` at the origin.
-    private static func makeCanvas(text: String) throws -> CanvasViewController {
+    private static func makeCanvas(text: String, zoom: Double = 1) throws -> CanvasViewController {
         var content = CanvasContent(canvasID: Fixtures.canvas)
         try content.add(try TextEditTests.box(text, at: .zero))
         var dependencies = CanvasDependencies(
@@ -84,7 +121,7 @@ final class TextEditFrameAllocationTests: XCTestCase {
             clock: Fixtures.clock(),
             content: content
         )
-        dependencies.camera = Camera(center: .zero, zoom: 1)
+        dependencies.camera = Camera(center: .zero, zoom: zoom)
         let canvas = CanvasViewController(dependencies: dependencies)
         canvas.isShownCanvas = true
         canvas.view.frame = CGRect(x: 0, y: 0, width: 400, height: 300)

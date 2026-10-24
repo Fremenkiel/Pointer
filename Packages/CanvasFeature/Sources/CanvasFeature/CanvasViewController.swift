@@ -347,7 +347,8 @@ public final class CanvasViewController: UIViewController {
         if camera != renderer.camera { isCameraMoving = true }
         // During a flight, the render thread takes the camera from the flight itself (D-121).
         if cameraController.flightProgress == nil { renderer.camera = camera }
-        textCameraDidChange(isPinching: isPinchActive)
+        // A spring back ends the pinch, so the text lays out once when it stops (D-85).
+        textCameraDidChange(isPinching: isPinchActive || cameraController.isSpringing)
         if cameraController.isAnimating {
             canvasView.inkView.requestFrame()
         }

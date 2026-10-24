@@ -101,6 +101,13 @@ struct CameraController {
         return true
     }
 
+    /// `true` while a spring back to a zoom limit runs. The edit view then scales as in the
+    /// pinch, and lays out its text once at the end (D-85, PERF-01).
+    var isSpringing: Bool {
+        if case .spring = animation { return true }
+        return false
+    }
+
     /// Stops a deceleration or a spring, for example when a finger or the pencil touches.
     mutating func stopAnimation() {
         animation = .none

@@ -75,12 +75,13 @@ enum AllocationTracer {
     }
 
     /// The images that both Pointer and the system call: malloc, the runtimes, Foundation, and
-    /// the text and drawing libraries. A frame there does not decide, so the walk goes on to its
-    /// caller.
+    /// the text and drawing libraries, with UIFoundation, the TextKit of `UITextView`. A frame
+    /// there does not decide, so the walk goes on to its caller. Without UIFoundation, the redraw
+    /// that UIKit makes of a scaled text view counted as about 31 Pointer allocations per frame.
     private static let passThroughImages: Set<String> = [
         "libsystem_malloc.dylib", "libobjc.A.dylib", "libswiftCore.dylib", "Foundation",
         "CoreFoundation", "libdispatch.dylib", "libsystem_platform.dylib", "CoreText",
-        "CoreGraphics",
+        "CoreGraphics", "UIFoundation", "libc++abi.dylib", "libsystem_blocks.dylib",
     ]
     /// The images of system work that does not count: UIKit, Core Animation, and Metal (D-43).
     private static let systemImages: Set<String> = ["UIKitCore", "QuartzCore", "Metal"]
