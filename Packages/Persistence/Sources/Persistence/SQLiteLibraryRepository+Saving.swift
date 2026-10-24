@@ -144,6 +144,7 @@ extension SQLiteLibraryRepository {
             rollBack(statements)
             throw error
         }
+        checkpointIfNeeded()
         lastTimestamp = newest
         assert(
             latest.map { latest in lastTimestamp.map { $0 >= latest } ?? false } ?? true,

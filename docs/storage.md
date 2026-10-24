@@ -171,7 +171,7 @@ A stroke of 300 points takes 4.8 KB. The layout matches `InkPoint` in memory. Th
 
 ## 4. Write path
 
-`SQLiteLibraryRepository` is an actor. It owns the one connection that writes. It is the only code that runs SQL.
+`SQLiteLibraryRepository` is an actor. It owns the one connection that writes rows. It is the only code that runs SQL, together with its checkpointer.
 
 1. A command changes `CanvasContent` on the main actor.
 2. The canvas controller sends a value copy of the changed rows to the repository.
@@ -181,6 +181,12 @@ A stroke of 300 points takes 4.8 KB. The layout matches `InkPoint` in memory. Th
 6. When the scene goes to the background, the repository writes all pending rows at once. It asks for extra time with `UIApplication.beginBackgroundTask` for this step.
 
 A write never waits for a pause in the input. Thus the data loss after a crash is at most 1 second plus the time of one write, also while you draw without a pause (STO-06, review A-02).
+
+The write connection runs no automatic checkpoint, because the commit that passes 1,000 pages of WAL would run the checkpoint and wait for its sync (D-146, <https://sqlite.org/wal.html>). A WAL hook counts the pages of the WAL after each commit:
+
+- At 1,000 pages or more, the repository asks `WALCheckpointer` for a passive checkpoint. The checkpointer owns a second connection on its own serial queue, so the save does not wait.
+- At 8,000 pages or more, the write connection runs the passive checkpoint itself. This bounds the WAL when the checkpointer falls behind, for example when saves come back to back under a heavy disk load. That save waits for the sync.
+- The next commit after a checkpoint that copied all pages starts the WAL again from the beginning.
 
 If a transaction fails, the repository rolls it back and keeps the rows in the pending set. It logs the error and tries again at the end of the throttle interval of 1 second. This holds also for the write at the move to the background (F-09 of [m4-fix-plan.md](m4-fix-plan.md)). After three failures in a row, the app shows a message and stops new edits until the next save works. It never drops changes in silence.
 

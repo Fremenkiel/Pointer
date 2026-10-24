@@ -46,7 +46,7 @@ Layer 0  Foundations      InkEngine ---- Model ---- Geometry
 | `Geometry` | 0 | Foundation | `Point`, `Vector`, `Rect`, `Transform` in `Double`. `Camera` and camera math. `SpatialGrid`. `StrokeCurve`, the B-spline math. |
 | `Model` | 0 | `Geometry` | Value types: `Workspace`, `Card`, `TextBox`, `Stroke`, IDs, `HybridClock`, `FractionalIndex`. Commands and `History`. Protocol `LibraryRepository`. |
 | `InkEngine` | 0 | `Model`, `Geometry` | Eraser hit test and stroke split. |
-| `Persistence` | 1 | `Model`, `Geometry`, SQLite3 | `SQLiteLibraryRepository` (an actor), a small SQLite wrapper, row codecs, migrations, snapshots, restore. `PreviewStore`, which reads and writes the preview files as `Data` (D-107). |
+| `Persistence` | 1 | `Model`, `Geometry`, SQLite3 | `SQLiteLibraryRepository` (an actor), `WALCheckpointer` (an actor with a second connection, D-146), a small SQLite wrapper, row codecs, migrations, snapshots, restore. `PreviewStore`, which reads and writes the preview files as `Data` (D-107). |
 | `Rendering` | 1 | `Model`, `Geometry`, `InkEngine`, Metal, ImageIO | `CanvasRenderer`, the point arena, shaders, the committed texture cache, text layout, the glyph atlas (D-81). The card previews and their PNG code (D-107). |
 | `Export` | 1 | `Model`, `Geometry`, `InkEngine`, `Rendering` for `TextLayout` (D-140), Core Graphics, Core Text | `PDFExporter`. |
 | `DesignSystem` | 1 | SwiftUI, UIKit | Color, spacing, size, and icon tokens. |

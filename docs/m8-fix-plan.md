@@ -63,7 +63,27 @@ The SQLite documentation names the fix: "disable automatic checkpointing and run
 
 The stall at save 1 came in both variants, when the stress thread started its first file, so it does not come from the checkpoint. Without a pause between saves, the checkpointer of (b) did not catch up, and the WAL grew to 9,035 pages (`F-save-bench-2.xcresult`). The app pauses at least 1 s between timed saves, so the checkpointer catches up there.
 
-D-146 holds the decision, because (b) changes the storage design.
+D-146 holds the decision, because (b) changes the storage design. The product owner chose (c) on 2026-10-24: (b), and a checkpoint on the write connection at a hard limit of 8,000 pages.
+
+### 4.3 The change
+
+1. `SQLiteConnection.trackWALPages()` sets a WAL hook that counts the pages of the WAL after each commit. The hook replaces the automatic checkpoint. `checkpointPassive()` runs `sqlite3_wal_checkpoint_v2` in the passive mode.
+2. `WALCheckpointer` is an actor on its own serial queue with a second connection.
+3. After each commit, `SQLiteLibraryRepository.checkpointIfNeeded()` asks the checkpointer at 1,000 pages, and runs the checkpoint on the write connection at 8,000 pages.
+4. `RepositoryCheckpointTests` on the Mac: the write connection runs no automatic checkpoint (the WAL reaches 3,000 pages), the checkpointer lets the next save restart the WAL, the write connection checkpoints at the hard limit, and the rows stay. All 105 Persistence tests pass, and the line coverage of `Persistence` is 91.06 %.
+
+### 4.4 Benchmark with the real repository
+
+A temporary device test ran the 640 saves of the control run under the disk stress of section 4.1, in 3 alternating pairs of the build before the change (116c375) and the new build (`.build/Runs/F-save-alt-*.xcresult`):
+
+| Build | Saves over 50 ms per run | p99 | Slowest save |
+|---|---|---|---|
+| Before | 17, 19, 16 | 92.3 to 115.0 ms | 125.0 to 400.5 ms |
+| New | 1, 1, 1 | 11.3 to 17.9 ms | 132.4 to 164.3 ms |
+
+Without stress, the p99 of `testSameSavesWithoutSnapshot` dropped from 8.1 to 8.3 ms to 0.7 to 1.2 ms.
+
+The one slow save of the new build is the hard limit (`.build/Runs/F-save-why-1.xcresult`). The saves of the test come back to back, about every 5 ms. Under the stress, one checkpoint takes longer than that, so the checkpointer does not catch up, and the WAL reaches 8,000 pages. The write connection then runs the checkpoint, and that save waits for the sync: 135 ms in one run and 253 ms in the other. The app saves at most once per second, so it does not reach the hard limit this way. Full runs of `PointerDeviceTests` decide whether the test passes under the real load of a full run (section 6).
 
 ## 5. The message over the palette
 

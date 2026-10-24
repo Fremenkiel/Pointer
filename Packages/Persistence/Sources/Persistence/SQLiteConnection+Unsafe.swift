@@ -24,6 +24,8 @@ final class SQLiteConnection {
     /// holds a strong reference to this connection, so the handle outlives all statements.
     let handle: OpaquePointer
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Persistence")
+    /// The pages of the WAL after the last commit of this connection, from the WAL hook.
+    private let walCounter = WALCounter()
 
     /// Opens the database at `path` and applies the connection settings.
     ///
@@ -56,6 +58,62 @@ final class SQLiteConnection {
         if code != SQLITE_OK {
             logger.fault("Closing the database failed with code \(code)")
         }
+    }
+
+    /// The pages of the WAL file after the last commit of this connection. It is 0 before
+    /// `trackWALPages()` and after a commit that restarted the WAL.
+    var walPages: Int { walCounter.pages }
+
+    /// Counts the pages of the WAL after each commit, and so turns off the automatic checkpoint
+    /// of SQLite (D-146).
+    ///
+    /// A connection has one WAL hook, and the automatic checkpoint is that hook
+    /// (`sqlite3_wal_autocheckpoint`, <https://sqlite.org/c3ref/wal_hook.html>). The owner runs
+    /// the checkpoints instead.
+    ///
+    /// - Precondition: The connection can write.
+    func trackWALPages() {
+        precondition(sqlite3_db_readonly(handle, "main") == 0, "Only a write connection has a WAL")
+        assert(walCounter.pages == 0, "The WAL hook is set once")
+        // Safe: the counter is a property of this connection, so it lives until `deinit` closes
+        // the handle, and SQLite calls the hook only during a commit of this handle.
+        sqlite3_wal_hook(
+            handle,
+            { context, _, _, pages in
+                guard let context else { return SQLITE_OK }
+                Unmanaged<WALCounter>.fromOpaque(context).takeUnretainedValue().pages = Int(pages)
+                return SQLITE_OK
+            },
+            Unmanaged.passUnretained(walCounter).toOpaque()
+        )
+    }
+
+    /// Runs a passive checkpoint: it copies the pages of the WAL into the database without a wait
+    /// for readers or writers, and syncs (<https://sqlite.org/c3ref/wal_checkpoint_v2.html>).
+    ///
+    /// - Precondition: The connection can write.
+    /// - Returns: `true` if the checkpoint copied all pages of the WAL, `false` if another
+    ///   checkpoint ran or new pages came during it.
+    /// - Throws: `PersistenceError.sqlite` if the checkpoint fails.
+    func checkpointPassive() throws(PersistenceError) -> Bool {
+        precondition(
+            sqlite3_db_readonly(handle, "main") == 0,
+            "Only a write connection checkpoints"
+        )
+        var logPages: Int32 = 0
+        var copiedPages: Int32 = 0
+        let code = sqlite3_wal_checkpoint_v2(
+            handle,
+            nil,
+            SQLITE_CHECKPOINT_PASSIVE,
+            &logPages,
+            &copiedPages
+        )
+        // Another connection runs a checkpoint now, which does the same work.
+        guard code != SQLITE_BUSY else { return false }
+        try check(code, expected: SQLITE_OK)
+        assert(copiedPages <= logPages, "A checkpoint copies at most the WAL")
+        return copiedPages == logPages
     }
 
     /// Runs SQL without parameters and without result rows, for example a pragma or a schema.
@@ -149,4 +207,10 @@ final class SQLiteConnection {
             """
         )
     }
+}
+
+/// The page count of the WAL of one connection. Only the WAL hook writes it, during a commit on
+/// the executor of the owner of the connection, and only that owner reads it.
+private final class WALCounter {
+    var pages = 0
 }

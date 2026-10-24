@@ -68,6 +68,12 @@ public actor SQLiteLibraryRepository: LibraryRepository {
     var lastAttempt: Duration?
     var failureCount = 0
     var scheduledSave: Task<Void, Never>?
+    /// The checkpointer of the writable library, or `nil` (D-146).
+    var checkpointer: WALCheckpointer?
+    /// The running request to the checkpointer, or `nil`.
+    var checkpointRequest: Task<Void, Never>?
+    /// `false` in a test of the hard limit, which needs a library without a checkpointer.
+    let usesCheckpointer: Bool
 
     /// The executor of the repository: its own serial queue.
     public nonisolated var unownedExecutor: UnownedSerialExecutor {
@@ -84,7 +90,8 @@ public actor SQLiteLibraryRepository: LibraryRepository {
         configuration: Configuration,
         onFault: @escaping FaultHandler,
         beforeCommit: (@Sendable () throws(PersistenceError) -> Void)?,
-        migrations: [Migration] = Migration.library
+        migrations: [Migration] = Migration.library,
+        usesCheckpointer: Bool = true
     ) {
         precondition(!configuration.databasePath.isEmpty, "The library needs a file path")
         precondition(!migrations.isEmpty, "The library needs at least one migration")
@@ -103,6 +110,7 @@ public actor SQLiteLibraryRepository: LibraryRepository {
         }
         self.beforeCommit = beforeCommit
         self.migrations = migrations
+        self.usesCheckpointer = usesCheckpointer
     }
 
     /// Opens the library, creates or migrates its schema, and cleans up (storage.md sections 5
@@ -122,6 +130,10 @@ public actor SQLiteLibraryRepository: LibraryRepository {
             try await openConnection(snapshot: snapshot)
             guard let connection else { preconditionFailure("The connection did not open") }
             if !isReadOnly {
+                connection.trackWALPages()
+                if usesCheckpointer {
+                    checkpointer = try WALCheckpointer(path: configuration.databasePath)
+                }
                 try writeCreationRows(on: connection)
                 try LibraryMaintenance.removeTombstones(
                     on: connection,

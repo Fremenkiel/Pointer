@@ -25,7 +25,8 @@ struct RepositoryHarness {
     func make(
         wallMillis: UInt64 = Self.now,
         failSwitch: FailSwitch? = nil,
-        migrations: [Migration] = Migration.library
+        migrations: [Migration] = Migration.library,
+        usesCheckpointer: Bool = true
     ) -> SQLiteLibraryRepository {
         let configuration = SQLiteLibraryRepository.Configuration(
             databasePath: path,
@@ -43,7 +44,8 @@ struct RepositoryHarness {
             configuration: configuration,
             onFault: { sink.yield($0) },
             beforeCommit: hook,
-            migrations: migrations
+            migrations: migrations,
+            usesCheckpointer: usesCheckpointer
         )
     }
 
