@@ -8,18 +8,57 @@ struct SnapshotFiles {
     static let interval: TimeInterval = 24 * 60 * 60
     /// The end of a partial file name. With `.sqlite`, it gives `LibraryMaintenance.partialSuffix`.
     static let partialExtension = ".partial"
+    /// The most snapshots of one kind with the same second in their name: the counter of a
+    /// name goes from 2 to this value (D-155). A tap of "Back up now" takes about a second.
+    static let maxNameCounter = 99
     private static let prefix = "Pointer-"
+    private static let preRestorePrefix = "Pointer-pre-restore-"
     private static let suffix = ".sqlite"
-    /// `Pointer-yyyy-MM-dd-HHmmss.sqlite`: 8 + 17 + 7 characters.
-    private static let dailyNameLength = 32
+    /// `yyyy-MM-dd-HHmmss`: 17 characters.
+    private static let stampLength = 17
 
     let backups: URL
     let temporary: URL
     let timeZone: TimeZone
     private let files = FileManager()
 
-    /// Returns the name of the daily snapshot at `date`, in the local time of the user.
-    func dailyName(at date: Date) -> String {
+    /// Returns the first name of a daily snapshot at `date` that `Backups/` does not hold:
+    /// `Pointer-<stamp>.sqlite`, then `Pointer-<stamp>-2.sqlite`, and so on (D-155).
+    ///
+    /// - Throws: `PersistenceError.fileFailed` if all names up to `maxNameCounter` exist.
+    func freeDailyName(at date: Date) throws(PersistenceError) -> String {
+        try freeName(Self.prefix + stamp(at: date))
+    }
+
+    /// Returns the first name of a pre-restore snapshot at `date` that `Backups/` does not
+    /// hold: `Pointer-pre-restore-<stamp>.sqlite`, with a counter as for a daily name (D-154).
+    ///
+    /// - Throws: `PersistenceError.fileFailed` if all names up to `maxNameCounter` exist.
+    func freePreRestoreName(at date: Date) throws(PersistenceError) -> String {
+        try freeName(Self.preRestorePrefix + stamp(at: date))
+    }
+
+    /// Returns the name after the highest counter of `base` in `Backups/`. A lower free name
+    /// would sort as older than the snapshots of the same second, and the rotation could delete
+    /// the new snapshot at once.
+    private func freeName(_ base: String) throws(PersistenceError) -> String {
+        precondition(base.hasPrefix(Self.prefix), "A snapshot name starts with Pointer-")
+        var next = 1
+        for counter in 1...Self.maxNameCounter where exists(Self.name(base, counter)) {
+            next = counter + 1
+        }
+        guard next <= Self.maxNameCounter else {
+            throw .fileFailed(reason: "\(Self.maxNameCounter) snapshots have the same second")
+        }
+        return Self.name(base, next)
+    }
+
+    private static func name(_ base: String, _ counter: Int) -> String {
+        base + (counter == 1 ? "" : "-\(counter)") + suffix
+    }
+
+    /// Returns the stamp of `date` in the local time of the user: `yyyy-MM-dd-HHmmss`.
+    private func stamp(at date: Date) -> String {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         let parts = calendar.dateComponents(
@@ -35,9 +74,8 @@ struct SnapshotFiles {
             parts.minute ?? 0,
             parts.second ?? 0
         )
-        let name = Self.prefix + stamp + Self.suffix
-        assert(Self.isDaily(name), "The daily name \(name) does not match its own pattern")
-        return name
+        assert(stamp.count == Self.stampLength, "The stamp \(stamp) has another length")
+        return stamp
     }
 
     /// Returns the name of the snapshot before a migration from `oldVersion` (storage.md 6).
@@ -45,13 +83,34 @@ struct SnapshotFiles {
         "\(prefix)pre-migration-v\(oldVersion)\(suffix)"
     }
 
-    /// Returns true if `name` is the name of a daily snapshot.
+    /// Returns true if `name` is the name of a daily snapshot, with or without a counter.
     static func isDaily(_ name: String) -> Bool {
-        guard name.count == dailyNameLength, name.hasPrefix(prefix), name.hasSuffix(suffix) else {
-            return false
-        }
-        let stamp = name.dropFirst(prefix.count).dropLast(suffix.count)
-        return stamp.allSatisfy { $0.isASCII && ($0.isNumber || $0 == "-") }
+        counter(of: name, prefix: prefix) != nil
+    }
+
+    /// Returns true if `name` is the name of a pre-restore snapshot (D-154).
+    static func isPreRestore(_ name: String) -> Bool {
+        counter(of: name, prefix: preRestorePrefix) != nil
+    }
+
+    /// Returns the counter of `<prefix><stamp>-<counter>.sqlite`, from 2 to `maxNameCounter`,
+    /// 1 for `<prefix><stamp>.sqlite`, and `nil` for another name.
+    private static func counter(of name: String, prefix: String) -> Int? {
+        guard name.hasPrefix(prefix), name.hasSuffix(suffix) else { return nil }
+        let middle = name.dropFirst(prefix.count).dropLast(suffix.count)
+        let stamp = middle.prefix(stampLength)
+        guard stamp.count == stampLength, stamp.allSatisfy(isStampCharacter) else { return nil }
+        let rest = middle.dropFirst(stampLength)
+        guard !rest.isEmpty else { return 1 }
+        let digits = rest.dropFirst()
+        guard rest.first == "-", !digits.hasPrefix("0"), digits.allSatisfy(\.isASCII),
+            let counter = Int(digits), (2...maxNameCounter).contains(counter)
+        else { return nil }
+        return counter
+    }
+
+    private static func isStampCharacter(_ character: Character) -> Bool {
+        character.isASCII && (character.isNumber || character == "-")
     }
 
     /// Returns the daily snapshots with their change dates, newest first.
@@ -75,7 +134,11 @@ struct SnapshotFiles {
                 .contentModificationDate ?? .distantPast
             return (url: url, date: date)
         }
-        let newestFirst = daily.sorted { $0.date > $1.date }
+        // Snapshots of the same second have the same date, so the counter breaks the tie.
+        let newestFirst = daily.sorted {
+            ($0.date, Self.counter(of: $0.url.lastPathComponent, prefix: Self.prefix) ?? 0)
+                > ($1.date, Self.counter(of: $1.url.lastPathComponent, prefix: Self.prefix) ?? 0)
+        }
         assert(
             zip(newestFirst, newestFirst.dropFirst()).allSatisfy { $0.date >= $1.date },
             "The snapshots are not newest first"
@@ -121,6 +184,39 @@ struct SnapshotFiles {
             (try? dailySnapshots().count).map { $0 <= Self.keptCount } ?? true,
             "More than \(Self.keptCount) daily snapshots stay"
         )
+    }
+
+    /// Deletes each pre-restore snapshot except `kept`, after `kept` exists (D-154).
+    ///
+    /// - Precondition: `kept` is the name of a pre-restore snapshot in `Backups/`.
+    /// - Throws: `PersistenceError.fileFailed` if the folder does not list or a delete fails.
+    func removePreRestoreSnapshots(except kept: String) throws(PersistenceError) {
+        precondition(Self.isPreRestore(kept), "\(kept) is not a pre-restore name")
+        precondition(exists(kept), "The new pre-restore snapshot exists before the old ones go")
+        do {
+            let names = try files.contentsOfDirectory(atPath: backups.path(percentEncoded: false))
+            for name in names where Self.isPreRestore(name) && name != kept {
+                try files.removeItem(at: backups.appending(path: name))
+            }
+        } catch {
+            throw .fileFailed(reason: "cannot delete an old pre-restore snapshot: \(error)")
+        }
+    }
+
+    /// Deletes the partial file of a failed snapshot at once, so that a full disk does not stay
+    /// full and the next snapshot with that name works (D-155).
+    ///
+    /// - Precondition: `partial` is a partial file.
+    /// - Throws: `PersistenceError.fileFailed` if the file exists and does not go.
+    func removePartial(_ partial: URL) throws(PersistenceError) {
+        precondition(partial.path.hasSuffix(Self.partialExtension), "Not a partial file")
+        precondition(partial.deletingLastPathComponent().path == temporary.path, "Not in tmp")
+        guard files.fileExists(atPath: partial.path(percentEncoded: false)) else { return }
+        do {
+            try files.removeItem(at: partial)
+        } catch {
+            throw .fileFailed(reason: "cannot delete a partial snapshot: \(error)")
+        }
     }
 
     /// Returns true if a file named `name` exists in `Backups/`.

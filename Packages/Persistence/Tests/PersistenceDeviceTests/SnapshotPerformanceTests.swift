@@ -110,7 +110,7 @@ final class SnapshotPerformanceTests: XCTestCase {
         let start = clock.now
         let snapshot = Task {
             defer { isDone.withLock { $0 = true } }
-            return try await writer.writeDailySnapshot()
+            return try await writer.writeSnapshotNow()
         }
         var saveTimes: [Double] = []
         for save in 0..<maxSaves where !isDone.withLock({ $0 }) {

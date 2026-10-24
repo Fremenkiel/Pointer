@@ -84,7 +84,7 @@ public actor SnapshotWriter {
     @discardableResult  // The app needs only the error. Tests read the URL.
     public func appIsIdle() throws(PersistenceError) -> URL? {
         guard try isDailySnapshotDue() else { return nil }
-        return try writeDailySnapshot()
+        return try writeSnapshotNow()
     }
 
     /// Returns true if no daily snapshot exists or the newest one is older than 24 hours.
@@ -95,16 +95,32 @@ public actor SnapshotWriter {
         return now().timeIntervalSince(newest.date) >= SnapshotFiles.interval
     }
 
-    /// Writes a daily snapshot now and keeps the newest 7 (D-21).
+    /// Writes a daily snapshot now and keeps the newest 7 (D-21), for the idle signal and for
+    /// "Back up now" (D-155). If the name of this second exists, a counter joins it:
+    /// `Pointer-<stamp>-2.sqlite`.
     ///
     /// - Returns: The snapshot in `Backups/`.
     /// - Throws: `PersistenceError.sqlite` if `VACUUM INTO` fails, and
-    ///   `PersistenceError.fileFailed` if the rename fails. `Backups/` then holds no new file.
-    public func writeDailySnapshot() throws(PersistenceError) -> URL {
+    ///   `PersistenceError.fileFailed` if the rename fails. `Backups/` then holds no new file,
+    ///   and `tmp/` holds no partial file.
+    public func writeSnapshotNow() throws(PersistenceError) -> URL {
         let date = now()
-        let url = try write(as: files.dailyName(at: date), at: date)
+        let url = try write(as: files.freeDailyName(at: date), at: date)
         try files.removeOldSnapshots()
         assert(files.exists(url.lastPathComponent), "The new snapshot is missing")
+        return url
+    }
+
+    /// Writes the snapshot before a restore, `Pointer-pre-restore-<stamp>.sqlite`, and then
+    /// deletes the older pre-restore snapshots (D-154). The daily rotation does not count it.
+    ///
+    /// - Returns: The snapshot in `Backups/`.
+    /// - Throws: `PersistenceError` if the snapshot fails. The older snapshots then stay.
+    public func writePreRestoreSnapshot() throws(PersistenceError) -> URL {
+        let date = now()
+        let url = try write(as: files.freePreRestoreName(at: date), at: date)
+        try files.removePreRestoreSnapshots(except: url.lastPathComponent)
+        assert(SnapshotFiles.isPreRestore(url.lastPathComponent), "Not a pre-restore name")
         return url
     }
 
@@ -129,17 +145,37 @@ public actor SnapshotWriter {
         let partial = configuration.temporaryFolder.appending(
             path: name + SnapshotFiles.partialExtension
         )
+        let url: URL
         do {
-            let connection = try SQLiteConnection(path: configuration.databasePath, mode: .readOnly)
-            let vacuum = try connection.prepare("VACUUM INTO ?")
-            try vacuum.bind(partial.path(percentEncoded: false), at: 1)
-            try LibraryStatements.run(vacuum)
+            try vacuum(into: partial)
+            try beforeRename?()
+            url = try files.publish(partial, as: name, at: date)
+        } catch {
+            // A full disk leaves a file of 0 bytes, and a second run with its name fails
+            // (<https://www.sqlite.org/lang_vacuum.html#vacuuminto>, D-155).
+            removePartial(partial)
+            throw error
         }
-        try beforeRename?()
-        let url = try files.publish(partial, as: name, at: date)
         logger.info("Wrote a snapshot")
         assert(url.lastPathComponent == name, "The snapshot has another name than \(name)")
         return url
+    }
+
+    private func vacuum(into partial: URL) throws(PersistenceError) {
+        let connection = try SQLiteConnection(path: configuration.databasePath, mode: .readOnly)
+        let vacuum = try connection.prepare("VACUUM INTO ?")
+        try vacuum.bind(partial.path(percentEncoded: false), at: 1)
+        try LibraryStatements.run(vacuum)
+    }
+
+    /// Deletes the partial file of a failed snapshot. A failed delete is only logged, because
+    /// the error of the snapshot is the one to report, and the launch deletes the file later.
+    private func removePartial(_ partial: URL) {
+        do {
+            try files.removePartial(partial)
+        } catch {
+            logger.error("The partial file of a failed snapshot stays: \(error)")
+        }
     }
 
     private func now() -> Date {

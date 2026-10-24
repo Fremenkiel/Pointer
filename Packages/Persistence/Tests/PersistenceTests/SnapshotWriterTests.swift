@@ -24,7 +24,7 @@ struct SnapshotWriterTests {
         )
         try await repository.saveNow()
 
-        let url = try await Self.writer(harness).writeDailySnapshot()
+        let url = try await Self.writer(harness).writeSnapshotNow()
         #expect(url.lastPathComponent == "Pointer-2023-11-14-221320.sqlite")
         let live = try SQLiteConnection(path: harness.path, mode: .readWrite)
         let attach = try live.prepare("ATTACH ? AS snapshot")
@@ -39,7 +39,7 @@ struct SnapshotWriterTests {
         #expect(backups == [url.lastPathComponent])
     }
 
-    @Test("A snapshot that stops before the rename leaves no file in Backups")
+    @Test("A snapshot that fails before the rename leaves no file in Backups and in tmp")
     func stopBeforeRename() async throws {
         let harness = try RepositoryHarness()
         _ = try await harness.open()
@@ -51,13 +51,13 @@ struct SnapshotWriterTests {
             beforeRename: { () throws(PersistenceError) in throw .fileFailed(reason: "stopped") }
         )
         await #expect(throws: PersistenceError.fileFailed(reason: "stopped")) {
-            try await writer.writeDailySnapshot()
+            try await writer.writeSnapshotNow()
         }
         let backups = Self.backups(harness).path(percentEncoded: false)
         let names = (try? FileManager().contentsOfDirectory(atPath: backups)) ?? []
         #expect(names.isEmpty)
         let temporary = try FileManager().contentsOfDirectory(atPath: harness.folder.url.path)
-        #expect(temporary.contains("Pointer-2023-11-14-221320.sqlite.partial"))
+        #expect(!temporary.contains("Pointer-2023-11-14-221320.sqlite.partial"))
         #expect(try await writer.isDailySnapshotDue())
     }
 
@@ -83,7 +83,7 @@ struct SnapshotWriterTests {
         try await writer.writePreMigrationSnapshot(oldVersion: 1)
         var written: [String] = []
         for _ in 0..<9 {
-            written.append(try await writer.writeDailySnapshot().lastPathComponent)
+            written.append(try await writer.writeSnapshotNow().lastPathComponent)
             clock.advance(byHours: 24)
         }
         let names = try FileManager().contentsOfDirectory(atPath: Self.backups(harness).path)
@@ -135,7 +135,7 @@ struct SnapshotWriterTests {
         let isDone = OSAllocatedUnfairLock(initialState: false)
         let snapshot = Task {
             defer { isDone.withLock { $0 = true } }
-            return try await writer.writeDailySnapshot()
+            return try await writer.writeSnapshotNow()
         }
         let clock = ContinuousClock()
         var savesDuringSnapshot = 0

@@ -226,9 +226,12 @@ A snapshot is a complete, consistent copy of the library in one file. `SnapshotW
    ```
 
 2. If the command succeeds, rename the file into `Documents/Backups/Pointer-<yyyy-MM-dd-HHmmss>.sqlite`. A rename in one volume is atomic, so `Backups/` never holds a partial file.
-3. If the command fails or the app stops, the partial file stays in `tmp/`. At launch, before it opens the database and before the pre-migration snapshot, the repository deletes each `*.sqlite.partial` file in `tmp/` (F-08 of [m4-fix-plan.md](m4-fix-plan.md)).
+3. If the command or the rename fails, the writer deletes the partial file at once (D-155). On a full disk, `VACUUM INTO` leaves a file of 0 bytes, and a second run with that name fails with "output file already exists".
+4. If the app stops during a snapshot, the partial file stays in `tmp/`. At launch, before it opens the database and before the pre-migration snapshot, the repository deletes each `*.sqlite.partial` file in `tmp/` (F-08 of [m4-fix-plan.md](m4-fix-plan.md)).
 
-The name uses the local time of the iPad, because the user reads it in the Files app. The change date of the file is the time of the snapshot. The writer uses it for the age and the order of the snapshots. A pre-migration snapshot of a version that exists already stays as it is, because it holds the state before the first try of the migration.
+The name uses the local time of the iPad, because the user reads it in the Files app. If `Backups/` holds a snapshot of the same kind with the same second, a counter joins the name: `Pointer-<yyyy-MM-dd-HHmmss>-2.sqlite`, then `-3`, up to `-99` (D-155). The new name takes the counter after the highest one of that second, so it is always the newest. The change date of the file is the time of the snapshot. The writer uses it for the age and the order of the snapshots, and the counter orders the snapshots of one second. A pre-migration snapshot of a version that exists already stays as it is, because it holds the state before the first try of the migration.
+
+The snapshot before a restore has its own name, `Pointer-pre-restore-<yyyy-MM-dd-HHmmss>.sqlite` (D-154). After the new one exists, the writer deletes the older pre-restore snapshots, so only the newest one stays. The daily rotation of section 7.2 does not count it.
 
 `VACUUM INTO` reads one consistent view of the database and writes a compact copy. The copy has no `-wal` file and no free pages. In WAL mode, the read does not block the writer, so saves continue while the snapshot runs. If the target file exists, the command fails, so the name has seconds. The live database uses `synchronous = NORMAL`, so SQLite syncs the output file (review A-12).
 
@@ -245,7 +248,7 @@ To back up, the user copies the newest snapshot file from the Files app to any p
 ### 7.4 "Back up now" (STO-04)
 
 1. The repository writes all pending rows.
-2. The repository makes a new snapshot.
+2. The snapshot writer makes a new daily snapshot with `writeSnapshotNow()` (D-155). It counts in the 7 daily snapshots of section 7.2. It is the newest, so the rotation keeps it.
 3. The app opens the share sheet with the snapshot file. The user picks a destination.
 
 ### 7.5 Restore
