@@ -33,6 +33,9 @@ public enum PersistenceError: Error, Equatable, Sendable {
     case incompleteFile(byteCount: Int)
     /// `PRAGMA integrity_check` found a fault in a picked file. The reason is its first row.
     case integrityFailed(reason: String)
+    /// The app stopped a restore before its end, for example at the end of the extra time in
+    /// the background. The library keeps its old content (D-164).
+    case restoreStopped
     /// The tables, columns, indexes, views, or triggers of a picked file differ from the
     /// schema of its version (D-162, D-163). The reason names the first difference.
     case schemaMismatch(reason: String)

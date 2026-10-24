@@ -253,13 +253,20 @@ To back up, the user copies the newest snapshot file from the Files app to any p
 
 ### 7.5 Restore
 
-1. The user picks a snapshot file with the document picker. The app calls `startAccessingSecurityScopedResource()` on the URL before it reads the file, and `stopAccessingSecurityScopedResource()` after the restore.
-2. The app opens it read-only and runs `PRAGMA integrity_check`, `PRAGMA user_version`, and `PRAGMA page_size`.
-3. If the file passes, the app makes a snapshot of the current library first. Then it copies the picked file into the live database with the SQLite online backup API (`sqlite3_backup_init`, `sqlite3_backup_step`, `sqlite3_backup_finish`).
-4. The repository runs the migrations of section 6, because the snapshot can have an older `user_version`.
-5. The app reloads all workspaces.
+1. The user picks a snapshot file with the document picker, which opens the file in place (`asCopy: false`). The picker shows only files of the type `dk.saarikivi.pointer.snapshot` that `Info.plist` declares for the extension `.sqlite` (D-156).
+2. `SnapshotImport` in `Persistence` calls `startAccessingSecurityScopedResource()` on the URL. It copies the file with a coordinated read of `NSFileCoordinator` into `tmp/<uuid>.sqlite.partial`, and calls `stopAccessingSecurityScopedResource()`. The coordinated read downloads a file of a provider first. The launch deletes a copy that stays.
+3. `SnapshotImport` checks the copy, in this order (D-162). A copy that fails a check goes at once, and the error names the reason:
+   - The 100 header bytes, in Swift: the SQLite magic text, page size 4096, rollback mode (bytes 18 and 19 are 1, not 2 of WAL mode), a `user_version` from 1 to the current version, and a file size of whole pages. A newer version gives its own error (D-153).
+   - An open with the mode `untrustedReadOnly`: `SQLITE_OPEN_READONLY` with `immutable=1`, `trusted_schema` off, `query_only` on, `cell_size_check` on, and `mmap_size` 0. The settings of `sqlite3_db_config` are open question D-166.
+   - A full `PRAGMA integrity_check`, which must give the single row `ok`.
+   - A compare of all rows of `sqlite_schema` (tables, columns, indexes, views, and triggers, with their SQL) with the schema that the migrations up to that version make in a database in memory. No `application_id` (D-163).
+4. The app writes the pre-restore snapshot of section 7.1 (D-154).
+5. `SQLiteLibraryRepository.restore(from:stop:)` needs an empty pending set. It waits for the running checkpoint and drops all statements, so that no read is open, because `sqlite3_backup_init` refuses a destination with an open read. Then it copies the checked file into the live database with the SQLite online backup API, in steps of 1,024 pages (`sqlite3_backup_init`, `sqlite3_backup_step`, `sqlite3_backup_finish`). A step that meets a lock tries again, at most 200 times, 10 ms apart.
+6. Between two steps, the restore reads a stop flag. At the end of the extra time in the background, the app sets it, and `sqlite3_backup_finish` rolls the copy back, so the library keeps its old content (D-164).
+7. The backup does not call the WAL hook, so after the copy the WAL holds the whole library. A `TRUNCATE` checkpoint copies it and cuts the `-wal` file to 0 bytes. Then the repository closes.
+8. The app builds a new composition, as at launch (D-148). Its repository opens the library and runs the migrations of section 6, because the snapshot can have an older `user_version`. The app clears the preview cache (D-97, D-157) and reloads all workspaces.
 
-The live database and each snapshot use a page size of 4,096 bytes. The repository sets `PRAGMA page_size = 4096` before the first table exists. If the page sizes of the source and the WAL destination differ, `sqlite3_backup_step` returns `SQLITE_READONLY` (review A-21, item 7). If the picked file has another page size, the app refuses it with a message.
+The live database and each snapshot use a page size of 4,096 bytes. The repository sets `PRAGMA page_size = 4096` before the first table exists. If the page sizes of the source and the WAL destination differ, `sqlite3_backup_step` returns `SQLITE_READONLY` (review A-21, item 7). Thus the header check refuses a picked file with another page size.
 
 Restore is part of version 1 (decision D-20).
 

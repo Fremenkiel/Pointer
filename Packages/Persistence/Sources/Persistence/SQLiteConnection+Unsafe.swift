@@ -154,6 +154,31 @@ final class SQLiteConnection {
         return copiedPages == logPages ? .complete : .partial
     }
 
+    /// Runs a `TRUNCATE` checkpoint: it copies all pages of the WAL into the database, waits up
+    /// to the busy timeout for readers, and cuts the `-wal` file to 0 bytes. Only `TRUNCATE`
+    /// shrinks the file (<https://www.sqlite.org/pragma.html#pragma_wal_checkpoint>).
+    ///
+    /// - Precondition: The connection can write.
+    /// - Throws: `PersistenceError.sqlite` if the checkpoint fails or a reader holds old pages
+    ///   past the busy timeout.
+    func checkpointTruncate() throws(PersistenceError) {
+        precondition(
+            sqlite3_db_readonly(handle, "main") == 0,
+            "Only a write connection checkpoints"
+        )
+        var logPages: Int32 = 0
+        var copiedPages: Int32 = 0
+        let code = sqlite3_wal_checkpoint_v2(
+            handle,
+            nil,
+            SQLITE_CHECKPOINT_TRUNCATE,
+            &logPages,
+            &copiedPages
+        )
+        try check(code, expected: SQLITE_OK)
+        assert(logPages == 0 && copiedPages == 0, "A truncated WAL has no pages left")
+    }
+
     /// Runs SQL without parameters and without result rows, for example a pragma or a schema.
     ///
     /// - Throws: `PersistenceError.sqlite` with the SQLite message if a statement fails.
