@@ -516,3 +516,7 @@ Measured on 2026-10-24 on the iPad in Release (`M9-phase4-1.xcresult`).
 
 The check at the end of phase 3 failed in `StrokeStoreMemoryTests` (82.7 MB against 75 MB), the fault of the baseline. Nine more full runs looked for the cause (`M9-probe-*`, `M9-relief-*`, `M9-reserve-*`, `M9-parts-*`). Other threads allocate nothing during the build, `malloc_zone_pressure_relief` gives back nothing, and the arrays of the store grew to capacities that depend on the blocks of libmalloc. `StrokeStore.add(contentsOf:)` reserves each list for the load, and `FrameRenderer.load` uses it. The collections then hold 50.9 to 51.7 MB in each run, but the heap growth stays at 66.4 to 76.9 MB, and one of six runs failed. D-167 holds the question of the measure for the product owner.
 
+
+### 6.7 Manual acceptance (tasks 5.1 and 5.2)
+
+Task 5.2 ran on 2026-10-24 on the iPad. The product owner made two workspaces, tapped "Back up now", saved the file outside the Pointer folder, and deleted the app. The app was installed again in Release with `devicectl`, and it started with a new library and a new device ID. The product owner restored the file, and the app showed the same workspaces and canvases. A new stroke stayed after a force quit. The product owner reported a pass (M9 acceptance 3, D-161).
