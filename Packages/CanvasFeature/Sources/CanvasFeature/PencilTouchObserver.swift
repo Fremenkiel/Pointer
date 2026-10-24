@@ -41,14 +41,17 @@ final class PencilTouchObserver: UIGestureRecognizer, UIGestureRecognizerDelegat
 
     /// Reports the samples of each moved pencil touch.
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
-        for touch in touches {
+        // A loop over the bridged `Set` makes an iterator object at each sample: 1,001
+        // allocations per 1,000 calls on the Mac. The loop over the `NSSet` of UIKit makes
+        // none (PERF-01, review after M9).
+        for case let touch as UITouch in touches as NSSet {
             report(touch, event: event)
         }
     }
 
     /// Reports the last samples and the end of each pencil touch.
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
-        for touch in touches {
+        for case let touch as UITouch in touches as NSSet {
             report(touch, event: event)
         }
         finish(touches, isCancelled: false)

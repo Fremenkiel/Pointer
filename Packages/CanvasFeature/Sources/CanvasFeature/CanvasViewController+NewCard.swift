@@ -8,10 +8,11 @@ import UIKit
 extension CanvasViewController {
     /// Shows the pending card with the size of D-118, centered on the left edge of the view. A
     /// second tap puts it back there. At level 32 and at the node limit, it shows a message and
-    /// shows no card (CARD-09, D-95). A running edit ends first.
+    /// shows no card (CARD-09, D-95). A running edit ends first. Without editing, for example
+    /// during a restore or on a read-only library, it shows no card.
     func showPendingCard() {
         endTextEdit()
-        guard mayAddCard() else { return }
+        guard isEditingEnabled, mayAddCard() else { return }
         let size = viewSize
         guard size.width > 0, size.height > 0 else { return }
         let edge = renderer.camera.canvasPoint(
@@ -65,12 +66,13 @@ extension CanvasViewController {
     }
 
     /// Ends the drag of the pending card. A lift places it with one undo step. A cancelled drag,
-    /// or a drag without a move, puts it back at its place before the drag.
+    /// a drag without a move, or a lift without editing puts it back at its place before the
+    /// drag.
     func endPendingDrag(isPlaced: Bool) {
         guard let drag = textEditing.pendingDrag else { return }
         textEditing.pendingDrag = nil
         let hasMoved = drag.current.frame.origin != drag.card.frame.origin
-        guard isPlaced, hasMoved else {
+        guard isPlaced, hasMoved, isEditingEnabled else {
             textEditing.pendingCard = drag.card
             renderer.changeCards(removing: [], adding: [drag.card])
             return

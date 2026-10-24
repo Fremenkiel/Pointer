@@ -158,7 +158,7 @@ extension CanvasViewController {
     /// (data-model.md section 6).
     private static func isAbove(_ first: Card, _ second: Card) -> Bool {
         guard first.sortKey == second.sortKey else { return second.sortKey < first.sortKey }
-        return first.id.rawValue.uuidString > second.id.rawValue.uuidString
+        return second.id < first.id
     }
 
     /// Returns the card that a tap at a canvas point opens: a card that no text box covers

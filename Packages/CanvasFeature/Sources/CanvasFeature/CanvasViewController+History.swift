@@ -6,8 +6,10 @@ import UIKit
 
 /// Undo and redo of the canvas (architecture.md section 8, UNDO-01, UNDO-02).
 extension CanvasViewController {
-    /// Undoes the newest step of this canvas. It does nothing if the undo list is empty.
+    /// Undoes the newest step of this canvas. It does nothing if the undo list is empty or the
+    /// canvas takes no edits, for example during a restore (D-169).
     public func undo() {
+        guard isEditingEnabled else { return }
         // During an edit, undo and redo act on the text view (D-86).
         if textEditing.isEditing {
             textEditing.view.undoManager?.undo()
@@ -20,8 +22,10 @@ extension CanvasViewController {
         }
     }
 
-    /// Redoes the newest undone step of this canvas. It does nothing if the redo list is empty.
+    /// Redoes the newest undone step of this canvas. It does nothing if the redo list is empty
+    /// or the canvas takes no edits (D-169).
     public func redo() {
+        guard isEditingEnabled else { return }
         if textEditing.isEditing {
             textEditing.view.undoManager?.redo()
             historyDidChange()

@@ -247,7 +247,7 @@ public final class CanvasViewController: UIViewController {
     }
 
     /// Tells the app once that the camera is at rest: no gesture and no animation (D-53).
-    private func cameraMayRest() {
+    func cameraMayRest() {
         let isGestureActive = [panRecognizer, pinchRecognizer].contains {
             $0.state == .began || $0.state == .changed
         }
@@ -299,38 +299,6 @@ public final class CanvasViewController: UIViewController {
         if !hasPenStroke { releaseHeldSpring() }
     }
 
-    @objc func handlePan(_ recognizer: UIPanGestureRecognizer) {
-        if dragsPendingCard(recognizer) { return }
-        let translation = recognizer.translation(in: canvasView)
-        recognizer.setTranslation(.zero, in: canvasView)
-        guard pinchRecognizer.state == .possible || pinchRecognizer.state == .failed else { return }
-        cameraController.pan(byView: Vector(dx: translation.x, dy: translation.y))
-        if recognizer.state == .ended {
-            let velocity = recognizer.velocity(in: canvasView)
-            cameraController.endPan(velocity: Vector(dx: velocity.x, dy: velocity.y))
-        }
-        applyCamera()
-        cameraMayRest()
-    }
-
-    @objc func handlePinch(_ recognizer: UIPinchGestureRecognizer) {
-        let location = recognizer.location(in: canvasView)
-        let centroid = Point(x: location.x, y: location.y)
-        switch recognizer.state {
-        case .began:
-            cameraController.beginPinch(centroid: centroid)
-        case .changed where recognizer.numberOfTouches >= 2 && recognizer.scale > 0:
-            cameraController.updatePinch(scale: recognizer.scale, centroid: centroid)
-        case .ended, .cancelled, .failed:
-            endPinchGesture()
-        default:
-            return
-        }
-        applyCamera()
-        updatePinchExit()
-        cameraMayRest()
-    }
-
     private func stepCamera(to time: TimeInterval) -> Bool {
         let isAnimating = cameraController.step(to: time)
         applyCamera()
@@ -342,7 +310,7 @@ public final class CanvasViewController: UIViewController {
 
     /// Sends the camera to the renderer. The pen width follows at a pencil down and at rest,
     /// because a new `PKInkingTool` at each zoom frame allocates (PERF-01, D-131).
-    private func applyCamera() {
+    func applyCamera() {
         let camera = cameraController.shownCamera
         if camera != renderer.camera { isCameraMoving = true }
         // During a flight, the render thread takes the camera from the flight itself (D-121).

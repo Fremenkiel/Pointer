@@ -163,6 +163,8 @@ extension CanvasViewController: UITextViewDelegate {
         let text = textEditing.view.text ?? ""
         textEditing.view.resignFirstResponder()
         textEditing.view.removeFromSuperview()
+        // The key commands of undo and redo reach the canvas only as the first responder.
+        becomeFirstResponder()
         do {
             if let step = try textStep(of: edit, text: text) {
                 send(try perform(step))

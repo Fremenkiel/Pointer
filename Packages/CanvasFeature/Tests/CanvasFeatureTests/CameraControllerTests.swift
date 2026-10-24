@@ -19,6 +19,32 @@ struct CameraControllerTests {
         #expect(subject.camera.center == Point(x: -50, y: 0))
     }
 
+    @Test(
+        "The camera center stays inside the camera bound (D-170)",
+        arguments: [Limits.maxCameraCoordinate * 4, -Limits.maxCameraCoordinate * 4]
+    )
+    func centerBound(distance: Double) {
+        var subject = controller()
+        subject.pan(byView: Vector(dx: -distance, dy: distance))
+        #expect(subject.camera.center.x == (distance > 0 ? 1 : -1) * Limits.maxCameraCoordinate)
+        #expect(subject.camera.center.y == (distance > 0 ? -1 : 1) * Limits.maxCameraCoordinate)
+        let stored = Camera(center: Point(x: 1e300, y: 0), zoom: 1)
+        let restored = CameraController(camera: stored, viewSize: viewSize)
+        #expect(restored.camera.center.x == Limits.maxCameraCoordinate)
+    }
+
+    @Test("A pinch sample after the start of a flight does nothing (review after M9)")
+    func pinchAfterFlight() {
+        var subject = controller()
+        subject.beginPinch(centroid: Point(x: 500, y: 400))
+        let target = Camera(center: Point(x: 300, y: 0), zoom: 2)
+        _ = subject.fly(to: target, start: 0)
+        subject.updatePinch(scale: 1.5, centroid: Point(x: 520, y: 400))
+        #expect(subject.camera.zoom == 1, "The flight keeps its start")
+        _ = subject.step(to: 10)
+        #expect(subject.camera == target)
+    }
+
     @Test("A pinch zooms about the finger midpoint")
     func pinchAnchor() {
         var subject = controller()

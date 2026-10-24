@@ -100,6 +100,44 @@ extension CanvasViewController: UIGestureRecognizerDelegate {
         canvasView.addGestureRecognizer(pencilObserver)
     }
 
+    /// Moves the camera with a finger pan, or drags the pending card.
+    @objc func handlePan(_ recognizer: UIPanGestureRecognizer) {
+        if dragsPendingCard(recognizer) { return }
+        let translation = recognizer.translation(in: canvasView)
+        recognizer.setTranslation(.zero, in: canvasView)
+        // A pan would stop the flight of an open or a leave, which then ends too early.
+        guard !isInCardTransition else { return }
+        guard pinchRecognizer.state == .possible || pinchRecognizer.state == .failed else { return }
+        cameraController.pan(byView: Vector(dx: translation.x, dy: translation.y))
+        if recognizer.state == .ended {
+            let velocity = recognizer.velocity(in: canvasView)
+            cameraController.endPan(velocity: Vector(dx: velocity.x, dy: velocity.y))
+        }
+        applyCamera()
+        cameraMayRest()
+    }
+
+    /// Zooms the camera with a pinch, and ends a pinch-out exit at the lift.
+    @objc func handlePinch(_ recognizer: UIPinchGestureRecognizer) {
+        let location = recognizer.location(in: canvasView)
+        let centroid = Point(x: location.x, y: location.y)
+        switch recognizer.state {
+        // A pinch during the flight of an open or a leave would stop the flight.
+        case .began where !isInCardTransition:
+            cameraController.beginPinch(centroid: centroid)
+        case .changed
+        where recognizer.numberOfTouches >= 2 && recognizer.scale > 0 && !isInCardTransition:
+            cameraController.updatePinch(scale: recognizer.scale, centroid: centroid)
+        case .ended, .cancelled, .failed:
+            endPinchGesture()
+        default:
+            return
+        }
+        applyCamera()
+        updatePinchExit()
+        cameraMayRest()
+    }
+
     /// Ends a pinch: inside a card, a lift under the threshold leaves the card (CARD-05), and a
     /// zoom past a limit springs back (CARD-06). While the pencil touches, the spring waits for
     /// the end of the stroke, so that the camera stays under the pencil (D-135).

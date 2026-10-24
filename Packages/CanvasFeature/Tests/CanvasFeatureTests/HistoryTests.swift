@@ -79,6 +79,28 @@ struct CanvasHistoryTests {
         #expect(Set(controller.content.strokes.keys) == parts)
     }
 
+    @Test("Without editing, undo, redo, and the card button do nothing (D-169)")
+    func noEditsWhileBusy() throws {
+        let line = Self.line()
+        let controller = try makeController(
+            content: CanvasContent(canvasID: Fixtures.canvas),
+            sessions: CanvasSessions(),
+            clock: Fixtures.clock()
+        )
+        controller.addPenStrokes([line])
+        controller.isEditingEnabled = false
+        controller.undo()
+        #expect(Set(controller.content.strokes.keys) == [line.id])
+        controller.showPendingCard()
+        #expect(controller.textEditing.pendingCard == nil)
+        controller.isEditingEnabled = true
+        controller.undo()
+        #expect(controller.content.strokes.isEmpty)
+        controller.isEditingEnabled = false
+        controller.redo()
+        #expect(controller.content.strokes.isEmpty)
+    }
+
     @Test("The history of a canvas stays after a switch to another canvas and back (D-12)")
     func switchKeepsHistory() throws {
         let sessions = CanvasSessions()

@@ -115,8 +115,16 @@ final class TextEditing {
                 maxY: box.origin.y + size.height + grow.dy
             )
             guard area.contains(point) else { continue }
-            if best.map({ box.sortKey >= $0.sortKey }) ?? true { best = box }
+            // The ID breaks a tie of equal keys, as for the cards (data-model.md section 6). The
+            // order of the dictionary changes with each launch.
+            if best.map({ Self.isAbove(box, $0) }) ?? true { best = box }
         }
         return best
+    }
+
+    /// `true` if `first` lies above `second`: a larger sort key, and the ID breaks a tie.
+    private static func isAbove(_ first: TextBox, _ second: TextBox) -> Bool {
+        guard first.sortKey == second.sortKey else { return second.sortKey < first.sortKey }
+        return second.id < first.id
     }
 }

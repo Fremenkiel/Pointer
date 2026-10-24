@@ -39,8 +39,12 @@ struct CameraController {
         case flight(CameraFlight)
     }
 
-    /// The camera.
-    private(set) var camera: Camera
+    /// The camera. Its center stays within `Limits.maxCameraCoordinate`, so that each item
+    /// on the screen stays inside the canvas bound of a load (D-170).
+    private(set) var camera: Camera {
+        // A set inside `didSet` does not call `didSet` again.
+        didSet { camera = Self.bounded(camera) }
+    }
     /// The size of the view, in view points.
     var viewSize: Size
     /// The allowed zoom range.
@@ -56,7 +60,7 @@ struct CameraController {
     /// - Precondition: The zoom range is above zero.
     init(camera: Camera, viewSize: Size, zoomRange: ClosedRange<Double> = Limits.zoomRange) {
         precondition(zoomRange.lowerBound > 0, "Zoom range \(zoomRange) must be above zero")
-        self.camera = camera
+        self.camera = Self.bounded(camera)
         self.viewSize = viewSize
         self.zoomRange = zoomRange
     }
@@ -159,11 +163,13 @@ struct CameraController {
     }
 
     /// Zooms about the start midpoint by `scale` and pans by the movement of the midpoint.
+    /// Without a pinch, it does nothing: a flight ends the pinch, but UIKit can still send
+    /// samples of the gesture.
     ///
-    /// - Precondition: `scale` is positive and a pinch runs.
+    /// - Precondition: `scale` is positive.
     mutating func updatePinch(scale: Double, centroid: Point) {
         precondition(scale > 0 && scale.isFinite, "Pinch scale must be positive, got \(scale)")
-        guard var current = pinch else { preconditionFailure("No pinch to update") }
+        guard var current = pinch else { return }
         current.centroid = centroid
         current.rawZoom = current.startCamera.zoom * scale
         pinch = current
@@ -282,6 +288,18 @@ struct CameraController {
         if isDone {
             animation = .none
         }
+    }
+
+    /// Returns `camera` with its center moved inside `Limits.maxCameraCoordinate` (D-170).
+    static func bounded(_ camera: Camera) -> Camera {
+        let limit = Limits.maxCameraCoordinate
+        let center = camera.center
+        guard abs(center.x) > limit || abs(center.y) > limit else { return camera }
+        let inside = Point(
+            x: min(max(center.x, -limit), limit),
+            y: min(max(center.y, -limit), limit)
+        )
+        return Camera(center: inside, zoom: camera.zoom)
     }
 
     /// Returns the zoom with resistance past the limits.
