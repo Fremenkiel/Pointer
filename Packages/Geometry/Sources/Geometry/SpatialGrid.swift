@@ -45,6 +45,16 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     /// The number of items in the grid.
     public var count: Int { boundsByID.count }
 
+    /// The bytes of the cell table, the cell lists, and the bounds table, from their
+    /// capacities (D-167).
+    public var storageByteCount: Int {
+        let lists = cells.values.reduce(0) { $0 + $1.storageByteCount }
+        assert(lists >= boundsByID.count * MemoryLayout<Entry>.stride, "Each item is in a cell")
+        let bytes = cells.storageByteCount + lists + boundsByID.storageByteCount
+        assert(bytes >= lists, "The grid holds its cell lists")
+        return bytes
+    }
+
     /// The number of cells that hold at least one item.
     public var occupiedCellCount: Int { cells.count }
 

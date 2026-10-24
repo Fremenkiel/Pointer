@@ -310,3 +310,49 @@ final class StrokeStore {
         return blockSpacings[info.firstBlock..<(info.firstBlock + info.blockCount)]
     }
 }
+
+extension StrokeStore {
+    /// Adds the strokes of a load. Each list grows once to its size first. Without it, each list
+    /// doubles, and its size after the last doubling depends on the blocks that libmalloc gives
+    /// back: the store of 200,000 strokes took 63.1 to 84.3 MB in full runs, and its list of draw
+    /// data held 263,850 to 655,700 slots (docs/m9-plan.md section 6.6, D-167).
+    ///
+    /// - Precondition: The store keeps the stroke bound with `strokes`.
+    func add(contentsOf strokes: [Stroke]) {
+        let total = infos.count + strokes.count
+        precondition(total <= Limits.maxStrokesAfterErase, "The renderer holds the stroke bound")
+        let blocks = strokes.reduce(blockSpacings.count) {
+            $0 + DetailRuns.blockCount(pointCount: $1.points.count)
+        }
+        infos.reserveCapacity(total)
+        points.reserveCapacity(total)
+        ownsBlocks.reserveCapacity(total)
+        slotByID.reserveCapacity(total)
+        grid.reserveCapacity(total)
+        blockSpacings.reserveCapacity(blocks)
+        blockBends.reserveCapacity(blocks)
+        for stroke in strokes {
+            add(stroke)
+        }
+        assert(count <= total, "The load adds each stroke once")
+    }
+
+    /// The bytes that the lists, the slot table, and the grid of the store hold, from their
+    /// capacities. The points of the strokes belong to the content and do not count (D-167).
+    var storageByteCount: Int {
+        let strokeLists =
+            infos.storageByteCount + points.storageByteCount + ownsBlocks.storageByteCount
+        let blockLists =
+            blockSpacings.storageByteCount + blockBends.storageByteCount
+            + spareSpacings.storageByteCount + spareBends.storageByteCount
+        let slotLists =
+            residentSlots.storageByteCount + removals.storageByteCount
+            + freeSlots.storageByteCount
+        assert(strokeLists >= count * MemoryLayout<DrawInfo>.stride, "Each stroke has draw data")
+        let bytes =
+            strokeLists + blockLists + slotLists + slotByID.storageByteCount
+            + grid.storageByteCount
+        assert(bytes >= strokeLists + blockLists, "The sum holds each list")
+        return bytes
+    }
+}

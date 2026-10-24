@@ -1716,7 +1716,8 @@ Status values: Open, Decided, Replaced.
 
 ### D-167 The heap measure of `StrokeStoreMemoryTests`
 
-- Open. Raised at the end of phase 3 of [m9-plan.md](m9-plan.md) on 2026-10-24.
+- Decided by the product owner on 2026-10-24: option (a). Raised at the end of phase 3 of [m9-plan.md](m9-plan.md) on 2026-10-24.
+- Result: `StrokeStore.storageByteCount` sums the capacities of the lists, the slot table, and the grid of the store. `Array.storageByteCount` and `Dictionary.storageByteCount` in `Geometry` give the bytes of one collection. A dictionary counts its buckets, the smallest power of two that holds its capacity at a load factor of three quarters. The test asserts this sum against 75 MB and reports the heap growth without a limit.
 - Facts: `StrokeStoreMemoryTests.testStoreOfTwoHundredThousandHandwritingStrokes` failed in the baseline `make check` (80.7 MB) and in 4 of 10 later full runs (76.9 to 84.3 MB) against its limit of 75 MB. It passed in the others at 63.1 to 72.7 MB. The test takes the growth of `size_in_use` of all malloc zones while it adds 200,000 strokes.
 - Measured on the iPad in full runs (`M9-probe-*`, `M9-relief-*`, `M9-reserve-*`, `M9-parts-*`):
   - Other threads allocate 0.0 MB during the build. The growth comes from the main thread alone.

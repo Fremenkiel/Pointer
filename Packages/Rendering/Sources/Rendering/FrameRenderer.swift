@@ -158,9 +158,7 @@ final class FrameRenderer {
             store.count + strokes.count <= Limits.maxStrokesAfterErase,
             "Too many strokes"
         )
-        for stroke in strokes {
-            store.add(stroke)
-        }
+        store.add(contentsOf: strokes)
         layer?.invalidate()
         assert(store.count >= strokes.count, "The store holds the loaded strokes")
     }
