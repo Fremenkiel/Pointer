@@ -269,6 +269,7 @@ extension AppComposition {
         dependencies.onCameraRest = { [weak self] camera in self?.save(camera, for: canvasID) }
         dependencies.onMessage = { [weak self] text in self?.container.showMessage(text) }
         dependencies.level = target.level
+        dependencies.isUITest = defaults.string(forKey: AppFiles.uiTestKey) != nil
         dependencies.onOpenCard = { [weak self] card in self?.openChild(card) }
         dependencies.parentCard = parentCard
         dependencies.workspaceTitle = { [weak self] in

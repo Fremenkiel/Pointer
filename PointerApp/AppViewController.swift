@@ -244,6 +244,13 @@ final class AppViewController: UIViewController {
         }
     }
 
+    /// Adds the probe of the UI tests: one point in the top left corner that takes no touch
+    /// (D-178).
+    func installProbe() {
+        let probe = UITestProbe { [weak self] in self?.canvas }
+        view.addSubview(probe)
+    }
+
     /// Shows a message with one button, on top of a popover that shows, for example the palette
     /// (F-12). If that popover is in a transition, the message shows after the transition. A
     /// message that comes while another one shows is dropped, because each message stays true

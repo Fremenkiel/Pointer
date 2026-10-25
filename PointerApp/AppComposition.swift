@@ -102,7 +102,10 @@ final class AppComposition {
     /// shows a message and leaves the empty screen.
     func start(after handoff: Handoff? = nil) async {
         do {
-            let files = try fileLocations ?? AppFiles.make(FileManager.default)
+            let token = defaults.string(forKey: AppFiles.uiTestKey)
+            let files =
+                try fileLocations ?? AppFiles.make(FileManager.default, uiTestToken: token)
+            if token != nil { container.installProbe() }
             openedFiles = files
             previewStore = PreviewStore(folder: files.previews)
             let device = try await openDeviceState(files)

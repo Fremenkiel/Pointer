@@ -121,6 +121,7 @@ struct WorkspaceList: View {
             }
             .buttonStyle(.plain)
             .disabled(!canCreate)
+            .accessibilityIdentifier("newWorkspace")
             if !canCreate {
                 Text(verbatim: WorkspaceStrings.limitReached)
                     .font(DesignSystem.Font.chromeMessage)

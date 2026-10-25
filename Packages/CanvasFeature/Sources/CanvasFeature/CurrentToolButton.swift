@@ -14,5 +14,6 @@ struct CurrentToolButton: View {
         .buttonStyle(.plain)
         .accessibilityLabel(CanvasStrings.tools)
         .accessibilityValue(controls.selected.label)
+        .accessibilityIdentifier("tools")
     }
 }

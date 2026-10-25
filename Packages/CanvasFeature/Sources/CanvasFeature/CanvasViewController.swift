@@ -115,18 +115,11 @@ public final class CanvasViewController: UIViewController {
         onCameraRest = dependencies.onCameraRest
         onMessage = dependencies.onMessage
         level = dependencies.level
+        palmGuard = PalmGuard(radius: dependencies.isUITest ? PalmGuard.uiTestPalmRadius : nil)
         onOpenCard = dependencies.onOpenCard
         parentLink = ParentLink(card: dependencies.parentCard, onLeave: dependencies.onPinchLeave)
         canvasExport = CanvasExport(workspaceTitle: dependencies.workspaceTitle)
-        let converter = PencilKitStrokeConverter(
-            clock: dependencies.clock,
-            canvasID: dependencies.canvasID
-        )
-        handoff = LiveStrokeHandoff(
-            canvasView: canvasView.liveCanvas,
-            renderer: renderer,
-            converter: converter
-        )
+        handoff = Self.makeHandoff(dependencies, canvasView: canvasView, renderer: renderer)
         super.init(nibName: nil, bundle: nil)
         applyPenTool()
         takeSession()
@@ -137,6 +130,23 @@ public final class CanvasViewController: UIViewController {
             content.strokes.count
                 == dependencies.content.strokes.count + dependencies.transientStrokes.count,
             "Each loaded and each transient stroke is in the content"
+        )
+    }
+
+    /// Makes the handoff of the live strokes of `canvasView` to `renderer`.
+    private static func makeHandoff(
+        _ dependencies: CanvasDependencies,
+        canvasView: CanvasView,
+        renderer: CanvasRenderer
+    ) -> LiveStrokeHandoff {
+        let converter = PencilKitStrokeConverter(
+            clock: dependencies.clock,
+            canvasID: dependencies.canvasID
+        )
+        return LiveStrokeHandoff(
+            canvasView: canvasView.liveCanvas,
+            renderer: renderer,
+            converter: converter
         )
     }
 

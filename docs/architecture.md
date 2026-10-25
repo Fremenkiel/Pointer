@@ -59,6 +59,8 @@ The script `Scripts/check-layers.swift` reads `swift package dump-package` for e
 
 Dependencies flow down. Features get repositories and services through their initializers. No singletons exist, except the ones that Apple provides.
 
+The UI test target `PointerUITests` imports XCTest only and drives the app in a new process (D-178). The launch argument `-uiTestLibrary <token>` makes `AppFiles` put all files into `tmp/UITest-<token>/`, so that a UI test never touches the real library. With this argument only, `PointerApp` adds `UITestProbe`: five accessibility elements that give the state of the shown canvas (`uiTest.loading`, `uiTest.strokes`, `uiTest.cards`, `uiTest.level`, and `uiTest.camera`). The tests wait on these values, never on a fixed time.
+
 ## 4. Input pipeline
 
 ### 4.1 Touch routing
@@ -75,7 +77,7 @@ A palm guard keeps the palm away from the finger gestures (review A-14). iPadOS 
 
 1. The touch begins while a pencil touch is active.
 2. The touch begins less than 150 ms after the last pencil touch ended. The value is a start value. Tune it on a device.
-3. The `majorRadius` of the touch is larger than a palm threshold of 30 points (`PalmGuard.palmRadius`).
+3. The `majorRadius` of the touch is larger than a palm threshold of 30 points (`PalmGuard.palmRadius`). The UI tests use 40 points, because XCTest gives each synthesized touch 32.67 points (D-191).
 
 The guard affects the finger gestures only. A finger never draws in any case (TOOL-03), because the `PKCanvasView` uses `drawingPolicy = .pencilOnly`.
 

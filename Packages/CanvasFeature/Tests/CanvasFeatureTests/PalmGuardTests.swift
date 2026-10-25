@@ -43,4 +43,14 @@ struct PalmGuardTests {
         guardState.pencilBegan()
         #expect(guardState.isPencilDown)
     }
+
+    @Test(
+        "The radius of a UI test takes the synthesized touches of XCTest and refuses a larger one",
+        arguments: [(32.67, true), (PalmGuard.uiTestPalmRadius, true), (40.01, false)]
+    )
+    func uiTestRadius(radius: Double, allowed: Bool) {
+        let guardState = PalmGuard(radius: PalmGuard.uiTestPalmRadius)
+        #expect(guardState.allowsFingerTouch(at: 0, majorRadius: radius) == allowed)
+        #expect(PalmGuard().allowsFingerTouch(at: 0, majorRadius: 32.67) == false)
+    }
 }

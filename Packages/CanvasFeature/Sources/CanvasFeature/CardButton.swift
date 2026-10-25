@@ -14,6 +14,7 @@ struct CardButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(CanvasStrings.newCard)
+        .accessibilityIdentifier("newCard")
     }
 }
 

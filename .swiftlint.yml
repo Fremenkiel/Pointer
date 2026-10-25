@@ -5,6 +5,7 @@
 included:
   - PointerApp
   - PointerAppTests
+  - PointerUITests
   - Packages
   - Scripts
 

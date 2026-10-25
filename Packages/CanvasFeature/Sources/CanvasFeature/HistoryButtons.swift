@@ -12,16 +12,27 @@ struct HistoryButtons: View {
     /// The buttons in a row.
     var body: some View {
         HStack(spacing: DesignSystem.Spacing.small) {
-            button(DesignSystem.Icon.undo, label: CanvasStrings.undo, isEnabled: controls.canUndo) {
+            button(
+                DesignSystem.Icon.undo,
+                label: CanvasStrings.undo,
+                identifier: "undo",
+                isEnabled: controls.canUndo
+            ) {
                 controls.undo()
             }
-            button(DesignSystem.Icon.redo, label: CanvasStrings.redo, isEnabled: controls.canRedo) {
+            button(
+                DesignSystem.Icon.redo,
+                label: CanvasStrings.redo,
+                identifier: "redo",
+                isEnabled: controls.canRedo
+            ) {
                 controls.redo()
             }
             if showsExport {
                 button(
                     DesignSystem.Icon.export,
                     label: CanvasStrings.export,
+                    identifier: "export",
                     isEnabled: !controls.isExporting
                 ) {
                     controls.export()
@@ -33,6 +44,7 @@ struct HistoryButtons: View {
     private func button(
         _ icon: String,
         label: String,
+        identifier: String,
         isEnabled: Bool,
         action: @escaping () -> Void
     ) -> some View {
@@ -42,5 +54,6 @@ struct HistoryButtons: View {
         .buttonStyle(.plain)
         .disabled(!isEnabled)
         .accessibilityLabel(label)
+        .accessibilityIdentifier(identifier)
     }
 }

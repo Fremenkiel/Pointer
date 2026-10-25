@@ -11,6 +11,20 @@ struct PalmGuard {
     /// A touch with a larger `majorRadius`, in points, is a palm. A start value: a fingertip
     /// gives about 10 points. Tune it on a device in M2.
     static let palmRadius = 30.0
+    /// The palm radius of a UI test. XCTest gives each synthesized finger touch a `majorRadius`
+    /// of 32.67 points, so the UI tests need a larger radius to pan and drag (D-191).
+    static let uiTestPalmRadius = 40.0
+
+    /// A touch with a larger `majorRadius` than this, in points, is a palm.
+    let radius: Double
+
+    /// Makes a guard with the palm radius `radius`, or `palmRadius` for `nil`.
+    ///
+    /// - Precondition: `radius` is positive.
+    init(radius: Double? = nil) {
+        precondition((radius ?? Self.palmRadius) > 0, "A palm radius is positive")
+        self.radius = radius ?? Self.palmRadius
+    }
 
     private var pencilTouches = 0
     private var lastPencilEnd: TimeInterval?
@@ -36,6 +50,6 @@ struct PalmGuard {
         if let lastPencilEnd, time - lastPencilEnd < Self.pencilCooldown {
             return false
         }
-        return majorRadius <= Self.palmRadius
+        return majorRadius <= radius
     }
 }

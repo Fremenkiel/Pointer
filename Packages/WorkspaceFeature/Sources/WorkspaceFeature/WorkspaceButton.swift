@@ -32,5 +32,6 @@ struct WorkspaceButton: View {
         .buttonStyle(.plain)
         .accessibilityLabel(WorkspaceStrings.selectorLabel)
         .accessibilityValue(title)
+        .accessibilityIdentifier("workspaces")
     }
 }

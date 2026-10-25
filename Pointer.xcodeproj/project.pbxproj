@@ -33,11 +33,19 @@
 			remoteGlobalIDString = B0000000000000000000A001;
 			remoteInfo = PointerApp;
 		};
+		B0000000000000000000X002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B0000000000000000000R001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B0000000000000000000A001;
+			remoteInfo = PointerApp;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		B0000000000000000000F001 /* Pointer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Pointer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B0000000000000000000F002 /* PointerDeviceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PointerDeviceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B0000000000000000000F003 /* PointerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PointerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -109,9 +117,21 @@
 			path = Packages/BackupFeature/Tests/BackupFeatureSnapshotTests;
 			sourceTree = "<group>";
 		};
+		B0000000000000000000G014 /* PointerUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PointerUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		B0000000000000000000P008 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B0000000000000000000P002 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -159,6 +179,7 @@
 				B0000000000000000000G011 /* Packages/Export/Tests/ExportTests */,
 				B0000000000000000000G012 /* Packages/BackupFeature/Tests/BackupFeatureTests */,
 				B0000000000000000000G013 /* Packages/BackupFeature/Tests/BackupFeatureSnapshotTests */,
+				B0000000000000000000G014 /* PointerUITests */,
 				B0000000000000000000G003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -168,6 +189,7 @@
 			children = (
 				B0000000000000000000F001 /* Pointer.app */,
 				B0000000000000000000F002 /* PointerDeviceTests.xctest */,
+				B0000000000000000000F003 /* PointerUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -245,6 +267,27 @@
 			productReference = B0000000000000000000F002 /* PointerDeviceTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		B0000000000000000000A003 /* PointerUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B0000000000000000000L004 /* Build configuration list for PBXNativeTarget "PointerUITests" */;
+			buildPhases = (
+				B0000000000000000000P007 /* Sources */,
+				B0000000000000000000P008 /* Frameworks */,
+				B0000000000000000000P009 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B0000000000000000000T002 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				B0000000000000000000G014 /* PointerUITests */,
+			);
+			name = PointerUITests;
+			productName = PointerUITests;
+			productReference = B0000000000000000000F003 /* PointerUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -259,6 +302,10 @@
 						CreatedOnToolsVersion = 27.0;
 					};
 					B0000000000000000000A002 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = B0000000000000000000A001;
+					};
+					B0000000000000000000A003 = {
 						CreatedOnToolsVersion = 27.0;
 						TestTargetID = B0000000000000000000A001;
 					};
@@ -291,11 +338,19 @@
 			targets = (
 				B0000000000000000000A001 /* PointerApp */,
 				B0000000000000000000A002 /* PointerDeviceTests */,
+				B0000000000000000000A003 /* PointerUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		B0000000000000000000P009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B0000000000000000000P003 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -313,6 +368,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		B0000000000000000000P007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B0000000000000000000P001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -334,6 +396,11 @@
 			isa = PBXTargetDependency;
 			target = B0000000000000000000A001 /* PointerApp */;
 			targetProxy = B0000000000000000000X001 /* PBXContainerItemProxy */;
+		};
+		B0000000000000000000T002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B0000000000000000000A001 /* PointerApp */;
+			targetProxy = B0000000000000000000X002 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -484,6 +551,38 @@
 			};
 			name = Release;
 		};
+		B0000000000000000000C007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WN75K5V2MH;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = dk.saarikivi.pointer.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				TARGETED_DEVICE_FAMILY = 2;
+				TEST_TARGET_NAME = PointerApp;
+			};
+			name = Debug;
+		};
+		B0000000000000000000C008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WN75K5V2MH;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = dk.saarikivi.pointer.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				TARGETED_DEVICE_FAMILY = 2;
+				TEST_TARGET_NAME = PointerApp;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -510,6 +609,15 @@
 			buildConfigurations = (
 				B0000000000000000000C005 /* Debug */,
 				B0000000000000000000C006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B0000000000000000000L004 /* Build configuration list for PBXNativeTarget "PointerUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B0000000000000000000C007 /* Debug */,
+				B0000000000000000000C008 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

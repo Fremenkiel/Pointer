@@ -58,14 +58,16 @@ analyze:
 	@echo "analyze: 0 findings"
 
 # Tier A tests run on the Mac. Package tests cannot run on a device, so the tests of the other
-# packages run in PointerDeviceTests on the iPad (D-77). Keep the iPad unlocked during the run.
+# packages run in PointerDeviceTests on the iPad (D-77). The UI tests of PointerUITests run on the
+# iPad after them, each in a new process of the app on a temporary library (D-178). Keep the iPad
+# unlocked during the run.
 test:
 	@for package in $(TIER_A); do \
 		if [ -d Packages/$$package/Tests ]; then \
 			swift test --package-path Packages/$$package || exit 1; \
 		fi; \
 	done
-	$(DEVICE_TEST) -quiet -only-testing:PointerDeviceTests
+	$(DEVICE_TEST) -quiet -only-testing:PointerDeviceTests -only-testing:PointerUITests
 	@echo "test: done"
 
 # TEST-07: the snapshot tests run in PointerDeviceTests on the iPad and compare against the
@@ -172,7 +174,7 @@ validation:
 
 # STYLE-04. The fixtures hold deliberate violations, so the formatter skips them.
 format:
-	swift format lint --strict --recursive PointerApp PointerAppTests Packages Scripts/*.swift \
+	swift format lint --strict --recursive PointerApp PointerAppTests PointerUITests Packages Scripts/*.swift \
 		Scripts/Nesting/Package.swift Scripts/Nesting/Sources
 
 lint:

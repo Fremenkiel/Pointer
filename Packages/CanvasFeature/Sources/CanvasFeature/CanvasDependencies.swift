@@ -32,6 +32,9 @@ public struct CanvasDependencies {
     public var parentCard: Card?
     /// Leaves this canvas for its parent after a pinch-out exit (CARD-05).
     public var onPinchLeave: @MainActor () -> Void = {}
+    /// `true` for a UI test. The palm guard then takes the larger radius of the synthesized
+    /// touches of XCTest (D-191). The app keeps `false`.
+    public var isUITest = false
     /// The level of the canvas in the card tree: 0 for the root canvas (D-95).
     ///
     /// - Precondition: From 0 to `Limits.maxDepth`.
