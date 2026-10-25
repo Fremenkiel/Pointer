@@ -147,6 +147,32 @@ struct RepositoryLaunchTests {
         #expect(!checkpoints.values.isEmpty, "No checkpoint after a cleanup of \(pages) pages")
     }
 
+    @Test("The launch reports the canvases that its cleanup removes, for their previews (D-18)")
+    func removedCanvases() async throws {
+        let harness = try RepositoryHarness()
+        _ = try await harness.open()
+        let writer = try SQLiteConnection(path: harness.path, mode: .readWrite)
+        try writer.execute(
+            """
+            INSERT INTO workspace VALUES (X'0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A', 'old', 'V',
+                zeroblob(28), zeroblob(28), 1);
+            INSERT INTO card VALUES (X'0B0B0B0B0B0B0B0B0B0B0B0B0B0B0B0B',
+                X'0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A0A', 0, 0, 64, 48, 'under old', 'V',
+                zeroblob(28), zeroblob(28), 0);
+            INSERT INTO workspace VALUES (X'0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C', 'live', 'W',
+                zeroblob(28), zeroblob(28), 0);
+            """
+        )
+        let later = harness.make(wallMillis: RepositoryHarness.now + 31 * Self.day)
+        let launch = try await later.open { _ in }
+        let removed = Set(launch.removedCanvases.map(\.rawValue.uuidString))
+        #expect(
+            removed == [
+                "0A0A0A0A-0A0A-0A0A-0A0A-0A0A0A0A0A0A", "0B0B0B0B-0B0B-0B0B-0B0B-0B0B0B0B0B0B",
+            ]
+        )
+    }
+
     @Test("A damaged library file gives a fault at the open and stays as it was (storage.md 9)")
     func damagedLibrary() async throws {
         let harness = try RepositoryHarness()

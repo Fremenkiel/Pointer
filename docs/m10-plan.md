@@ -801,3 +801,8 @@ The 160 tests of Persistence pass on the Mac.
 
 - The messages at the workspace limit and of an invalid name take their numbers from `Limits` as format arguments, with the same visible text. The selector snapshots pass unchanged, and a test makes sure that the messages show the numbers of `Limits` (`T-28-new2.xcresult`).
 - The PDF writes its text boxes in the order of the page (D-185). `PDFTextTests.pageOrder` covers the order, and the PDF suites pass (`T-28b.xcresult`).
+
+### 6.27 The undo of an erase and the preview files (task 2.9)
+
+- `EraseStrokes.revert` accepts up to `Limits.maxStrokesAfterErase` (D-159). The undo of a cutting erase and a whole-stroke erase at 200,000 strokes failed at each try with the old code, and it passes now.
+- The 30-day purge reports the canvases that it removes in `LibraryLaunch.removedCanvases`, and the launch removes their preview files. `RepositoryLaunchTests.removedCanvases` covers the report on the Mac. `PurgedPreviewTests.removesPurged` found both preview files of a purged workspace on the old code (`T-29-old.xcresult`) and passes on the new code (`T-29-new.xcresult`). The previews of a tombstone of one day stay.

@@ -95,6 +95,10 @@ final class SQLiteConnection {
     /// `trackWALPages()` and after a commit that restarted the WAL.
     var walPages: Int { walCounter.pages }
 
+    /// True between a `BEGIN` and its `COMMIT` or `ROLLBACK`
+    /// (<https://www.sqlite.org/c3ref/get_autocommit.html>).
+    var isInTransaction: Bool { sqlite3_get_autocommit(handle) == 0 }
+
     /// Counts the pages of the WAL after each commit, and so turns off the automatic checkpoint
     /// of SQLite (D-146).
     ///

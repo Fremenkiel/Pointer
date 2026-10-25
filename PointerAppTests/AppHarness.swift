@@ -28,8 +28,11 @@ final class AppHarness {
     /// The key window before the test, which gets the key back at the end.
     private weak var previous: UIWindow?
 
-    /// Makes the folders, starts a composition, and waits for the canvas of its first workspace.
-    static func start() async throws -> AppHarness {
+    /// Makes the folders, runs `prepare` on the files, starts a composition, and waits for the
+    /// canvas of its first workspace.
+    static func start(
+        prepare: (AppFiles) async throws -> Void = { _ in }
+    ) async throws -> AppHarness {
         // swiftlint:disable:next arch_04_file_system
         let folder = FileManager().temporaryDirectory.appending(path: "App-\(UUID())")
         let files = AppFiles(
@@ -41,6 +44,7 @@ final class AppHarness {
         )
         // swiftlint:disable:next arch_04_file_system
         try FileManager().createDirectory(at: files.temporary, withIntermediateDirectories: true)
+        try await prepare(files)
         // A window of its own, as `SceneDelegate` makes it, so that the alerts and the sheets of
         // the composition present as in the app. The window of the test host stays below.
         let host = try OnScreenCanvas.host()

@@ -144,6 +144,7 @@ public actor SQLiteLibraryRepository: LibraryRepository {
     /// - Throws: `ModelError.storageFailed` if the file does not open or migrate.
     public func open(snapshot: PreMigrationSnapshot) async throws(ModelError) -> LibraryLaunch {
         precondition(connection == nil, "The library is open already")
+        var removedCanvases: [CanvasID] = []
         // A partial file of a stopped launch makes `VACUUM INTO` fail before the migration (F-08).
         LibraryMaintenance.removePartialSnapshots(in: configuration.temporaryFolder)
         do {
@@ -158,7 +159,7 @@ public actor SQLiteLibraryRepository: LibraryRepository {
                     )
                 }
                 try writeCreationRows(on: connection)
-                try LibraryMaintenance.removeTombstones(
+                removedCanvases = try LibraryMaintenance.removeTombstones(
                     on: connection,
                     now: configuration.wallClock
                 )
@@ -171,7 +172,11 @@ public actor SQLiteLibraryRepository: LibraryRepository {
             dropConnection()
             throw .storageFailed(reason: "\(error)")
         }
-        return LibraryLaunch(isReadOnly: isReadOnly, lastTimestamp: lastTimestamp)
+        return LibraryLaunch(
+            isReadOnly: isReadOnly,
+            lastTimestamp: lastTimestamp,
+            removedCanvases: removedCanvases
+        )
     }
 
     private func openConnection(snapshot: PreMigrationSnapshot) async throws(PersistenceError) {

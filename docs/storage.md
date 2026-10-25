@@ -201,7 +201,7 @@ If a transaction fails, the repository rolls it back and keeps the rows in the p
 
 The repository loads one canvas at a time. It never loads the whole library into memory.
 
-At launch, the repository removes the tombstones that are older than 30 days (D-18). This covers deleted cards with their subtrees and erased strokes with their erase records (review A-07). Then it runs `PRAGMA incremental_vacuum`, which gives the free pages back to the file system (review A-21, item 6).
+At launch, the repository removes the tombstones that are older than 30 days (D-18). This covers deleted cards with their subtrees and erased strokes with their erase records (review A-07). Then it runs `PRAGMA incremental_vacuum`, which gives the free pages back to the file system (review A-21, item 6). The repository returns the IDs of the removed canvases in `LibraryLaunch.removedCanvases`, and the app removes their preview files (m10-plan.md task 2.9).
 
 The load reads at most `Limits.maxStrokesAfterErase` (210,000) strokes, because an erase can pass the stroke limit (D-73). A canvas at the stroke limit (200,000 strokes of 300 points) holds about 1 GB of points. That is too much for one load. If tests on the device show a slow open for large canvases, the next step is a load by viewport: an R-tree index on the stroke bounds, and a query for the strokes near the camera only. Version 1 loads the whole canvas (decision D-24).
 

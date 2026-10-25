@@ -116,6 +116,7 @@ final class AppComposition {
             let last = [library.lastTimestamp, handoff?.lastClock].compactMap { $0 }.max()
             makeClock(device: device.state.deviceID, last: last)
             isReadOnly = library.isReadOnly
+            await removePreviews(of: library.removedCanvases)
             if isReadOnly { container.showMessage(AppStrings.readOnly) }
             if let workspace = device.state.lastWorkspace {
                 let stored = try NavigationPath(

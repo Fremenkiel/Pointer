@@ -73,4 +73,17 @@ extension AppComposition {
             }
         }
     }
+
+    /// Removes the preview files of the canvases that the launch purge removed (D-18,
+    /// m10-plan.md task 2.9). A file that stays costs disk space only, so a failure logs.
+    func removePreviews(of canvases: [CanvasID]) async {
+        guard let store = previewStore else { return }
+        for canvas in canvases {
+            do {
+                try await store.remove(canvas)
+            } catch {
+                logger.error("The preview of a purged canvas stays: \(String(describing: error))")
+            }
+        }
+    }
 }

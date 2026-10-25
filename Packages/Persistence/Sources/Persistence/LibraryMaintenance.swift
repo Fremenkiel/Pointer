@@ -17,16 +17,18 @@ enum LibraryMaintenance {
     /// at `Limits.maxDepth` (FLOW-01).
     ///
     /// - Throws: `PersistenceError.sqlite` if a step fails. The transaction then rolls back.
+    /// - Returns: The removed canvases: the workspaces and the cards with their subtrees.
     static func removeTombstones(
         on connection: SQLiteConnection,
         now: any WallClock
-    ) throws(PersistenceError) {
+    ) throws(PersistenceError) -> [CanvasID] {
         let nowMillis = now.nowMillis()
         let cutoffMillis =
             nowMillis > tombstoneLifetimeMillis ? nowMillis - tombstoneLifetimeMillis : 0
         let zeroDevice = DeviceID(rawValue: UUID(uuid: UUID_NULL))
         let cutoff = HybridTimestamp(wallMillis: cutoffMillis, counter: 0, device: zeroDevice)
         try connection.execute("BEGIN IMMEDIATE")
+        var canvases: [CanvasID] = []
         do {
             try connection.execute(
                 """
@@ -39,6 +41,7 @@ enum LibraryMaintenance {
                 try statement.bind(ValueCodec.data(cutoff), at: 1)
                 try LibraryStatements.run(statement)
             }
+            canvases = try doomedCanvases(on: connection)
             try connection.execute(removeDoomed)
             try connection.execute("COMMIT")
             assert(
@@ -50,6 +53,43 @@ enum LibraryMaintenance {
             throw error
         }
         try connection.execute("PRAGMA incremental_vacuum")
+        return canvases
+    }
+
+    /// The most removed canvases that one cleanup reports: each workspace with a full canvas. A
+    /// tree has no limit on its total cards, so a larger cleanup reports the first ones only. The
+    /// other preview files stay and cost disk space only.
+    static let maxReportedCanvases = Limits.maxWorkspaces * (Limits.maxNodesPerCanvas + 1)
+
+    /// Reads the canvases that the cleanup removes. A row with an ID of another length is skipped
+    /// with a log entry, because it has no preview file.
+    ///
+    /// - Precondition: The cleanup transaction is open, so the temporary table exists.
+    private static func doomedCanvases(
+        on connection: SQLiteConnection
+    ) throws(PersistenceError) -> [CanvasID] {
+        precondition(connection.isInTransaction, "The removed canvases are read in the cleanup")
+        let statement = try connection.prepare("SELECT id FROM doomed_canvas")
+        // The read must end before the cleanup drops the table.
+        defer {
+            do {
+                try statement.reset()
+            } catch {
+                logger.error("The read of the removed canvases did not reset: \(error)")
+            }
+        }
+        var canvases: [CanvasID] = []
+        for _ in 0..<maxReportedCanvases {
+            guard try statement.step() else { break }
+            guard let data = statement.data(at: 0),
+                let canvas = try? ValueCodec.identifier(data, as: CanvasID.self)
+            else {
+                logger.error("A removed canvas has no valid ID")
+                continue
+            }
+            canvases.append(canvas)
+        }
+        return canvases
     }
 
     /// Rolls back. SQLite rolls back by itself after some errors, so a failed rollback is only
