@@ -37,9 +37,13 @@ final class PreviewAtlas {
     private(set) var unavailable: Set<CardID> = []
     /// The new requests of the current frame. Reused (PERF-01).
     var wanted: [PreviewRequest] = []
-    /// The requests past `requestLimit`, oldest first. A result moves the next one to `wanted`,
-    /// so no card waits for a later build to ask again (review after M8, section 3.2, item 5).
+    /// The requests past `requestLimit`, oldest first, from `deferredHead` on. A result moves
+    /// the next one to `wanted`, so no card waits for a later build to ask again (review after
+    /// M8, section 3.2, item 5).
     private(set) var deferred: [PreviewRequest] = []
+    /// The first request of `deferred` that waits. The ones before it are taken. A head index
+    /// takes a request without a shift of the list (m10-plan.md section 6.30).
+    private var deferredHead = 0
     /// The cards of `deferred`.
     private var deferredCards: Set<CardID> = []
     /// The results that wait for an upload, oldest first.
@@ -99,7 +103,8 @@ final class PreviewAtlas {
         guard !requested.contains(card), !unavailable.contains(card) else { return }
         let request = PreviewRequest(card: card, bounds: bounds, step: step, cardAspect: cardAspect)
         guard requested.count < requestLimit else {
-            if deferred.count < Self.deferredLimit, deferredCards.insert(card).inserted {
+            let hasRoom = deferred.count - deferredHead < Self.deferredLimit
+            if hasRoom, deferredCards.insert(card).inserted {
                 deferred.append(request)
             }
             return
@@ -109,11 +114,13 @@ final class PreviewAtlas {
         assert(requested.count <= requestLimit, "At most \(requestLimit) requests wait")
     }
 
-    /// Moves deferred requests to `wanted` while the limit has room.
+    /// Moves deferred requests to `wanted` while the limit has room. The loop stops at the
+    /// limit: a `for` loop with a `where` clause walked the whole list at each result, and
+    /// the shift of `removeFirst` moved the rest (m10-plan.md section 6.30).
     private func moveDeferred() {
-        var taken = 0
-        for request in deferred where requested.count < requestLimit {
-            taken += 1
+        while deferredHead < deferred.count, requested.count < requestLimit {
+            let request = deferred[deferredHead]
+            deferredHead += 1
             deferredCards.remove(request.card)
             let hasStep = (entries[request.card]?.step ?? 0) >= request.step
             guard !requested.contains(request.card), !unavailable.contains(request.card),
@@ -122,8 +129,16 @@ final class PreviewAtlas {
             requested.insert(request.card)
             wanted.append(request)
         }
-        deferred.removeFirst(taken)
+        // The taken requests go once they are half of the list, so each request moves at most
+        // once on average.
+        if deferredHead * 2 >= deferred.count { compactDeferred() }
         assert(requested.count <= requestLimit, "At most \(requestLimit) requests wait")
+    }
+
+    /// Removes the taken requests from the front of `deferred`.
+    private func compactDeferred() {
+        deferred.removeFirst(deferredHead)
+        deferredHead = 0
     }
 
     /// Takes the result of a request. Pixels get a slot of the size of their step, and the slot
@@ -155,7 +170,10 @@ final class PreviewAtlas {
     func forget(_ card: CardID) {
         assert(!requested.contains(card) || entries[card] == nil, "A requested card has no entry")
         unavailable.remove(card)
-        if deferredCards.remove(card) != nil { deferred.removeAll { $0.card == card } }
+        if deferredCards.remove(card) != nil {
+            compactDeferred()
+            deferred.removeAll { $0.card == card }
+        }
         guard let entry = entries.removeValue(forKey: card) else { return }
         slots.free(entry.slot)
     }

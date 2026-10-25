@@ -828,3 +828,22 @@ The measures ran in release builds on the Mac, with the median of 11 to 31 repea
 ### 6.29 Small allocations (task 3.6)
 
 - The load of a canvas counts its strokes, cards, and text boxes with one query and reserves room for them in `CanvasContent`. The count includes erased and deleted rows, so it is an upper bound, and the limits of a canvas cap it. In a release build on the Mac, the count of 20,000 strokes took 0.24 ms, and the reserve cut the growth of the stroke table from 1.8 ms to 0.8 ms. The whole load went from 36.0 to 39.6 ms to 32.6 to 35.0 ms in three runs each.
+
+### 6.30 Phase 2 against its base, and the deferred previews
+
+Four alternating pairs of the base 0673d1e and commit f6c7e5e ran `EraseUndoPerformanceTests`, `EraserFramePerformanceTests`, `TextPassPerformanceTests`, `CanvasOpenPerformanceTests`, `FrameLoopTests`, `RenderingPerformanceTests`, `PreviewMakerPerformanceTests`, `ExportPerformanceTests`, and `OpenAnimationTests` (`T-P2-alt-*`). 79 measures passed. Three were unsure, with all four new runs above all four base runs (p = 0.029):
+
+| Measure | Base | Phase 2 |
+|---|---|---|
+| Card pan, render p50 | 0.419 ms | 0.501 ms (+19.4 %) |
+| Card zoom, render p50 | 0.339 ms | 0.436 ms (+28.4 %) |
+| Handwriting pan, main p99 | 0.013 ms | 0.025 ms |
+
+The cause of the render time was task 2.5 (a754c20). `PreviewAtlas.moveDeferred` looped with `for request in deferred where requested.count < requestLimit`. Such a loop does not stop when its condition turns false: it skips the rest, so it walked the whole list of deferred requests at each stored preview. `removeFirst` then shifted the rest of the list. With the 5,000 cards of D-56, the cost grew with the square of the waiting cards. The loop now stops at the limit, and a head index takes a request without a shift. Four pairs of `FrameLoopTests` against f6c7e5e (`T-P2fix-alt-*`):
+
+| Measure | f6c7e5e | Fix |
+|---|---|---|
+| Card pan, render p50 | 0.490 ms | 0.394 ms (-19.5 %, p = 0.029) |
+| Card zoom, render p50 | 0.441 ms | 0.350 ms (-20.7 %, p = 0.029) |
+
+Both are back at the level of the base. The main-thread p99 values move by a few microseconds in both directions between runs, and two of them were unsure again. The fix runs on the render thread only. The compare of 10 runs in phase 8 decides them (D-177).
