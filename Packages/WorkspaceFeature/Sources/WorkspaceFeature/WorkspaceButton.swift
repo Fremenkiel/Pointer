@@ -13,13 +13,13 @@ struct WorkspaceButton: View {
         Button(action: action) {
             HStack(spacing: DesignSystem.Spacing.small) {
                 Text(verbatim: title)
-                    .font(DesignSystem.Font.chromeTitle)
+                    .font(DesignSystem.Font.chromeBar)
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .frame(maxWidth: DesignSystem.Size.selectorTitleWidth, alignment: .leading)
                     .fixedSize(horizontal: true, vertical: false)
                 Image(systemName: DesignSystem.Icon.expand)
-                    .font(DesignSystem.Font.chromeMessage)
+                    .font(DesignSystem.Font.chromeBarDetail)
             }
             .foregroundStyle(DesignSystem.Color.chromeForeground)
             .padding(.horizontal, DesignSystem.Spacing.medium)
@@ -33,5 +33,9 @@ struct WorkspaceButton: View {
         .accessibilityLabel(WorkspaceStrings.selectorLabel)
         .accessibilityValue(title)
         .accessibilityIdentifier("workspaces")
+        // The title keeps its size in the bar, so the viewer shows it large (D-179).
+        .accessibilityShowsLargeContentViewer {
+            Label(title, systemImage: DesignSystem.Icon.expand)
+        }
     }
 }

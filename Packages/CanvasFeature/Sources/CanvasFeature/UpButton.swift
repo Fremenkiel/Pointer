@@ -19,5 +19,6 @@ public struct UpButton: View {
         .buttonStyle(.plain)
         .accessibilityLabel(CanvasStrings.up)
         .accessibilityIdentifier("up")
+        .largeContent(CanvasStrings.up, icon: DesignSystem.Icon.up)
     }
 }

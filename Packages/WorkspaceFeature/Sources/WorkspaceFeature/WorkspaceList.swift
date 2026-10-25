@@ -37,7 +37,7 @@ struct WorkspaceList: View {
                 commandRows
             }
         }
-        .frame(width: DesignSystem.Size.selectorListWidth)
+        .modifier(ListWidth())
         .foregroundStyle(DesignSystem.Color.chromeForeground)
         .background(DesignSystem.Color.chromeBackground)
     }
@@ -59,10 +59,12 @@ struct WorkspaceList: View {
             HStack(spacing: DesignSystem.Spacing.small) {
                 Text(verbatim: workspace.title)
                     .font(DesignSystem.Font.chromeRow)
-                    .lineLimit(1)
+                    .modifier(RowLines())
                 Spacer(minLength: DesignSystem.Spacing.small)
                 if isCurrent {
+                    // The row reads as selected, so VoiceOver skips the mark (D-179).
                     Image(systemName: DesignSystem.Icon.current)
+                        .accessibilityHidden(true)
                 }
             }
             .padding(.horizontal, DesignSystem.Spacing.medium)
@@ -84,6 +86,9 @@ struct WorkspaceList: View {
             }
         }
         .accessibilityAddTraits(isCurrent ? .isSelected : [])
+        // The context menu needs a long press, so VoiceOver gets the same commands (D-179).
+        .accessibilityAction(named: WorkspaceStrings.rename) { onRename(workspace) }
+        .accessibilityAction(named: WorkspaceStrings.delete) { onDelete(workspace) }
     }
 
     private var commandRows: some View {
@@ -131,5 +136,24 @@ struct WorkspaceList: View {
             }
         }
         .padding(.horizontal, DesignSystem.Spacing.medium)
+    }
+}
+
+/// The width of the list, which grows with the text size up to
+/// `DesignSystem.Size.selectorListMaxWidth` (D-179).
+private struct ListWidth: ViewModifier {
+    @ScaledMetric(relativeTo: .body) private var width = DesignSystem.Size.selectorListWidth
+
+    func body(content: Content) -> some View {
+        content.frame(width: min(width, DesignSystem.Size.selectorListMaxWidth))
+    }
+}
+
+/// One line per row, and 2 lines at an accessibility text size (D-179).
+private struct RowLines: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    func body(content: Content) -> some View {
+        content.lineLimit(typeSize.isAccessibilitySize ? 2 : 1)
     }
 }

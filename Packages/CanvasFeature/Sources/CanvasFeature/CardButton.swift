@@ -15,6 +15,7 @@ struct CardButton: View {
         .buttonStyle(.plain)
         .accessibilityLabel(CanvasStrings.newCard)
         .accessibilityIdentifier("newCard")
+        .largeContent(CanvasStrings.newCard, icon: DesignSystem.Icon.card)
     }
 }
 

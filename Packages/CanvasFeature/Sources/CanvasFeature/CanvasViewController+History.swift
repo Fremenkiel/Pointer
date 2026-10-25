@@ -266,6 +266,9 @@ extension CanvasViewController {
         canvasExport.share = { [weak self] provider in self?.presentShareSheet(provider) }
         host.view.backgroundColor = .clear
         host.sizingOptions = .intrinsicContentSize
+        // The Large Content Viewer needs this interaction around the buttons, and a SwiftUI
+        // host adds none, as measured on the iPad (D-179).
+        host.view.addInteraction(UILargeContentViewerInteraction())
         addChild(host)
         host.view.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(host.view)

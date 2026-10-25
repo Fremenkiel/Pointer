@@ -30,9 +30,13 @@ public final class CanvasViewController: UIViewController {
     /// The state of the current-tool button and the palette.
     let toolControls = ToolControls()
     /// The host of the current-tool button and the card button.
-    private(set) lazy var toolButtonHost = UIHostingController(
-        rootView: ToolChrome(controls: toolControls)
-    )
+    private(set) lazy var toolButtonHost: UIHostingController<ToolChrome> = {
+        let host = UIHostingController(rootView: ToolChrome(controls: toolControls))
+        // The Large Content Viewer needs this interaction around the buttons, and a SwiftUI
+        // host adds none, as measured on the iPad (D-179).
+        host.view.addInteraction(UILargeContentViewerInteraction())
+        return host
+    }()
     /// The current-tool button and the card button right of it. The app places them next to the
     /// workspace selector (D-64, D-117).
     public var toolButton: UIViewController { toolButtonHost }

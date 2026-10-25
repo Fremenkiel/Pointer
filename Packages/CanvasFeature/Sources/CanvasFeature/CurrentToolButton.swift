@@ -15,5 +15,6 @@ struct CurrentToolButton: View {
         .accessibilityLabel(CanvasStrings.tools)
         .accessibilityValue(controls.selected.label)
         .accessibilityIdentifier("tools")
+        .largeContent(controls.selected.label, icon: controls.selected.icon)
     }
 }

@@ -60,6 +60,9 @@ extension CanvasViewController: UIPencilInteractionDelegate {
         )
         host.view.backgroundColor = UIColor(DesignSystem.Color.chromeBackground)
         host.overrideUserInterfaceStyle = .dark
+        // The Large Content Viewer needs this interaction around the buttons, and a SwiftUI
+        // host adds none, as measured on the iPad (D-179).
+        host.view.addInteraction(UILargeContentViewerInteraction())
         host.modalPresentationStyle = .popover
         host.preferredContentSize = host.sizeThatFits(in: view.bounds.size)
         if let popover = host.popoverPresentationController {

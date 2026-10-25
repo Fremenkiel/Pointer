@@ -55,5 +55,6 @@ struct HistoryButtons: View {
         .disabled(!isEnabled)
         .accessibilityLabel(label)
         .accessibilityIdentifier(identifier)
+        .largeContent(label, icon: icon)
     }
 }

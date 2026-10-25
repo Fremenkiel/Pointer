@@ -13,7 +13,7 @@ struct ChromeIcon: View {
     /// The icon on its square background.
     var body: some View {
         Image(systemName: icon)
-            .font(DesignSystem.Font.chromeTitle)
+            .font(DesignSystem.Font.chromeBar)
             .foregroundStyle(
                 isEnabled ? DesignSystem.Color.chromeForeground : DesignSystem.Color.chromeDisabled
             )
@@ -23,5 +23,15 @@ struct ChromeIcon: View {
                     ? DesignSystem.Color.chromeSelection : DesignSystem.Color.chromeBackground,
                 in: RoundedRectangle(cornerRadius: DesignSystem.Size.cornerRadius)
             )
+    }
+}
+
+extension View {
+    /// Shows the icon and the label of a button of the bar in the Large Content Viewer, because
+    /// the icon keeps its size at large text sizes (D-179).
+    func largeContent(_ label: String, icon: String) -> some View {
+        accessibilityShowsLargeContentViewer {
+            Label(label, systemImage: icon)
+        }
     }
 }

@@ -78,6 +78,8 @@ snapshots:
 		-only-testing:PointerDeviceTests/RedrawTests \
 		-only-testing:PointerDeviceTests/EraserMaskTests \
 		-only-testing:PointerDeviceTests/WorkspaceSelectorSnapshotTests \
+		-only-testing:PointerDeviceTests/LargeTextSnapshotTests \
+		-only-testing:PointerDeviceTests/LargeTextChromeSnapshotTests \
 		-only-testing:PointerDeviceTests/HistoryButtonsSnapshotTests \
 		-only-testing:PointerDeviceTests/ToolControlsSnapshotTests \
 		-only-testing:PointerDeviceTests/TextRenderingTests \

@@ -133,6 +133,32 @@ final class FlowTests: XCTestCase {
         alert.buttons.firstMatch.tap()
         XCTAssertTrue(alert.waitForNonExistence(timeout: Self.timeout))
     }
+
+    /// VoiceOver reads a label for each button, without the word "button" (A11Y-01, D-179).
+    func testEachButtonHasLabel() {
+        let app = launch()
+        app.buttons["newCard"].tap()
+        let buttons = app.buttons.allElementsBoundByIndex
+        XCTAssertGreaterThanOrEqual(buttons.count, 6)
+        for button in buttons {
+            XCTAssertFalse(button.label.isEmpty, "\(button.identifier) has no label")
+            XCTAssertFalse(
+                button.label.localizedCaseInsensitiveContains("button"),
+                "\(button.label) names the control type"
+            )
+        }
+    }
+
+    /// The current workspace reads as selected, without a "Checkmark" (A11Y-01, D-179).
+    func testCurrentWorkspaceReadsAsSelected() {
+        let app = launch()
+        app.buttons["workspaces"].tap()
+        let row = app.buttons["Workspace"]
+        XCTAssertTrue(row.waitForExistence(timeout: Self.timeout))
+        XCTAssertTrue(row.isSelected)
+        let marks = app.images.matching(NSPredicate(format: "label ==[c] %@", "checkmark"))
+        XCTAssertEqual(marks.count, 0)
+    }
 }
 
 extension XCUIElement {

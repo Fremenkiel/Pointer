@@ -200,6 +200,9 @@ final class AppViewController: UIViewController {
         guard let action, let toolButton else { return }
         let host = UIHostingController(rootView: UpButton(action: action))
         host.view.backgroundColor = .clear
+        // The Large Content Viewer needs this interaction around the buttons, and a SwiftUI
+        // host adds none, as measured on the iPad (D-179).
+        host.view.addInteraction(UILargeContentViewerInteraction())
         host.sizingOptions = .intrinsicContentSize
         addChild(host)
         host.view.translatesAutoresizingMaskIntoConstraints = false
@@ -222,6 +225,9 @@ final class AppViewController: UIViewController {
             rootView: WorkspaceSelectorView(model: model, commands: commands)
         )
         host.view.backgroundColor = .clear
+        // The Large Content Viewer needs this interaction around the buttons, and a SwiftUI
+        // host adds none, as measured on the iPad (D-179).
+        host.view.addInteraction(UILargeContentViewerInteraction())
         host.sizingOptions = .intrinsicContentSize
         addChild(host)
         host.view.translatesAutoresizingMaskIntoConstraints = false

@@ -21,6 +21,7 @@ struct ToolPalette: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(tool.label)
                 .accessibilityAddTraits(tool == tools.selected ? .isSelected : [])
+                .largeContent(tool.label, icon: tool.icon)
             }
             HistoryButtons(controls: history, showsExport: false)
         }

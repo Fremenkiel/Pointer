@@ -102,10 +102,18 @@ enum ViewSnapshot {
         window.isHidden = false
         host.view.frame = window.bounds
         host.view.layoutIfNeeded()
+        // In the window, the view takes the text size of its environment, for example AX5 of
+        // D-179. The size can then differ from the first measure.
+        let laidOut = host.sizeThatFits(in: CGSize(width: 1_000, height: 1_000))
+        if laidOut != size {
+            window.frame = CGRect(origin: .zero, size: laidOut)
+            host.view.frame = window.bounds
+            host.view.layoutIfNeeded()
+        }
         let format = UIGraphicsImageRendererFormat()
         format.scale = scale
         format.opaque = true
-        let image = UIGraphicsImageRenderer(size: size, format: format).image { context in
+        let image = UIGraphicsImageRenderer(size: laidOut, format: format).image { context in
             host.view.layer.render(in: context.cgContext)
         }
         window.isHidden = true

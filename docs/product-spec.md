@@ -101,6 +101,11 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 - STO-05: The data model is ready for an automatic backup to an online provider later. This version contains no such integration.
 - STO-06: The app never loses more than 2 seconds of work after a crash.
 
+### 3.9 Accessibility
+
+- A11Y-01: VoiceOver reads a label for each button of the chrome. A label holds no control type and no state. The workspace list reads the current workspace as selected, and each row offers rename and delete as actions (D-179).
+- A11Y-02: The text of the workspace list, the menus, the alerts, and the messages grows with the system text size, up to the largest accessibility size. The icon buttons and the workspace button keep their size, and a long press on them shows the Large Content Viewer (D-179).
+
 ## 4. Out of scope
 
 These features are not part of Pointer. A pull request that adds one of them will be rejected:

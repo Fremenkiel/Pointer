@@ -61,6 +61,9 @@ public enum DesignSystem {
         public static let selectorTitleWidth: CGFloat = 260
         /// The highest workspace list before it scrolls.
         public static let selectorListHeight: CGFloat = 480
+        /// The widest workspace list at a large text size: twice `selectorListWidth`, inside the
+        /// 744-point width of the smallest iPad in portrait (D-179). The text of a row wraps.
+        public static let selectorListMaxWidth: CGFloat = 600
         /// The radius of the hover dot of the pen and the text tool, in view points (D-128). A
         /// start value that the product owner tunes on the device.
         public static let hoverDotRadius: CGFloat = 2
@@ -71,12 +74,17 @@ public enum DesignSystem {
 
     /// The font tokens.
     public enum Font {
-        /// The title in a control of the chrome.
-        public static let chromeTitle = SwiftUI.Font.headline
         /// A row in a list of the chrome.
         public static let chromeRow = SwiftUI.Font.body
         /// A message under a list.
         public static let chromeMessage = SwiftUI.Font.footnote
+        /// The symbol of an icon button and the title of the workspace button: the size of
+        /// `headline` at the standard text size. It does not grow with the text size, because the
+        /// bar keeps its height. The Large Content Viewer shows the button large (D-179).
+        public static let chromeBar = SwiftUI.Font.system(size: 17, weight: .semibold)
+        /// The small symbol of the workspace button: the size of `footnote` at the standard text
+        /// size, fixed as `chromeBar` (D-179).
+        public static let chromeBarDetail = SwiftUI.Font.system(size: 13)
     }
 
     /// The icon tokens: names of SF Symbols.
