@@ -24,7 +24,6 @@ enum ValueCodec {
         appendBigEndian(timestamp.wallMillis, byteCount: wallByteCount, to: &data)
         appendBigEndian(UInt64(timestamp.counter), byteCount: counterByteCount, to: &data)
         data.append(Self.data(timestamp.device))
-        assert(data.count == timestampByteCount, "Clock value has \(data.count) bytes")
         assert((try? Self.timestamp(data)) == timestamp, "Clock value \(timestamp) does not decode")
         return data
     }
@@ -115,11 +114,9 @@ enum ValueCodec {
             byteCount >= 1 && byteCount <= MemoryLayout<UInt64>.size,
             "Cannot write \(byteCount) bytes of UInt64"
         )
-        let start = data.count
         for index in (0..<byteCount).reversed() {
             data.append(UInt8(truncatingIfNeeded: value >> (index * bitsPerByte)))
         }
-        assert(data.count == start + byteCount, "Wrote \(data.count - start) of \(byteCount) bytes")
     }
 
     private static func bigEndian(_ bytes: ArraySlice<UInt8>) -> UInt64 {

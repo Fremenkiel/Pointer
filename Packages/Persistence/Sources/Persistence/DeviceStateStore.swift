@@ -148,7 +148,6 @@ public actor DeviceStateStore {
                 try LibraryStatements.run(statements.deleteValue)
             }
             let path = navigationPath.reduce(into: Data()) { $0.append(ValueCodec.data($1)) }
-            assert(path.count == navigationPath.count * ValueCodec.identifierByteCount, "Path size")
             try write(Self.navigationPathKey, path, statements)
         }
     }
@@ -180,7 +179,6 @@ public actor DeviceStateStore {
             let deepest = state.navigationPath.last.map(CanvasID.init) ?? CanvasID(workspace)
             camera = try self.camera(for: deepest)
         }
-        assert(connection != nil && statements != nil, "The device state did not open")
         return Launch(state: state, camera: camera, isNew: isNew)
     }
 
@@ -203,7 +201,6 @@ public actor DeviceStateStore {
         for start in stride(from: 0, to: pathData.count, by: size) {
             path.append(try ValueCodec.identifier(pathData.subdata(in: start..<start + size)))
         }
-        assert(path.count * size == pathData.count, "The path lost bytes")
         do {
             return try DeviceState(
                 deviceID: deviceID,

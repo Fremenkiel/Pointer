@@ -117,7 +117,6 @@ extension SQLiteLibraryRepository {
         pending = PendingRows()
         if failureCount >= Self.failuresBeforeFault { report(.savesRecovered) }
         failureCount = 0
-        assert(pending.isEmpty, "A good save leaves no pending row")
     }
 
     /// Runs `body` and the write of `lastTimestamp` in one transaction (`BEGIN IMMEDIATE`).
@@ -160,7 +159,6 @@ extension SQLiteLibraryRepository {
     ) throws(PersistenceError) {
         precondition(!rows.isEmpty, "A write needs rows")
         var written = 0
-        defer { assert(written == rows.count, "Wrote \(written) of \(rows.count) rows") }
         for stroke in rows.strokes.values {
             try StrokeRow.bind(stroke, to: statements.insertStroke)
             try LibraryStatements.run(statements.insertStroke)
@@ -181,6 +179,8 @@ extension SQLiteLibraryRepository {
             try LibraryStatements.run(statements.upsertTextBox)
             written += 1
         }
+        // Not in a `defer`: a failed bind or step throws with fewer rows, and the save retries.
+        assert(written == rows.count, "Wrote \(written) of \(rows.count) rows")
     }
 
     /// Rolls back. SQLite rolls back by itself after some errors, so a failed rollback is only

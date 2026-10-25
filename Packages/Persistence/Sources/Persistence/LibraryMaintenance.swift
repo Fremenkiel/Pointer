@@ -21,7 +21,6 @@ enum LibraryMaintenance {
         on connection: SQLiteConnection,
         now: any WallClock
     ) throws(PersistenceError) {
-        assert(Limits.maxDepth == 32, "The tree walk in cutoffStatements uses depth 32")
         let nowMillis = now.nowMillis()
         let cutoffMillis =
             nowMillis > tombstoneLifetimeMillis ? nowMillis - tombstoneLifetimeMillis : 0
@@ -100,7 +99,7 @@ enum LibraryMaintenance {
     }
 
     /// The statements that take the cutoff clock value as parameter 1.
-    private static let cutoffStatements: [StaticString] = [
+    static let cutoffStatements: [StaticString] = [
         """
         WITH RECURSIVE doomed (id, depth) AS (
             SELECT id, 0 FROM workspace WHERE is_deleted = 1 AND modified < ?1

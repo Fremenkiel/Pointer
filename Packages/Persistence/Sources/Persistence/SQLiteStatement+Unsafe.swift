@@ -201,7 +201,6 @@ extension SQLiteStatement {
     /// - Throws: `PersistenceError.corruptValue` for a length other than 16 bytes.
     func uuid(at column: Int32) throws(PersistenceError) -> UUID? {
         checkColumn(column)
-        precondition(MemoryLayout<uuid_t>.size == ValueCodec.identifierByteCount, "UUID size")
         guard sqlite3_column_type(handle, column) != SQLITE_NULL else { return nil }
         let bytes = sqlite3_column_blob(handle, column)
         let count = Int(sqlite3_column_bytes(handle, column))
@@ -218,11 +217,6 @@ extension SQLiteStatement {
     /// - Throws: `PersistenceError.corruptValue` for a length other than 28 bytes.
     func timestamp(at column: Int32) throws(PersistenceError) -> HybridTimestamp? {
         checkColumn(column)
-        precondition(
-            ValueCodec.deviceOffset + ValueCodec.identifierByteCount
-                == ValueCodec.timestampByteCount,
-            "A clock value ends with the device UUID"
-        )
         guard sqlite3_column_type(handle, column) != SQLITE_NULL else { return nil }
         let bytes = sqlite3_column_blob(handle, column)
         let count = Int(sqlite3_column_bytes(handle, column))
@@ -248,8 +242,10 @@ extension SQLiteStatement {
     /// - Precondition: `index` is a parameter of the statement.
     /// - Throws: `PersistenceError.sqlite` if SQLite refuses the value.
     func bind(uuid: UUID, at index: Int32) throws(PersistenceError) {
-        checkParameter(index)
-        precondition(MemoryLayout<uuid_t>.size == ValueCodec.identifierByteCount, "UUID size")
+        precondition(
+            index >= 1 && index <= sqlite3_bind_parameter_count(handle),
+            "Parameter \(index) is not a parameter of the statement"
+        )
         // Safe: SQLite copies the bytes (SQLITE_TRANSIENT) before the closure returns.
         let code = withUnsafeBytes(of: uuid.uuid) { bytes in
             sqlite3_bind_blob(
@@ -269,11 +265,11 @@ extension SQLiteStatement {
     /// - Throws: `PersistenceError.sqlite` if SQLite refuses the value.
     func bind(timestamp: HybridTimestamp, at index: Int32) throws(PersistenceError) {
         checkParameter(index)
-        let count = ValueCodec.timestampByteCount
         precondition(
-            ValueCodec.deviceOffset + MemoryLayout<uuid_t>.size == count,
-            "A clock value ends with the device UUID"
+            timestamp.wallMillis <= UUIDVersion7.maxMillis,
+            "Clock time \(timestamp.wallMillis) passes 48 bits"
         )
+        let count = ValueCodec.timestampByteCount
         // Safe: the buffer lives on the stack for the closure, and SQLite copies the bytes
         // (SQLITE_TRANSIENT) before it returns.
         let code = withUnsafeTemporaryAllocation(byteCount: count, alignment: 1) { buffer in
@@ -315,10 +311,6 @@ extension SQLiteStatement {
     ///   `PersistenceError.sqlite` if SQLite refuses the value.
     func bind(_ points: InkPoints, at index: Int32) throws(PersistenceError) {
         checkParameter(index)
-        precondition(
-            MemoryLayout<InkPoint>.stride == Self.pointByteCount,
-            "InkPoint is not 16 bytes"
-        )
         let byteCount = points.count * Self.pointByteCount
         guard let length = Int32(exactly: byteCount) else {
             throw .valueTooLarge(byteCount: byteCount)

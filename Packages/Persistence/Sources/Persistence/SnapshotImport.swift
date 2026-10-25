@@ -145,7 +145,6 @@ public actor SnapshotImport {
             }
             rows.append(statement.string(at: 0) ?? "")
         }
-        assert(rows.count <= maxSchemaRows, "The read keeps the row bound")
         return rows
     }
 

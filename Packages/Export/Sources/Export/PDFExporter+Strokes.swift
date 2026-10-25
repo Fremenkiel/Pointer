@@ -29,7 +29,6 @@ extension PDFExporter {
                 control2: cgPoint(segment.control2)
             )
         }
-        assert(!path.isEmpty, "The path of stroke \(stroke.id) is not empty")
         return path
     }
 

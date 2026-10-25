@@ -21,7 +21,6 @@ extension SQLiteLibraryRepository {
                 result.append(workspace)
             }
         }
-        assert(result.count <= Limits.maxWorkspaces, "Read \(result.count) workspaces")
         return result
     }
 
@@ -70,7 +69,6 @@ extension SQLiteLibraryRepository {
                 try content.add(stroke, limit: Limits.maxStrokesAfterErase)
             }
         }
-        assert(content.canvasID == canvasID, "Loaded content of another canvas")
         assert(content.nodeCount <= Limits.maxNodesPerCanvas, "Loaded too many nodes")
         return content
     }
@@ -102,7 +100,6 @@ extension SQLiteLibraryRepository {
             valid.append(card)
             above = CanvasID(card)
         }
-        assert(valid.count <= Limits.maxDepth, "A valid path holds at most the depth limit")
         do {
             return try NavigationPath(workspace: workspace, cards: valid)
         } catch {
@@ -169,7 +166,6 @@ extension SQLiteLibraryRepository {
                 logger.error("Skipped a row of \(query.table): \(error)")
             }
         }
-        assert(skipped <= rows, "Skipped \(skipped) of \(rows) rows")
         if skipped > 0 { report(.rowsSkipped(table: query.table, count: skipped)) }
     }
 

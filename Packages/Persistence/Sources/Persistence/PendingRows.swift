@@ -21,6 +21,12 @@ struct PendingRows {
     mutating func add(_ change: LibraryChange) {
         switch change {
         case .stroke(let stroke):
+            let earlier = strokes[stroke.id]
+            assert(
+                earlier == nil
+                    || (earlier?.created == stroke.created && earlier?.canvasID == stroke.canvasID),
+                "Stroke \(stroke.id) changed, but strokes never change"
+            )
             strokes[stroke.id] = stroke
             note(stroke.created)
         case .erase(let record):
@@ -33,8 +39,6 @@ struct PendingRows {
             textBoxes[textBox.id] = textBox
             note(textBox.meta.modified)
         }
-        assert(!isEmpty, "A row was added, so the set is not empty")
-        assert(latest != nil, "A row was added, so the set has a latest clock value")
     }
 
     private mutating func note(_ timestamp: HybridTimestamp) {

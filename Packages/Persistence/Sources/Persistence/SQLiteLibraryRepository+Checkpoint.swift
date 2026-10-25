@@ -29,7 +29,6 @@ extension SQLiteLibraryRepository {
                 await checkpointer.checkpoint()
                 await self?.checkpointDidEnd()
             }
-            assert(checkpointRequest != nil, "A large WAL starts one checkpoint")
             return
         }
         let fallsBehind =

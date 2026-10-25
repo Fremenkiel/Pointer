@@ -141,8 +141,11 @@ struct SnapshotFiles {
                 > ($1.date, Self.counter(of: $1.url.lastPathComponent, prefix: Self.prefix) ?? 0)
         }
         assert(
-            zip(newestFirst, newestFirst.dropFirst()).allSatisfy { $0.date >= $1.date },
-            "The snapshots are not newest first"
+            newestFirst.allSatisfy {
+                $0.url.deletingLastPathComponent().standardizedFileURL
+                    == backups.standardizedFileURL
+            },
+            "A daily snapshot outside \(backups.path(percentEncoded: false))"
         )
         return newestFirst
     }

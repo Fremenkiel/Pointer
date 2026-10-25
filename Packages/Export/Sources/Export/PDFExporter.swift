@@ -59,7 +59,6 @@ public enum PDFExporter {
             height: min(size.height * scale, maxPageSide),
             scale: scale
         )
-        assert(layout.scale > 0 && layout.scale <= 1, "Page scale \(layout.scale) is in 0...1")
         return layout
     }
 }

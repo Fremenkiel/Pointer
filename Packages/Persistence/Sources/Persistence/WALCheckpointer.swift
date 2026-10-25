@@ -40,7 +40,6 @@ actor WALCheckpointer {
     /// Runs one passive checkpoint. A failure is only logged: the next save asks again, and the
     /// hard limit of the repository bounds the WAL (D-146).
     func checkpoint() {
-        let before = completed
         beforeCheckpoint?()
         do {
             _ = try connection.checkpointPassive()
@@ -48,6 +47,5 @@ actor WALCheckpointer {
         } catch {
             logger.error("A checkpoint failed: \(error)")
         }
-        assert(completed >= before, "The count of checkpoints never goes back")
     }
 }

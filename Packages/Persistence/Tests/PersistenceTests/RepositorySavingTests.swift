@@ -48,6 +48,27 @@ struct RepositorySavingTests {
         #expect(await repository.pendingCount == 0)
     }
 
+    @Test("A row that fails in the middle of the write rolls back, and the rows stay pending")
+    func failureInsideWrite() async throws {
+        let harness = try RepositoryHarness()
+        let repository = try await harness.open()
+        try await repository.send([.stroke(Values.stroke(1, millis: 10))])
+        try await repository.saveNow()
+
+        // The erase record names a stroke that is not in the file, so its foreign key fails
+        // after the stroke row is written.
+        let orphan = EraseRecord(
+            strokeID: Values.id(9),
+            erased: Values.late,
+            modified: Values.late,
+            isDeleted: false
+        )
+        try await repository.send([.stroke(Values.stroke(2, millis: 20)), .erase(orphan)])
+        await #expect(throws: ModelError.self) { try await repository.saveNow() }
+        #expect(try harness.reader().integer("SELECT count(*) FROM stroke") == 1)
+        #expect(await repository.pendingCount == 2)
+    }
+
     @Test("A failed saveNow schedules a new try, and the row is saved after the interval (F-09)")
     func failedSaveNowRetries() async throws {
         let harness = try RepositoryHarness()

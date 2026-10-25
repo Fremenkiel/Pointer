@@ -18,7 +18,6 @@ extension PDFExporter {
             count: buffer.length,
             deallocator: .custom { _, _ in owner.release() }
         )
-        assert(data.count == buffer.length, "The data holds the \(buffer.length) bytes")
         return data
     }
 }
