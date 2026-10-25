@@ -105,6 +105,20 @@ expect_perf 1 critical-16.json "fail: A/t.ms: base 10.45, new 12.25, +17.2 %, p 
 expect_perf 3 unsure.json "unsure: A/t.ms: base 10.45, new 12.15, +16.3 %, p 0.043"
 expect_perf 1 missing.json "missing: A/t.ms: missing in the new runs"
 expect_perf 1 slow.json "recorded: A/peak.mb: base 104.5, new 204.5"
+# The nesting tool of FLOW-04 (D-175). It is a package, so it builds once before the fixtures.
+swift build -c release --package-path Scripts/Nesting --quiet || exit 1
+expect_nesting() { # expected-exit fixture expected-output
+    Scripts/Nesting/.build/release/Nesting --root "Scripts/Fixtures/$2" > "$work/$2.log" 2>&1
+    actual=$?
+    if [ "$actual" -ne "$1" ] || ! grep -q -- "$3" "$work/$2.log"; then
+        fail "Nesting on $2 exits with $actual, expected $1 and \"$3\"." "$work/$2.log"
+        return
+    fi
+    echo "pass: Nesting on $2 exits with $actual"
+}
+
+expect_nesting 1 nesting-deep "Deep.swift:3: error: FLOW-04 deep nests 4 levels deep at line 8"
+expect_nesting 0 nesting-ok "nesting: 1 files, 0 functions over 3 levels"
 expect_lint lint-violations
 expect_lint lint-pdf-context
 expect_lint lint-clean

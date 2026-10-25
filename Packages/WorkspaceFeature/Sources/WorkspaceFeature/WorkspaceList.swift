@@ -19,15 +19,9 @@ struct WorkspaceList: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(workspaces) { workspace in
-                        row(workspace)
-                    }
-                }
-            }
-            .frame(maxHeight: DesignSystem.Size.selectorListHeight)
-            .fixedSize(horizontal: false, vertical: true)
+            ScrollView { workspaceRows }
+                .frame(maxHeight: DesignSystem.Size.selectorListHeight)
+                .fixedSize(horizontal: false, vertical: true)
             Divider()
             createRow
             if !commands.isEmpty {
@@ -38,6 +32,15 @@ struct WorkspaceList: View {
         .frame(width: DesignSystem.Size.selectorListWidth)
         .foregroundStyle(DesignSystem.Color.chromeForeground)
         .background(DesignSystem.Color.chromeBackground)
+    }
+
+    /// The rows of the workspaces, in their order.
+    private var workspaceRows: some View {
+        LazyVStack(alignment: .leading, spacing: 0) {
+            ForEach(workspaces) { workspace in
+                row(workspace)
+            }
+        }
     }
 
     private func row(_ workspace: Workspace) -> some View {

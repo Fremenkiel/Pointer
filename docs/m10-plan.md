@@ -639,3 +639,7 @@ The old script failed or passed the new fixtures for the wrong reason. It counte
 | Persistence | 79 | 160 | 2.03 |
 | Rendering | 160 | 317 | 1.98 |
 | Export | 5 | 10 | 2.00 |
+
+### 6.6 The nesting check (task 1.3)
+
+`make nesting` builds the SwiftSyntax tool in `Scripts/Nesting` and checks 285 files in 0.05 s. The first build takes about 2 minutes. It found the 2 functions of the research of D-175: the initializer of `RowChannel` at 5 levels and the body of `WorkspaceList` at 4 levels. The consumer of `RowChannel` now hands each item to a function of its own, and the rows of `WorkspaceList` are a view property of their own. The fixture `nesting-deep` fails at 4 levels, and `nesting-ok` passes at 3 levels with an `else if` chain, a `case`, a `catch`, and a nested function. The 38 device tests of the selector, the navigation, the restore, and the history passed after the split (`T-13-subset.xcresult`). `make layers` reports no finding: the SwiftSyntax package is outside the app and its packages.

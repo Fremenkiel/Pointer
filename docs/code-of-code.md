@@ -77,7 +77,7 @@ Sources: <https://en.wikipedia.org/wiki/The_Power_of_10:_Rules_for_Developing_Sa
 - `FLOW-01` No recursion, with one exception: a function that walks the card tree. That function must take a `depth` parameter and must start with `precondition(depth <= Limits.maxDepth)`. An iterative walk with an explicit stack is preferred. Enforcement: review.
 - `FLOW-02` No `fallthrough`. No labeled `break` or `continue`. Enforcement: lint.
 - `FLOW-03` Each loop has a bound that a reader can see. A `for` loop over a collection is bounded by the collection, and the collection is bounded by a constant in `Limits`. A `while` or `repeat` loop must compare a counter against a named constant. An `AsyncSequence` loop must call `try Task.checkCancellation()` in its body. `while true` is not allowed. Enforcement: lint and review.
-- `FLOW-04` Early exit with `guard`. Nesting depth is at most 3 levels inside a function body. Enforcement: lint.
+- `FLOW-04` Early exit with `guard`. Nesting depth is at most 3 levels inside a function body. The body of `if`, `else`, `guard`, `for`, `while`, `repeat`, `do`, `catch`, a `case` of a `switch`, and a closure each add one level. An `else if` stays at the level of its `if`, and a nested function starts again at level 0 (D-175). Enforcement: `make nesting`, a SwiftSyntax tool in `Scripts/Nesting` (D-174).
 
 ### 3.4 Size
 
@@ -191,6 +191,7 @@ Third-party development tools are allowed (decision D-04). They run in developme
 | SwiftLint | Built-in rules and `custom_rules`: one rule per invariant, with an allowed path and a message that names the fix | Third party (D-04) |
 | `Scripts/check-layers.swift` | `ARCH-02` | This repository |
 | `Scripts/assertion-density.swift` | `CONTRACT-02` | This repository |
+| `Scripts/Nesting` (`make nesting`), with SwiftSyntax | `FLOW-04` (D-174, D-175) | This repository, SwiftSyntax from Apple (D-04) |
 | SwiftLint metric rules | `SIZE-01` to `SIZE-04` (`function_body_length`, `cyclomatic_complexity`, `type_body_length`, `file_length`, `function_parameter_count`) | Third party (D-04) |
 
 Each custom rule in `.swiftlint.yml` has this form (Threema pattern):

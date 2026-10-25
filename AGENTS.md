@@ -67,6 +67,7 @@ pointer/
   Scripts/                 check-layers.swift, assertion-density.swift, coverage.swift, perf.swift,
                            perf-runs.sh, self-test.sh
     Fixtures/              small trees that the self-test runs the check scripts on
+    Nesting/               SwiftSyntax tool of FLOW-04, a development tool under D-04 (D-174)
 ```
 
 ## Commands
@@ -82,6 +83,7 @@ make format      # swift format lint
 make lint        # swiftlint --strict
 make layers      # Scripts/check-layers.swift
 make density     # Scripts/assertion-density.swift
+make nesting     # Scripts/Nesting: FLOW-04, the first build takes about 2 minutes
 make self-test   # runs the check scripts on Scripts/Fixtures
 make plist       # the Files app keys of PointerApp/Info.plist are true
 make check       # all of the above, the full check

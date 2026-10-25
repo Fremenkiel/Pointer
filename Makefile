@@ -14,10 +14,10 @@ DEVICE_TEST := xcodebuild test -project $(PROJECT) -scheme $(SCHEME) -configurat
 	-destination 'id=$(DEVICE)' -derivedDataPath $(DEVICE_DATA) -allowProvisioningUpdates \
 	ENABLE_TESTABILITY=YES
 
-.PHONY: check build analyze test snapshots coverage format lint layers density self-test plist \
+.PHONY: check build analyze test snapshots coverage format lint layers density nesting self-test plist \
 	perf-baseline perf-compare validation
 
-check: build analyze test snapshots format lint layers density self-test plist
+check: build analyze test snapshots format lint layers density nesting self-test plist
 	@echo "All checks passed."
 
 # BUILD-01, BUILD-02: the targets treat warnings as errors. Swift 6 keeps some diagnostics of
@@ -158,7 +158,8 @@ validation:
 
 # STYLE-04. The fixtures hold deliberate violations, so the formatter skips them.
 format:
-	swift format lint --strict --recursive PointerApp PointerAppTests Packages Scripts/*.swift
+	swift format lint --strict --recursive PointerApp PointerAppTests Packages Scripts/*.swift \
+		Scripts/Nesting/Package.swift Scripts/Nesting/Sources
 
 lint:
 	swiftlint --strict --quiet
@@ -170,6 +171,13 @@ layers:
 # CONTRACT-02
 density:
 	swift Scripts/assertion-density.swift
+
+# FLOW-04: at most 3 levels of control flow in a function body (D-174, D-175). A SwiftSyntax tool
+# under D-04. The first build takes about 2 minutes, later runs reuse it.
+NESTING := Scripts/Nesting/.build/release/Nesting
+nesting:
+	swift build -c release --package-path Scripts/Nesting --quiet
+	$(NESTING) --root .
 
 # The check scripts and the SwiftLint rules on Scripts/Fixtures.
 self-test:

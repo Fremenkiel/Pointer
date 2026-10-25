@@ -28,19 +28,28 @@ final class RowChannel {
             do {
                 for await item in stream {
                     try Task.checkCancellation()
-                    guard case .rows(let rows) = item else {
-                        if case .flush(let waiter) = item { waiter.resume() }
-                        continue
-                    }
-                    do {
-                        try await repository.send(rows)
-                    } catch {
-                        logger.error("The library did not take \(rows.count) rows: \(error)")
-                    }
+                    await Self.handle(item, repository: repository, logger: logger)
                 }
             } catch {
                 logger.error("The row channel stopped with rows left")
             }
+        }
+    }
+
+    /// Sends the rows of `item` to the library, or ends the wait of a flush.
+    private static func handle(
+        _ item: Item,
+        repository: any LibraryRepository,
+        logger: Logger
+    ) async {
+        guard case .rows(let rows) = item else {
+            if case .flush(let waiter) = item { waiter.resume() }
+            return
+        }
+        do {
+            try await repository.send(rows)
+        } catch {
+            logger.error("The library did not take \(rows.count) rows: \(error)")
         }
     }
 
