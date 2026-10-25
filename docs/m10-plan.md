@@ -775,3 +775,7 @@ Two faults of my own tests came up on the way. A last read of the fake library w
 ### 6.22 The preview of the opened card during a flight (task 2.5, item 2)
 
 Each frame of a flight now marks the preview slot of the opened card as used, so a full atlas keeps that slot while the flight draws it. `PreviewRequestTests.openMarksSlot` read a last use at frame 3 while the flight drew frame 4 on the old code (`T-25b-old.xcresult`). With the change, it and the transition and open suites pass, 11 of 11 (`T-25b-new.xcresult`).
+
+### 6.23 The screen size of a new preview (task 2.5, item 5)
+
+`PreviewFiles` now reads the size of the canvas screen at each render, through a closure of the main actor, instead of the size at its creation. `PreviewFilesTests` renders the same ink for two canvases, before and after a change of the size from landscape to portrait. With the old fixed size, both previews were the same 937 bytes (`T-25c-old.xcresult`). With the change, the second preview follows the new size, and the app suites of the navigation pass (`T-25c-new.xcresult`). The files of earlier previews keep their region until the next event that writes a preview (D-111).

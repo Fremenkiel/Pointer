@@ -220,6 +220,23 @@ extension AppComposition {
         remember(target)
     }
 
+    /// Returns the preview source of a new canvas screen, or `nil` without a preview store. It
+    /// reads the size of the screen at each render, so a rotation counts (D-98).
+    private func previewFiles(repository: any LibraryRepository) -> PreviewFiles? {
+        let container = container
+        return previewStore.map { store in
+            PreviewFiles(
+                store: store,
+                repository: repository,
+                maker: previewMaker,
+                viewSize: { @MainActor [weak container] in
+                    let bounds = container?.view.bounds ?? .zero
+                    return Size(width: bounds.width, height: bounds.height)
+                }
+            )
+        }
+    }
+
     /// Makes the canvas screen of `target` with its content at `camera`. The screen on the
     /// screen keeps its session first, because the new one reads the sessions (F-02).
     ///
@@ -234,19 +251,10 @@ extension AppComposition {
         guard let repository, let clock else { return nil }
         precondition(content.canvasID == target.currentCanvas, "The content of the path")
         let canvasID = target.currentCanvas
-        let bounds = container.view.bounds
-        let screenSize = Size(width: bounds.width, height: bounds.height)
         var dependencies = CanvasDependencies(
             renderer: try CanvasRenderer(
                 configuration: CanvasComposition.rendererConfiguration(defaults),
-                previews: previewStore.map { store in
-                    PreviewFiles(
-                        store: store,
-                        repository: repository,
-                        maker: previewMaker,
-                        viewSize: screenSize
-                    )
-                }
+                previews: previewFiles(repository: repository)
             ),
             clock: clock,
             content: content

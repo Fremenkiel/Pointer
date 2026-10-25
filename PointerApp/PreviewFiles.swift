@@ -19,8 +19,9 @@ struct PreviewFiles: PreviewSource {
     /// The offscreen renderer that the app shares among all canvases (D-157). It blocks on its
     /// own serial queue until the GPU completes, not on the shared pool.
     let maker: PreviewMaker
-    /// The size of the canvas screen, for the region of the open camera (D-98).
-    let viewSize: Size
+    /// Returns the size of the canvas screen at the time of a render, for the region of the open
+    /// camera (D-98). A rotation changes it (review after M9, section 3.2, item 13).
+    let viewSize: @Sendable () async -> Size
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "App")
 
     /// Returns the PNG bytes of the preview of `canvas`. Without a valid file, it renders the
@@ -44,7 +45,7 @@ struct PreviewFiles: PreviewSource {
                 content,
                 camera: content.openCamera,
                 cardAspect: cardAspect,
-                viewSize: viewSize
+                viewSize: await viewSize()
             ).pngData()
         } catch {
             logger.error(
