@@ -433,6 +433,7 @@ Rules: PERF-01, PERF-03, D-94, D-105.
 1. Trace the render thread during the open of an empty card with a Metal System Trace with a time limit (section 1.1, item 7).
 2. Find why the render thread skips the target at place 0. Benchmark each possible fix on the iPad.
 3. Remove the expected failure of D-125 in `OpenAnimationTests` and `FlightStallTests`.
+4. Trace the late frame at place 41 of 43, at the end of an open, the same way. It is older than M10 (section 6.15). It failed the strict check of the open of a D-56 card in 2 of the 10 runs of the baseline.
 
 #### 5.2 The GPU wait at the start of a leave (D-137)
 
@@ -722,3 +723,17 @@ The spread between the 10 runs, as the coefficient of variation (CV):
 The compare cannot see a change of 10 % in a time with a CV over 10 % (D-177). The hard budgets of architecture.md section 12 still guard those measures.
 
 Runs 5 and 9 of the baseline each failed one test: the open of a D-56 card had 1 late frame at place 41 of 43, near the end of the flight (`.build/Perf/baseline-5.xcresult`, `baseline-9.xcresult`). It is not the late frame at place 0 of D-125 and D-137. Section 6.15 holds the search for its cause.
+
+### 6.15 The late frame at the end of an open
+
+Eight alternating pairs of `OpenAnimationTests` alone ran on the commit before M10 (7287e42) and on commit 4456612 (`T-OA-alt-*`):
+
+| Flight | Before M10, late frames in 8 runs | M10, late frames in 8 runs |
+|---|---|---|
+| Open of the empty card, place 0 (D-125) | 3 runs | 2 runs |
+| Open of the empty card, place 41 | 2 runs | 1 run |
+| Open of a D-56 card | 0 | 0 |
+| Leave of a D-56 card | 1 run, 2 late frames | 0 |
+| Leave of the empty card | 0 | 0 |
+
+The late frame at place 41 is older than M10. It is a second fault of the flights, at the frame before the swap to the child. Task 5.1 traces it with the late frame at place 0.
