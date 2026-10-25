@@ -14,7 +14,7 @@ private final class GPUTimes: FrameObserving {
     func measure(_ work: () -> Void) { work() }
 
     func willCommit(_ commandBuffer: any MTLCommandBuffer, drawable: any CAMetalDrawable) {
-        commandBuffer.addCompletedHandler { [self] buffer in
+        commandBuffer.whenCompleted { [self] buffer in
             let milliseconds = (buffer.gpuEndTime - buffer.gpuStartTime) * 1000
             values.withLock { $0.append(milliseconds) }
         }

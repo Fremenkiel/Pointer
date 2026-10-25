@@ -19,9 +19,20 @@ DEVICE_TEST := xcodebuild test -project $(PROJECT) -scheme $(SCHEME) -configurat
 check: build analyze test snapshots format lint layers density self-test plist
 	@echo "All checks passed."
 
-# BUILD-01, BUILD-02: the targets treat warnings as errors.
+# BUILD-01, BUILD-02: the targets treat warnings as errors. Swift 6 keeps some diagnostics of
+# imported C and Objective-C APIs as warnings that -warnings-as-errors does not raise (D-132).
+# The build thus starts in a fresh folder, so that each file compiles and prints its warnings,
+# and it fails on each warning line, as `make analyze` does.
+CLEAN_BUILD := .build/CleanBuild
 build:
-	$(XCODEBUILD) -destination 'generic/platform=iOS' -quiet CODE_SIGNING_ALLOWED=NO build
+	@rm -rf $(CLEAN_BUILD)
+	@mkdir -p $(CLEAN_BUILD)
+	@xcodebuild -project $(PROJECT) -scheme $(SCHEME) -derivedDataPath $(CLEAN_BUILD) \
+		-destination 'generic/platform=iOS' -quiet CODE_SIGNING_ALLOWED=NO build \
+		> $(CLEAN_BUILD)/build.log 2>&1 || { cat $(CLEAN_BUILD)/build.log; exit 1; }
+	@if grep -E '^/.*: warning:' $(CLEAN_BUILD)/build.log; then \
+		echo "Build warnings above (BUILD-02, D-132)."; exit 1; fi
+	@echo "build: 0 warnings"
 
 # BUILD-04: zero analyzer findings.
 analyze:

@@ -314,12 +314,12 @@ final class FrameRenderer {
         // The handler and its hop to the main queue run only for a change that asks (P-08).
         if waitingCompletion {
             let onCompleted = onCompleted
-            commandBuffer.addCompletedHandler { buffer in onCompleted(handoff, buffer.gpuEndTime) }
+            commandBuffer.whenCompleted { buffer in onCompleted(handoff, buffer.gpuEndTime) }
             waitingCompletion = false
         }
         #if targetEnvironment(simulator)
             // The simulator has no presented handler. The GPU completion is the closest event.
-            commandBuffer.addCompletedHandler { _ in onPresented(handoff) }
+            commandBuffer.whenCompleted { _ in onPresented(handoff) }
         #else
             drawable.addPresentedHandler { _ in onPresented(handoff) }
         #endif

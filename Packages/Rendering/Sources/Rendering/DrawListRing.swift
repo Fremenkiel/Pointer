@@ -71,7 +71,7 @@ final class DrawListRing {
             buffer.length >= capacity * MemoryLayout<StrokeDrawEntry>.stride,
             "Draw list is short"
         )
-        commandBuffer.addCompletedHandler(release)
+        commandBuffer.whenCompleted(release)
     }
 
     /// Writes entries at the end of the current frame in one copy.

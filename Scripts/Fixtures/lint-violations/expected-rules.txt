@@ -5,6 +5,7 @@ arch_04_pdf
 arch_04_sqlite
 arch_05_singletons
 arch_07_haptics_sounds
+build_02_metal_handler
 doc_04_todo
 doc_05_file_header
 fallthrough

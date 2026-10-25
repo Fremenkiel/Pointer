@@ -110,7 +110,7 @@ final class FrameLoopCollector: FrameObserving {
             }
         #endif
         guard measuresGPU else { return }
-        commandBuffer.addCompletedHandler { [self] buffer in
+        commandBuffer.whenCompleted { [self] buffer in
             let milliseconds = (buffer.gpuEndTime - buffer.gpuStartTime) * 1000
             state.withLock {
                 if $0.window.contains(buffer.gpuEndTime) { $0.gpu.append(milliseconds) }

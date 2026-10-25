@@ -14,6 +14,12 @@ public struct Violations {
         return cast + implicit
     }
 
+    /// A Metal handler that Swift checks only with a warning (BUILD-02, D-132).
+    func handler(_ buffer: AnyObject) {
+        buffer.addCompletedHandler { _ in }
+        buffer.addScheduledHandler { _ in }
+    }
+
     /// Jumps that FLOW-02 and FLOW-03 ban.
     func flow(_ value: Int) -> Int {
         outer: for item in 0..<value {

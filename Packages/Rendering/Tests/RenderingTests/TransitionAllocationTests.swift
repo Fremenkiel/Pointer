@@ -102,7 +102,7 @@ final class TransitionAllocationTests: XCTestCase {
             let drawable = try XCTUnwrap(layer.nextDrawable())
             let count = AllocationCounter.count {
                 guard let commandBuffer = queue.makeCommandBuffer() else { return }
-                commandBuffer.addCompletedHandler(Self.completed)
+                commandBuffer.whenCompleted(Self.completed)
                 pass.colorAttachments[0].texture = drawable.texture
                 pass.colorAttachments[0].loadAction = .clear
                 guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass) else {

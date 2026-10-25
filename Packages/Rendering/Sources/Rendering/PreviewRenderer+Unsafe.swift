@@ -26,7 +26,7 @@ extension PreviewRenderer {
         precondition(width > 0 && height > 0, "A preview has pixels, got \(width) by \(height)")
         precondition(width * height <= readback.length, "The image fits the readback buffer")
         let box = ReadbackBox(buffer: readback)
-        commandBuffer.addCompletedHandler { buffer in
+        commandBuffer.whenCompleted { buffer in
             // In the background, iOS refuses work on the GPU, and the buffer ends with an error.
             let image =
                 buffer.status == .completed

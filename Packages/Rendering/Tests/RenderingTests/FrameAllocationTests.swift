@@ -75,7 +75,7 @@ final class FrameAllocationTests: XCTestCase {
         guard let commandBuffer = queue.makeCommandBuffer() else { return }
         // Each frame needs one completed handler to free its draw list. Metal copies the block
         // of the handler, an allocation inside Metal (D-43), so the bare frame has one too.
-        commandBuffer.addCompletedHandler(Self.completed)
+        commandBuffer.whenCompleted(Self.completed)
         pass.colorAttachments[0].texture = drawable.texture
         pass.colorAttachments[0].loadAction = .clear
         guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass) else { return }

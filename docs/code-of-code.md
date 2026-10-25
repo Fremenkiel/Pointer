@@ -58,7 +58,7 @@ Sources: <https://en.wikipedia.org/wiki/The_Power_of_10:_Rules_for_Developing_Sa
 ### 3.1 Build
 
 - `BUILD-01` Every target and package uses the Swift 6 language mode with complete strict concurrency checking. Enforcement: compiler.
-- `BUILD-02` Warnings are errors. Xcode targets set `SWIFT_TREAT_WARNINGS_AS_ERRORS = YES` and `GCC_TREAT_WARNINGS_AS_ERRORS = YES`. Packages set `.treatAllWarnings(as: .error)`. Enforcement: compiler.
+- `BUILD-02` Warnings are errors. Xcode targets set `SWIFT_TREAT_WARNINGS_AS_ERRORS = YES` and `GCC_TREAT_WARNINGS_AS_ERRORS = YES`. Packages set `.treatAllWarnings(as: .error)`. Swift 6 keeps some diagnostics of imported C and Objective-C APIs as warnings (D-132), so `make build` builds in a fresh folder and fails on each warning line. A Metal handler goes through `whenCompleted(_:)`, which makes a bad capture an error. Enforcement: compiler, `make build`, and lint.
 - `BUILD-03` The app links no third-party code. A new framework dependency, even from Apple, needs an entry in `docs/decisions.md`. Development tools from third parties (linters, formatters, rule checkers) are allowed (decision D-04). They never link into the app. Enforcement: a CI script fails the build on a third-party package in the dependency graph of the app target.
 - `BUILD-04` CI runs `xcodebuild analyze` on each pull request. Zero analyzer findings. Enforcement: CI.
 
@@ -187,6 +187,7 @@ Third-party development tools are allowed (decision D-04). They run in developme
 | Swift compiler | `BUILD-01`, `BUILD-02`, `SCOPE-03` | Xcode |
 | `swift format` and `swift format lint` | Format and basic lint (`SAFE-01`, `DOC-01`) | Xcode toolchain |
 | `xcodebuild analyze` | `BUILD-04` | Xcode |
+| `make build` in a fresh folder | `BUILD-02`: no warning line (D-132) | This repository |
 | SwiftLint | Built-in rules and `custom_rules`: one rule per invariant, with an allowed path and a message that names the fix | Third party (D-04) |
 | `Scripts/check-layers.swift` | `ARCH-02` | This repository |
 | `Scripts/assertion-density.swift` | `CONTRACT-02` | This repository |

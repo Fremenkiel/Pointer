@@ -559,4 +559,48 @@ The baseline ran on 2026-10-25 on branch `m10` at commit 7287e42, before any cha
 | Rendering | on the iPad | 240 functions, 480 checks, 2.00 |
 | Export | on the iPad | 7 functions, 15 checks, 2.14 |
 
-`make test` runs `PointerDeviceTests` with `-quiet` and no result bundle, so the log holds no count of the device tests. `make coverage` and the full run with a result bundle of task 0.1 run after the approval of this plan.
+`make test` runs `PointerDeviceTests` with `-quiet` and no result bundle, so the log holds no count of the device tests.
+
+`make coverage` passed in 6 minutes 58 seconds (`T-baseline-coverage.log`): Geometry 90.12 %, Model 90.78 %, InkEngine 92.70 %, Persistence 90.46 %, Rendering 86.90 %, and Export 87.20 %.
+
+The full run of `PointerDeviceTests` passed 440 of 440 tests in 367 s, with no expected failure (`T-base-full.xcresult`). `T-base-full-measures.txt` in `.build/Runs` holds all its activity titles with numbers.
+
+| Measure | Baseline |
+|---|---|
+| Open of D-56 to the first frame, median and slowest of 10 | 252.1 ms, 257.8 ms |
+| Memory of the open D-56 canvas | held 321 MB, peak 334 MB |
+| Transition memory: open peak, leave peak | 350 MB, 431 MB |
+| Erase, undo, redo of 1,000 strokes: median and slowest of 5 | 22.95 and 24.72 ms, 19.67 and 21.80 ms, 20.39 and 23.03 ms |
+| `FrameRenderer.apply` allocations: erase, undo, redo | 17, 2, 7 |
+| Eraser frame: CPU p50 and max, GPU p50 and max | 0.15 and 0.35 ms, 0.34 and 0.62 ms |
+| Open of a D-56 card, open of an empty card | 464 ms and 466 ms to the child, 44 frames, 0 late |
+| Leave of a D-56 card, leave of an empty card | 591 ms and 488 ms, 0 late |
+| Frame loops: late frames | 0 of 479 in each, except the zoom over the D-56 text with 1 of 478 |
+| Pan over the D-56 text: uncovered frames | 115 of 480 |
+| Text pass of 300 boxes at zoom 1 | median 0.846 ms, 17.6 ns per glyph |
+| Text layout of 5,000 boxes | median 56.5 ms |
+| Preview of a D-56 child, first and second of a maker | 0.052 s and 53 MB, 0.052 s and 74 MB |
+| Previews of 100 cards after a restore | 0.31 s, peak 93 MB |
+| Export of D-56, of 200,000 handwriting strokes | 6.85 s and 218 MB, 14.64 s and 313 MB |
+| "Back up now" and restore of D-56 | 0.173 s and 11 MB, 0.607 s and 5 MB |
+| Save of 240 strokes, median and slowest of 50 | 2.60 ms, 3.76 ms |
+| Store of 200,000 handwriting strokes | 58.2 MB, heap growth 68.0 MB |
+| Allocations of a text move step | median 6 |
+
+Two device runs measured the questions of section 5 on 2026-10-25. The performance suites alone took 286 s for 51 tests (`T-q-perf-1.xcresult`). A full run with Metal API validation took 368 s, and only the 3 allocation tests failed (`T-q-validation-1.xcresult`).
+
+### 6.2 The clean build (task 0.2)
+
+A probe file with a capture of a non-Sendable value in `addCompletedHandler` passed the old `make build` with exit code 0 and one warning (`T-02-probe-old.log`). The new `make build` fails on that warning line (`T-02-probe-new-direct.log`). The same capture through `whenCompleted(_:)` is a compile error (`T-02-probe-new-wrapper.log`). The clean build of the app takes 10 to 14 s on the Mac and prints no warning. The lint fixture `lint-violations` fails without the rule `build_02_metal_handler`.
+
+The change touches `Rendering`, so four alternating pairs of `EraseUndoPerformanceTests` alone ran against the base commit 28de13b (`T-02-alt-base-1` to `-4`, `T-02-alt-new-1` to `-4`):
+
+| Measure | Base, mean of 4 | New, mean of 4 | Change |
+|---|---|---|---|
+| Erase, median | 23.29 ms | 22.91 ms | -1.7 % |
+| Erase, slowest | 26.97 ms | 25.35 ms | -6.0 % |
+| Undo, slowest | 21.31 ms | 20.65 ms | -3.1 % |
+| Redo, median | 19.89 ms | 20.84 ms | +4.8 % |
+| Redo, slowest | 23.83 ms | 24.02 ms | +0.8 % |
+
+The allocation tests of a frame, an open frame, and a flight frame stayed at 15, equal to the bare frame (`T-02-render.xcresult`).

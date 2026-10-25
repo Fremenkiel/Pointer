@@ -204,6 +204,14 @@ custom_rules:
     message: "No labeled break or continue. Split the loop into a function and return early."
     severity: error
 
+  build_02_metal_handler:
+    name: "BUILD-02"
+    regex: '\badd(Completed|Scheduled)Handler\b'
+    excluded: 'Packages/Rendering/Sources/Rendering/MTLCommandBuffer\+Sendable\.swift$'
+    match_kinds: [identifier]
+    message: "Swift keeps a bad capture in a Metal handler as a warning (D-132). Call whenCompleted(_:) instead."
+    severity: error
+
   flow_03_while_true:
     name: "FLOW-03"
     regex: '\bwhile\s+true\b'
