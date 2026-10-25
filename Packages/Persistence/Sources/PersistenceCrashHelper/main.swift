@@ -64,11 +64,25 @@ for index in 0..<maxStrokes {
     try await Task.sleep(for: strokeInterval)
 }
 
+/// Stops the process with SIGKILL 0.5 ms from now, from a thread of its own. The stop lands in
+/// the copy, which runs in steps of pages on the calling task.
+func stopDuringCopy() {
+    let stop = Thread {
+        usleep(500)
+        kill(getpid(), SIGKILL)
+    }
+    stop.start()
+}
+
 /// The restore mode of the crash test of D-180. Arguments: the path of the library, the
 /// temporary folder, the backups folder, the picked snapshot, and the step at which the helper
 /// stops itself with SIGKILL: "marker" after the marker, "copy" right at the start of the copy,
 /// or "done" after the copy. The library stays as each stop leaves it.
 func runRestore(_ values: [String]) async {
+    precondition(
+        values.count == 5 && ["marker", "copy", "done"].contains(values[4]),
+        "The restore mode takes 5 arguments and a known stop step"
+    )
     let (library, temporary, backups, picked, step) =
         (values[0], URL(filePath: values[1]), URL(filePath: values[2]), values[3], values[4])
     let repository = SQLiteLibraryRepository(
@@ -96,13 +110,7 @@ func runRestore(_ values: [String]) async {
         if step == "marker" { kill(getpid(), SIGKILL) }
         let checked = try await SnapshotImport(temporaryFolder: temporary)
             .copyAndCheck(URL(filePath: picked))
-        if step == "copy" {
-            // The stop lands in the copy, which runs in steps of pages on this task.
-            let stop = Thread {
-                usleep(500); kill(getpid(), SIGKILL)
-            }
-            stop.start()
-        }
+        if step == "copy" { stopDuringCopy() }
         try await repository.restore(from: checked, stop: RestoreStop())
         if step == "done" { kill(getpid(), SIGKILL) }
     } catch {

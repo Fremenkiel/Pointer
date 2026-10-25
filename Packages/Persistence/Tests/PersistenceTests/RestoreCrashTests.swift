@@ -15,9 +15,12 @@ struct RestoreCrashTests {
     static let oldStrokes = 1
     static let newStrokes = 3_000
 
-    @Test("A stop at each step of a restore leaves a library and a way back", arguments: [
-        "marker", "copy", "done",
-    ])
+    @Test(
+        "A stop at each step of a restore leaves a library and a way back",
+        arguments: [
+            "marker", "copy", "done",
+        ]
+    )
     func stopAtStep(step: String) async throws {
         let folder = try TemporaryFolder()
         let library = folder.path("library.sqlite")
