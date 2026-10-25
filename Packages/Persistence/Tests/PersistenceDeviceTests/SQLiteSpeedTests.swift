@@ -7,7 +7,7 @@ import XCTest
 
 /// The read and write speed of SQLite through the repository on the device, for research.md
 /// section 5 (review B-4). The records are text boxes of about 400 bytes, as on the Mac. Each
-/// time is the best of 5 runs with a warm cache. The simulator skips it.
+/// time is the best of 5 runs with a warm cache. It runs on the iPad only (D-77).
 @MainActor
 final class SQLiteSpeedTests: XCTestCase {
     private static let runs = 5
@@ -17,35 +17,31 @@ final class SQLiteSpeedTests: XCTestCase {
     private static let textLength = 300
 
     func testReadAndWriteSpeed() async throws {
-        #if targetEnvironment(simulator)
-            throw XCTSkip("Storage times are valid on a device only.")
-        #else
-            let operations = [
-                TimedOperation("write 1,000 in one transaction", "write-one") {
-                    try await Self.writeInOneTransaction($0, $1)
-                },
-                TimedOperation("write 1,000 in 1,000 transactions", "write-many") {
-                    try await Self.writeInManyTransactions($0, $1)
-                },
-                TimedOperation("read 1,000", "read") { try await Self.readRecords($0, $1) },
-                TimedOperation("save 5 changed", "save-changed") {
-                    try await Self.saveChanged($0, $1)
-                },
-                TimedOperation("write and read one stroke of 16,384 points", "large-stroke") {
-                    try await Self.largeStroke($0, $1)
-                },
-            ]
-            var results: [String] = ["SQLite \(String(cString: sqlite3_libversion()))"]
-            var samples: [String: Double] = [:]
-            for operation in operations {
-                let best = try await Self.best(operation.run)
-                results.append(operation.name + " " + Self.format(best))
-                samples["\(operation.key).best.ms"] = best
-            }
-            let line = results.joined(separator: "; ")
-            XCTContext.runActivity(named: line) { _ in }
-            PerformanceRecord.attach(samples)
-        #endif
+        let operations = [
+            TimedOperation("write 1,000 in one transaction", "write-one") {
+                try await Self.writeInOneTransaction($0, $1)
+            },
+            TimedOperation("write 1,000 in 1,000 transactions", "write-many") {
+                try await Self.writeInManyTransactions($0, $1)
+            },
+            TimedOperation("read 1,000", "read") { try await Self.readRecords($0, $1) },
+            TimedOperation("save 5 changed", "save-changed") {
+                try await Self.saveChanged($0, $1)
+            },
+            TimedOperation("write and read one stroke of 16,384 points", "large-stroke") {
+                try await Self.largeStroke($0, $1)
+            },
+        ]
+        var results: [String] = ["SQLite \(String(cString: sqlite3_libversion()))"]
+        var samples: [String: Double] = [:]
+        for operation in operations {
+            let best = try await Self.best(operation.run)
+            results.append(operation.name + " " + Self.format(best))
+            samples["\(operation.key).best.ms"] = best
+        }
+        let line = results.joined(separator: "; ")
+        XCTContext.runActivity(named: line) { _ in }
+        PerformanceRecord.attach(samples)
     }
 
     /// Returns the best time of `runs` runs, in milliseconds. Each run gets a new library.

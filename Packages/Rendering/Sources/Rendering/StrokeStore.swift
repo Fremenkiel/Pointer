@@ -54,6 +54,7 @@ final class StrokeStore {
     private var removals: [(slot: Int, frame: UInt64)] = []
     /// The slots that a new stroke can take, after their removal is complete.
     private var freeSlots: [Int] = []
+    /// The GPU buffers of the stroke points.
     let arena: PointArena
 
     /// Makes an empty store.

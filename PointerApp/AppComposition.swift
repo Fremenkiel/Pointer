@@ -12,14 +12,23 @@ import os
 /// with the canvas and the workspace selector (task 3.9 of docs/m3-plan.md, ARCH-01).
 @MainActor
 final class AppComposition {
+    /// The root view controller that holds the screens.
     let container: AppViewController
+    /// The window that notes the time of the last touch.
     let window: InputTrackingWindow
+    /// The defaults that hold the launch arguments.
     let defaults: UserDefaults
+    /// The logger of the app.
     let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "App")
+    /// The library, or `nil` before it opens or after it fails.
     var repository: SQLiteLibraryRepository?
+    /// The device state store, or `nil` before it opens.
     var deviceStore: DeviceStateStore?
+    /// The snapshot writer, or `nil` before the library opens.
     var writer: SnapshotWriter?
+    /// The clock of the edits, or `nil` before the device state loads.
     var clock: AppClock?
+    /// The model of the workspace selector, or `nil` before the library opens.
     var selector: WorkspaceSelectorModel?
     /// The undo history of each canvas while the app runs, across workspace switches (D-12).
     let sessions = CanvasSessions()
@@ -34,10 +43,14 @@ final class AppComposition {
     var paths: [WorkspaceID: NavigationPath] = [:]
     /// The open of a card or the leave that runs, or `nil` (D-98).
     var opening: CardOpening?
+    /// `true` if the library opens read-only.
     var isReadOnly = false
+    /// `true` while the saves fail.
     var areSavesFailing = false
-    var hasFilled = false
+    private var hasFilled = false
+    /// Fires when the app is idle, or `nil`.
     var idleTimer: Timer?
+    /// `true` while a snapshot runs.
     var isSnapshotRunning = false
     /// True while a restore or "Back up now" runs. The screen then takes no input, and no
     /// edit, command, open, or leave starts (D-169).
@@ -270,7 +283,7 @@ final class AppComposition {
         }
     }
 
-    func storedCamera(for canvasID: CanvasID) async throws -> Camera? {
+    private func storedCamera(for canvasID: CanvasID) async throws -> Camera? {
         if let launch = launchCamera, launch.canvas == canvasID {
             launchCamera = nil
             return launch.camera

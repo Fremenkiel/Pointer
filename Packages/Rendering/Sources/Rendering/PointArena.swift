@@ -22,6 +22,7 @@ final class PointArena {
     /// The slabs of one full buffer.
     static let maxSlabsPerBuffer = bytesPerBuffer / bytesPerSlab
 
+    /// The GPU that makes the buffers.
     let device: any MTLDevice
     /// The largest size of all buffers together, in bytes.
     let byteBudget: Int

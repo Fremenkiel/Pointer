@@ -14,44 +14,40 @@ final class DeviceStatePerformanceTests: XCTestCase {
     private static let openCount = 20
 
     func testLaunchReadWithOneThousandCameras() async throws {
-        #if targetEnvironment(simulator)
-            throw XCTSkip("Read times are valid on a device only.")
-        #else
-            let files = FileManager()
-            let folder = files.temporaryDirectory.appending(
-                path: "DeviceState-\(UUID().uuidString)",
-                directoryHint: .isDirectory
-            )
-            try files.createDirectory(at: folder, withIntermediateDirectories: true)
-            defer { Self.removeFolder(folder, files) }
-            let configuration = DeviceStateStore.Configuration(
-                databasePath: folder.appending(path: "device.sqlite").path(percentEncoded: false),
-                makeDeviceID: { DeviceID(rawValue: UUID()) }
-            )
-            let workspace = WorkspaceID(rawValue: UUID())
-            try await Self.fill(DeviceStateStore(configuration: configuration), workspace)
-            let clock = ContinuousClock()
-            var times: [Double] = []
-            for _ in 0..<Self.openCount {
-                let store = DeviceStateStore(configuration: configuration)
-                var launch: DeviceStateStore.Launch?
-                let duration = try await clock.measure { launch = try await store.open() }
-                XCTAssertNotNil(launch?.camera)
-                times.append(duration / .milliseconds(1))
-            }
-            times.sort()
-            let line = String(
-                format: "device state launch read: median %.2f ms, slowest %.2f ms over %d opens",
-                times[times.count / 2],
-                times.last ?? 0,
-                times.count
-            )
-            XCTContext.runActivity(named: line) { _ in }
-            PerformanceRecord.attach([
-                "read.median.ms": times[times.count / 2],
-                "read.slowest.ms": times.last ?? 0,
-            ])
-        #endif
+        let files = FileManager()
+        let folder = files.temporaryDirectory.appending(
+            path: "DeviceState-\(UUID().uuidString)",
+            directoryHint: .isDirectory
+        )
+        try files.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { Self.removeFolder(folder, files) }
+        let configuration = DeviceStateStore.Configuration(
+            databasePath: folder.appending(path: "device.sqlite").path(percentEncoded: false),
+            makeDeviceID: { DeviceID(rawValue: UUID()) }
+        )
+        let workspace = WorkspaceID(rawValue: UUID())
+        try await Self.fill(DeviceStateStore(configuration: configuration), workspace)
+        let clock = ContinuousClock()
+        var times: [Double] = []
+        for _ in 0..<Self.openCount {
+            let store = DeviceStateStore(configuration: configuration)
+            var launch: DeviceStateStore.Launch?
+            let duration = try await clock.measure { launch = try await store.open() }
+            XCTAssertNotNil(launch?.camera)
+            times.append(duration / .milliseconds(1))
+        }
+        times.sort()
+        let line = String(
+            format: "device state launch read: median %.2f ms, slowest %.2f ms over %d opens",
+            times[times.count / 2],
+            times.last ?? 0,
+            times.count
+        )
+        XCTContext.runActivity(named: line) { _ in }
+        PerformanceRecord.attach([
+            "read.median.ms": times[times.count / 2],
+            "read.slowest.ms": times.last ?? 0,
+        ])
     }
 
     private static func fill(_ store: DeviceStateStore, _ workspace: WorkspaceID) async throws {

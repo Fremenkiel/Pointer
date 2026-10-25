@@ -13,6 +13,7 @@ final class ParentLink {
     /// The exit that the renderer shows, or `nil`.
     var exit: PinchExit?
 
+    /// Makes the link with the card of the canvas and the leave.
     init(card: Card?, onLeave: @escaping @MainActor () -> Void) {
         self.card = card
         self.onLeave = onLeave

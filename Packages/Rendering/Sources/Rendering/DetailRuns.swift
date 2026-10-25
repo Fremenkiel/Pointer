@@ -69,14 +69,17 @@ enum DetailRuns {
 
 /// Holds back one run until the next run is known, and sets the neighbor offsets of each run.
 private struct RunLinker {
+    /// The points of the stroke.
     let pointCount: Int
     private var held: DetailRun?
     private var previousStride = 0
 
+    /// Makes a linker for a stroke of `pointCount` points.
     init(pointCount: Int) {
         self.pointCount = pointCount
     }
 
+    /// Takes the next run and gives the held run to `body`.
     mutating func add(_ run: DetailRun, _ body: (DetailRun) -> Void) {
         if let held {
             emit(held, nextStride: run.stride, body)
@@ -84,6 +87,7 @@ private struct RunLinker {
         held = run
     }
 
+    /// Gives the last run to `body`.
     mutating func finish(_ body: (DetailRun) -> Void) {
         guard let held else { preconditionFailure("A stroke has one run at least") }
         emit(held, nextStride: 0, body)
@@ -113,15 +117,20 @@ struct DetailScale {
 
 /// A part of a stroke with its total length and its largest neighbor spacing.
 private struct Span {
+    /// The first point of the span.
     let start: Int
+    /// The last point of the span.
     let end: Int
     /// The first and the last block of the span, in the stroke.
     let blocks: ClosedRange<Int>
+    /// The total length of the span.
     let length: Float
+    /// The largest neighbor spacing of the span.
     let largest: Float
     /// The pieces per segment of the first block, the merge key.
     var pieces = 0
 
+    /// Makes the span of one block.
     init(start: Int, end: Int, block: Int, _ spacing: BlockSpacing) {
         precondition(end > start, "A span has one segment at least")
         self.start = start
@@ -139,12 +148,14 @@ private struct Span {
         self.largest = largest
     }
 
+    /// Returns the span with `pieces` as its merge key.
     func with(pieces: Int) -> Span {
         var span = Span(start: start, end: end, blocks: blocks, length: length, largest: largest)
         span.pieces = pieces
         return span
     }
 
+    /// Returns the span joined with the span after it.
     func merged(with next: Span) -> Span {
         precondition(next.start == end, "Merged spans must touch")
         precondition(next.blocks.lowerBound == blocks.upperBound + 1, "Merged blocks must touch")
@@ -179,6 +190,7 @@ private struct Span {
         )
     }
 
+    /// Returns the run of the span at the scale.
     func run(_ scale: DetailScale, bend: (Int) -> Float) -> DetailRun {
         let detail = detail(scale, bend: bend)
         let stride = min(detail.stride, DetailRuns.maxStride)

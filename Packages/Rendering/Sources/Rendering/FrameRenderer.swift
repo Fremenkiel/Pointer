@@ -10,9 +10,13 @@ import os
 /// One thread at a time uses it: the render thread in the app (D-42), or the thread of a test.
 /// `RenderEngine` keeps it behind a lock and gives it the changes of the main actor.
 final class FrameRenderer {
+    /// The device, the queue, and the pipelines.
     let resources: InkResources
+    /// The settings of the renderer.
     let configuration: RendererConfiguration
+    /// The strokes on the GPU.
     let store: StrokeStore
+    /// The ink pass.
     let encoder: InkEncoder
     /// The text boxes with their layouts (D-84).
     let texts = TextStore()
@@ -40,6 +44,7 @@ final class FrameRenderer {
     /// The flight of the camera that the render thread plays, or `nil` (D-121).
     var flight: RenderFlight?
     private let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
+    /// The logger of the renderer.
     let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     /// The committed layer, or `nil` before the first frame with a drawable size.
     private(set) var layer: CommittedLayer?
@@ -318,11 +323,6 @@ final class FrameRenderer {
             commandBuffer.whenCompleted { buffer in onCompleted(handoff, buffer.gpuEndTime) }
             waitingCompletion = false
         }
-        #if targetEnvironment(simulator)
-            // The simulator has no presented handler. The GPU completion is the closest event.
-            commandBuffer.whenCompleted { _ in onPresented(handoff) }
-        #else
-            drawable.addPresentedHandler { _ in onPresented(handoff) }
-        #endif
+        drawable.addPresentedHandler { _ in onPresented(handoff) }
     }
 }

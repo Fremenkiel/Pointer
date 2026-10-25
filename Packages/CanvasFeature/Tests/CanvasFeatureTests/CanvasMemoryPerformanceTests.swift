@@ -2,7 +2,7 @@ import XCTest
 
 /// A canvas with the content of D-56 takes under 380 MB on the device (architecture.md section
 /// 12, PERF-03). The test reads the growth of the process memory from the start of the load to
-/// the first frame with all strokes, and the peak on the way. The simulator skips it.
+/// the first frame with all strokes, and the peak on the way. It runs on the iPad only (D-77).
 ///
 /// The test makes one open. A closed canvas gives its memory back to the allocator of the
 /// process, not to the system, so a second open reuses it and shows too little growth.

@@ -2,7 +2,7 @@ import XCTest
 
 /// The memory peak of an open from the D-56 canvas into a D-56 child and of the leave back
 /// (m6-plan.md task 3.6, D-110). At the start of the open, the parent keeps a frozen copy of its
-/// frame and frees its committed textures and its eraser mask. The simulator skips the test.
+/// frame and frees its committed textures and its eraser mask. It runs on the iPad only (D-77).
 @MainActor
 final class TransitionMemoryPerformanceTests: XCTestCase {
     /// The budgets of D-110 on the iPad Pro 11-inch (M4), in MB: the largest of 3 runs alone on

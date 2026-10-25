@@ -37,9 +37,9 @@ public actor DeviceStateStore {
 
     /// The most cameras that stay. A write drops the least recently used ones (D-53).
     static let maxCameras = 1_000
-    static let deviceKey = "deviceID"
-    static let lastWorkspaceKey = "lastWorkspace"
-    static let navigationPathKey = "navigationPath"
+    private static let deviceKey = "deviceID"
+    private static let lastWorkspaceKey = "lastWorkspace"
+    private static let navigationPathKey = "navigationPath"
     private static let keys: Set = [deviceKey, lastWorkspaceKey, navigationPathKey]
 
     private let configuration: Configuration

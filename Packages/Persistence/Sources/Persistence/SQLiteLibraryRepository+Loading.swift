@@ -181,9 +181,14 @@ extension SQLiteLibraryRepository {
 
 /// One read of live rows: the statement, its canvas parameter, and the codec of its rows.
 struct RowQuery<Row> {
+    /// The prepared read.
     let statement: SQLiteStatement
+    /// The canvas that the read binds, or `nil` for a read without a canvas.
     let canvas: CanvasID?
+    /// The table name for the log.
     let table: String
+    /// The most rows that the read returns.
     let limit: Int
+    /// Decodes one row.
     let read: (SQLiteStatement) throws(PersistenceError) -> Row
 }

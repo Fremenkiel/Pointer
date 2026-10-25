@@ -187,7 +187,10 @@ enum StrokeSplitter {
 
 /// The point of a curve at a cut, with the force and the time of the curve there.
 private struct CutPoint {
+    /// The position of the curve at the cut.
     let position: Point
+    /// The force of the curve at the cut.
     let force: Float
+    /// The time of the curve at the cut.
     let time: Float
 }

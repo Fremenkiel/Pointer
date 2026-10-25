@@ -37,6 +37,7 @@ public actor SnapshotImport {
         self.init(temporaryFolder: temporaryFolder, migrations: Migration.library)
     }
 
+    /// Makes an import that expects the schema of `migrations`.
     init(temporaryFolder: URL, migrations: [Migration]) {
         precondition(temporaryFolder.isFileURL, "The temporary folder must be a file URL")
         precondition(!migrations.isEmpty, "The expected schema needs a migration")
@@ -139,11 +140,12 @@ public actor SnapshotImport {
             """
         )
         var rows: [String] = []
-        while try statement.step() {
-            guard rows.count < maxSchemaRows else {
-                throw .schemaMismatch(reason: "more than \(maxSchemaRows) schema rows")
-            }
+        // The bound stays in the condition (FLOW-03): one row past it ends the loop.
+        while rows.count <= maxSchemaRows, try statement.step() {
             rows.append(statement.string(at: 0) ?? "")
+        }
+        guard rows.count <= maxSchemaRows else {
+            throw .schemaMismatch(reason: "more than \(maxSchemaRows) schema rows")
         }
         return rows
     }

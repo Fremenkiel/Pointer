@@ -29,6 +29,8 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
 
     // The removal is inlinable, so that a caller in another module gets code for its own ID
     // type. Unspecialized, 2,000 removals took 72 ms on the Mac (M4 task 3.8).
+    /// The entries of each occupied cell.
+    /// The bounds of each item.
     @usableFromInline var cells: [GridCell: [Entry]] = [:]
     @usableFromInline var boundsByID: [ID: Rect] = [:]
 
@@ -153,6 +155,7 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
         GridCell(column: coordinate(point.x), row: coordinate(point.y))
     }
 
+    /// Calls `body` for each entry of a cell that touches `query` and starts in that cell.
     @inlinable
     func report(_ cell: GridCell, entries: [Entry]?, query: Rect, _ body: (ID) -> Void) {
         guard let entries else { return }
@@ -168,6 +171,7 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
         }
     }
 
+    /// Removes the entry of an item from one cell, and the cell if it becomes empty.
     @inlinable
     mutating func removeEntry(_ id: ID, from cell: GridCell) {
         // One lookup, and the cell changes in place through `values`. The optional chain of
@@ -189,11 +193,13 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
         assert(cells[cell]?.contains { $0.id == id } != true, "Grid cell \(cell) still holds \(id)")
     }
 
+    /// Returns the cell coordinate of a canvas coordinate.
     @inlinable
     func coordinate(_ value: Double) -> Int {
         GridCell.coordinate(value, cellSize: cellSize)
     }
 
+    /// Returns the cells that a rectangle touches.
     @inlinable
     func cellRange(for rect: Rect) -> CellRange {
         CellRange(
@@ -206,17 +212,22 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
 /// A rectangle of grid cells.
 @usableFromInline
 struct CellRange {
+    /// The column coordinates of the cells.
+    /// The row coordinates of the cells.
     @usableFromInline let columns: ClosedRange<Int>
     @usableFromInline let rows: ClosedRange<Int>
 
+    /// Makes the range from its columns and rows.
     @inlinable
     init(columns: ClosedRange<Int>, rows: ClosedRange<Int>) {
         self.columns = columns
         self.rows = rows
     }
 
+    /// The number of cells in the range.
     @usableFromInline var cellCount: Int { columns.count * rows.count }
 
+    /// Returns `true` if the range holds `cell`.
     @inlinable
     func contains(_ cell: GridCell) -> Bool {
         columns.contains(cell.column) && rows.contains(cell.row)

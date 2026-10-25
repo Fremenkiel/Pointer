@@ -10,7 +10,7 @@ import XCTest
 
 /// M4 acceptance 2: erase, undo, and redo of 1,000 strokes in one gesture take under 33 ms per
 /// step on the device (D-69). The clock runs from the pencil lift or the undo or redo call until
-/// the GPU completes the first frame that holds the result (D-74). The simulator skips it.
+/// the GPU completes the first frame that holds the result (D-74). It runs on the iPad only (D-77).
 @MainActor
 final class EraseUndoPerformanceTests: XCTestCase {
     /// The budget of one step, in milliseconds: four display frames at 120 Hz (D-75).

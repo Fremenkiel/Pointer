@@ -61,6 +61,7 @@ public actor SnapshotWriter {
         self.init(configuration: configuration, beforeRename: nil)
     }
 
+    /// Makes a writer with a test hook before the rename.
     init(
         configuration: Configuration,
         beforeRename: (@Sendable () throws(PersistenceError) -> Void)?

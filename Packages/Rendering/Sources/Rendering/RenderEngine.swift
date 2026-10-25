@@ -19,7 +19,9 @@ final class RenderEngine: Sendable {
 
     /// The GPU of the renderer.
     let device: any MTLDevice
+    /// The frame work behind its lock.
     let core: Mutex<FrameRenderer>
+    /// The changes of the main actor behind their lock.
     let inbox = Mutex(RenderInbox())
     private let cameraArrived = DispatchSemaphore(value: 0)
     /// The stored previews of the child canvases, or `nil` without previews (D-97).
@@ -300,9 +302,13 @@ final class RenderEngine: Sendable {
 
 /// The values that one frame gives back from inside the lock.
 private struct FrameResult: Sendable {
+    /// `true` if the frame drew.
     let didDraw: Bool
+    /// `true` if the frame needs another frame.
     let needsMore: Bool
+    /// The number of strokes in the store.
     let count: Int
+    /// The record of the frame, or `nil`.
     var record: FrameRecord?
     /// `true` while a flight of the camera runs or changed the frame (D-121).
     var isFlying = false

@@ -310,5 +310,6 @@ public final class CanvasRenderer {
 /// renderer does not exist yet when the engine needs the callback, so the relay holds it.
 @MainActor
 private final class HandoffRelay {
+    /// The renderer that takes the events, or `nil` before it exists.
     weak var renderer: CanvasRenderer?
 }

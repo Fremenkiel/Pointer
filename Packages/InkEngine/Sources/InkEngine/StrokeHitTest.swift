@@ -52,9 +52,13 @@ enum StrokeHitTest {
 
 /// The state of one hit test: one stroke and the eraser bands near it.
 private struct Probe {
+    /// The curve of the stroke.
     let spline: StrokeSpline
+    /// The path of the eraser.
     let path: EraserPath
+    /// The bands of the path near the stroke.
     let bands: [Int]
+    /// The eraser radius plus half the stroke width.
     let reach: Double
     /// The union of the bounds of `bands`. Most segments miss it, so they need no other test.
     let nearBounds: Rect

@@ -6,7 +6,7 @@ import XCTest
 
 /// The GPU time of one full content pass for each level-of-detail spacing, with an image
 /// comparison against the M2 spacing (docs/m2-fix-plan.md, phase 0, task 6). The GPU times are
-/// valid on a device only, so the simulator skips these tests.
+/// valid on a device only, so they run on the iPad only (D-77).
 @MainActor
 final class LevelOfDetailPerformanceTests: XCTestCase {
     /// The spacings and piece rules to compare. The first one is the M2 value and gives the
@@ -50,48 +50,44 @@ final class LevelOfDetailPerformanceTests: XCTestCase {
     }
 
     private func compare(_ content: [Stroke], camera: Camera, name: String) throws {
-        #if targetEnvironment(simulator)
-            throw XCTSkip("GPU times are valid on a device only.")
-        #else
-            let rig = try InkRig(strokes: content)
-            let texture = try rig.resources.makeTarget(
-                width: Self.textureWidth,
-                height: Self.textureHeight,
-                format: InkResources.committedFormat,
-                isReadable: true
+        let rig = try InkRig(strokes: content)
+        let texture = try rig.resources.makeTarget(
+            width: Self.textureWidth,
+            height: Self.textureHeight,
+            format: InkResources.committedFormat,
+            isReadable: true
+        )
+        let target = InkTarget(texture: texture, camera: camera, displayScale: 2)
+        let slots = rig.visibleSlots(of: target)
+        // The GPU clock ramps up during the first passes of a test, so the first run only
+        // warms it up.
+        _ = medianTime(rig: rig, slots: slots, target: target)
+        var reference: [UInt8]?
+        var samples: [String: Double] = [:]
+        for (spacing, usesSmoothPieces) in Self.variants {
+            rig.encoder.minimumPixelSpacing = spacing
+            rig.encoder.usesSmoothPieces = usesSmoothPieces
+            let time = medianTime(rig: rig, slots: slots, target: target)
+            let image = CoverageReader.pixels(of: texture)
+            let difference = CoverageReader.largestDifference(reference ?? image, image)
+            reference = reference ?? image
+            let instances = rig.instanceCount(slots: slots, target: target)
+            let line = String(
+                format: "%@ at %.2f px%@: %d strokes, %d instances, %.2f GPU ms, diff %d",
+                name,
+                spacing,
+                usesSmoothPieces ? " smooth" : "",
+                slots.count,
+                instances,
+                time,
+                difference
             )
-            let target = InkTarget(texture: texture, camera: camera, displayScale: 2)
-            let slots = rig.visibleSlots(of: target)
-            // The GPU clock ramps up during the first passes of a test, so the first run only
-            // warms it up.
-            _ = medianTime(rig: rig, slots: slots, target: target)
-            var reference: [UInt8]?
-            var samples: [String: Double] = [:]
-            for (spacing, usesSmoothPieces) in Self.variants {
-                rig.encoder.minimumPixelSpacing = spacing
-                rig.encoder.usesSmoothPieces = usesSmoothPieces
-                let time = medianTime(rig: rig, slots: slots, target: target)
-                let image = CoverageReader.pixels(of: texture)
-                let difference = CoverageReader.largestDifference(reference ?? image, image)
-                reference = reference ?? image
-                let instances = rig.instanceCount(slots: slots, target: target)
-                let line = String(
-                    format: "%@ at %.2f px%@: %d strokes, %d instances, %.2f GPU ms, diff %d",
-                    name,
-                    spacing,
-                    usesSmoothPieces ? " smooth" : "",
-                    slots.count,
-                    instances,
-                    time,
-                    difference
-                )
-                XCTContext.runActivity(named: line) { _ in }
-                let smooth = usesSmoothPieces ? "-smooth" : ""
-                samples[String(format: "spacing-%.2f%@.gpu.ms", spacing, smooth)] = time
-                XCTAssertLessThanOrEqual(difference, Self.maxDifference, line)
-            }
-            PerformanceRecord.attach(samples)
-        #endif
+            XCTContext.runActivity(named: line) { _ in }
+            let smooth = usesSmoothPieces ? "-smooth" : ""
+            samples[String(format: "spacing-%.2f%@.gpu.ms", spacing, smooth)] = time
+            XCTAssertLessThanOrEqual(difference, Self.maxDifference, line)
+        }
+        PerformanceRecord.attach(samples)
     }
 
     /// The passes run back to back, so that the GPU keeps its clock between them. The span from

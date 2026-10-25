@@ -48,6 +48,7 @@ public actor SQLiteLibraryRepository: LibraryRepository {
     /// The failed saves in a row before the app shows a message (storage.md section 4).
     static let failuresBeforeFault = 3
 
+    /// The paths and the settings of the library.
     let configuration: Configuration
     /// The faults in the order of their reports. One task on the main actor gives them to the
     /// handler, so the app never sees a recovery before its failure.
@@ -56,17 +57,27 @@ public actor SQLiteLibraryRepository: LibraryRepository {
     let beforeCommit: (@Sendable () throws(PersistenceError) -> Void)?
     /// The schema migrations. Tests add a version to test the pre-migration snapshot.
     let migrations: [Migration]
+    /// The logger of the library.
     let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Persistence")
+    /// The signposter of the library.
     let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Persistence")
     private let queue = DispatchSerialQueue(label: "dk.saarikivi.pointer.library")
 
+    /// The open connection, or `nil` before the open and after the close.
     var connection: SQLiteConnection?
+    /// The prepared statements of the open connection, or `nil`.
     var statements: LibraryStatements?
+    /// `true` if the library comes from a newer schema and opens read-only.
     var isReadOnly = false
+    /// The rows that wait for the next save.
     var pending = PendingRows()
+    /// The newest timestamp that the library holds, or `nil`.
     var lastTimestamp: HybridTimestamp?
+    /// The time of the last save, or `nil` before the first one.
     var lastAttempt: Duration?
+    /// The failed saves in a row.
     var failureCount = 0
+    /// The save that waits for the throttle interval, or `nil`.
     var scheduledSave: Task<Void, Never>?
     /// The checkpointer of the writable library, or `nil` (D-146).
     var checkpointer: WALCheckpointer?
@@ -92,6 +103,7 @@ public actor SQLiteLibraryRepository: LibraryRepository {
         self.init(configuration: configuration, onFault: onFault, beforeCommit: nil)
     }
 
+    /// Makes a repository with the test hooks and the migrations.
     init(
         configuration: Configuration,
         onFault: @escaping FaultHandler,

@@ -2,7 +2,7 @@ import XCTest
 
 /// M3 acceptance 3: a canvas with the content of D-56 opens to the first frame in under 300 ms
 /// on the device (architecture.md section 12, PERF-03). The test opens the canvas on the screen
-/// with its render thread, as the app does. The simulator skips it.
+/// with its render thread, as the app does. It runs on the iPad only (D-77).
 @MainActor
 final class CanvasOpenPerformanceTests: XCTestCase {
     /// The budget of architecture.md section 12, in milliseconds.

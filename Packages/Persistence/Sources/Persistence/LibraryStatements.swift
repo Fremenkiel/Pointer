@@ -2,22 +2,39 @@ import Model
 
 /// The prepared statements of the repository, compiled once at open and reused (storage.md 4).
 final class LibraryStatements {
+    /// Holds `BEGIN IMMEDIATE`.
     let begin: SQLiteStatement
+    /// Holds `COMMIT`.
     let commit: SQLiteStatement
+    /// Holds `ROLLBACK`.
     let rollback: SQLiteStatement
+    /// Holds `StrokeRow.insert`, which writes a stroke.
     let insertStroke: SQLiteStatement
+    /// Holds `EraseRow.upsert`, which writes an erase record.
     let upsertErase: SQLiteStatement
+    /// Holds `CardRow.upsert`, which writes a card.
     let upsertCard: SQLiteStatement
+    /// Holds `TextBoxRow.upsert`, which writes a text box.
     let upsertTextBox: SQLiteStatement
+    /// Holds `WorkspaceRow.upsert`, which writes a workspace.
     let upsertWorkspace: SQLiteStatement
+    /// Sets the title of a live workspace.
     let renameWorkspace: SQLiteStatement
+    /// Marks a live workspace as deleted.
     let deleteWorkspace: SQLiteStatement
+    /// Counts the live workspaces.
     let countWorkspaces: SQLiteStatement
+    /// Holds `WorkspaceRow.selectLive`, which reads the live workspaces.
     let selectWorkspaces: SQLiteStatement
+    /// Holds `StrokeRow.selectLive`, which reads the live strokes of a canvas.
     let selectStrokes: SQLiteStatement
+    /// Holds `CardRow.selectLive`, which reads the live cards of a canvas.
     let selectCards: SQLiteStatement
+    /// Holds `CardRow.selectPath`, which reads the cards of a navigation path.
     let selectPathCards: SQLiteStatement
+    /// Holds `TextBoxRow.selectLive`, which reads the live text boxes of a canvas.
     let selectTextBoxes: SQLiteStatement
+    /// Writes the last timestamp of the clock to the `library` table.
     let writeLastTimestamp: SQLiteStatement
 
     /// Compiles all statements on `connection`.

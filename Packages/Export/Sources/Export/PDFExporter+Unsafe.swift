@@ -29,6 +29,7 @@ extension PDFExporter {
 private final class BufferOwner: @unchecked Sendable {
     private var buffer: NSMutableData?
 
+    /// Makes the owner of a finished buffer.
     init(buffer: NSMutableData) {
         self.buffer = buffer
     }

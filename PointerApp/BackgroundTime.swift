@@ -20,6 +20,7 @@ protocol BackgroundTime {
 /// The extra time of `UIApplication`, about 30 s
 /// (<https://developer.apple.com/forums/thread/85066>).
 struct SystemBackgroundTime: BackgroundTime {
+    /// Asks `UIApplication` for extra time.
     func begin(
         _ name: String,
         onExpiry: @escaping @MainActor @Sendable () -> Void
@@ -29,6 +30,7 @@ struct SystemBackgroundTime: BackgroundTime {
         }
     }
 
+    /// Ends the extra time of `task` at `UIApplication`.
     func end(_ task: UIBackgroundTaskIdentifier) {
         guard task != .invalid else { return }
         UIApplication.shared.endBackgroundTask(task)

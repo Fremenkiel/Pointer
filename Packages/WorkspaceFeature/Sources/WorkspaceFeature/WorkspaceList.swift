@@ -5,18 +5,26 @@ import SwiftUI
 /// The list of all workspaces with the commands to switch, create, rename, and delete (WS-02,
 /// WS-03).
 struct WorkspaceList: View {
+    /// The workspaces in the order of the list.
     let workspaces: [Workspace]
+    /// The ID of the current workspace, or `nil`.
     let currentID: WorkspaceID?
+    /// `false` when the library holds the most workspaces.
     let canCreate: Bool
+    /// Switches to a workspace.
     let onSelect: (WorkspaceID) -> Void
+    /// Starts a new workspace.
     let onCreate: () -> Void
+    /// Starts the rename of a workspace.
     let onRename: (Workspace) -> Void
+    /// Starts the delete of a workspace.
     let onDelete: (Workspace) -> Void
     /// The commands of the library below the workspaces, from the app (D-160).
     var commands: [LibraryCommand] = []
     /// Runs a command of the library.
     var onCommand: (LibraryCommand) -> Void = { _ in }
 
+    /// The workspaces, the create row, and the commands.
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ScrollView { workspaceRows }

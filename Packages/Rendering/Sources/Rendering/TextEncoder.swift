@@ -34,6 +34,7 @@ final class TextEncoder {
     /// The first capacity of the run list. It grows once to the most runs of a pass.
     private static let initialRunCapacity = 64
 
+    /// The pipelines and the device.
     let resources: InkResources
     private let store: TextStore
     /// The cards of the canvas, for the cards in the list of a pass (D-96).
@@ -53,7 +54,9 @@ final class TextEncoder {
     var previewQuads: [GlyphInstance] = []
     /// The run of the preview quads of the current pass in the glyph buffer, or `nil`.
     var previewRun: (first: Int, count: Int)?
+    /// The glyph coverage on the GPU.
     let atlas: GlyphAtlas
+    /// The glyph buffers of the frames in flight.
     let ring: GlyphRing
     /// The runs of the current pass, reused (PERF-01).
     var runs: [Run] = []

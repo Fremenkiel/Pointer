@@ -3,9 +3,12 @@ import SwiftUI
 
 /// The button in the top left corner with the name of the current workspace (WS-01).
 struct WorkspaceButton: View {
+    /// The name of the current workspace.
     let title: String
+    /// Opens the selector.
     let action: () -> Void
 
+    /// The name and the expand icon.
     var body: some View {
         Button(action: action) {
             HStack(spacing: DesignSystem.Spacing.small) {

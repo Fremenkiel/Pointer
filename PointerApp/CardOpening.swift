@@ -30,6 +30,7 @@ final class CardOpening {
     /// The new preview of the child of a leave, or `nil`.
     var preview: PreviewImage?
 
+    /// Makes an open or a leave toward `target`.
     init(target: NavigationPath) {
         self.target = target
     }
@@ -43,9 +44,10 @@ final class CardOpening {
     static func waitForFirstFrame(of canvas: CanvasViewController) async throws {
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: timeout)
-        while !canvas.hasDrawnLoad {
-            guard clock.now < deadline else { throw FirstFrameTimedOut() }
+        // The deadline bounds the loop in its condition (FLOW-03).
+        while !canvas.hasDrawnLoad, clock.now < deadline {
             try await Task.sleep(for: pollInterval)
         }
+        guard canvas.hasDrawnLoad else { throw FirstFrameTimedOut() }
     }
 }

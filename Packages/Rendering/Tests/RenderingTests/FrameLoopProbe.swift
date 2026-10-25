@@ -102,13 +102,9 @@ final class FrameLoopCollector: FrameObserving {
 
     func willCommit(_ commandBuffer: any MTLCommandBuffer, drawable: any CAMetalDrawable) {
         let measuresGPU = state.withLock { $0.frameIndex.isMultiple(of: 2) }
-        #if targetEnvironment(simulator)
-            // The simulator has no presented handler. The frame-loop tests skip it.
-        #else
-            drawable.addPresentedHandler { [self] presented in
-                record(presentedAt: presented.presentedTime)
-            }
-        #endif
+        drawable.addPresentedHandler { [self] presented in
+            record(presentedAt: presented.presentedTime)
+        }
         guard measuresGPU else { return }
         commandBuffer.whenCompleted { [self] buffer in
             let milliseconds = (buffer.gpuEndTime - buffer.gpuStartTime) * 1000

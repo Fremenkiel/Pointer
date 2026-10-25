@@ -11,9 +11,13 @@ final class InkResources {
     /// The pixel format of the drawable (decision D-38).
     static let drawableFormat = MTLPixelFormat.bgra8Unorm
 
+    /// The GPU.
     let device: any MTLDevice
+    /// The command queue of the renderer.
     let queue: any MTLCommandQueue
+    /// Draws the ink coverage of the strokes.
     let inkPipeline: any MTLRenderPipelineState
+    /// Draws the composite pass without the eraser mask.
     let compositePipeline: any MTLRenderPipelineState
     /// Draws the composite pass through the eraser mask (D-66).
     let compositeMaskedPipeline: any MTLRenderPipelineState

@@ -34,42 +34,38 @@ final class LibrarySavePerformanceTests: XCTestCase {
 
     /// Returns the sorted times of `saveCount` saves in milliseconds.
     private static func measureSaves(strokesPerSave: Int) async throws -> [Double] {
-        #if targetEnvironment(simulator)
-            throw XCTSkip("Save times are valid on a device only.")
-        #else
-            let files = FileManager()
-            let folder = files.temporaryDirectory.appending(
-                path: "LibrarySave-\(UUID().uuidString)",
-                directoryHint: .isDirectory
-            )
-            try files.createDirectory(at: folder, withIntermediateDirectories: true)
-            defer { removeFolder(folder, files) }
-            let device = DeviceID(rawValue: UUID())
-            let path = folder.appending(path: "library.sqlite").path(percentEncoded: false)
-            let configuration = SQLiteLibraryRepository.Configuration(
-                databasePath: path,
-                temporaryFolder: folder,
-                device: device,
-                wallClock: SystemWallClock(),
-                timer: ContinuousSaveTimer()
-            )
-            let repository = SQLiteLibraryRepository(configuration: configuration) { _ in }
-            _ = try await repository.open { _ in }
-            // SQLite must not hold the files at the delete (task 1.1 of docs/m9-plan.md).
-            defer { await repository.close() }
-            let canvas = CanvasID(rawValue: UUID())
-            let clock = ContinuousClock()
-            var times: [Double] = []
-            for save in 0..<saveCount {
-                let rows = (0..<strokesPerSave).map { index in
-                    LibraryChange.stroke(stroke(save * strokesPerSave + index, canvas, device))
-                }
-                try await repository.send(rows)
-                let duration = try await clock.measure { try await repository.saveNow() }
-                times.append(duration / .milliseconds(1))
+        let files = FileManager()
+        let folder = files.temporaryDirectory.appending(
+            path: "LibrarySave-\(UUID().uuidString)",
+            directoryHint: .isDirectory
+        )
+        try files.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { removeFolder(folder, files) }
+        let device = DeviceID(rawValue: UUID())
+        let path = folder.appending(path: "library.sqlite").path(percentEncoded: false)
+        let configuration = SQLiteLibraryRepository.Configuration(
+            databasePath: path,
+            temporaryFolder: folder,
+            device: device,
+            wallClock: SystemWallClock(),
+            timer: ContinuousSaveTimer()
+        )
+        let repository = SQLiteLibraryRepository(configuration: configuration) { _ in }
+        _ = try await repository.open { _ in }
+        // SQLite must not hold the files at the delete (task 1.1 of docs/m9-plan.md).
+        defer { await repository.close() }
+        let canvas = CanvasID(rawValue: UUID())
+        let clock = ContinuousClock()
+        var times: [Double] = []
+        for save in 0..<saveCount {
+            let rows = (0..<strokesPerSave).map { index in
+                LibraryChange.stroke(stroke(save * strokesPerSave + index, canvas, device))
             }
-            return times.sorted()
-        #endif
+            try await repository.send(rows)
+            let duration = try await clock.measure { try await repository.saveNow() }
+            times.append(duration / .milliseconds(1))
+        }
+        return times.sorted()
     }
 
     private static func removeFolder(_ folder: URL, _ files: FileManager) {

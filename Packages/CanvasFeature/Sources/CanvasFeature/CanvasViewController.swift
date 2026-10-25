@@ -10,11 +10,16 @@ import os
 /// library (M3).
 @MainActor
 public final class CanvasViewController: UIViewController {
+    /// The renderer that draws the canvas.
     let renderer: CanvasRenderer
     private let handoff: LiveStrokeHandoff
+    /// The Metal view with the view of the live stroke on top.
     let canvasView: CanvasView
+    /// The logger of the canvas.
     let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Canvas")
+    /// The clock and the ID factory of the new items.
     let clock: AppClock
+    /// The strokes, cards, and text boxes of the canvas.
     var content: CanvasContent
     /// The undo and redo steps of the canvas (D-12).
     var history = History()
@@ -44,11 +49,17 @@ public final class CanvasViewController: UIViewController {
     var eraserSamples: [Point]?
     /// The sample list of the last gesture, kept for its capacity.
     var spareEraserSamples: [Point] = []
+    /// Turns the pan and the pinch input into camera changes.
     var cameraController: CameraController
+    /// Decides which finger touches the gestures ignore (TOOL-03).
     var palmGuard = PalmGuard()
+    /// The recognizer of the finger pan.
     let panRecognizer = UIPanGestureRecognizer()
+    /// The recognizer of the finger pinch.
     let pinchRecognizer = UIPinchGestureRecognizer()
+    /// Watches the pencil touches for the palm guard.
     let pencilObserver = PencilTouchObserver()
+    /// The library that saves the canvas, or `nil` without a library.
     let repository: (any LibraryRepository)?
     /// Sends the rows of the steps in order, or `nil` without a library (F-11).
     private let rowChannel: RowChannel?

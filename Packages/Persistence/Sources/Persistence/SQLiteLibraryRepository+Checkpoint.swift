@@ -10,7 +10,7 @@ extension SQLiteLibraryRepository {
     /// The wait between two tries of the write connection while the checkpointer holds the
     /// checkpoint lock, and the most tries: 2 s, the `busy_timeout` of storage.md section 3.1.
     static let checkpointRetryInterval = 0.010
-    static let maxCheckpointRetries = 200
+    private static let maxCheckpointRetries = 200
 
     /// Starts a checkpoint after a commit if the WAL is large (D-146, D-147).
     ///

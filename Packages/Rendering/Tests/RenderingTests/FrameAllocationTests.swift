@@ -8,54 +8,50 @@ import XCTest
 
 /// The heap allocations of a frame against a bare Metal frame with the same passes (PERF-01,
 /// D-43, docs/m2-fix-plan.md, phase 5, task 7). Only a device gives drawables at the frame rate,
-/// so the simulator skips the test.
+/// so it runs on the iPad only (D-77).
 @MainActor
 final class FrameAllocationTests: XCTestCase {
     /// The measured frames of each kind.
     private static let frames = 60
 
     func testFrameAllocatesNoMoreThanBareMetalFrame() throws {
-        #if targetEnvironment(simulator)
-            throw XCTSkip("The allocation count needs the drawables of a device.")
-        #else
-            let renderer = try CanvasRenderer()
-            let layer = CAMetalLayer()
-            renderer.configure(layer)
-            layer.drawableSize = CGSize(width: 800, height: 600)
-            renderer.setViewport(viewSize: Size(width: 400, height: 300), displayScale: 2)
-            renderer.load(PerformanceContent.dense(count: 200, points: 300))
-            for _ in 0..<100 where renderer.renderFrame(into: layer, deadline: nil) {}
-            var ours: [Int] = []
-            for step in 0..<Self.frames {
-                // A pan of one point per frame stays inside the margin, so no frame builds.
-                renderer.camera = Camera(center: Point(x: Double(step % 2), y: 0), zoom: 1)
-                let drawable = try XCTUnwrap(layer.nextDrawable())
-                let size = layer.drawableSize
-                let count = AllocationCounter.count {
-                    _ = renderer.engine.renderFrame(
-                        drawableSize: size,
-                        deadline: nil,
-                        drawable: .drawable(drawable)
-                    )
-                }
-                if let count { ours.append(count) }
-                Self.settle()
+        let renderer = try CanvasRenderer()
+        let layer = CAMetalLayer()
+        renderer.configure(layer)
+        layer.drawableSize = CGSize(width: 800, height: 600)
+        renderer.setViewport(viewSize: Size(width: 400, height: 300), displayScale: 2)
+        renderer.load(PerformanceContent.dense(count: 200, points: 300))
+        for _ in 0..<100 where renderer.renderFrame(into: layer, deadline: nil) {}
+        var ours: [Int] = []
+        for step in 0..<Self.frames {
+            // A pan of one point per frame stays inside the margin, so no frame builds.
+            renderer.camera = Camera(center: Point(x: Double(step % 2), y: 0), zoom: 1)
+            let drawable = try XCTUnwrap(layer.nextDrawable())
+            let size = layer.drawableSize
+            let count = AllocationCounter.count {
+                _ = renderer.engine.renderFrame(
+                    drawableSize: size,
+                    deadline: nil,
+                    drawable: .drawable(drawable)
+                )
             }
-            let device = try XCTUnwrap(MTLCreateSystemDefaultDevice())
-            let queue = try XCTUnwrap(device.makeCommandQueue())
-            let pass = MTLRenderPassDescriptor()
-            var bare: [Int] = []
-            for _ in 0..<Self.frames {
-                let drawable = try XCTUnwrap(layer.nextDrawable())
-                let count = AllocationCounter.count { Self.bareFrame(queue, drawable, pass) }
-                if let count { bare.append(count) }
-                Self.settle()
-            }
-            let median = { (values: [Int]) in values.sorted()[values.count / 2] }
-            let line = "frame allocations p50 \(median(ours)), bare frame p50 \(median(bare))"
-            XCTContext.runActivity(named: line) { _ in }
-            XCTAssertLessThanOrEqual(median(ours), median(bare), line)
-        #endif
+            if let count { ours.append(count) }
+            Self.settle()
+        }
+        let device = try XCTUnwrap(MTLCreateSystemDefaultDevice())
+        let queue = try XCTUnwrap(device.makeCommandQueue())
+        let pass = MTLRenderPassDescriptor()
+        var bare: [Int] = []
+        for _ in 0..<Self.frames {
+            let drawable = try XCTUnwrap(layer.nextDrawable())
+            let count = AllocationCounter.count { Self.bareFrame(queue, drawable, pass) }
+            if let count { bare.append(count) }
+            Self.settle()
+        }
+        let median = { (values: [Int]) in values.sorted()[values.count / 2] }
+        let line = "frame allocations p50 \(median(ours)), bare frame p50 \(median(bare))"
+        XCTContext.runActivity(named: line) { _ in }
+        XCTAssertLessThanOrEqual(median(ours), median(bare), line)
     }
 
     /// A completed handler that does nothing.

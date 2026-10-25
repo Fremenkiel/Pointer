@@ -681,3 +681,11 @@ The SwiftLint analyzer rule `unused_declaration` works on the compiler log of th
 - Removed, because nothing reads them: `navigate(to:camera:)` of the app, `ToolState.isTextEnabled`, `Transform.inverted()`, `NavigationPath.parentCanvas`, and the empty `BackupFeature` namespace.
 - Kept with a local exception and its reason: 20 probes that only tests read, for example `LiveStrokeHandoff.liveStrokeCount` and `SQLiteLibraryRepository.settle()`, the class `SceneDelegate` that Info.plist names, and the fields of the structs that the shaders read.
 - Made internal: 12 public declarations of Geometry, Model, and InkEngine that no other package reads, among them `StrokeHitTest` and `StrokeSplitter`. `BezierSegment`, `CanvasNode`, `CameraFlight.standardDuration`, and `GridCell.maxCoordinate` stay public, because public signatures or inlinable code use them.
+
+### 6.11 Documentation, loop bounds, and the simulator (task 1.6, part 2)
+
+- DOC-01: 205 declarations got a documentation comment, and 10 that only their own file uses became `private` (M9 3.4.7).
+- FLOW-03: the loops of `SnapshotImport` and `CardOpening.waitForFirstFrame` keep their bound in the condition (M9 3.4.8).
+- Learned rule 1: the `#if targetEnvironment(simulator)` branches of 11 test files and of `FrameRenderer` are gone, and the test comments name the iPad (M9 3.4.5).
+
+`make check` passed with the iPad in 9 minutes 4 seconds at the end of phase 1 (`T-16-check.log`).

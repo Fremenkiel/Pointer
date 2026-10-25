@@ -9,7 +9,7 @@ import XCTest
 
 /// The heap allocations of `FrameRenderer.apply` for one erase, one undo, and one redo of the
 /// content of M4 acceptance 2 (D-69, docs/m4-fix-plan.md phase 0, task 3). The test records the
-/// counts. Phase 3 sets their targets. The simulator skips it.
+/// counts. Phase 3 sets their targets. It runs on the iPad only (D-77).
 @MainActor
 final class EditAllocationTests: XCTestCase {
     /// The frames that a test may draw until the renderer needs no more.

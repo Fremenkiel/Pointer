@@ -9,7 +9,7 @@ extension SQLiteLibraryRepository {
     /// The tries of a step while another connection holds a lock, and the wait between two
     /// tries: 2 s, the `busy_timeout` of storage.md section 3.1 (FLOW-03).
     static let maxRestoreRetries = 200
-    static let restoreRetryInterval = 0.010
+    private static let restoreRetryInterval = 0.010
 
     /// Replaces the content of the library with a checked snapshot, and closes the library
     /// (storage.md section 7.5, D-148).

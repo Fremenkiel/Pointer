@@ -42,5 +42,6 @@ public final class SnapshotPicker: NSObject, UIDocumentPickerDelegate {
 
 /// A document picker that keeps its delegate for its own lifetime.
 private final class PickerController: UIDocumentPickerViewController {
+    /// The picker that the controller keeps alive, and so its delegate.
     var owner: SnapshotPicker?
 }

@@ -316,5 +316,6 @@ extension PersistenceError {
 /// The page count of the WAL of one connection. Only the WAL hook writes it, during a commit on
 /// the executor of the owner of the connection, and only that owner reads it.
 private final class WALCounter {
+    /// The pages in the WAL after the last commit.
     var pages = 0
 }

@@ -8,7 +8,7 @@ import XCTest
 @testable import Rendering
 
 /// Pan and zoom on the screen for 4 seconds with the renderer of the app (docs/m2-fix-plan.md,
-/// phase 0, task 3). The tests need the display of a device, so the simulator skips them.
+/// phase 0, task 3). The tests need the display of a device, so they run on the iPad only (D-77).
 @MainActor
 final class FrameLoopTests: XCTestCase {
     func testPanDenseStrokes() throws {
@@ -170,15 +170,11 @@ final class FrameLoopTests: XCTestCase {
     }
 
     private func hostWindow() throws -> UIWindow {
-        #if targetEnvironment(simulator)
-            throw XCTSkip("The frame loop needs the display of a device.")
-        #else
-            // Only UIApplication reaches the window of the host app. The product owner allowed
-            // this one use in the frame-loop test on 2026-10-17 (D-44).
-            // swiftlint:disable:next arch_05_singletons
-            let scenes = UIApplication.shared.connectedScenes
-            let window = scenes.compactMap { ($0 as? UIWindowScene)?.windows.first }.first
-            return try XCTUnwrap(window, "The test host has no window")
-        #endif
+        // Only UIApplication reaches the window of the host app. The product owner allowed
+        // this one use in the frame-loop test on 2026-10-17 (D-44).
+        // swiftlint:disable:next arch_05_singletons
+        let scenes = UIApplication.shared.connectedScenes
+        let window = scenes.compactMap { ($0 as? UIWindowScene)?.windows.first }.first
+        return try XCTUnwrap(window, "The test host has no window")
     }
 }

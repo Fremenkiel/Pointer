@@ -17,8 +17,11 @@ struct SnapshotFiles {
     /// `yyyy-MM-dd-HHmmss`: 17 characters.
     private static let stampLength = 17
 
+    /// The `Backups/` folder.
     let backups: URL
+    /// The `tmp/` folder of the app.
     let temporary: URL
+    /// The time zone of the names.
     let timeZone: TimeZone
     private let files = FileManager()
 

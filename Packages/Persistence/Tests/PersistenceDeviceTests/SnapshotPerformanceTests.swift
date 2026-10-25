@@ -24,59 +24,51 @@ final class SnapshotPerformanceTests: XCTestCase {
     private static let maxSaves = 1_000
 
     func testSnapshotOfTwentyThousandStrokesWithSaves() async throws {
-        #if targetEnvironment(simulator)
-            throw XCTSkip("Snapshot times are valid on a device only.")
-        #else
-            let run = try await Self.withFilledLibrary { repository, path, folder in
-                let writer = SnapshotWriter(
-                    configuration: SnapshotWriter.Configuration(
-                        databasePath: path,
-                        temporaryFolder: folder,
-                        backupsFolder: folder.appending(path: "Backups"),
-                        wallClock: SystemWallClock(),
-                        timeZone: .current
-                    )
+        let run = try await Self.withFilledLibrary { repository, path, folder in
+            let writer = SnapshotWriter(
+                configuration: SnapshotWriter.Configuration(
+                    databasePath: path,
+                    temporaryFolder: folder,
+                    backupsFolder: folder.appending(path: "Backups"),
+                    wallClock: SystemWallClock(),
+                    timeZone: .current
                 )
-                return try await Self.snapshotWithSaves(writer, repository)
-            }
-            let snapshotTime = run.snapshotMilliseconds
-            let saveTimes = run.saveMilliseconds
-            let size = run.bytes
-            let line = String(
-                format: "snapshot of %d strokes, %d MB: %.0f ms; saves: %@",
-                Self.strokeCount,
-                size >> 20,
-                snapshotTime,
-                Self.summary(saveTimes)
             )
-            XCTContext.runActivity(named: line) { _ in }
-            var samples = Self.samples(saveTimes)
-            samples["snapshot.ms"] = snapshotTime
-            PerformanceRecord.attach(samples)
-            XCTAssertGreaterThan(saveTimes.count, 0, line)
-            XCTAssertLessThanOrEqual(saveTimes.max() ?? 0, Self.saveBudgetMilliseconds, line)
-        #endif
+            return try await Self.snapshotWithSaves(writer, repository)
+        }
+        let snapshotTime = run.snapshotMilliseconds
+        let saveTimes = run.saveMilliseconds
+        let size = run.bytes
+        let line = String(
+            format: "snapshot of %d strokes, %d MB: %.0f ms; saves: %@",
+            Self.strokeCount,
+            size >> 20,
+            snapshotTime,
+            Self.summary(saveTimes)
+        )
+        XCTContext.runActivity(named: line) { _ in }
+        var samples = Self.samples(saveTimes)
+        samples["snapshot.ms"] = snapshotTime
+        PerformanceRecord.attach(samples)
+        XCTAssertGreaterThan(saveTimes.count, 0, line)
+        XCTAssertLessThanOrEqual(saveTimes.max() ?? 0, Self.saveBudgetMilliseconds, line)
     }
 
     func testSameSavesWithoutSnapshot() async throws {
-        #if targetEnvironment(simulator)
-            throw XCTSkip("Save times are valid on a device only.")
-        #else
-            let saveTimes = try await Self.withFilledLibrary { repository, _, _ in
-                let clock = ContinuousClock()
-                var saveTimes: [Double] = []
-                for save in 0..<Self.controlSaves {
-                    try await repository.send(Self.rows(save, count: Self.strokesPerSave))
-                    let duration = try await clock.measure { try await repository.saveNow() }
-                    saveTimes.append(duration / .milliseconds(1))
-                }
-                return saveTimes
+        let saveTimes = try await Self.withFilledLibrary { repository, _, _ in
+            let clock = ContinuousClock()
+            var saveTimes: [Double] = []
+            for save in 0..<Self.controlSaves {
+                try await repository.send(Self.rows(save, count: Self.strokesPerSave))
+                let duration = try await clock.measure { try await repository.saveNow() }
+                saveTimes.append(duration / .milliseconds(1))
             }
-            let line = "no snapshot: saves: " + Self.summary(saveTimes)
-            XCTContext.runActivity(named: line) { _ in }
-            PerformanceRecord.attach(Self.samples(saveTimes))
-            XCTAssertLessThanOrEqual(saveTimes.max() ?? 0, Self.saveBudgetMilliseconds, line)
-        #endif
+            return saveTimes
+        }
+        let line = "no snapshot: saves: " + Self.summary(saveTimes)
+        XCTContext.runActivity(named: line) { _ in }
+        PerformanceRecord.attach(Self.samples(saveTimes))
+        XCTAssertLessThanOrEqual(saveTimes.max() ?? 0, Self.saveBudgetMilliseconds, line)
     }
 
     /// Returns the median, the 99th percentile, the slowest time with its index, and the count

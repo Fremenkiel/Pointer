@@ -83,10 +83,14 @@ struct BlockSpacing: Equatable {
 
 /// One edge of the control polygon.
 private struct Edge {
+    /// The horizontal extent.
     let dx: Float
+    /// The vertical extent.
     let dy: Float
+    /// The length.
     let length: Float
 
+    /// Makes the edge from `from` to `to`.
     init(_ from: InkPoint, _ to: InkPoint) {
         dx = to.x - from.x
         dy = to.y - from.y
@@ -100,12 +104,14 @@ private struct Accumulator {
     private var total: Float = 0
     private var largest: Float = 0
 
+    /// Adds one segment.
     mutating func add(length: Float) {
         segments += 1
         total += length
         largest = max(largest, length)
     }
 
+    /// Returns the mean and the largest spacing of the block.
     func spacing() -> BlockSpacing {
         precondition(segments > 0, "A block has one segment at least")
         // Equal segments can give a mean one rounding step above the largest spacing.

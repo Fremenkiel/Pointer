@@ -13,6 +13,7 @@ final class CanvasExport {
     /// Opens the share sheet with the PDF. The canvas sets it, and a test can read the provider.
     var share: @MainActor (NSItemProvider) -> Void = { _ in }
 
+    /// Makes the state with the source of the workspace title.
     init(workspaceTitle: @escaping @MainActor () -> String?) {
         self.workspaceTitle = workspaceTitle
     }

@@ -81,20 +81,16 @@ enum OnScreenCanvas {
     private static let settleTime = Duration.milliseconds(500)
     private static let bytesPerMegabyte = 1_048_576.0
 
-    /// Returns the root view controller of the test host window. The simulator skips.
+    /// Returns the root view controller of the test host window.
     ///
-    /// - Throws: `XCTSkip` on the simulator, or an error if the host has no window.
+    /// - Throws: An error if the host has no window.
     static func host() throws -> UIViewController {
-        #if targetEnvironment(simulator)
-            throw XCTSkip("Open times and memory are valid on a device only.")
-        #else
-            // Only UIApplication reaches the window of the host app. The product owner allowed
-            // this one use in the open and memory tests on 2026-10-19 (D-62).
-            // swiftlint:disable:next arch_05_singletons
-            let scenes = UIApplication.shared.connectedScenes
-            let window = scenes.compactMap { ($0 as? UIWindowScene)?.windows.first }.first
-            return try XCTUnwrap(window?.rootViewController, "The test host has no window")
-        #endif
+        // Only UIApplication reaches the window of the host app. The product owner allowed
+        // this one use in the open and memory tests on 2026-10-19 (D-62).
+        // swiftlint:disable:next arch_05_singletons
+        let scenes = UIApplication.shared.connectedScenes
+        let window = scenes.compactMap { ($0 as? UIWindowScene)?.windows.first }.first
+        return try XCTUnwrap(window?.rootViewController, "The test host has no window")
     }
 
     /// Opens the canvas of `library` in `host`, measures the open, and closes the canvas.

@@ -1,13 +1,22 @@
 /// The prepared statements of the device state store, compiled once at open.
 final class DeviceStatements {
+    /// Holds `BEGIN IMMEDIATE`.
     let begin: SQLiteStatement
+    /// Holds `COMMIT`.
     let commit: SQLiteStatement
+    /// Holds `ROLLBACK`.
     let rollback: SQLiteStatement
+    /// Reads the value of one key of the `device` table.
     let selectValue: SQLiteStatement
+    /// Writes the value of one key of the `device` table.
     let upsertValue: SQLiteStatement
+    /// Deletes one key of the `device` table.
     let deleteValue: SQLiteStatement
+    /// Reads the camera of one canvas.
     let selectCamera: SQLiteStatement
+    /// Writes the camera of one canvas and marks it as the most recently used.
     let upsertCamera: SQLiteStatement
+    /// Deletes all cameras but the most recently used ones.
     let trimCameras: SQLiteStatement
 
     /// Compiles all statements on `connection`.

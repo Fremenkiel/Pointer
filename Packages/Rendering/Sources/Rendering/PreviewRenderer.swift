@@ -29,12 +29,15 @@ final class PreviewRenderer {
 
     /// The pipelines and the device.
     let resources: InkResources
+    /// The coverage target of the preview.
     let coverage: any MTLTexture
+    /// The resolve target of the preview.
     let resolved: any MTLTexture
     /// The preview in progress, or `nil`.
     var job: Job?
-    /// The strokes and the green items of the job. Reused (PERF-01).
+    /// The strokes of the job. Reused (PERF-01).
     var slots: [Int] = []
+    /// The green items of the job. Reused (PERF-01).
     var greens: [GreenItem] = []
 
     /// Makes the targets.
