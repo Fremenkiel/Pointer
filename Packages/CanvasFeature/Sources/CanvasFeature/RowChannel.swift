@@ -18,6 +18,7 @@ final class RowChannel {
     private let continuation: AsyncStream<Item>.Continuation
     private let consumer: Task<Void, Never>
     private var isFinished = false
+    private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Canvas")
 
     /// Starts the consumer task for `repository`.
     init(repository: any LibraryRepository) {
@@ -60,6 +61,8 @@ final class RowChannel {
         precondition(!rows.isEmpty, "A send needs rows")
         let result = continuation.yield(.rows(rows))
         if case .terminated = result {
+            // The rows go with a log entry, because the canvas ended (CONTRACT-04).
+            logger.error("Dropped \(rows.count) rows sent after the end of the canvas")
             assertionFailure("Rows sent after the end of the canvas")
         }
     }
@@ -71,6 +74,12 @@ final class RowChannel {
         await withCheckedContinuation { waiter in
             if case .terminated = continuation.yield(.flush(waiter)) { waiter.resume() }
         }
+    }
+
+    /// A channel that goes without `finish()` ends its stream too, so the consumer sends the
+    /// queued rows, ends, and frees the library (review after M9, section 3.2, item 8).
+    deinit {
+        continuation.finish()
     }
 
     /// Ends the channel. The consumer sends the queued rows and then ends.
