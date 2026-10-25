@@ -706,3 +706,19 @@ Four alternating pairs of the base c7026d6 and commit 703c3c3 ran the suites of 
 | Open of D-56, median | 255.7 ms | 253.0 ms |
 | Eraser frame, CPU p50 | 0.137 ms | 0.136 ms |
 | Text pass of D-56 | 0.926 ms | 0.921 ms |
+
+### 6.14 The baseline (task 0.4)
+
+`make perf-baseline` recorded `Performance/Baselines/iPad16,4.json` in 47 minutes 41 seconds: 10 runs of the 24 performance suites alone at commit 015b6b6, iPadOS 26.5, Xcode 27.1. It holds 180 samples, 127 of them gated times.
+
+The spread between the 10 runs, as the coefficient of variation (CV):
+
+| CV | Gated times | Examples |
+|---|---|---|
+| over 10 % | 22 | the slowest save of `LibrarySavePerformanceTests` and `SnapshotPerformanceTests` (34 to 106 %), main-thread p99 values of a few microseconds in `FrameLoopTests` (11 to 38 %), the slowest undo (12 %) |
+| 5 to 10 % | 17 | the slowest redo (8.4 %), the median erase (8.2 %) |
+| under 5 % | 88 | the open of D-56, the text pass, the exports |
+
+The compare cannot see a change of 10 % in a time with a CV over 10 % (D-177). The hard budgets of architecture.md section 12 still guard those measures.
+
+Runs 5 and 9 of the baseline each failed one test: the open of a D-56 card had 1 late frame at place 41 of 43, near the end of the flight (`.build/Perf/baseline-5.xcresult`, `baseline-9.xcresult`). It is not the late frame at place 0 of D-125 and D-137. Section 6.15 holds the search for its cause.

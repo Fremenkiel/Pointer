@@ -64,6 +64,8 @@ pointer/
       Sources/BackupFeature/Resources/      String Catalog of the backup commands and messages
       Tests/BackupFeatureTests/             part of PointerDeviceTests only (D-77)
       Tests/BackupFeatureSnapshotTests/     view snapshots, part of PointerDeviceTests only (D-77)
+  Performance/
+    Baselines/             baseline of the performance samples, one file per iPad model (D-172)
   Scripts/                 check-layers.swift, assertion-density.swift, coverage.swift, perf.swift,
                            perf-runs.sh, self-test.sh
     Fixtures/              small trees that the self-test runs the check scripts on
