@@ -43,7 +43,10 @@ public enum Eraser {
         along path: EraserPath,
         factory: inout StrokeFactory
     ) -> EraseStrokes? {
-        precondition(
+        // The set costs about 2 % of an erase of 1,000 strokes in a release build, so the check
+        // runs in debug builds only (m10-plan.md task 3.2). A stroke twice in release fails the
+        // apply with `strokeNotLive`, which rolls the content back.
+        assert(
             Set(candidates.map(\.id)).count == candidates.count,
             "A candidate stroke appears twice"
         )

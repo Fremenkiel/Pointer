@@ -23,7 +23,10 @@ public struct EraseStrokes: CanvasCommand {
     /// - Precondition: At least one removed stroke, and each stroke ID appears once.
     public init(removed: [Stroke], parts: [Stroke], area: Rect? = nil) {
         precondition(!removed.isEmpty, "EraseStrokes needs a removed stroke")
-        precondition(
+        // The set costs about 8 % of an erase of 1,000 strokes in a release build, so the check
+        // runs in debug builds only (m10-plan.md task 3.2). A stroke twice in release fails the
+        // apply with `strokeNotLive` or `strokeAlreadyLive`, which rolls the content back.
+        assert(
             Set(removed.map(\.id) + parts.map(\.id)).count == removed.count + parts.count,
             "EraseStrokes holds a stroke twice"
         )
