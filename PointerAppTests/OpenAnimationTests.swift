@@ -80,39 +80,6 @@ final class OpenAnimationTests: XCTestCase {
         let child: CanvasViewController
     }
 
-    /// Runs the open of `card` and returns its report line, its late frames, and the child.
-    static func measureOpen(
-        of card: Card,
-        from parent: CanvasViewController,
-        in composition: AppComposition,
-        name: String = "a D-56 card"
-    ) async throws -> Measure {
-        let viewSize = Size(width: parent.view.bounds.width, height: parent.view.bounds.height)
-        let collector = FrameLoopCollector(viewSize: viewSize)
-        let cameras = Cameras(collector: collector)
-        let start = CACurrentMediaTime()
-        collector.measure(from: start, to: start + 5)
-        parent.renderer.engine.post { $0.observer = cameras }
-        composition.openChild(card)
-        let child = try await waitForCanvas(card.childCanvasID, in: composition)
-        let end = CACurrentMediaTime()
-        let line = reportLine(
-            name: name,
-            collector: collector,
-            cameras: cameras.all,
-            viewSize: viewSize,
-            milliseconds: (end - start) * 1000
-        )
-        var report = FrameLoopReport()
-        collector.fill(&report)
-        return Measure(
-            text: line,
-            late: report.lateIntervals,
-            held: heldFrames(cameras.all),
-            child: child
-        )
-    }
-
     /// The leave of a D-56 card back to the D-56 canvas (m6-plan.md task 4.6): the late frames
     /// of the child and of the parent, from the tap to the end of the flight of the parent.
     func testLeaveOfD56CardHasNoLateFrame() async throws {
@@ -232,7 +199,7 @@ final class OpenAnimationTests: XCTestCase {
     }
 
     /// The line of the report: the time, the frames, the late frames, and the largest jump.
-    private static func reportLine(
+    static func reportLine(
         name: String,
         collector: FrameLoopCollector,
         cameras: [Camera],
@@ -253,7 +220,21 @@ final class OpenAnimationTests: XCTestCase {
             jump.move,
             jump.zoom,
             latePlaces(report)
-        ) + " " + startDetail(report)
+        ) + " " + startDetail(report) + " " + lateNeighborhood(report)
+            + ", last move at frame \(cameras.lastIndex { $0 != cameras.last } ?? -1)"
+            + ", first moves " + moves(cameras.prefix(7), viewSize: viewSize)
+            + ", last moves " + moves(cameras.suffix(7), viewSize: viewSize)
+    }
+
+    /// The screen moves between the frames of `cameras` in points: the shift of a corner of
+    /// the screen between a frame and the frame before it.
+    private static func moves(_ cameras: ArraySlice<Camera>, viewSize: Size) -> String {
+        zip(cameras, cameras.dropFirst()).map { before, after in
+            let corner = Point(x: viewSize.width, y: viewSize.height)
+            let canvas = before.canvasPoint(fromView: corner, viewSize: viewSize)
+            let moved = after.viewPoint(fromCanvas: canvas, viewSize: viewSize)
+            return String(format: "%.2f", (moved - corner).length)
+        }.joined(separator: " ")
     }
 
     /// The largest move of the screen center and the largest zoom ratio between two frames.

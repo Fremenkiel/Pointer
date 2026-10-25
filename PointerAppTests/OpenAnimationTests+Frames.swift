@@ -25,6 +25,7 @@ extension OpenAnimationTests {
         return "(child late \(child.lateIntervals) of "
             + childIntervals.joined(separator: " ")
             + ", parent late at " + latePlaces(parent) + "; " + startDetail(parent) + ")"
+            + " " + lateNeighborhood(parent)
     }
 
     /// The first frames of a report (D-136): the target and the presented times in
@@ -55,6 +56,36 @@ extension OpenAnimationTests {
         XCTExpectFailure("The accepted late frame of \(decision)", options: options) {
             XCTAssertEqual(late, 0, text)
         }
+    }
+
+    /// The frames around each late interval (m10-plan.md task 5.1): for frames two before to two
+    /// after, the target and the presented time in milliseconds after the first target, the
+    /// render-thread time, and the GPU spans that start near the target.
+    static func lateNeighborhood(_ report: FrameLoopReport) -> String {
+        guard let first = report.targetTimes.first else { return "" }
+        let late = FrameLoopReport.lateIntervalMilliseconds
+        let ms = { (time: Double) in String(format: "%.1f", (time - first) * 1000) }
+        var parts: [String] = []
+        for place in report.intervals.indices where report.intervals[place] > late {
+            let frames = max(0, place - 2)...min(report.presentedTimes.count - 1, place + 2)
+            let lines = frames.map { index -> String in
+                let target =
+                    report.targetTimes.indices.contains(index)
+                    ? ms(report.targetTimes[index]) : "-"
+                let render =
+                    report.renderThread.indices.contains(index)
+                    ? String(format: "%.2f", report.renderThread[index]) : "-"
+                let near =
+                    report.targetTimes.indices.contains(index)
+                    ? report.gpuSpans.filter {
+                        abs($0.start - report.targetTimes[index]) < 0.006
+                    }.map { ms($0.start) + "-" + ms($0.end) }.joined(separator: "/") : ""
+                return "\(index): t \(target) p \(ms(report.presentedTimes[index])) r \(render)"
+                    + (near.isEmpty ? "" : " g \(near)")
+            }
+            parts.append("[" + lines.joined(separator: "; ") + "]")
+        }
+        return parts.joined(separator: " ")
     }
 
     /// The places and the lengths of the late intervals of a report: "2:16.7 9:25.0".

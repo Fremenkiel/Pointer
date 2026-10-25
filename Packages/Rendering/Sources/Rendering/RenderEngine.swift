@@ -204,9 +204,13 @@ final class RenderEngine: Sendable {
         time: FrameTime,
         _ drawable: DrawableSource
     ) -> FrameResult {
+        let shown = (camera: renderer.camera, weight: renderer.transition?.parentWeight)
         apply(input, to: renderer)
         let isFlying = stepFlight(renderer, at: time.deadline ?? time.start)
-        guard input.hasChange || isFlying || renderer.needsMoreFrames else {
+        let isSame =
+            input.changesOnlyTheView && renderer.camera == shown.camera
+            && renderer.transition?.parentWeight == shown.weight
+        guard (input.hasChange && !isSame) || isFlying || renderer.needsMoreFrames else {
             var result = FrameResult(didDraw: false, needsMore: false, count: renderer.store.count)
             result.previewUploadsWaiting = renderer.previews?.pending.count ?? 0
             result.hasPreviewsToRequest = renderer.hasPreviewsToRequest
