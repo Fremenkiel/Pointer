@@ -33,6 +33,15 @@ struct CameraControllerTests {
         #expect(restored.camera.center.x == Limits.maxCameraCoordinate)
     }
 
+    @Test("A center exactly at the camera bound stays, and one step past it comes back (TEST-06)")
+    func centerExactlyAtBound() {
+        let limit = Limits.maxCameraCoordinate
+        let at = Camera(center: Point(x: limit, y: -limit), zoom: 1)
+        #expect(CameraController.bounded(at) == at)
+        let past = Camera(center: Point(x: limit.nextUp, y: (-limit).nextDown), zoom: 1)
+        #expect(CameraController.bounded(past) == at)
+    }
+
     @Test("A pinch sample after the start of a flight does nothing (review after M9)")
     func pinchAfterFlight() {
         var subject = controller()

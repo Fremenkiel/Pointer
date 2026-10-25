@@ -30,6 +30,13 @@ enum CanvasStrings {
     static var textLimit: String {
         String(localized: "A text box holds at most 10,000 characters.", bundle: .module)
     }
+    /// The message when the pen meets the stroke limit of the canvas (D-181).
+    static var strokeLimit: String {
+        String(
+            localized: "This canvas holds no more ink. Erase some ink or draw in a card.",
+            bundle: .module
+        )
+    }
     /// The message when the canvas holds the most cards and text boxes.
     static var nodeLimit: String {
         String(localized: "This canvas holds no more cards or text boxes.", bundle: .module)

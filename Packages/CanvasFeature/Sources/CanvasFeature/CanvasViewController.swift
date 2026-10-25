@@ -68,6 +68,8 @@ public final class CanvasViewController: UIViewController {
     private var isCameraMoving = false
     /// True after `endSession()` kept the session.
     var hasEndedSession = false
+    /// `true` after the stroke limit message showed in the current touch of the pencil (D-181).
+    var hasShownStrokeLimit = false
     /// The zoom of the pen tool of the live canvas, or `nil` before the first tool (D-131).
     var penToolZoom: Double?
     /// The key commands of undo and redo, made once (C-05).
@@ -193,6 +195,7 @@ public final class CanvasViewController: UIViewController {
         handoff.remainingCapacity = { [weak self] in
             Limits.maxStrokesPerCanvas - (self?.content.strokes.count ?? Limits.maxStrokesPerCanvas)
         }
+        handoff.onLimit = { [weak self] in self?.showStrokeLimit() }
         canvasView.inkView.onFrame = { [weak self] time in self?.stepCamera(to: time) ?? false }
         installGestures()
         installHistoryButtons()
@@ -252,6 +255,13 @@ public final class CanvasViewController: UIViewController {
         assert(content.strokes.count - start <= strokes.count, "More strokes added than given")
     }
 
+    /// Shows the stroke limit message once per pencil down at the limit (D-181).
+    func showStrokeLimit() {
+        guard !hasShownStrokeLimit else { return }
+        hasShownStrokeLimit = true
+        onMessage(CanvasStrings.strokeLimit)
+    }
+
     /// Sends changed rows to the pending set of the library, in the order of the steps
     /// (storage.md section 4).
     func send(_ rows: [LibraryChange]) {
@@ -286,6 +296,7 @@ public final class CanvasViewController: UIViewController {
     /// The camera stops, and running finger gestures end (D-36). The selected tool becomes the
     /// tool of the touch (D-70).
     func pencilBegan() {
+        hasShownStrokeLimit = false
         if toolState.pencilDown() == .eraser, toolState.isErasingEnabled {
             beginErase()
         }

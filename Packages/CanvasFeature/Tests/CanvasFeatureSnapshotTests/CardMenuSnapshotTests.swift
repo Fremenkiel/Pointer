@@ -154,4 +154,30 @@ final class CardMenuSnapshotTests: XCTestCase {
         root.dismiss(animated: false)
         try ViewSnapshot.assertMatches(image: image, named: "card-rename-alert")
     }
+
+    /// The message at the stroke limit shows as the app shows each message: the text and an OK
+    /// button (D-181, m10-plan.md task 6.2).
+    func testStrokeLimitMessage() async throws {
+        let previous = Self.keyWindow()
+        let window = try Self.makeWindow()
+        defer { Self.close(window, previous: previous) }
+        let root = try XCTUnwrap(window.rootViewController)
+        let alert = UIAlertController(
+            title: nil,
+            message: CanvasStrings.strokeLimit,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        root.present(alert, animated: false)
+        try await Task.sleep(for: Self.settle)
+        let frame = alert.view.convert(alert.view.bounds, to: window)
+        let image = try Self.capture(window, in: frame.insetBy(dx: -8, dy: -8))
+        root.dismiss(animated: false)
+        // An XCTest class keeps only XCTest attachments, so a new image comes out this way.
+        let attachment = XCTAttachment(image: image)
+        attachment.name = "canvas-message-stroke-limit"
+        attachment.lifetime = .deleteOnSuccess
+        add(attachment)
+        try ViewSnapshot.assertMatches(image: image, named: "canvas-message-stroke-limit")
+    }
 }

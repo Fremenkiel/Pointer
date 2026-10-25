@@ -903,3 +903,11 @@ Four alternating pairs of the base 619beb3 and the changes of tasks 3.1 and 3.3 
 - The history counts bytes, not points (D-183). `HistoryCost` gives 17 bytes per control point plus 192 bytes for each stroke, the measure of D-183, and the UTF-8 bytes plus 192 bytes for each text. A measure on the Mac in a release build gave the text bytes of D-88: a text box of 200 ASCII characters held 256 bytes of heap and its value of 144 bytes, one of 10,000 CJK characters 32,787 bytes and 144, within 5 % of the formula for texts of 200 characters and more.
 - The budgets are 64 MiB per canvas and 256 MiB for all canvases, the "about 67 MB" and "about 270 MB" of D-76. The shown canvas reports the bytes of its history to `CanvasSessions` after each step and when it takes its session, so the stored sessions make room for it. Before, a taken history counted nowhere until the canvas left.
 - `HistoryByteBudgetTests` holds 500 steps of 4,000 strokes of 2 points: the old point budget kept 2,000,000 such strokes, about 452 MB, and the test failed on 619beb3. The byte budget keeps them inside 64 MiB. `CanvasSessionsTests.shownCanvasCounts` covers the shown canvas.
+
+### 6.38 The message at the stroke limit (task 6.2)
+
+- The pen at `Limits.maxStrokesPerCanvas` shows "This canvas holds no more ink. Erase some ink or draw in a card." from the String Catalog of the canvas, once per pencil down at the limit (D-181). `StrokeLimitTests.penAtLimit` fills the canvas to the limit and hands two strokes in one touch and one in the next: the old code showed no message (`T-37-old`), and the new code shows it twice.
+- An erase past `Limits.maxStrokesAfterErase` removes the strokes whole and shows no message (D-181, D-73). `StrokeLimitTests.eraseAtBound` covers it. It passes on the old code too, because the behavior is older.
+- `CardMenuSnapshotTests.testStrokeLimitMessage` compares the message as an alert with its reference, made on the iPad.
+- `CameraControllerTests.centerExactlyAtBound` covers `Limits.maxCameraCoordinate` exactly at the bound and one step past it (task 6.1, the gaps on the iPad).
+

@@ -141,6 +141,16 @@
         }
       }
     },
+    "This canvas holds no more ink. Erase some ink or draw in a card.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This canvas holds no more ink. Erase some ink or draw in a card."
+          }
+        }
+      }
+    },
     "This canvas is at the deepest level. It holds no cards.": {
       "localizations": {
         "en": {

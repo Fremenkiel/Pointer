@@ -34,6 +34,9 @@ final class LiveStrokeHandoff {
     /// Returns the number of strokes that the canvas can still take (`Limits.maxStrokesPerCanvas`).
     var remainingCapacity: () -> Int = { Limits.maxStrokesPerCanvas }
 
+    /// Called when the canvas is at its stroke limit and a live stroke is refused (D-181).
+    var onLimit: (() -> Void)?
+
     /// Makes the handoff for a canvas view.
     init(canvasView: PKCanvasView, renderer: CanvasRenderer, converter: PencilKitStrokeConverter) {
         self.canvasView = canvasView
@@ -69,10 +72,10 @@ final class LiveStrokeHandoff {
         do {
             let strokes = try converter.convert(stroke, camera: camera, viewSize: viewSize)
             guard strokes.count <= remainingCapacity() else {
-                // The short limit message of architecture.md section 10 comes with M10.
-                logger.error("The canvas is at its stroke limit. A live stroke is refused.")
+                logger.notice("The canvas is at its stroke limit. A live stroke is refused.")
                 presented.insert(key)
                 removePresentedStrokes()
+                onLimit?()
                 return
             }
             renderer.add(strokes) { [weak self] in
