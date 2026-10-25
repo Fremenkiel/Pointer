@@ -259,11 +259,14 @@ public final class CanvasViewController: UIViewController {
         rowChannel?.send(rows)
     }
 
-    /// Tells the app once that the camera is at rest: no gesture and no animation (D-53).
-    func cameraMayRest() {
-        let isGestureActive = [panRecognizer, pinchRecognizer].contains {
-            $0.state == .began || $0.state == .changed
-        }
+    /// Tells the app once that the camera is at rest: no gesture and no animation (D-53). A
+    /// gesture handler passes its recognizer, which counts as one of the canvas.
+    func cameraMayRest(after gesture: UIGestureRecognizer? = nil) {
+        // Checks one by one, not a list of the recognizers: the list cost an allocation at each
+        // step of a pan or a pinch (m10-plan.md task 3.7).
+        let isGestureActive =
+            Self.isActive(panRecognizer) || Self.isActive(pinchRecognizer)
+            || gesture.map(Self.isActive) == true
         guard isCameraMoving, !isGestureActive, !cameraController.isAnimating else { return }
         isCameraMoving = false
         applyPenTool()
@@ -273,6 +276,11 @@ public final class CanvasViewController: UIViewController {
         guard cardTransition == nil, parentLink.exit == nil, Limits.zoomRange.contains(camera.zoom)
         else { return }
         onCameraRest(camera)
+    }
+
+    /// Returns `true` while a recognizer runs.
+    private static func isActive(_ recognizer: UIGestureRecognizer) -> Bool {
+        recognizer.state == .began || recognizer.state == .changed
     }
 
     /// The camera stops, and running finger gestures end (D-36). The selected tool becomes the

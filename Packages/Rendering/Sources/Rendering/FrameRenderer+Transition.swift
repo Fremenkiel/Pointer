@@ -33,7 +33,7 @@ extension FrameRenderer {
             texture: target.texture
         )
         commandBuffer.present(target)
-        onCommit?(commandBuffer, target)
+        commitObserver?.willCommit(commandBuffer, drawable: target)
         commandBuffer.commit()
         return !(previews?.pending.isEmpty ?? true)
     }

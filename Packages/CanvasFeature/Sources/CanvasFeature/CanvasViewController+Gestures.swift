@@ -114,7 +114,7 @@ extension CanvasViewController: UIGestureRecognizerDelegate {
             cameraController.endPan(velocity: Vector(dx: velocity.x, dy: velocity.y))
         }
         applyCamera()
-        cameraMayRest()
+        cameraMayRest(after: recognizer)
     }
 
     /// Zooms the camera with a pinch, and ends a pinch-out exit at the lift.
@@ -135,7 +135,7 @@ extension CanvasViewController: UIGestureRecognizerDelegate {
         }
         applyCamera()
         updatePinchExit()
-        cameraMayRest()
+        cameraMayRest(after: recognizer)
     }
 
     /// Ends a pinch: inside a card, a lift under the threshold leaves the card (CARD-05), and a

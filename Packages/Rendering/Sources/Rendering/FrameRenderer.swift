@@ -86,8 +86,9 @@ final class FrameRenderer {
     /// The camera of the canvas.
     var camera = Camera(center: .zero, zoom: Limits.standardZoom)
     /// Gets the command buffer and the drawable of each frame before the commit. Only the tests
-    /// set it.
-    var onCommit: ((any MTLCommandBuffer, any CAMetalDrawable) -> Void)?
+    /// set it. A reference, not a closure, so that a frame with an observer makes no closure
+    /// (m10-plan.md task 3.7).
+    var commitObserver: (any FrameObserving)?
 
     /// The composite pass of each frame, made once (PERF-01, docs/m2-fix-plan.md, phase 5).
     let compositePass: MTLRenderPassDescriptor = {
@@ -225,7 +226,7 @@ final class FrameRenderer {
         encodeComposite(layer: layer, commandBuffer: commandBuffer, texture: target.texture)
         attachHandoff(to: target, commandBuffer: commandBuffer)
         commandBuffer.present(target)
-        onCommit?(commandBuffer, target)
+        commitObserver?.willCommit(commandBuffer, drawable: target)
         commandBuffer.commit()
         if let deadline, CACurrentMediaTime() > deadline {
             signposter.emitEvent("LateFrame")

@@ -37,6 +37,8 @@ enum AllocationTracer {
         let system: Int
         /// The allocations past `maxTraces`, which the trace could not attribute.
         let unrecorded: Int
+        /// The image and the symbol that decided each Pointer allocation, for a failure message.
+        var pointerCallers: [String] = []
     }
 
     /// Runs `body` and attributes the heap allocations of the main thread during the run.
@@ -70,8 +72,13 @@ enum AllocationTracer {
         hook.pointee = nil
         let total = traceIndex.load(ordering: .relaxed)
         let recorded = min(total, maxTraces)
-        let pointer = (0..<recorded).filter(isPointerAllocation).count
-        return Result(pointer: pointer, system: recorded - pointer, unrecorded: total - recorded)
+        let pointer = (0..<recorded).filter(isPointerAllocation)
+        return Result(
+            pointer: pointer.count,
+            system: recorded - pointer.count,
+            unrecorded: total - recorded,
+            pointerCallers: pointer.map(caller)
+        )
     }
 
     /// The images that both Pointer and the system call: malloc, the runtimes, Foundation, and
@@ -84,18 +91,44 @@ enum AllocationTracer {
         "CoreGraphics", "UIFoundation", "libc++abi.dylib", "libsystem_blocks.dylib",
     ]
     /// The images of system work that does not count: UIKit, Core Animation, and Metal (D-43).
-    private static let systemImages: Set<String> = ["UIKitCore", "QuartzCore", "Metal"]
+    /// The Metal work includes the GPU driver and the frame pacing of the display link.
+    private static let systemImages: Set<String> = [
+        "UIKitCore", "QuartzCore", "Metal", "FramePacing",
+    ]
+    /// The name starts of the GPU driver images, whose names hold the GPU family.
+    private static let systemImagePrefixes = ["AGXMetal", "IOGPU"]
 
     /// Whether the allocation at `index` comes from Pointer code. The first frame is the hook.
     private static func isPointerAllocation(_ index: Int) -> Bool {
         let depth = Int(traceDepths[index])
         for frame in 1..<max(depth, 1) {
             let image = imageName(traceFrames[index * framesPerTrace + frame])
-            if systemImages.contains(image) { return false }
+            if isSystem(image) { return false }
             if !passThroughImages.contains(image) { return true }
         }
         // A stack of runtime frames only has no caller to blame, so it counts.
         return true
+    }
+
+    private static func isSystem(_ image: String) -> Bool {
+        systemImages.contains(image) || systemImagePrefixes.contains { image.hasPrefix($0) }
+    }
+
+    /// Returns the image and the symbol of the frame that decided the allocation at `index`.
+    private static func caller(_ index: Int) -> String {
+        let depth = Int(traceDepths[index])
+        for frame in 1..<max(depth, 1) {
+            let address = traceFrames[index * framesPerTrace + frame]
+            let image = imageName(address)
+            guard passThroughImages.contains(image) else {
+                var info = Dl_info()
+                let symbol =
+                    address.flatMap { dladdr($0, &info) != 0 ? info.dli_sname : nil }
+                    .map { String(cString: $0) } ?? "?"
+                return "\(image) \(symbol)"
+            }
+        }
+        return "runtime only"
     }
 
     /// Returns the file name of the image that holds `address`.

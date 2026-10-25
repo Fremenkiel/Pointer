@@ -172,7 +172,9 @@ final class RenderEngine: Sendable {
         return FrameOutcome(didDraw: result.didDraw, needsMore: result.needsMore)
     }
 
-    /// Applies the input and draws a frame if the input or the renderer has work.
+    /// Applies the input and draws a frame if the input or the renderer has work. With an
+    /// observer, one measure covers the apply and the frame, so that its count holds both
+    /// (m10-plan.md task 3.7).
     private static func draw(
         _ input: RenderInput,
         with renderer: FrameRenderer,
@@ -180,40 +182,46 @@ final class RenderEngine: Sendable {
         deadline: TimeInterval?,
         drawable: DrawableSource
     ) -> FrameResult {
-        let start = CACurrentMediaTime()
+        let time = FrameTime(start: CACurrentMediaTime(), deadline: deadline)
+        guard let observer = input.observer else {
+            return drawFrame(input, with: renderer, size: drawableSize, time: time, drawable)
+        }
+        var result = FrameResult(didDraw: false, needsMore: false, count: 0)
+        // The closure goes straight to `measure`, so it does not escape and allocates no box
+        // for `result` (PERF-01).
+        observer.measure {
+            result = drawFrame(input, with: renderer, size: drawableSize, time: time, drawable)
+        }
+        result.record = result.didDraw ? Self.record(of: renderer, time: time) : nil
+        return result
+    }
+
+    /// Applies the input, steps a flight, and draws the frame if there is work.
+    private static func drawFrame(
+        _ input: RenderInput,
+        with renderer: FrameRenderer,
+        size drawableSize: CGSize,
+        time: FrameTime,
+        _ drawable: DrawableSource
+    ) -> FrameResult {
         apply(input, to: renderer)
-        let isFlying = stepFlight(renderer, at: deadline ?? start)
-        var needsMore = false
-        var record: FrameRecord?
-        if !input.hasChange && !isFlying && !renderer.needsMoreFrames {
+        let isFlying = stepFlight(renderer, at: time.deadline ?? time.start)
+        guard input.hasChange || isFlying || renderer.needsMoreFrames else {
             var result = FrameResult(didDraw: false, needsMore: false, count: renderer.store.count)
             result.previewUploadsWaiting = renderer.previews?.pending.count ?? 0
             result.hasPreviewsToRequest = renderer.hasPreviewsToRequest
             return result
-        } else if let observer = input.observer {
-            // The closure goes straight to `measure`, so it does not escape and allocates no box
-            // for `needsMore` (PERF-01).
-            observer.measure {
-                needsMore = renderer.renderFrame(
-                    drawableSize: drawableSize,
-                    deadline: deadline,
-                    drawable: drawable
-                )
-            }
-            record = Self.record(of: renderer, start: start, target: deadline ?? start)
-        } else {
-            needsMore = renderer.renderFrame(
-                drawableSize: drawableSize,
-                deadline: deadline,
-                drawable: drawable
-            )
         }
+        let needsMore = renderer.renderFrame(
+            drawableSize: drawableSize,
+            deadline: time.deadline,
+            drawable: drawable
+        )
         assert(renderer.store.count <= Limits.maxStrokesAfterErase, "The renderer passed its bound")
         return FrameResult(
             didDraw: true,
             needsMore: needsMore || isFlying,
             count: renderer.store.count,
-            record: record,
             isFlying: isFlying,
             previewUploadsWaiting: renderer.previews?.pending.count ?? 0,
             hasPreviewsToRequest: renderer.hasPreviewsToRequest
@@ -290,18 +298,11 @@ final class RenderEngine: Sendable {
         if !input.edits.isEmpty {
             renderer.markHandoff(input.editHandoff, wantsCompletion: input.editsWantCompletion)
         }
-        if let observer = input.observer {
-            renderer.onCommit = { observer.willCommit($0, drawable: $1) }
-        } else if renderer.onCommit != nil {
-            renderer.onCommit = nil
-        }
+        renderer.commitObserver = input.observer
     }
 
-    private static func record(
-        of renderer: FrameRenderer,
-        start: Double,
-        target: Double
-    ) -> FrameRecord {
+    private static func record(of renderer: FrameRenderer, time: FrameTime) -> FrameRecord {
+        let (start, target) = (time.start, time.deadline ?? time.start)
         let front = renderer.layer?.front
         let milliseconds = (CACurrentMediaTime() - start) * 1000
         assert(milliseconds >= 0, "The frame time \(milliseconds) ms is negative")
@@ -313,6 +314,12 @@ final class RenderEngine: Sendable {
             camera: renderer.camera
         )
     }
+}
+
+/// The start of a frame on the render thread and its deadline, or `nil` without one.
+private struct FrameTime {
+    let start: Double
+    let deadline: TimeInterval?
 }
 
 /// The values that one frame gives back from inside the lock.
