@@ -24,7 +24,8 @@ check: build unused analyze test snapshots format lint layers density nesting se
 # BUILD-01, BUILD-02: the targets treat warnings as errors. Swift 6 keeps some diagnostics of
 # imported C and Objective-C APIs as warnings that -warnings-as-errors does not raise (D-132).
 # The build thus starts in a fresh folder, so that each file compiles and prints its warnings,
-# and it fails on each warning line, as `make analyze` does.
+# and it fails on each warning line, as `make analyze` does. The test bundle builds there too,
+# because BUILD-02 covers each target.
 CLEAN_BUILD := .build/CleanBuild
 build:
 	@rm -rf $(CLEAN_BUILD)
@@ -32,9 +33,13 @@ build:
 	@xcodebuild -project $(PROJECT) -scheme $(SCHEME) -derivedDataPath $(CLEAN_BUILD) \
 		-destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build \
 		> $(CLEAN_BUILD)/build.log 2>&1 || { cat $(CLEAN_BUILD)/build.log; exit 1; }
-	@if grep -E '^/.*: warning:' $(CLEAN_BUILD)/build.log; then \
+	@xcodebuild -project $(PROJECT) -scheme $(SCHEME) -derivedDataPath $(CLEAN_BUILD) \
+		-destination 'generic/platform=iOS' -configuration Release CODE_SIGNING_ALLOWED=NO \
+		ENABLE_TESTABILITY=YES build-for-testing > $(CLEAN_BUILD)/test-build.log 2>&1 \
+		|| { cat $(CLEAN_BUILD)/test-build.log; exit 1; }
+	@if grep -E '^/.*: warning:' $(CLEAN_BUILD)/build.log $(CLEAN_BUILD)/test-build.log; then \
 		echo "Build warnings above (BUILD-02, D-132)."; exit 1; fi
-	@echo "build: 0 warnings"
+	@echo "build: 0 warnings in the app and the test bundle"
 
 # SCOPE-01: no declaration without a reader (D-174). The SwiftLint analyzer rule
 # unused_declaration reads the compiler log of the clean build of `make build`. A declaration that

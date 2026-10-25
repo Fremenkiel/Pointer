@@ -689,3 +689,20 @@ The SwiftLint analyzer rule `unused_declaration` works on the compiler log of th
 - Learned rule 1: the `#if targetEnvironment(simulator)` branches of 11 test files and of `FrameRenderer` are gone, and the test comments name the iPad (M9 3.4.5).
 
 `make check` passed with the iPad in 9 minutes 4 seconds at the end of phase 1 (`T-16-check.log`).
+
+### 6.12 The test bundle in the clean build
+
+The clean build of the base of the phase 1 compare printed a warning from `PerformanceRecord`: a call of the main-actor method `XCTContext.runActivity` from a nonisolated function. The incremental device builds never printed it again, and `make build` built only the app. `make build` now also builds the test bundle in its fresh folder (56 s for both). It failed on the warning before `PerformanceRecord` became `@MainActor`, and passes after.
+
+### 6.13 Phase 1 against its base
+
+Four alternating pairs of the base c7026d6 and commit 703c3c3 ran the suites of the hot paths alone: `EraseUndoPerformanceTests`, `EraserFramePerformanceTests`, `TextPassPerformanceTests`, `CanvasOpenPerformanceTests`, and `FrameLoopTests` (`T-P1-alt-*`). No time is more than 10 % slower with p < 0.1. The largest changes are main-thread p99 values of a few microseconds and the one preview frame of `testPreviewRenderOfD56`, each with p ≥ 0.11.
+
+| Measure | Base, median of 4 | Phase 1, median of 4 |
+|---|---|---|
+| Erase, median and slowest | 21.52 ms, 26.36 ms | 22.31 ms, 27.27 ms |
+| Undo, median and slowest | 18.05 ms, 20.78 ms | 17.57 ms, 20.13 ms |
+| Redo, median and slowest | 20.22 ms, 23.89 ms | 18.56 ms, 25.19 ms |
+| Open of D-56, median | 255.7 ms | 253.0 ms |
+| Eraser frame, CPU p50 | 0.137 ms | 0.136 ms |
+| Text pass of D-56 | 0.926 ms | 0.921 ms |

@@ -9,6 +9,7 @@ import XCTest
 /// (`.ms` or `.s`) and records a memory size (`.mb`) or a count (`.count`) without a gate. Each
 /// test reports the median of its own repetitions as one sample, because the spread that the
 /// compare needs comes from separate runs (D-177).
+@MainActor
 enum PerformanceRecord {
     /// The file name of the attachment that `Scripts/perf.swift` looks for.
     static let attachmentName = "perf-samples.json"
