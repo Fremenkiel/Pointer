@@ -14,16 +14,22 @@ extension RenderEngine {
         assert(previewRequestLimit > 0, "A request limit is positive")
         core.withLock { renderer in
             renderer.takeWantedPreviews { requests, area in
-                // The count goes up before the loader gets the requests, so the loading state
-                // has no gap. The loader drops the requests past its limit.
-                inbox.withLock { box in
-                    box.previewRequestsOut += requests.count
-                    box.hasPreviewsToRequest = false
-                }
-                let dropped = requests.count - loader(for: source).request(requests, area: area)
-                if dropped > 0 { inbox.withLock { $0.previewRequestsOut -= dropped } }
+                send(requests, area: area, to: source)
             }
         }
+    }
+
+    /// Counts the requests as out and gives them to the loader. The count goes up before the
+    /// loader gets the requests, so the loading state has no gap. The loader drops the requests
+    /// past its limit, and they no longer count.
+    private func send(_ requests: [PreviewRequest], area: Rect, to source: any PreviewSource) {
+        inbox.withLock { box in
+            box.previewRequestsOut += requests.count
+            box.hasPreviewsToRequest = false
+        }
+        let dropped = requests.count - loader(for: source).request(requests, area: area)
+        assert(dropped >= 0, "The loader takes at most the requests that it gets")
+        if dropped > 0 { inbox.withLock { $0.previewRequestsOut -= dropped } }
     }
 
     /// Ends the preview render that waits or runs with `nil`, because the render thread stops
