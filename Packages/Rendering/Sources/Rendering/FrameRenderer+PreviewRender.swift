@@ -35,6 +35,7 @@ extension FrameRenderer {
         guard let renderer = previewRenderer, var job = renderer.job, layer?.build == nil else {
             return
         }
+        assert(job.greenCursor <= renderer.greens.count, "A preview job is past its text and cards")
         RenderSignpost.begin("PreviewRender")
         defer { RenderSignpost.end("PreviewRender") }
         let deadline = CACurrentMediaTime() + configuration.buildTimeBudget

@@ -96,6 +96,7 @@ struct SnapshotFiles {
     /// Returns the counter of `<prefix><stamp>-<counter>.sqlite`, from 2 to `maxNameCounter`,
     /// 1 for `<prefix><stamp>.sqlite`, and `nil` for another name.
     private static func counter(of name: String, prefix: String) -> Int? {
+        precondition(!prefix.isEmpty, "A snapshot name has a prefix")
         guard name.hasPrefix(prefix), name.hasSuffix(suffix) else { return nil }
         let middle = name.dropFirst(prefix.count).dropLast(suffix.count)
         let stamp = middle.prefix(stampLength)

@@ -132,6 +132,10 @@ public enum StrokeSplitter {
         of spline: StrokeSpline,
         at parameter: Double
     ) -> CutPoint {
+        precondition(
+            (0...spline.maxParameter).contains(parameter),
+            "Cut at \(parameter), outside 0...\(spline.maxParameter)"
+        )
         let stroke = spline.stroke
         if parameter == 0 || parameter == spline.maxParameter {
             let index = Int(parameter)

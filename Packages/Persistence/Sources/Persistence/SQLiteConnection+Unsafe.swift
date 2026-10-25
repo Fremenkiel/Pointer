@@ -30,6 +30,8 @@ final class SQLiteConnection {
     /// Safe: `sqlite3_open_v2` gives the handle, and only `deinit` closes it. Each statement
     /// holds a strong reference to this connection, so the handle outlives all statements.
     let handle: OpaquePointer
+    /// How the connection opened its file.
+    let mode: Mode
     private let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Persistence")
     /// The pages of the WAL after the last commit of this connection, from the WAL hook.
     private let walCounter = WALCounter()
@@ -56,6 +58,7 @@ final class SQLiteConnection {
             throw .sqlite(code: code, message: message)
         }
         handle = opened
+        self.mode = mode
         try configure(mode)
     }
 

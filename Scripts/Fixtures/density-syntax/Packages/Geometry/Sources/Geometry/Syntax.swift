@@ -1,7 +1,7 @@
-/// A fixture with three counted functions and four contract checks: average 1.33.
+/// A fixture with three counted functions and four contract checks.
 ///
 /// The old blanker skipped the nested generic clause, and the quote in the regex literal hid
-/// the rest of the file. Checks in comments and strings do not count.
+/// the rest of the file. Checks in comments and strings do not count, so `quoted` fails.
 public enum Syntax {
     /// Has a nested generic clause and two checks.
     public static func total<T: Collection<Int>>(_ values: T) -> Int {
@@ -10,7 +10,12 @@ public enum Syntax {
         let first = values.first ?? 0
         let last = values.reversed().first ?? 0
         let sum = first + last
-        return sum
+        let twice = sum * 2
+        let half = twice / 2
+        let same = half == sum
+        let rest = same ? 0 : 1
+        let unused = rest * 0
+        return sum + rest
     }
 
     /// Has a regex literal with a quote and no real checks.
@@ -20,7 +25,13 @@ public enum Syntax {
         let note = "assert(false) in a string does not count"
         let hasNote = !note.isEmpty
         let hasMatch = text.contains(pattern)
-        return hasNote && hasMatch
+        let count = text.count
+        let isShort = count < 10
+        let isLong = count > 100
+        let isMiddle = !isShort && !isLong
+        let answer = hasNote && hasMatch
+        let unused = answer && false
+        return answer || isMiddle && !isMiddle
     }
 
     /// Has two checks after the regex literal.
@@ -30,6 +41,11 @@ public enum Syntax {
         assert(result <= value, "result \(result) is above \(value)")
         let doubled = result * 2
         let rest = value - doubled
-        return result + rest - rest
+        let total = result + rest
+        let check = total - rest
+        let same = check == result
+        let offset = same ? 0 : 1
+        let unused = offset * 0
+        return result + offset
     }
 }

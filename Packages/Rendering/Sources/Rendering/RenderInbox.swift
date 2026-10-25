@@ -136,6 +136,7 @@ struct RenderInbox {
 
     /// Empties the changes that a frame took. The camera stays as the newest value.
     private mutating func reset() {
+        assert(!isSleeping, "A sleeping frame loop takes no changes")
         eraserStart = nil
         eraserSamples = spareEraserSamples
         spareEraserSamples = []

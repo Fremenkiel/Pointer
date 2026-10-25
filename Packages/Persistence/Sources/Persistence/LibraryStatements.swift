@@ -22,8 +22,13 @@ final class LibraryStatements {
 
     /// Compiles all statements on `connection`.
     ///
+    /// - Precondition: `connection` opened a library file, to read and write or to read only.
     /// - Throws: `PersistenceError.sqlite` if a statement does not compile.
     init(_ connection: SQLiteConnection) throws(PersistenceError) {
+        precondition(
+            connection.mode == .readWrite || connection.mode == .readOnly,
+            "The statements of a library need a library file, got \(connection.mode)"
+        )
         begin = try connection.prepare("BEGIN IMMEDIATE")
         commit = try connection.prepare("COMMIT")
         rollback = try connection.prepare("ROLLBACK")

@@ -20,7 +20,7 @@ The standard combines four sources:
 |---|---|---|
 | A (core) | `Geometry`, `Model`, `InkEngine`, `Persistence` | All rules. |
 | B (engine) | `Rendering`, `Export` | All rules. `SAFE-09` allows Metal buffer pointers in files named `*+Unsafe.swift`. |
-| C (interface) | `CanvasFeature`, `WorkspaceFeature`, `BackupFeature`, `DesignSystem`, `PointerApp` | All rules except `CONTRACT-02` (assertion density). |
+| C (interface) | `CanvasFeature`, `WorkspaceFeature`, `BackupFeature`, `DesignSystem`, `PointerApp` | All rules except `CONTRACT-02` (contract checks). |
 
 One exception applies in Tier A: `Persistence` can use SQLite C pointers in files named `SQLite*+Unsafe.swift` (`SAFE-09`).
 
@@ -91,7 +91,7 @@ Sources: <https://en.wikipedia.org/wiki/The_Power_of_10:_Rules_for_Developing_Sa
 ### 3.5 Contracts
 
 - `CONTRACT-01` Each function that is not private states its contract in its documentation comment: what it needs (`- Precondition:`), what it returns, and what it throws.
-- `CONTRACT-02` Tier A and B functions with more than 5 lines have at least two contract checks on average per package. A contract check is a `precondition`, an `assert`, or a `guard` that throws or returns an error value. Enforcement: CI script `Scripts/assertion-density.swift` reports the average per package and fails below 2.0.
+- `CONTRACT-02` Each Tier A and B function of more than 10 lines has at least one contract check (D-173). A contract check is a `precondition`, an `assert`, or a `guard` that throws or returns a value that the contract of the function names as an error. A check that a reader can prove always holds does not count and is removed. The lines count without blank lines and comment lines, as SwiftLint counts them for SIZE-01. A nested function counts once, as a function of its own. A `guard` that returns a value counts only with the comment `// contract: error value` on the `return` line (D-176). Enforcement: CI script `Scripts/assertion-density.swift` fails on each function without a check, and reports the average per package without a limit.
 - `CONTRACT-03` Use the right check for the right fault:
 
 | Fault | Check | Active in release builds |

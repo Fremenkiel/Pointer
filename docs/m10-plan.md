@@ -614,3 +614,28 @@ Each performance test of section 2.1 now attaches its samples through `Performan
 ### 6.4 Metal validation (task 0.5)
 
 `make validation` passed in 73 s on 2026-10-25 (`T-05-validation.log`). It runs `PointerDeviceTests` with API validation and shader validation, without the 11 allocation suites and the 24 performance suites. A run of `FrameAllocationTests` alone with the same settings shows that validation is on: the bare frame makes 237 allocations, against 15 without validation and 121 with API validation alone (`T-05-proof.xcresult`).
+
+### 6.5 The rule CONTRACT-02 (task 1.1)
+
+`Scripts/assertion-density.swift` follows D-173 and D-176. It counts 297 functions of more than 10 code lines in Tier A and B, the same number as the research of D-176. It found 7 functions without a check, and each got one:
+
+| Function | Check |
+|---|---|
+| `StrokeSplitter.cutPoint(of:at:)` | precondition: the cut parameter is inside the curve |
+| `SnapshotFiles.counter(of:prefix:)` | precondition: the prefix is not empty |
+| `DeviceStateStore.camera(for:)` | the `nil` of a bad row is marked as the error value of the contract |
+| `LibraryStatements.init(_:)` | precondition: the connection opened a library file. `SQLiteConnection` keeps its mode for it. |
+| `PreviewImage.pngData()` | the `nil` of a failed image is marked as the error value of the contract |
+| `FrameRenderer.continuePreviewRender(_:)` | assert: the cursor of the job is inside its list |
+| `RenderInbox.reset()` | assert: a sleeping frame loop takes no changes |
+
+The old script failed or passed the new fixtures for the wrong reason. It counted the check of a nested function for the outer function (`density-nested`: "1 functions, 1 checks"), and it counted a plain `return nil` (`density-error-exit`: "4 functions, 2 checks"). The new script finds a function of 11 code lines and passes one of 10 (`density-error-exit`). The lines of a multi-line string count as code (`density-low`).
+
+| Package | Functions over 10 lines | Checks | Average |
+|---|---|---|---|
+| Geometry | 13 | 27 | 2.08 |
+| Model | 23 | 55 | 2.39 |
+| InkEngine | 17 | 37 | 2.18 |
+| Persistence | 79 | 160 | 2.03 |
+| Rendering | 160 | 317 | 1.98 |
+| Export | 5 | 10 | 2.00 |

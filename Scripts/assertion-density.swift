@@ -4,11 +4,12 @@ import Foundation
 /// The packages that rule CONTRACT-02 covers: Tier A and Tier B.
 let checkedPackages = ["Geometry", "Model", "InkEngine", "Persistence", "Rendering", "Export"]
 
-/// The minimum average number of contract checks per counted function (CONTRACT-02).
-let minimumAverage = 2.0
+/// A function body with more than this number of code lines needs a contract check
+/// (CONTRACT-02, D-173). Blank lines and comment lines do not count, as in SwiftLint (D-176).
+let maximumLinesWithoutCheck = 10
 
-/// A function body counts only if it has more than this number of lines (CONTRACT-02).
-let minimumBodyLines = 5
+/// The comment that makes the `return` of a value in a `guard` an error exit (D-176).
+let errorValueMarker = "// contract: error value"
 
 /// Returns the text of bytes that the blanker made. They are ASCII by construction.
 ///
@@ -37,8 +38,15 @@ struct Blanker {
     private var stack: [LexerContext] = [.code(isInterpolation: false, parenDepth: 0)]
     private var index = 0
 
+    /// `false` keeps the text of strings, so that only comments go. The count of code lines
+    /// uses it, because a line of a multi-line string is code (D-176).
+    private let blanksStrings: Bool
+
     /// Makes a blanker for the UTF-8 bytes of one source file.
-    init(source: String) { bytes = Array(source.utf8) }
+    init(source: String, blanksStrings: Bool = true) {
+        bytes = Array(source.utf8)
+        self.blanksStrings = blanksStrings
+    }
 
     /// Returns the source text with comments and strings blanked.
     mutating func run() -> String {
@@ -58,6 +66,10 @@ struct Blanker {
         let pattern = Array(text.utf8)
         guard position + pattern.count <= bytes.count else { return false }
         return Array(bytes[position..<position + pattern.count]) == pattern
+    }
+
+    private mutating func blankString(_ range: Range<Int>) {
+        if blanksStrings { blank(range) }
     }
 
     private mutating func blank(_ range: Range<Int>) {
@@ -110,7 +122,7 @@ struct Blanker {
         let isMultiline = starts(with: "\"\"\"", at: end)
         let hashes = end - index
         let close = end + (isMultiline ? 3 : 1)
-        blank(index..<close)
+        blankString(index..<close)
         stack.append(.string(hashes: hashes, isMultiline: isMultiline))
         index = close
     }
@@ -125,7 +137,7 @@ struct Blanker {
         } else if byte == UInt8(ascii: ")") {
             stack[stack.count - 1] = .code(isInterpolation: isInterpolation, parenDepth: depth - 1)
         }
-        if isInsideString { blank(index..<index + 1) }
+        if isInsideString { blankString(index..<index + 1) }
         index += 1
     }
 
@@ -139,20 +151,20 @@ struct Blanker {
             index += 1
         } else if starts(with: "\\" + delimiter + "(", at: index) {
             let open = index + hashes + 2
-            blank(index..<open)
+            blankString(index..<open)
             stack.append(.code(isInterpolation: true, parenDepth: 0))
             index = open
         } else if starts(with: "\\" + delimiter, at: index) {
             let end = min(index + hashes + 2, bytes.count)
-            blank(index..<end)
+            blankString(index..<end)
             index = end
         } else if starts(with: quote + delimiter, at: index) {
             let end = index + quote.utf8.count + hashes
-            blank(index..<end)
+            blankString(index..<end)
             stack.removeLast()
             index = end
         } else {
-            blank(index..<index + 1)
+            blankString(index..<index + 1)
             index += 1
         }
     }
@@ -160,10 +172,12 @@ struct Blanker {
 
 /// The result for one package.
 struct PackageResult {
-    /// The number of functions with more than `minimumBodyLines` lines.
+    /// The number of functions with more than `maximumLinesWithoutCheck` code lines.
     var functions = 0
     /// The number of contract checks in these functions.
     var checks = 0
+    /// One line per counted function without a check, in the form of a compiler error.
+    var findings: [String] = []
 }
 
 let declarationPattern = try NSRegularExpression(
@@ -174,7 +188,8 @@ let checkPattern = try NSRegularExpression(
     pattern: #"\b(?:precondition|preconditionFailure|assert|assertionFailure)\s*\("#
 )
 let guardPattern = try NSRegularExpression(pattern: #"\bguard\b[^{]*?\belse\s*\{"#)
-let errorExitPattern = try NSRegularExpression(pattern: #"\bthrow\b|\breturn[ \t]+[^\s}]"#)
+let throwPattern = try NSRegularExpression(pattern: #"\bthrow\b"#)
+let valueReturnPattern = try NSRegularExpression(pattern: #"\breturn[ \t]+[^\s}]"#)
 let stopWords: Set<String> = [
     "func", "init", "subscript", "var", "let", "case", "struct", "class", "enum", "protocol",
     "extension", "typealias", "associatedtype", "actor", "deinit",
@@ -225,33 +240,116 @@ func word(_ text: [UInt8], _ position: Int) -> String {
     return asciiText(text[position..<end])
 }
 
-/// Counts the contract checks in one function body (CONTRACT-02).
-func contractChecks(in body: String) -> Int {
-    let all = NSRange(location: 0, length: (body as NSString).length)
-    var count = checkPattern.numberOfMatches(in: body, range: all)
-    let bytes = Array(body.utf8)
-    for match in guardPattern.matches(in: body, range: all) {
+/// The text of one source file after the blanker, with the facts that the count needs.
+struct SourceFile {
+    /// The text with comments and strings blanked.
+    let text: String
+    /// The bytes of `text`.
+    let bytes: [UInt8]
+    /// The bytes of the source with comments blanked and strings kept, at the same offsets.
+    let codeBytes: [UInt8]
+    /// The line numbers, from 1, of the lines with the marker of an error value.
+    let markedLines: Set<Int>
+    /// The offset of the first byte of each line.
+    let lineStarts: [Int]
+
+    init(source: String) {
+        var blanker = Blanker(source: source)
+        let blanked = blanker.run()
+        let all = Array(blanked.utf8)
+        let lines = source.components(separatedBy: "\n")
+        var commentBlanker = Blanker(source: source, blanksStrings: false)
+        text = blanked
+        bytes = all
+        codeBytes = Array(commentBlanker.run().utf8)
+        let marked = lines.indices.filter { lines[$0].contains(errorValueMarker) }
+        markedLines = Set(marked.map { $0 + 1 })
+        lineStarts = [0] + all.indices.filter { all[$0] == UInt8(ascii: "\n") }.map { $0 + 1 }
+    }
+
+    /// Returns the line number, from 1, of the byte at `offset`.
+    func line(of offset: Int) -> Int {
+        var low = 0
+        var high = lineStarts.count
+        while low + 1 < high {
+            let middle = (low + high) / 2
+            if lineStarts[middle] <= offset { low = middle } else { high = middle }
+        }
+        return low + 1
+    }
+}
+
+/// Returns the bytes of `range` in `text` with the bytes of `holes` made spaces. Newlines stay.
+func bytes(_ text: [UInt8], _ range: Range<Int>, without holes: [Range<Int>]) -> [UInt8] {
+    var result = Array(text[range])
+    for hole in holes {
+        for position in hole where text[position] != UInt8(ascii: "\n") {
+            result[position - range.lowerBound] = UInt8(ascii: " ")
+        }
+    }
+    return result
+}
+
+/// Returns the number of lines inside the braces of `body` with code (D-176).
+func codeLines(_ body: [UInt8]) -> Int {
+    let inner = body.dropFirst().dropLast()
+    return inner.split(separator: UInt8(ascii: "\n"), omittingEmptySubsequences: false)
+        .filter { line in line.contains { $0 != UInt8(ascii: " ") && $0 != UInt8(ascii: "\t") } }
+        .count
+}
+
+/// Counts the contract checks in one function body (CONTRACT-02, D-176). `offset` is the offset
+/// of the body in the file, for the line numbers of the markers.
+func contractChecks(in body: [UInt8], offset: Int, file: SourceFile) -> Int {
+    let text = asciiText(body)
+    let all = NSRange(location: 0, length: body.count)
+    var count = checkPattern.numberOfMatches(in: text, range: all)
+    for match in guardPattern.matches(in: text, range: all) {
         let open = match.range.location + match.range.length - 1
-        guard let close = matchingBrace(in: bytes, open: open) else { continue }
+        guard let close = matchingBrace(in: body, open: open) else { continue }
         let block = NSRange(location: open, length: close - open)
-        if errorExitPattern.firstMatch(in: body, range: block) != nil { count += 1 }
+        if throwPattern.firstMatch(in: text, range: block) != nil {
+            count += 1
+            continue
+        }
+        let returns = valueReturnPattern.matches(in: text, range: block)
+        let marked = returns.map { file.line(of: offset + $0.range.location) }
+        if marked.contains(where: file.markedLines.contains) {
+            count += 1
+        }
     }
     return count
 }
 
 /// Adds the counted functions of one source file to `result`.
-func measure(source: String, into result: inout PackageResult) {
-    var blanker = Blanker(source: source)
-    let text = blanker.run()
-    let bytes = Array(text.utf8)
-    let all = NSRange(location: 0, length: (text as NSString).length)
-    for match in declarationPattern.matches(in: text, range: all) {
-        let start = match.range.location + match.range.length - 1
-        guard let range = body(in: bytes, start: start) else { continue }
-        let lines = bytes[range].filter { $0 == UInt8(ascii: "\n") }.count - 1
-        guard lines > minimumBodyLines else { continue }
+func measure(source: String, path: String, into result: inout PackageResult) {
+    let file = SourceFile(source: source)
+    let all = NSRange(location: 0, length: file.bytes.count)
+    let bodies = declarationPattern.matches(in: file.text, range: all).compactMap { match in
+        body(in: file.bytes, start: match.range.location + match.range.length - 1)
+            .map { (declaration: match.range.location, body: $0) }
+    }
+    for function in bodies {
+        let range = function.body.lowerBound..<(function.body.upperBound + 1)
+        // A nested function counts once, as a function of its own (D-173).
+        let isNested = { (other: Range<Int>) in
+            other != range && range.contains(other.lowerBound)
+                && other.upperBound < range.upperBound
+        }
+        let nested = bodies.map { $0.body.lowerBound..<($0.body.upperBound + 1) }.filter(isNested)
+        let own = bytes(file.bytes, range, without: nested)
+        let lines = codeLines(bytes(file.codeBytes, range, without: nested))
+        guard lines > maximumLinesWithoutCheck else { continue }
+        let checks = contractChecks(in: own, offset: range.lowerBound, file: file)
         result.functions += 1
-        result.checks += contractChecks(in: asciiText(bytes[range]))
+        result.checks += checks
+        if checks == 0 {
+            let line = file.line(of: function.declaration)
+            result.findings.append(
+                "\(path):\(line): error: CONTRACT-02 A function of \(lines) lines "
+                    + "has no contract check."
+            )
+        }
     }
 }
 
@@ -274,7 +372,7 @@ func measurePackage(_ folder: URL) -> PackageResult {
             print("\(file.path):1: warning: CONTRACT-02 The file is not UTF-8 text. It is skipped.")
             continue
         }
-        measure(source: source, into: &result)
+        measure(source: source, path: file.path, into: &result)
     }
     return result
 }
@@ -285,18 +383,14 @@ for name in checkedPackages {
     let sources = root.appendingPathComponent("Packages/\(name)/Sources")
     guard FileManager.default.fileExists(atPath: sources.path) else { continue }
     let result = measurePackage(sources)
+    for finding in result.findings { print(finding) }
+    failures += result.findings.count
     guard result.functions > 0 else {
-        print("\(name): no functions")
+        print("\(name): no functions over \(maximumLinesWithoutCheck) lines")
         continue
     }
-    let average = Double(result.checks) / Double(result.functions)
-    let summary = "\(result.functions) functions, \(result.checks) checks"
-    let averageText = String(format: "%.2f", average)
-    if average < minimumAverage {
-        failures += 1
-        print("error: CONTRACT-02 \(name): \(summary), average \(averageText) is below 2.0.")
-    } else {
-        print("\(name): \(summary), average \(averageText)")
-    }
+    // The average is a report only (D-173).
+    let average = String(format: "%.2f", Double(result.checks) / Double(result.functions))
+    print("\(name): \(result.functions) functions, \(result.checks) checks, average \(average)")
 }
 exit(failures == 0 ? 0 : 1)

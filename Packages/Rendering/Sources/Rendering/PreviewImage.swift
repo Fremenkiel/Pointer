@@ -49,7 +49,9 @@ public struct PreviewImage: Sendable, Equatable {
                 shouldInterpolate: false,
                 intent: .defaultIntent
             )
-        else { return nil }
+        else {
+            return nil  // contract: error value
+        }
         let data = NSMutableData()
         guard
             let destination = CGImageDestinationCreateWithData(

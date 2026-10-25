@@ -101,7 +101,7 @@ public actor DeviceStateStore {
         let zoom = statement.double(at: 2)
         guard center.isFinite, Limits.zoomRange.contains(zoom) else {
             logger.error("Skipped a camera with a bad center or zoom")
-            return nil
+            return nil  // contract: error value
         }
         return Camera(center: center, zoom: zoom)
     }

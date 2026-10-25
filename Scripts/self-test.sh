@@ -63,9 +63,18 @@ expect 1 check-layers.swift layers-third-party \
 expect 1 check-layers.swift layers-access-import \
     "ARCH-02 Model (layer 0) depends on Persistence (layer 1)"
 expect 0 check-layers.swift layers-clean "2 packages, 0 findings"
-expect 1 assertion-density.swift density-low "1 functions, 1 checks, average 1.00 is below 2.0"
-expect 1 assertion-density.swift density-syntax "3 functions, 4 checks, average 1.33 is below 2.0"
+expect 1 assertion-density.swift density-low \
+    "Scale.swift:5: error: CONTRACT-02 A function of 11 lines has no contract check."
+expect 1 assertion-density.swift density-syntax \
+    "Syntax.swift:22: error: CONTRACT-02 A function of 11 lines has no contract check." \
+    "3 functions, 4 checks, average 1.33"
 expect 0 assertion-density.swift density-ok "1 functions, 3 checks, average 3.00"
+expect 1 assertion-density.swift density-nested \
+    "Nested.swift:5: error: CONTRACT-02 A function of 12 lines has no contract check."
+expect 1 assertion-density.swift density-error-exit \
+    "Exits.swift:4: error: CONTRACT-02 A function of 11 lines has no contract check." \
+    "Exits.swift:48: error: CONTRACT-02 A function of 11 lines has no contract check." \
+    "3 functions, 1 checks, average 0.33"
 expect 0 coverage.swift coverage-ok "Geometry: 90.00 % (90 of 100 lines)" \
     "Persistence: 95.00 % (95 of 100 lines)" "Rendering: 70.00 % (70 of 100 lines)" \
     "Export: 70.00 % (70 of 100 lines)"
