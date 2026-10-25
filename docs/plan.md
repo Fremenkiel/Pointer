@@ -207,7 +207,11 @@ Review after M9, 2026-10-24: [review-2026-10-24-m9.md](review-2026-10-24-m9.md).
   - From the review after M8: the open items of sections 3.2 to 3.4 of [review-2026-10-24.md](review-2026-10-24.md) that M9 does not take. The review after M9 fixed item 3 of section 3.2.
   - From the review after M8, section 3.1: the message at the stroke limit (item 4), and the history of the shown canvas outside the budget of D-76 (item 5).
   - From the review after M9 ([review-2026-10-24-m9.md](review-2026-10-24-m9.md)): the open items of sections 3.2 to 3.4.
-  - From the review after M9, section 3.1: the product owner decides items 1 to 4 before M10 starts. Items 5 to 8 need a decision before their task. They are the restore after a stop of the process, the grid budget per canvas of D-170, the rebalance of sort keys, and the history budget in bytes.
+  - Performance baselines of D-172: `make perf-baseline` and `make perf-compare`, with a baseline file for the iPad Pro 11-inch (M4).
+  - The contract checks of D-173: the new text of CONTRACT-02 and the change of `Scripts/assertion-density.swift`. Then the removal of the checks that restate the line before them, and a real check in each function of more than 10 lines that has none.
+  - The enforcement of D-174: `make nesting`, the lint rules of SAFE-03 and SAFE-02, the per-function check of TEST-02, and a try of `unused_declaration` for SCOPE-01.
+  - The clean build of D-132: `make build` builds in a fresh folder and fails on each warning line. `@Sendable` wrappers of the Metal handlers come with a lint ban on a direct call.
+  - From the review after M9, section 3.1: the product owner decided items 1 to 4 on 2026-10-25 (D-172, D-173, D-174, D-132). Items 5 to 8 need a decision before their task. They are the restore after a stop of the process, and the grid budget per canvas of D-170. The other two are the rebalance of sort keys and the history budget in bytes.
   - Read the contract checks of each Tier A and Tier B package by hand. Each package has an average of exactly 2.00 (CONTRACT-02), so remove checks that test nothing.
 
 Acceptance:
