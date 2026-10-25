@@ -5,6 +5,8 @@ import Foundation
 struct Limit {
     let package: String
     let minimumPercent: Double
+    /// `true` for Tier A: each function that is not private has a test (TEST-02, D-174).
+    var checksFunctions: Bool { minimumPercent >= 90 }
 }
 
 /// The limits of TEST-02: 90 % for Tier A and 70 % for Tier B. The tests of Rendering and Export
@@ -35,9 +37,17 @@ struct File: Decodable {
     let summary: Summary
 }
 
-/// One export of the report.
+/// One function of the report, with its mangled name and the number of times that it ran.
+struct Function: Decodable {
+    let name: String
+    let count: Int
+    let filenames: [String]
+}
+
+/// One export of the report. A report of `-summary-only` holds no functions.
 struct Export: Decodable {
     let files: [File]
+    let functions: [Function]?
 }
 
 /// The JSON of `llvm-cov export`. `swift test --enable-code-coverage` writes the same format.
@@ -69,8 +79,61 @@ func lines(of package: String, in report: Report) -> Lines {
     return Lines(count: count, covered: covered)
 }
 
+/// The message closures of `precondition` and `assert` run only when the check fails, so no test
+/// runs them. Their mangled names end in `fu_` or `fu<number>_` (D-187).
+let autoclosureSuffix = try NSRegularExpression(pattern: #"fu[0-9]*_$"#)
+
+/// Reads the allow list of `--allow <path>`, by default `coverage-allow.txt` in the root folder:
+/// one mangled name per line, then `#` and the reason. Blank lines and lines that start with `#`
+/// do not count (D-187).
+func allowedFunctions(root: URL) -> Set<String> {
+    let arguments = CommandLine.arguments
+    let path =
+        arguments.firstIndex(of: "--allow").flatMap {
+            $0 + 1 < arguments.count ? arguments[$0 + 1] : nil
+        } ?? root.appendingPathComponent("coverage-allow.txt").path
+    guard let text = try? String(contentsOfFile: path, encoding: .utf8) else { return [] }
+    let names = text.split(separator: "\n").compactMap { line -> String? in
+        let name =
+            line.split(separator: "#", maxSplits: 1).first?
+            .trimmingCharacters(in: .whitespaces) ?? ""
+        return name.isEmpty ? nil : name
+    }
+    return Set(names)
+}
+
+/// Returns the readable names of `mangled`, in the same order, with `swift-demangle`.
+func demangled(_ mangled: [String]) -> [String] {
+    // Without names, swift-demangle reads its standard input and waits.
+    guard !mangled.isEmpty else { return [] }
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+    process.arguments = ["swift-demangle", "--compact"] + mangled
+    let pipe = Pipe()
+    process.standardOutput = pipe
+    do { try process.run() } catch { return mangled }
+    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+    process.waitUntilExit()
+    guard let text = String(bytes: data, encoding: .utf8) else { return mangled }
+    let lines = text.split(separator: "\n").map(String.init)
+    return lines.count == mangled.count ? lines : mangled
+}
+
+/// Returns the Tier A functions of `package` that no test runs, without the allowed ones.
+func missedFunctions(of package: String, in report: Report, allowed: Set<String>) -> [String] {
+    let folder = "/Packages/\(package)/Sources/\(package)/"
+    let missed = report.data.flatMap { $0.functions ?? [] }.filter { function in
+        let range = NSRange(location: 0, length: (function.name as NSString).length)
+        return function.count == 0 && function.filenames.contains { $0.contains(folder) }
+            && autoclosureSuffix.firstMatch(in: function.name, range: range) == nil
+            && !allowed.contains(function.name)
+    }
+    let names = Array(Set(missed.map(\.name))).sorted()
+    return zip(demangled(names), names).map { "\($0) (\($1))" }
+}
+
 /// Checks one package and prints its line. Returns `false` if it fails.
-func check(_ limit: Limit, root: URL) -> Bool {
+func check(_ limit: Limit, root: URL, allowed: Set<String>) -> Bool {
     let name = limit.package
     let file = root.appendingPathComponent("Coverage/\(name).json")
     guard let data = try? Data(contentsOf: file) else {
@@ -94,10 +157,16 @@ func check(_ limit: Limit, root: URL) -> Bool {
         print("error: TEST-02 \(name): \(detail) is below \(minimum).")
         return false
     }
+    if limit.checksFunctions {
+        let missed = missedFunctions(of: name, in: report, allowed: allowed)
+        for function in missed { print("error: TEST-02 \(name): no test runs \(function).") }
+        guard missed.isEmpty else { return false }
+    }
     print("\(name): \(detail)")
     return true
 }
 
 let root = rootFolder()
-let failures = limits.filter { !check($0, root: root) }.count
+let allowed = allowedFunctions(root: root)
+let failures = limits.filter { !check($0, root: root, allowed: allowed) }.count
 exit(failures == 0 ? 0 : 1)

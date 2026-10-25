@@ -48,6 +48,33 @@ struct PathValidationTests {
         #expect(path == (try NavigationPath(workspace: Self.workspace)))
     }
 
+    @Test("A path takes the cards that still wait for the save")
+    func pendingCards() async throws {
+        let harness = try RepositoryHarness()
+        let repository = try await harness.open()
+        let chain = Self.chain(2)
+        let rows = try Self.rows(chain)
+        // The first send saves at once. The next one waits for the save interval.
+        try await repository.send([rows[0]])
+        try await repository.send([rows[1]])
+        #expect(await repository.pendingCount == 1)
+        let path = try await repository.validPath(chain, in: Self.workspace)
+        #expect(path.cards == chain)
+        #expect(await repository.pendingCount == 0)
+    }
+
+    @Test("The initializer of the app opens a library and keeps its rows")
+    func appInitializer() async throws {
+        let harness = try RepositoryHarness()
+        let repository = harness.makeAsTheApp()
+        _ = try await repository.open { _ in }
+        let chain = Self.chain(1)
+        try await repository.send(try Self.rows(chain))
+        try await repository.saveNow()
+        let path = try await repository.validPath(chain, in: Self.workspace)
+        #expect(path.cards == chain)
+    }
+
     @Test("A valid path of 32 cards stays whole")
     func full() async throws {
         let harness = try RepositoryHarness()

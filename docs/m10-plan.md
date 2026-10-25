@@ -662,3 +662,14 @@ The reading found a fault: the assert that counts the rows of a save ran in a `d
 ### 6.8 The lint rules of SAFE-02 and SAFE-03 (task 1.4)
 
 `safe_02_dropped_try` and `safe_03_discardable_result` fire on the new lines of the fixture `lint-violations`. The code had two dropped `try?` statements, both in the cleanup of test folders (`TemporaryFolder`, `NavigationTests`). They now record the error. All 12 `@discardableResult` attributes already had a documentation comment.
+
+### 6.9 One test per Tier A function (task 1.5)
+
+`Scripts/coverage.swift` reads the functions of each Tier A report and fails on a function that no test runs. It skips the message closures of `precondition` and `assert` by their mangled suffix, 434 of the 445 entries of the research. On the reports of the baseline it found the 7 real functions of D-187. Four got tests: `EditText.forEachHeldStroke`, the redo loop of `History.unheldStrokeIDs`, the save of the pending rows in `validPath`, and the initializer of the app of `SQLiteLibraryRepository`. `Scripts/coverage-allow.txt` holds the other 3: two rollbacks after a failed `COMMIT`, and the initial value of a private property. The old script passed the fixture `coverage-function-missed`, and the new one fails on it.
+
+| Package | Line coverage at the baseline | After phase 1 |
+|---|---|---|
+| Geometry | 90.12 % | 90.97 % |
+| Model | 90.78 % | 91.94 % |
+| InkEngine | 92.70 % | 93.91 % |
+| Persistence | 90.46 % | 90.96 % |

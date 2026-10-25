@@ -1,0 +1,46 @@
+{
+ "data": [
+  {
+   "files": [
+    {
+     "filename": "/repo/Packages/Persistence/Sources/Persistence/A.swift",
+     "summary": {
+      "lines": {
+       "count": 100,
+       "covered": 95
+      }
+     }
+    },
+    {
+     "filename": "/repo/Packages/Persistence/Tests/PersistenceTests/ATests.swift",
+     "summary": {
+      "lines": {
+       "count": 100,
+       "covered": 0
+      }
+     }
+    },
+    {
+     "filename": "/repo/.build/Persistence.build/DerivedSources/test_entry_point.swift",
+     "summary": {
+      "lines": {
+       "count": 10,
+       "covered": 0
+      }
+     }
+    },
+    {
+     "filename": "/repo/Packages/Persistence/Sources/PersistenceCrashHelper/main.swift",
+     "summary": {
+      "lines": {
+       "count": 50,
+       "covered": 0
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "type": "llvm.coverage.json.export",
+ "version": "3.0.1"
+}

@@ -1,0 +1,5 @@
+# Tier A functions that no Mac test can run, for the per-function check of TEST-02 (D-187).
+# One mangled name per line, then # and the reason. The product owner reads each change.
+$s11Persistence16DeviceStateStoreC8rollBack018_D4DB3B5D3AD69F833J13EBF91D0CD6E03LLyyAA0B10StatementsCF # rollBack after a failed COMMIT, which needs a disk error
+$s11Persistence18LibraryMaintenanceO8rollBack33_14DD794CEB3C673A84FDDE95C761F00CLLyyAA16SQLiteConnectionCFZ # rollBack after a failed COMMIT, which needs a disk error
+$s11Persistence13SnapshotFilesV5files33_16891B9A16F9E88367EB3342FFDAAF51LLSo13NSFileManagerCvpfi # compiler artifact: the initial value of a private stored property

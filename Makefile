@@ -103,7 +103,7 @@ coverage:
 			-instr-profile $(COVERAGE_DATA)/Build/ProfileData/$(DEVICE)/Coverage.profdata \
 			> $(COVERAGE_REPORTS)/$$package.json || exit 1; \
 	done
-	swift Scripts/coverage.swift --root .build
+	swift Scripts/coverage.swift --root .build --allow Scripts/coverage-allow.txt
 
 # D-172, D-177: the performance suites alone, each run in a new test process. `make perf-baseline`
 # records the baseline of the iPad model. `make perf-compare` fails if a time is more than 10 %

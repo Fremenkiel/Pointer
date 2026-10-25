@@ -154,6 +154,7 @@ struct TextCommandTests {
         #expect(MoveNode(from: box, to: moved).heldPointCount == 3)
         var strokes = 0
         AddTextBox(textBox: box).forEachHeldStroke { _ in strokes += 1 }
+        EditText(old: box, new: edited).forEachHeldStroke { _ in strokes += 1 }
         #expect(strokes == 0)
     }
 }

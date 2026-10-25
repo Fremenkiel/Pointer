@@ -29,13 +29,7 @@ struct RepositoryHarness {
         usesCheckpointer: Bool = true,
         beforeCheckpoint: (@Sendable () -> Void)? = nil
     ) -> SQLiteLibraryRepository {
-        let configuration = SQLiteLibraryRepository.Configuration(
-            databasePath: path,
-            temporaryFolder: folder.url,
-            device: Values.device,
-            wallClock: FixedWallClock(millis: wallMillis),
-            timer: timer
-        )
+        let configuration = configuration(wallMillis: wallMillis)
         let sink = faultSink
         var hook: (@Sendable () throws(PersistenceError) -> Void)?
         if let failSwitch {
@@ -49,6 +43,23 @@ struct RepositoryHarness {
             usesCheckpointer: usesCheckpointer,
             beforeCheckpoint: beforeCheckpoint
         )
+    }
+
+    /// The configuration of the repositories of the harness.
+    func configuration(wallMillis: UInt64 = Self.now) -> SQLiteLibraryRepository.Configuration {
+        SQLiteLibraryRepository.Configuration(
+            databasePath: path,
+            temporaryFolder: folder.url,
+            device: Values.device,
+            wallClock: FixedWallClock(millis: wallMillis),
+            timer: timer
+        )
+    }
+
+    /// Makes a repository with the public initializer of the app, with no test hook.
+    func makeAsTheApp() -> SQLiteLibraryRepository {
+        let sink = faultSink
+        return SQLiteLibraryRepository(configuration: configuration(), onFault: { sink.yield($0) })
     }
 
     /// Makes and opens a repository without a pre-migration snapshot.

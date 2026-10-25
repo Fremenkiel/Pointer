@@ -82,6 +82,9 @@ expect 1 coverage.swift coverage-low "TEST-02 Geometry: 89.00 % (89 of 100 lines
     "TEST-02 Rendering: 69.00 % (69 of 100 lines) is below 70 %" \
     "TEST-02 Export: 69.00 % (69 of 100 lines) is below 70 %"
 expect 1 coverage.swift coverage-missing "TEST-02 Rendering: no report at"
+expect 1 coverage.swift coverage-function-missed \
+    "TEST-02 Geometry: no test runs static Geometry.Scale.scaled(Swift.Double, Swift.Double)"
+expect 0 coverage.swift coverage-function-allowed "Geometry: 90.00 % (90 of 100 lines)"
 # The compare of performance samples (D-172, D-177). The critical U values of 10 runs against
 # 10 come from the published two-tailed tables: U <= 16 for p < 0.01, U <= 23 for p < 0.05.
 expect_perf() { # expected-exit runs-file expected-output

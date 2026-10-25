@@ -160,7 +160,7 @@ func split(_ stroke: Stroke, by center: Point, radius: Double) -> [StrokePart] {
 ### 3.11 Tests
 
 - `TEST-01` New unit tests use Swift Testing (`import Testing`, `@Suite`, `@Test`, `#expect`, `#require`). XCTest is only for UI tests and performance tests.
-- `TEST-02` Each Tier A function that is not private has at least one test. Line coverage for each Tier A package is at least 90%. For Tier B it is at least 70%. Enforcement: CI reads the coverage report.
+- `TEST-02` Each Tier A function that is not private has at least one test. Line coverage for each Tier A package is at least 90%. For Tier B it is at least 70%. Enforcement: `Scripts/coverage.swift` reads the coverage report. It fails on a Tier A function that no test runs, except the message closures of `precondition` and `assert` and the entries of `Scripts/coverage-allow.txt`, each with its reason (D-174, D-187).
 - `TEST-03` Each bug fix comes with a test that fails before the fix.
 - `TEST-04` Tests are independent and can run in parallel. No shared mutable state. No real clock: inject a clock. No real file system in unit tests: use a temporary folder per test.
 - `TEST-05` Test names are sentences that state the behavior: `@Test("Erasing the middle of a stroke leaves two parts")`.

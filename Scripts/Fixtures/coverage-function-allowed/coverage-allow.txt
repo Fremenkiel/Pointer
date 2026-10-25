@@ -1,0 +1,2 @@
+# The fixture allows the one function without a test.
+$s8Geometry5ScaleO6scaledyS2d_SdtFZ # reason of the fixture

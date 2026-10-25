@@ -203,4 +203,27 @@ struct HistoryTests {
         #expect(rig.content.erased[second.id] == nil)
         #expect(rig.content.erased[first.id] != nil)
     }
+
+    @Test("A dropped step frees no stroke that a step of the redo list still holds (D-76)")
+    func redoStepHoldsStroke() throws {
+        var rig = CommandRig()
+        var history = History()
+        let stroke = Self.stroke(&rig, points: Self.points(2))
+        _ = try history.perform(
+            AddStroke(strokes: [stroke]),
+            on: &rig.content,
+            clock: &rig.factory.clock
+        )
+        _ = try history.perform(
+            EraseStrokes(removed: [stroke], parts: []),
+            on: &rig.content,
+            clock: &rig.factory.clock
+        )
+        _ = try history.undo(on: &rig.content, clock: &rig.factory.clock)
+        let redo = try #require(history.redoSteps.first)
+        // The budget keeps the erase on the redo list and drops the add from the undo list.
+        let dropped = history.dropOldest(toFit: redo.heldPointCount)
+        #expect(dropped.count == 1)
+        #expect(history.unheldStrokeIDs(of: dropped).isEmpty)
+    }
 }

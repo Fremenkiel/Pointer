@@ -1,0 +1,67 @@
+{
+ "data": [
+  {
+   "files": [
+    {
+     "filename": "/repo/Packages/Geometry/Sources/Geometry/A.swift",
+     "summary": {
+      "lines": {
+       "count": 100,
+       "covered": 90
+      }
+     }
+    },
+    {
+     "filename": "/repo/Packages/Geometry/Tests/GeometryTests/ATests.swift",
+     "summary": {
+      "lines": {
+       "count": 100,
+       "covered": 0
+      }
+     }
+    },
+    {
+     "filename": "/repo/.build/Geometry.build/DerivedSources/test_entry_point.swift",
+     "summary": {
+      "lines": {
+       "count": 10,
+       "covered": 0
+      }
+     }
+    }
+   ],
+   "functions": [
+    {
+     "name": "$s8Geometry5ScaleO6scaledyS2d_SdtFZ",
+     "count": 0,
+     "filenames": [
+      "/repo/Packages/Geometry/Sources/Geometry/A.swift"
+     ]
+    },
+    {
+     "name": "$s8Geometry5ScaleO6scaledyS2d_SdtFZSSyXEfu_",
+     "count": 0,
+     "filenames": [
+      "/repo/Packages/Geometry/Sources/Geometry/A.swift"
+     ]
+    },
+    {
+     "name": "$s8Geometry5ScaleO8identityyS2dFZ",
+     "count": 3,
+     "filenames": [
+      "/repo/Packages/Geometry/Sources/Geometry/A.swift"
+     ]
+    },
+    {
+     "name": "$s12GeometryTests1AV4testyyF",
+     "count": 0,
+     "filenames": [
+      "/repo/Packages/Geometry/Tests/GeometryTests/ATests.swift"
+     ]
+    }
+   ]
+  }
+ ],
+ "type": "llvm.coverage.json.export",
+ "version": "3.0.1"
+}
