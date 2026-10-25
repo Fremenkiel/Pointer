@@ -113,6 +113,73 @@ struct ItemBoundTests {
         await repository.close()
     }
 
+    /// The largest value from `start` on at which `fits` holds, by steps of one `Double`.
+    private static func lastFitting(from start: Double, _ fits: (Double) -> Bool) -> Double {
+        var value = start
+        // The rounding of the start is a few steps at most (FLOW-03).
+        var steps = 0
+        while !fits(value), steps < 64 {
+            value = value.nextDown
+            steps += 1
+        }
+        while fits(value.nextUp), steps < 128 {
+            value = value.nextUp
+            steps += 1
+        }
+        return value
+    }
+
+    @Test("A stroke exactly at the canvas bound loads, and one step past it is skipped (TEST-06)")
+    func strokeExactlyAtBound() async throws {
+        let limit = Limits.maxCanvasCoordinate
+        let stroke = Self.stroke(4, offset: 10)
+        let extent = stroke.bounds.maxX - stroke.origin.x
+        let last = Self.lastFitting(from: limit - extent) { x in
+            Stroke(
+                id: stroke.id,
+                canvasID: stroke.canvasID,
+                created: stroke.created,
+                origin: Point(x: x, y: 10),
+                width: stroke.width,
+                points: stroke.points
+            ).bounds.maxX <= limit
+        }
+        for (x, loads) in [(last, true), (last.nextUp, false)] {
+            let harness = try RepositoryHarness()
+            let repository = try await harness.open()
+            try await repository.send([.stroke(stroke)])
+            try await repository.saveNow()
+            let writer = try SQLiteConnection(path: harness.path, mode: .readWrite)
+            let update = try writer.prepare("UPDATE stroke SET origin_x = ?")
+            try update.bind(x, at: 1)
+            try LibraryStatements.run(update)
+            let content = try await repository.content(of: Values.canvas)
+            #expect((content.strokes.count == 1) == loads, "Origin \(x)")
+            await repository.close()
+        }
+    }
+
+    @Test("A card whose title reach ends exactly at the canvas bound loads (TEST-06, D-170)")
+    func cardTitleExactlyAtBound() async throws {
+        let limit = Limits.maxCanvasCoordinate
+        let card = try Values.card(3)
+        let reach = card.frame.size.width + Limits.cardTitleReach
+        let last = Self.lastFitting(from: limit - reach) { $0 + reach <= limit }
+        for (x, loads) in [(last, true), (last.nextUp, false)] {
+            let harness = try RepositoryHarness()
+            let repository = try await harness.open()
+            try await repository.send([.card(card)])
+            try await repository.saveNow()
+            let writer = try SQLiteConnection(path: harness.path, mode: .readWrite)
+            let update = try writer.prepare("UPDATE card SET x = ?")
+            try update.bind(x, at: 1)
+            try LibraryStatements.run(update)
+            let content = try await repository.content(of: Values.canvas)
+            #expect((content.cards.count == 1) == loads, "Frame origin \(x)")
+            await repository.close()
+        }
+    }
+
     /// A stroke at (10, 10) from its origin to `offset` points to the right.
     private static func stroke(_ byte: UInt8, offset: Float) -> Stroke {
         Stroke(

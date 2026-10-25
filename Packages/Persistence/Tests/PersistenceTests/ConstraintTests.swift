@@ -48,8 +48,12 @@ struct ConstraintTests {
     }
 
     @Test(
-        "A card is at least 64 by 48",
-        arguments: [(64.0, 48.0, true), (63.999, 48.0, false), (64.0, 47.999, false)]
+        "A card is at least the minimum size (TEST-06)",
+        arguments: [
+            (Limits.minCardWidth, Limits.minCardHeight, true),
+            (Limits.minCardWidth.nextDown, Limits.minCardHeight, false),
+            (Limits.minCardWidth, Limits.minCardHeight.nextDown, false),
+        ]
     )
     func cardSize(width: Double, height: Double, isAccepted: Bool) throws {
         let library = try TestLibrary()

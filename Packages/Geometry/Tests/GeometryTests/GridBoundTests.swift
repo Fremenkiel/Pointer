@@ -6,6 +6,10 @@ import Testing
 /// docs/m9-plan.md, D-158).
 @Suite("Grid cells per item")
 struct GridBoundTests {
+    /// The cell size of the grids of the app, `Limits.gridCellSize` of Model, which Geometry
+    /// does not import (TEST-06).
+    private static let cellSize = 512.0
+
     @Test(
         "The cell count follows the cells that the bounds touch",
         arguments: [
@@ -17,18 +21,18 @@ struct GridBoundTests {
         ]
     )
     func count(bounds: Rect, cells: Int) {
-        #expect(GridCell.count(covering: bounds, cellSize: 512) == cells)
+        #expect(GridCell.count(covering: bounds, cellSize: Self.cellSize) == cells)
     }
 
     @Test("A far item lands in the edge cells, so its count stays small")
     func farItem() {
         let far = Rect(origin: Point(x: 1e300, y: -1e300), size: Size(width: 1e299, height: 1))
-        #expect(GridCell.count(covering: far, cellSize: 512) == 1)
+        #expect(GridCell.count(covering: far, cellSize: Self.cellSize) == 1)
     }
 
     @Test("An item at the bound goes in and out of the grid")
     func atBound() {
-        var grid = SpatialGrid<Int>(cellSize: 512, maxCellsPerItem: 4)
+        var grid = SpatialGrid<Int>(cellSize: Self.cellSize, maxCellsPerItem: 4)
         let bounds = Rect(origin: Point(x: 10, y: 10), size: Size(width: 600, height: 600))
         grid.insert(1, bounds: bounds)
         #expect(grid.occupiedCellCount == 4)
@@ -40,7 +44,7 @@ struct GridBoundTests {
     @Test("An item one cell past the bound stops the program")
     func pastBound() async {
         await #expect(processExitsWith: .failure) {
-            var grid = SpatialGrid<Int>(cellSize: 512, maxCellsPerItem: 4)
+            var grid = SpatialGrid<Int>(cellSize: Self.cellSize, maxCellsPerItem: 4)
             grid.insert(
                 1,
                 bounds: Rect(origin: Point(x: 10, y: 10), size: Size(width: 1_100, height: 600))

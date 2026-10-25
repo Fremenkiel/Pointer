@@ -77,10 +77,13 @@ struct RecordTests {
     }
 
     @Test(
-        "A card is at least 64 by 48 canvas points with a finite frame",
+        "A card is at least the minimum size with a finite frame (TEST-06)",
         arguments: [
-            (64.0, 48.0, true), (63.9, 48.0, false), (64.0, 47.9, false), (0.0, 0.0, false),
-            (Double.infinity, 48.0, false), (64.0, Double.infinity, false),
+            (Limits.minCardWidth, Limits.minCardHeight, true),
+            (Limits.minCardWidth.nextDown, Limits.minCardHeight, false),
+            (Limits.minCardWidth, Limits.minCardHeight.nextDown, false), (0.0, 0.0, false),
+            (Double.infinity, Limits.minCardHeight, false),
+            (Limits.minCardWidth, Double.infinity, false),
         ]
     )
     func cardSize(width: Double, height: Double, isValid: Bool) throws {

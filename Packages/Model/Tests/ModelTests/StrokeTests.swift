@@ -118,4 +118,14 @@ struct StrokeTests {
         ).expanded(by: 1.5)
         #expect(stroke.bounds == expected)
     }
+
+    @Test("Points of one more than the limit stop at the precondition (TEST-06)")
+    func pastPointLimit() async {
+        await #expect(processExitsWith: .failure) {
+            let values = (0...Limits.maxPointsPerStroke).map {
+                InkPoint(x: Float($0), y: 0, force: 1, time: 0)
+            }
+            _ = InkPoints(values)
+        }
+    }
 }
