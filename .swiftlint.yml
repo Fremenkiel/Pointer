@@ -229,6 +229,13 @@ custom_rules:
     message: "A @discardableResult needs a documentation comment that gives the reason (D-174). Add the /// comment above it."
     severity: error
 
+  test_04_hooks_in_tests:
+    name: "TEST-04"
+    regex: '\b(afterTake|afterCameraLock|beforeCommit|beforeCheckpoint|beforeRename)\s*:\s*(?:\{|(?!nil\b|\1\b)[a-z_]\w*\s*[,)])'
+    included: ['Packages/[^/]+/Sources/', 'PointerApp/']
+    message: "Only the tests set a test hook (D-184). Pass nil, or forward the parameter of the same name."
+    severity: error
+
   flow_03_while_true:
     name: "FLOW-03"
     regex: '\bwhile\s+true\b'

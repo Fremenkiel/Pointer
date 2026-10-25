@@ -31,7 +31,8 @@ struct LoadingStateTests {
                     engine.isLoading,
                 ]
                 seen.values.withLock { $0.append(flags) }
-            }
+            },
+            afterCameraLock: nil
         )
     }
 

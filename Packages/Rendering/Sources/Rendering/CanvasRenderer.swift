@@ -49,19 +49,26 @@ public final class CanvasRenderer {
         configuration: RendererConfiguration = RendererConfiguration(),
         previews: (any PreviewSource)? = nil
     ) throws(RenderingError) {
-        try self.init(configuration: configuration, previews: previews, afterTake: nil)
+        try self.init(
+            configuration: configuration,
+            previews: previews,
+            afterTake: nil,
+            afterCameraLock: nil
+        )
     }
 
-    /// Makes a renderer as `init(configuration:previews:)` does, with a hook that runs on the
-    /// render thread between the take of the inbox and the apply of the frame. Only the tests
-    /// pass a hook (D-184).
+    /// Makes a renderer as `init(configuration:previews:)` does, with hooks for the tests (D-184).
+    /// `afterTake` runs on the render thread between the take of the inbox and the apply of the
+    /// frame. `afterCameraLock` runs after the inbox lock of a post that gave a waiting frame its
+    /// camera.
     ///
     /// - Precondition: The configuration values are positive.
     /// - Throws: `RenderingError` if the device has no GPU or a Metal object fails.
     init(
         configuration: RendererConfiguration,
         previews: (any PreviewSource)?,
-        afterTake: (@Sendable (RenderEngine) -> Void)?
+        afterTake: (@Sendable (RenderEngine) -> Void)?,
+        afterCameraLock: (@Sendable () -> Void)?
     ) throws(RenderingError) {
         precondition(
             configuration.instanceBudgetPerFrame > 0 && configuration.drawListCapacity > 0,
@@ -84,7 +91,8 @@ public final class CanvasRenderer {
                     MainActor.assumeIsolated { relay.renderer?.deliver(upTo: handoff) }
                 }
             },
-            afterTake: afterTake
+            afterTake: afterTake,
+            afterCameraLock: afterCameraLock
         )
         self.configuration = configuration
         self.relay = relay

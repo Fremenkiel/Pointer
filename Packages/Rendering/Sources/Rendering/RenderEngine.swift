@@ -33,6 +33,9 @@ final class RenderEngine: Sendable {
     /// Runs on the render thread after each frame took the inbox and before it applies the
     /// input. Only the tests set it (D-184).
     private let afterTake: (@Sendable (RenderEngine) -> Void)?
+    /// Runs on the posting thread after the inbox lock of a post that gave a waiting frame its
+    /// camera. Only the tests set it (D-184).
+    private let afterCameraLock: (@Sendable () -> Void)?
 
     /// Makes the engine on the system GPU.
     ///
@@ -42,7 +45,8 @@ final class RenderEngine: Sendable {
         previewSource: (any PreviewSource)? = nil,
         onCompleted: @escaping @Sendable (UInt64, Double) -> Void = { _, _ in },
         onPresented: @escaping @Sendable (UInt64) -> Void,
-        afterTake: (@Sendable (RenderEngine) -> Void)? = nil
+        afterTake: (@Sendable (RenderEngine) -> Void)? = nil,
+        afterCameraLock: (@Sendable () -> Void)? = nil
     ) throws(RenderingError) {
         let renderer = try FrameRenderer(
             configuration: configuration,
@@ -54,6 +58,7 @@ final class RenderEngine: Sendable {
         self.previewSource = previewSource
         previewRequestLimit = configuration.previewRequestLimit
         self.afterTake = afterTake
+        self.afterCameraLock = afterCameraLock
         assert(
             core.withLock { $0.resources.device === device },
             "The engine uses the GPU of its frames"
@@ -84,17 +89,23 @@ final class RenderEngine: Sendable {
         let (wake, signalsCamera) = inbox.withLock { box -> ((@Sendable () -> Void)?, Bool) in
             change(&box)
             let signalsCamera = box.isWaitingForCamera && box.hasNewCamera
-            if signalsCamera { box.isWaitingForCamera = false }
+            // The signal goes inside the lock. After the lock, a wait could time out and reset
+            // first, and the late signal would end the next wait at once (review after M8,
+            // section 3.2, item 4).
+            if signalsCamera {
+                box.isWaitingForCamera = false
+                cameraArrived.signal()
+            }
             guard box.isSleeping, let wake = box.wake else { return (nil, signalsCamera) }
             box.isSleeping = false
             return (wake, signalsCamera)
         }
-        if signalsCamera { cameraArrived.signal() }
+        if signalsCamera { afterCameraLock?() }
         wake?()
     }
 
     /// Waits up to `cameraWaitBudget` for a new camera if the camera moved in the last frame.
-    private func waitForCameraIfMoving() {
+    func waitForCameraIfMoving() {
         let waits = inbox.withLock { box in
             assert(!box.isWaitingForCamera, "Two frames wait for the camera at once")
             // A flight takes its camera from its closed form, not from the main thread (D-121).

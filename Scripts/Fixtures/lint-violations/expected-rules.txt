@@ -26,3 +26,4 @@ safe_10_sql_interpolation
 scope_02_final_class
 scope_04_private_property_wrappers
 style_03_raw_ui_values
+test_04_hooks_in_tests

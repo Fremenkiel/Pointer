@@ -45,6 +45,9 @@ public final class WorkspaceSelectorModel {
     public private(set) var message: WorkspaceMessage?
 
     @ObservationIgnored private let dependencies: Dependencies
+    /// The largest sort key that a create gave out. A second create during the await of the
+    /// first one takes a key after it, not the same key (review after M9, section 3.2, item 10).
+    @ObservationIgnored private var lastGivenKey: FractionalIndex?
 
     /// Makes a selector without workspaces. `start(lastWorkspace:)` loads them.
     public init(dependencies: Dependencies) {
@@ -88,14 +91,18 @@ public final class WorkspaceSelectorModel {
             return
         }
         do {
+            let last = [workspaces.last?.sortKey, lastGivenKey].compactMap { $0 }.max()
             let workspace = try Workspace(
                 id: dependencies.makeWorkspaceID(),
                 meta: RecordMeta(created: dependencies.makeTimestamp()),
                 title: title,
-                sortKey: try FractionalIndex.between(workspaces.last?.sortKey, nil)
+                sortKey: try FractionalIndex.between(last, nil)
             )
+            lastGivenKey = workspace.sortKey
             try await dependencies.repository.create(workspace)
-            workspaces.append(workspace)
+            // Another create can finish first, so the new row goes to the place of its key.
+            let place = workspaces.firstIndex { $0.sortKey > workspace.sortKey } ?? workspaces.count
+            workspaces.insert(workspace, at: place)
             open(workspace)
         } catch {
             message = WorkspaceMessage(error)
@@ -107,15 +114,16 @@ public final class WorkspaceSelectorModel {
     ///
     /// - Precondition: The selector lists the workspace.
     public func rename(_ id: WorkspaceID, to title: String) async {
-        guard let index = workspaces.firstIndex(where: { $0.id == id }) else {
+        guard let old = workspaces.first(where: { $0.id == id }) else {
             preconditionFailure("Workspace \(id) is not in the selector")
         }
         do {
-            let old = workspaces[index]
             let modified = dependencies.makeTimestamp()
             let meta = RecordMeta(created: old.meta.created, modified: modified, isDeleted: false)
             let renamed = try Workspace(id: id, meta: meta, title: title, sortKey: old.sortKey)
             try await dependencies.repository.rename(id, to: renamed.title, modified: modified)
+            // A delete during the await moves the rows, so the index comes after it.
+            guard let index = workspaces.firstIndex(where: { $0.id == id }) else { return }
             workspaces[index] = renamed
             if current?.id == id { current = renamed }
         } catch {

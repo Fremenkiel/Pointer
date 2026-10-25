@@ -751,3 +751,11 @@ A preview request that ends without an image now calls its completion on a queue
 ### 6.18 The parent image without a wait on the main actor (task 2.3)
 
 `giveParentImage` tries both frame locks with `Mutex.withLockIfAvailable` (SE-0433). If a frame holds one of them, a task tries again every 2 ms, up to 500 times. The two render threads never hold both locks, so the nested tries cannot deadlock. `ParentImageHandoffTests` holds the frame lock of the parent for 200 ms on another thread. With the old code, the call on the main actor took 0.203 s (`T-23-old.xcresult`). With the change, it returns in under 20 ms, and the child gets the image after the lock (`T-23-new.xcresult`, 17 of 17 tests of the flight suites).
+
+### 6.19 Races with a test hook (task 2.4)
+
+- The camera wait of `RenderEngine`: the post now signals inside the inbox lock. `CameraSignalTests` holds the post in the hook `afterCameraLock` until the waiting frame times out. With the old signal after the lock, the next wait ended after about 1 µs instead of 3 ms in 3 of 3 runs (`T-24-oldcam-*`). With the change, 5 of 5 runs pass (`T-24-cam-*`).
+- The selector: `rename` looks up its row after the await, and `create` takes a key after the largest key that it gave out and puts the row at the place of its key. `WorkspaceSelectorRaceTests` runs the jobs of a fake library on a gated executor (SE-0392). With the old model, a rename after a delete wrote over the wrong row (["Beta", "Renamed"]), and two creates got one key (`T-24-old.xcresult`).
+- The lint rule `test_04_hooks_in_tests` fails on a hook that the product code sets.
+
+Two faults of my own tests came up on the way. A last read of the fake library waited for a job that the gated executor kept, and a spin as a `for ... where` loop ran all its steps, because such a loop only skips its body. Xcode stopped the first after a test time allowance of 60 s, and its spindump showed the waiting task.

@@ -30,6 +30,13 @@ public struct Violations {
     @discardableResult
     func undocumented() -> Int { 1 }
 
+    /// A test hook that the product code sets (TEST-04, D-184).
+    func hooks(_ make: (_ afterTake: (() -> Void)?) -> Void, hook: (() -> Void)?) {
+        make(afterTake: { })
+        make(afterTake: hook)
+        make(afterTake: nil)
+    }
+
     /// Jumps that FLOW-02 and FLOW-03 ban.
     func flow(_ value: Int) -> Int {
         outer: for item in 0..<value {
