@@ -120,6 +120,33 @@ struct RepositoryLaunchTests {
         #expect(files.contains("keep.sqlite"))
     }
 
+    @Test("A launch that removes many tombstones starts a checkpoint (review after M8, 3.2.8)")
+    func checkpointAfterCleanup() async throws {
+        let harness = try RepositoryHarness()
+        _ = try await harness.open()
+        let writer = try SQLiteConnection(path: harness.path, mode: .readWrite)
+        try writer.execute(Self.tombstoneRows)
+        // 12,000 strokes of 4 KB under the old workspace: their delete fills more than
+        // `checkpointPages` pages of the WAL.
+        try writer.execute(
+            """
+            WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 12000)
+            INSERT INTO stroke SELECT randomblob(16), X'11', zeroblob(28), 0, 0, 2, 0, 0, 1, 1, 256,
+                zeroblob(4096) FROM n
+            """
+        )
+        try writer.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        let checkpoints = VersionList()
+        let repository = harness.make(
+            wallMillis: RepositoryHarness.now + 31 * Self.day,
+            beforeCheckpoint: { checkpoints.add(1, seen: 0) }
+        )
+        _ = try await repository.open { _ in }
+        await repository.waitForCheckpoint()
+        let pages = await repository.walPageCount
+        #expect(!checkpoints.values.isEmpty, "No checkpoint after a cleanup of \(pages) pages")
+    }
+
     @Test("A damaged library file gives a fault at the open and stays as it was (storage.md 9)")
     func damagedLibrary() async throws {
         let harness = try RepositoryHarness()

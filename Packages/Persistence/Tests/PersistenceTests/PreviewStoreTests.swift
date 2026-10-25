@@ -25,6 +25,21 @@ struct PreviewStoreTests {
         #expect(names == ["\(Self.canvas.rawValue.uuidString).png"])
     }
 
+    @Test("A failed rename reports the error number of the rename (review after M8, 3.2.11)")
+    func renameErrno() async throws {
+        let folder = try TemporaryFolder()
+        let (store, previews) = Self.store(folder)
+        // A folder with a file in it at the place of the preview makes the rename fail.
+        let target = previews.appending(path: Self.canvas.rawValue.uuidString)
+            .appendingPathExtension("png")
+        try FileManager().createDirectory(at: target, withIntermediateDirectories: true)
+        try Data([1]).write(to: target.appending(path: "inside"))
+        let reason = "cannot rename preview \(Self.canvas.rawValue), errno \(EISDIR)"
+        await #expect(throws: PersistenceError.fileFailed(reason: reason)) {
+            try await store.write(Data([1, 2, 3]), for: Self.canvas)
+        }
+    }
+
     @Test("A missing file reads as nil")
     func missing() async throws {
         let folder = try TemporaryFolder()

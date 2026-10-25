@@ -151,7 +151,9 @@ final class SQLiteConnection {
             &logPages,
             &copiedPages
         )
-        guard code != SQLITE_BUSY else { return .busy }
+        // The connection opens with extended result codes, so a busy code can carry more bits
+        // than SQLITE_BUSY. The primary code is the low byte (<https://sqlite.org/rescode.html>).
+        guard code & 0xFF != SQLITE_BUSY else { return .busy }
         try check(code, expected: SQLITE_OK)
         assert(copiedPages <= logPages, "A checkpoint copies at most the WAL")
         return copiedPages == logPages ? .complete : .partial

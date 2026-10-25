@@ -31,8 +31,11 @@ struct RowReader {
     /// - Throws: `PersistenceError.corruptRow` for NULL or a value that is not finite.
     mutating func double() throws(PersistenceError) -> Double {
         defer { column += 1 }
+        // The type of a column is undefined after a read converts it, so the NULL check comes
+        // first (<https://www.sqlite.org/c3ref/column_blob.html>).
+        guard !statement.isNull(at: column) else { throw corrupt("bad number") }
         let value = statement.double(at: column)
-        guard !statement.isNull(at: column), value.isFinite else { throw corrupt("bad number") }
+        guard value.isFinite else { throw corrupt("bad number") }
         return value
     }
 

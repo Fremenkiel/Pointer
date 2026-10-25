@@ -81,8 +81,10 @@ public actor PreviewStore {
         }
         guard rename(partial.path(percentEncoded: false), url.path(percentEncoded: false)) == 0
         else {
+            // The cleanup calls change errno, so the number of the rename is read first.
+            let code = errno
             removeDamaged(partial)
-            throw .fileFailed(reason: "cannot rename preview \(canvas.rawValue), errno \(errno)")
+            throw .fileFailed(reason: "cannot rename preview \(canvas.rawValue), errno \(code)")
         }
         assert(files.fileExists(atPath: url.path(percentEncoded: false)), "The preview is in place")
     }

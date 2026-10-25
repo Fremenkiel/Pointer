@@ -1,6 +1,7 @@
 import Foundation
 import SQLite3
 import Testing
+import os
 
 @testable import Persistence
 
@@ -11,6 +12,43 @@ struct SQLiteConnectionTests {
         let folder = try TemporaryFolder()
         let connection = try SQLiteConnection(path: folder.path("new.sqlite"), mode: .readWrite)
         try Self.expectLibrarySettings(connection)
+    }
+
+    @Test("A passive checkpoint reports busy while another connection holds the checkpoint lock")
+    func passiveCheckpointBusy() throws {
+        let folder = try TemporaryFolder()
+        let path = folder.path("busy.sqlite")
+        let writer = try SQLiteConnection(path: path, mode: .readWrite)
+        try writer.execute("CREATE TABLE item (value INTEGER) STRICT")
+        try writer.execute("INSERT INTO item VALUES (1)")
+        // A reader of an older snapshot makes a FULL checkpoint wait in its busy handler, and
+        // the waiting checkpoint holds the checkpoint lock
+        // (<https://sqlite.org/c3ref/wal_checkpoint_v2.html>).
+        let reader = try SQLiteConnection(path: path, mode: .readOnly)
+        try reader.execute("BEGIN")
+        _ = try reader.integer("SELECT count(*) FROM item")
+        try writer.execute("INSERT INTO item VALUES (2)")
+        let holder = try SQLiteConnection(path: path, mode: .readWrite)
+        let started = DispatchSemaphore(value: 0)
+        let ended = DispatchSemaphore(value: 0)
+        let failure = OSAllocatedUnfairLock<String?>(initialState: nil)
+        let thread = Thread {
+            started.signal()
+            do {
+                try holder.execute("PRAGMA wal_checkpoint(FULL)")
+            } catch {
+                failure.withLock { $0 = "\(error)" }
+            }
+            ended.signal()
+        }
+        thread.start()
+        started.wait()
+        Thread.sleep(forTimeInterval: 0.2)
+        let outcome = try writer.checkpointPassive()
+        try reader.execute("COMMIT")
+        ended.wait()
+        #expect(outcome == .busy)
+        #expect(failure.withLock { $0 } == nil, "The FULL checkpoint ends after the reader")
     }
 
     @Test("A database that opens again keeps its settings")

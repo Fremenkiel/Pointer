@@ -784,3 +784,15 @@ Each frame of a flight now marks the preview slot of the opened card as used, so
 
 - `RowChannel` finishes its stream in `deinit`, so a channel that goes without `finish()` frees its consumer and the library. `RowChannelTests` found the library alive with the old code (`T-26-old.xcresult`). A send after the end now also writes a log entry.
 - The close of a canvas cancels its export, the canvas forwards the cancel to the detached task of the PDF, and `PDFExporter` throws `ExportError.cancelled` at the next check. `ExportCancelTests` cancels an export of 200,000 handwriting strokes after 200 ms. The old export ended 14.23 s after the cancel with a whole PDF (`T-26b-old.xcresult`). The new one ends within 1 s with `.cancelled` (`T-26b-new.xcresult`).
+
+### 6.25 Persistence (task 2.7)
+
+| Item | Change | Test, result with the old code |
+|---|---|---|
+| M8 3.2.8 | The launch asks for a checkpoint after its cleanup | `RepositoryLaunchTests.checkpointAfterCleanup`: a cleanup of 12,000 old strokes left 1,657 WAL pages and no checkpoint |
+| M8 3.2.9 | `checkpointPassive` compares the primary result code | `SQLiteConnectionTests.passiveCheckpointBusy`: a passive checkpoint while a `FULL` checkpoint holds the lock reports busy. It passes on the old code too, because SQLite 3.50 gives the plain `SQLITE_BUSY` here. |
+| M8 3.2.10 | `RowReader.double()` checks for `NULL` first | `RowReaderTests`: passes on the old code too. SQLite 3.50 keeps the NULL type after the read, but the documentation leaves the type undefined after a conversion. |
+| M8 3.2.11 | `PreviewStore.write` keeps `errno` of the rename | `PreviewStoreTests.renameErrno`: the old code reported "errno 0" instead of `EISDIR` |
+| M9 3.2.11 | The busy path of the hard-limit checkpoint | `passiveCheckpointBusy` above. A writer cannot keep running while a blocking checkpoint holds the lock, so the test covers the start of the busy path at the connection. |
+
+The 160 tests of Persistence pass on the Mac.

@@ -162,6 +162,9 @@ public actor SQLiteLibraryRepository: LibraryRepository {
                     on: connection,
                     now: configuration.wallClock
                 )
+                // A large cleanup leaves a large WAL, so the launch asks for a checkpoint as a
+                // save does (review after M8, section 3.2, item 8).
+                checkpointIfNeeded()
             }
             lastTimestamp = try LibraryMaintenance.lastTimestamp(on: connection)
         } catch {
