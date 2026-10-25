@@ -28,7 +28,6 @@ struct StrokeSpline {
     /// - Precondition: `index` is in `-1...count`.
     func point(at index: Int) -> InkPoint {
         precondition(index >= -1 && index <= values.count, "Point index \(index) out of range")
-        assert(values.count >= 2, "A stroke holds \(values.count) points")
         if index == -1 { return Self.mirror(values[0], through: values[1]) }
         if index == values.count {
             return Self.mirror(values[values.count - 1], through: values[values.count - 2])
@@ -75,6 +74,10 @@ struct StrokeSpline {
     /// box that the point lies beyond. A segment misses the box if all 4 of its points lie beyond
     /// the same side.
     func segments(near box: Rect) -> [Int] {
+        precondition(
+            box.origin.isFinite && box.size.width.isFinite && box.size.height.isFinite,
+            "Segment query \(box) is not finite"
+        )
         let low = SIMD2<Float>(
             Float(box.minX - Self.boxMargin - stroke.origin.x),
             Float(box.minY - Self.boxMargin - stroke.origin.y)
@@ -96,7 +99,6 @@ struct StrokeSpline {
             if window.0 & window.1 & window.2 & next == 0 { result.append(segment) }
             window = (window.1, window.2, next)
         }
-        assert(result.count <= segmentCount, "More near segments than segments")
         return result
     }
 

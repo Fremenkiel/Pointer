@@ -28,7 +28,6 @@ public enum StrokeSplitter {
     ) -> [Stroke] {
         let shapes = shapes(of: stroke, outside: covered)
         let parts = shapes.map { finish($0, factory: &factory) }
-        assert(parts.count == shapes.count, "Each shape gives one part")
         return parts
     }
 
@@ -81,7 +80,6 @@ public enum StrokeSplitter {
             start = range.upperBound
         }
         if start < upper { result.append(start...upper) }
-        assert(result.count <= covered.count + 1, "More free ranges than gaps")
         return result
     }
 
@@ -122,7 +120,6 @@ public enum StrokeSplitter {
                 time: last.time - first.time
             )
         )
-        assert(result.count >= 2, "A part holds its two ends")
         return (first.position, result)
     }
 

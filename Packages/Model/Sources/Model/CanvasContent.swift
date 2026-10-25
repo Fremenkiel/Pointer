@@ -130,7 +130,6 @@ public struct CanvasContent: Sendable {
         for id in ids {
             erased.removeValue(forKey: id)
         }
-        assert(ids.allSatisfy { erased[$0] == nil }, "A forgotten record stayed")
     }
 
     /// Takes the erase records of the session back after a new load of the canvas, so that an
@@ -210,7 +209,6 @@ extension CanvasContent {
             log.removed.append((stroke, earlier))
             changes.append(.erase(record))
         }
-        assert(log.removed.count >= list.count, "The log holds each removed stroke")
     }
 
     /// Puts strokes back or adds them as `restore(_:at:ignoringLimit:)` does, without a limit
@@ -252,7 +250,6 @@ extension CanvasContent {
             log.restored.append((stroke.id, earlier))
             changes.append(.erase(tombstone))
         }
-        assert(log.restored.count >= list.count, "The log holds each restored stroke")
     }
 
     /// Takes back the changes of a failed step, in the reverse order.
@@ -265,7 +262,6 @@ extension CanvasContent {
             strokes[stroke.id] = stroke
             erased[stroke.id] = earlier
         }
-        assert(log.removed.allSatisfy { strokes[$0.stroke.id] != nil }, "A removal stayed")
     }
 }
 
@@ -293,7 +289,6 @@ extension CanvasContent {
     public mutating func removeTextBox(_ id: TextBoxID) -> TextBox {
         let removed = textBoxes.removeValue(forKey: id)
         guard let removed else { preconditionFailure("Canvas holds no live text box \(id)") }
-        assert(textBoxes[id] == nil, "The text box \(id) left the content")
         return removed
     }
 

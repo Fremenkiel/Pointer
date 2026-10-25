@@ -41,7 +41,6 @@ public struct StrokeFactory {
         let strokes = runs.map { run in
             makeStroke(Array(samples[run]), width: Float(width), canvasID: canvasID)
         }
-        assert(strokes.count == runs.count, "Each run gives one stroke")
         return strokes
     }
 
@@ -97,7 +96,6 @@ public struct StrokeFactory {
                 time: Float(sample.timeOffset - startTime)
             )
         }
-        assert(points.count == samples.count, "Each sample gives one point")
         return Stroke(
             id: identifiers.make(StrokeID.self),
             canvasID: canvasID,

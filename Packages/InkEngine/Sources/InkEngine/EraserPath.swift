@@ -51,7 +51,6 @@ public struct EraserPath: Sendable {
             grid.insert(index, bounds: bounds)
         }
         self.grid = grid
-        assert(grid.count == bandBounds.count, "Each band is in the grid")
     }
 
     /// Returns the indices of the bands whose bounds touch a rectangle, in ascending order.

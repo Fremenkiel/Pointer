@@ -29,7 +29,6 @@ public struct StrokeCurve: Sendable {
     /// - Precondition: `index` is in `-1...count`.
     public func extendedControlPoint(at index: Int) -> Point {
         let count = controlPoints.count
-        assert(count >= 2, "A curve holds \(count) control points")
         precondition(
             index >= -1 && index <= count,
             "Control point index \(index) out of -1...\(count)"
@@ -54,10 +53,6 @@ public struct StrokeCurve: Sendable {
         )
         let segment = min(Int(parameter), segmentCount - 1)
         let local = parameter - Double(segment)
-        assert(
-            segment >= 0 && segment < segmentCount,
-            "Segment \(segment) out of 0..<\(segmentCount)"
-        )
         return Self.evaluate(
             extendedControlPoint(at: segment - 1),
             extendedControlPoint(at: segment),

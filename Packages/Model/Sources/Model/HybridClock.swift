@@ -41,7 +41,6 @@ public struct HybridClock: Sendable {
             next = HybridTimestamp(wallMillis: last.wallMillis + 1, counter: 0, device: device)
         }
         assert(next > last, "Clock value \(next) is not greater than \(last)")
-        assert(next.device == device, "Clock value belongs to another device")
         last = next
         return next
     }

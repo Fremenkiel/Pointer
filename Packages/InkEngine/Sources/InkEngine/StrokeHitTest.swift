@@ -90,7 +90,6 @@ private struct Probe {
             )
         }
         nearBounds = near
-        assert(near.minX <= near.maxX && near.minY <= near.maxY, "The near bounds are inverted")
         assert(reach > path.radius, "The reach includes half the stroke width")
     }
 
@@ -135,7 +134,6 @@ private struct Probe {
             previous = parameter
             wasCovered = covered
         }
-        assert(steps >= 1, "A segment takes at least one step")
     }
 
     /// Returns the start of a range that opens at `parameter`. If the last range ends there, the
@@ -208,7 +206,6 @@ private struct Probe {
                 upper = middle
             }
         }
-        assert(lower <= upper, "Bisection lost its order")
         return startCovered ? upper : lower
     }
 }

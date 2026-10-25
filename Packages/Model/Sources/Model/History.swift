@@ -123,6 +123,10 @@ public struct History: Sendable {
     /// Returns the IDs of the strokes of `dropped` that no step of this history holds. Their
     /// session erase records can go (D-76).
     public func unheldStrokeIDs(of dropped: [any CanvasCommand]) -> [StrokeID] {
+        assert(
+            undoSteps.count + redoSteps.count <= Limits.maxHistoryDepth,
+            "History over its depth: \(undoSteps.count) + \(redoSteps.count) steps"
+        )
         guard !dropped.isEmpty else { return [] }
         // The dropped steps hold few strokes and the kept steps many, so only the dropped IDs
         // go into a set. On a full history with 4 erases of the D-69 size, a set of all held IDs
@@ -141,7 +145,6 @@ public struct History: Sendable {
         for step in dropped {
             step.forEachHeldStroke { if unheld.contains($0) { result.append($0) } }
         }
-        assert(result.count >= unheld.count, "Each unheld stroke is in the result")
         return result
     }
 }

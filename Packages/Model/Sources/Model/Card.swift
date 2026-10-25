@@ -70,8 +70,6 @@ public struct Card: Identifiable, Hashable, Sendable {
     public static func defaultFrame(at point: Point) -> Rect {
         precondition(point.isFinite, "The center of a new card must be finite, got \(point)")
         let frame = Rect(origin: point - defaultSize.halfDiagonal, size: defaultSize)
-        assert(frame.size.width >= Limits.minCardWidth, "The frame meets the card minimum")
-        assert(frame.size.height >= Limits.minCardHeight, "The frame meets the card minimum")
         return frame
     }
 
@@ -107,7 +105,6 @@ public struct Card: Identifiable, Hashable, Sendable {
             origin: frame.origin,
             title: title
         )
-        assert(copy.meta.isDeleted == isDeleted, "The copy has the asked tombstone flag")
         return copy
     }
 

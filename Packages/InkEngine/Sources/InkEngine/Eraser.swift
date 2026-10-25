@@ -58,7 +58,6 @@ public enum Eraser {
                 parts.append(StrokeSplitter.finish(shape, factory: &factory))
             }
         }
-        assert(cuts.count <= candidates.count, "More strokes removed than given")
         // Covered ink lies within the radius plus the width of the path, and the round end of
         // a part stays inside it too. The curve of a part also changes next to a cut (F-07).
         let width = cuts.map { Double($0.stroke.width) }.max() ?? 0
@@ -100,7 +99,6 @@ public enum Eraser {
             }
         }
         guard let area else { preconditionFailure("A cut changes the ink somewhere") }
-        assert(area.minX <= area.maxX && area.minY <= area.maxY, "The changed area is inverted")
         return area.expanded(by: half)
     }
 
@@ -122,10 +120,6 @@ public enum Eraser {
     /// `strokes`.
     private static func split(_ strokes: [Stroke], along path: EraserPath) -> [Cut] {
         let chunkCount = min(max(strokes.count / minimumChunk, 1), maxChunks)
-        precondition(
-            chunkCount >= 1 && chunkCount <= maxChunks,
-            "Chunk count \(chunkCount) invalid"
-        )
         let chunkSize = (strokes.count + chunkCount - 1) / max(chunkCount, 1)
         let results = OSAllocatedUnfairLock(initialState: [[Cut]](repeating: [], count: chunkCount))
         DispatchQueue.concurrentPerform(iterations: chunkCount) { chunk in

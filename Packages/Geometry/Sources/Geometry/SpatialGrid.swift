@@ -51,7 +51,6 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
         let lists = cells.values.reduce(0) { $0 + $1.storageByteCount }
         assert(lists >= boundsByID.count * MemoryLayout<Entry>.stride, "Each item is in a cell")
         let bytes = cells.storageByteCount + lists + boundsByID.storageByteCount
-        assert(bytes >= lists, "The grid holds its cell lists")
         return bytes
     }
 
@@ -64,7 +63,6 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     public mutating func reserveCapacity(_ count: Int) {
         precondition(count >= 0, "A grid reserves no negative count, got \(count)")
         boundsByID.reserveCapacity(count)
-        assert(boundsByID.capacity >= count, "The grid holds room for \(count) items")
     }
 
     /// Returns the bounds of an item, or `nil` if the grid does not hold it.
@@ -84,7 +82,6 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
             "Grid item \(id) touches \(range.cellCount) cells, more than \(maxCellsPerItem)"
         )
         boundsByID[id] = bounds
-        assert(range.cellCount >= 1, "Bounds of \(id) cover no cell")
         let entry = Entry(id: id, bounds: bounds)
         for row in range.rows {
             for column in range.columns {
@@ -113,7 +110,6 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
                 removeEntry(id, from: GridCell(column: column, row: row))
             }
         }
-        assert(boundsByID[id] == nil, "Grid still holds \(id) after the removal")
         return true
     }
 

@@ -22,7 +22,6 @@ extension CanvasContent {
     public mutating func removeCard(_ id: CardID) -> Card {
         let removed = cards.removeValue(forKey: id)
         guard let removed else { preconditionFailure("Canvas holds no live card \(id)") }
-        assert(cards[id] == nil, "The card \(id) left the content")
         return removed
     }
 

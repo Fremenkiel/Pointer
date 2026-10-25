@@ -80,7 +80,6 @@ public struct FractionalIndex: Hashable, Comparable, Sendable {
         let largest = alphabet.count - 1
         guard let index = low.firstIndex(where: { $0 < largest }) else { return low + [1] }
         let result = low.prefix(index) + [low[index] + 1]
-        assert(result.last != 0, "A key after \(low) ends with zero")
         return Array(result)
     }
 

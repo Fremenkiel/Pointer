@@ -82,7 +82,6 @@ public struct Stroke: Identifiable, Sendable {
     /// - Returns: A stroke equal to this one except for `id` and `created`.
     public func renamed(id: StrokeID, created: HybridTimestamp) -> Stroke {
         let copy = Stroke(copying: self, id: id, created: created)
-        assert(copy.bounds == bounds && copy.points === points, "A renamed stroke keeps its shape")
         return copy
     }
 

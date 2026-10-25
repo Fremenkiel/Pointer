@@ -6,9 +6,7 @@
 extension Array {
     /// The bytes of the element storage: the capacity times the stride of an element.
     public var storageByteCount: Int {
-        assert(capacity >= count, "An array holds its elements in its capacity")
         let bytes = capacity * MemoryLayout<Element>.stride
-        assert(bytes >= count * MemoryLayout<Element>.stride, "The storage holds each element")
         return bytes
     }
 }

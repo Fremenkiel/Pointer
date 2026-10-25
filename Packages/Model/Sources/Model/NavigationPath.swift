@@ -42,7 +42,6 @@ public struct NavigationPath: Hashable, Sendable {
     public func pushing(_ card: CardID) throws(ModelError) -> NavigationPath {
         guard canAddCard else { throw .depthLimitReached }
         let pushed = try NavigationPath(workspace: workspace, cards: cards + [card])
-        assert(pushed.level == level + 1, "A push adds one level")
         return pushed
     }
 

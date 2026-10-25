@@ -56,7 +56,6 @@ public struct AddStroke: CanvasCommand {
             }
             changes.append(tombstone.map(LibraryChange.erase) ?? .stroke(stroke))
         }
-        assert(changes.count == strokes.count, "Each stroke gives one row")
         return changes
     }
 
@@ -75,7 +74,6 @@ public struct AddStroke: CanvasCommand {
         let changes = strokes.map { stroke in
             LibraryChange.erase(content.remove(stroke.id, at: time))
         }
-        assert(changes.count == strokes.count, "Each stroke gives one erase record")
         return changes
     }
 }

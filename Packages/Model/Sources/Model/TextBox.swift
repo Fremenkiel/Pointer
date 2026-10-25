@@ -90,7 +90,6 @@ public struct TextBox: Identifiable, Hashable, Sendable {
             origin: origin,
             text: text
         )
-        assert(copy.meta.isDeleted == isDeleted, "The copy has the asked tombstone flag")
         return copy
     }
 }
