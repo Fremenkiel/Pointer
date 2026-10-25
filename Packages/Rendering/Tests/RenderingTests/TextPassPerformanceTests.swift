@@ -83,6 +83,7 @@ final class TextPassPerformanceTests: XCTestCase {
             median * 1e6 / Double(max(glyphs, 1))
         )
         XCTContext.runActivity(named: line) { _ in }
+        PerformanceRecord.attach(["pass.median.ms": median])
         XCTAssertLessThan(median, Self.budgetMilliseconds, line)
     }
 }

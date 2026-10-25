@@ -62,5 +62,7 @@ final class PreviewMakerPerformanceTests: XCTestCase {
             megabytes
         )
         XCTContext.runActivity(named: line) { _ in }
+        let key = name.contains("second") ? "second" : "first"
+        PerformanceRecord.attach(["\(key).s": seconds, "\(key)-peak.mb": megabytes])
     }
 }

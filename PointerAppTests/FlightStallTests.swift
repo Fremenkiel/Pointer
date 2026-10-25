@@ -44,7 +44,8 @@ final class FlightStallTests: XCTestCase {
             name: "an empty card, main thread blocked"
         )
         try await block.value
-        XCTContext.runActivity(named: open.text) { _ in }
+        let samples = OpenAnimationTests.flightSamples("open", late: open.late, held: open.held)
+        PerformanceRecord.attach(samples, line: open.text)
         // The late frame at place 0 of an open, as in D-125, also comes here in full runs. M10
         // traces it. The held frames stay strict.
         OpenAnimationTests.expectNoLateFrame(open.late, open.text, accepted: "D-125")
@@ -78,7 +79,8 @@ final class FlightStallTests: XCTestCase {
             name: "an empty card, main thread blocked"
         )
         try await block.value
-        XCTContext.runActivity(named: leave.text) { _ in }
+        let samples = OpenAnimationTests.flightSamples("leave", late: leave.late, held: leave.held)
+        PerformanceRecord.attach(samples, line: leave.text)
         XCTAssertEqual(leave.late, 0, leave.text)
         XCTAssertEqual(leave.held, 0, leave.text)
     }

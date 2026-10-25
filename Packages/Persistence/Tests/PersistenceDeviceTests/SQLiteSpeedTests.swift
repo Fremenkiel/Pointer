@@ -20,29 +20,53 @@ final class SQLiteSpeedTests: XCTestCase {
         #if targetEnvironment(simulator)
             throw XCTSkip("Storage times are valid on a device only.")
         #else
+            let operations = [
+                TimedOperation("write 1,000 in one transaction", "write-one") {
+                    try await Self.writeInOneTransaction($0, $1)
+                },
+                TimedOperation("write 1,000 in 1,000 transactions", "write-many") {
+                    try await Self.writeInManyTransactions($0, $1)
+                },
+                TimedOperation("read 1,000", "read") { try await Self.readRecords($0, $1) },
+                TimedOperation("save 5 changed", "save-changed") {
+                    try await Self.saveChanged($0, $1)
+                },
+                TimedOperation("write and read one stroke of 16,384 points", "large-stroke") {
+                    try await Self.largeStroke($0, $1)
+                },
+            ]
             var results: [String] = ["SQLite \(String(cString: sqlite3_libversion()))"]
-            results.append(
-                "write 1,000 in one transaction "
-                    + Self.format(try await Self.best(Self.writeInOneTransaction))
-            )
-            results.append(
-                "write 1,000 in 1,000 transactions "
-                    + Self.format(try await Self.best(Self.writeInManyTransactions))
-            )
-            results.append("read 1,000 " + Self.format(try await Self.best(Self.readRecords)))
-            results.append("save 5 changed " + Self.format(try await Self.best(Self.saveChanged)))
-            results.append(
-                "write and read one stroke of 16,384 points "
-                    + Self.format(try await Self.best(Self.largeStroke))
-            )
+            var samples: [String: Double] = [:]
+            for operation in operations {
+                let best = try await Self.best(operation.run)
+                results.append(operation.name + " " + Self.format(best))
+                samples["\(operation.key).best.ms"] = best
+            }
             let line = results.joined(separator: "; ")
             XCTContext.runActivity(named: line) { _ in }
+            PerformanceRecord.attach(samples)
         #endif
     }
 
     /// Returns the best time of `runs` runs, in milliseconds. Each run gets a new library.
+    /// One timed operation on a new library.
+    private typealias Operation = (SQLiteLibraryRepository, CanvasID) async throws -> Duration
+
+    /// An operation with its name in the report and its sample key (D-172).
+    private struct TimedOperation {
+        let name: String
+        let key: String
+        let run: Operation
+
+        init(_ name: String, _ key: String, _ run: @escaping Operation) {
+            self.name = name
+            self.key = key
+            self.run = run
+        }
+    }
+
     private static func best(
-        _ run: (SQLiteLibraryRepository, CanvasID) async throws -> Duration
+        _ run: Operation
     ) async throws -> Double {
         var best = Double.infinity
         for _ in 0..<runs {

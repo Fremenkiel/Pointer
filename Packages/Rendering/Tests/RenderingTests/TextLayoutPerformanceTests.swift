@@ -24,5 +24,6 @@ final class TextLayoutPerformanceTests: XCTestCase {
         let sorted = times.sorted()
         let line = String(format: "text layout of 5,000 boxes: median %.1f ms", sorted[2])
         XCTContext.runActivity(named: line) { _ in }
+        PerformanceRecord.attach(["layout.median.ms": sorted[2]])
     }
 }

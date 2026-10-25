@@ -604,3 +604,9 @@ The change touches `Rendering`, so four alternating pairs of `EraseUndoPerforman
 | Redo, slowest | 23.83 ms | 24.02 ms | +0.8 % |
 
 The allocation tests of a frame, an open frame, and a flight frame stayed at 15, equal to the bare frame (`T-02-render.xcresult`).
+
+### 6.3 The samples and the compare (task 0.3)
+
+Each performance test of section 2.1 now attaches its samples through `PerformanceRecord`. `RenderingPerformanceTests` times its passes with `ContinuousClock`, so a throw fails the test (M9 3.4.4). One run of the 24 performance suites alone gave 180 samples in 317 s: 127 times that the compare gates and 53 memory sizes and counts that it records (`.build/Perf/probe-1.xcresult`). A compare of that run with itself passed with exit code 0.
+
+`Scripts/perf.swift` gives the exact two-sided p of the Mann-Whitney test at the critical values of the published table for 10 runs against 10: U = 16 gives p 0.0089 and U = 17 gives 0.011, U = 23 gives 0.043 and U = 24 gives 0.052. The self-test runs six cases: the same code, a slower time, U = 16, U = 23 (exit code 3), a missing time, and a recorded memory peak.

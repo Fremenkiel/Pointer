@@ -73,6 +73,29 @@ expect 1 coverage.swift coverage-low "TEST-02 Geometry: 89.00 % (89 of 100 lines
     "TEST-02 Rendering: 69.00 % (69 of 100 lines) is below 70 %" \
     "TEST-02 Export: 69.00 % (69 of 100 lines) is below 70 %"
 expect 1 coverage.swift coverage-missing "TEST-02 Rendering: no report at"
+# The compare of performance samples (D-172, D-177). The critical U values of 10 runs against
+# 10 come from the published two-tailed tables: U <= 16 for p < 0.01, U <= 23 for p < 0.05.
+expect_perf() { # expected-exit runs-file expected-output
+    cp -R Scripts/Fixtures/perf "$work/perf"
+    swift Scripts/perf.swift record --output "$work/perf/baseline.json" --commit fixture \
+        --device fixture --os fixture --xcode fixture "$work/perf/base-runs.json" > /dev/null
+    swift Scripts/perf.swift compare --baseline "$work/perf/baseline.json" "$work/perf/$2" \
+        > "$work/perf-$2.log" 2>&1
+    actual=$?
+    rm -rf "$work/perf"
+    if [ "$actual" -ne "$1" ] || ! grep -q -- "$3" "$work/perf-$2.log"; then
+        fail "perf.swift on $2 exits with $actual, expected $1 and \"$3\"." "$work/perf-$2.log"
+        return
+    fi
+    echo "pass: perf.swift on $2 exits with $actual"
+}
+
+expect_perf 0 same.json "pass: A/t.ms: base 10.45, new 10.5, +0.5 %"
+expect_perf 1 slow.json "fail: A/t.ms: base 10.45, new 11.85, +13.4 %, p 1.1e-05"
+expect_perf 1 critical-16.json "fail: A/t.ms: base 10.45, new 12.25, +17.2 %, p 0.0089"
+expect_perf 3 unsure.json "unsure: A/t.ms: base 10.45, new 12.15, +16.3 %, p 0.043"
+expect_perf 1 missing.json "missing: A/t.ms: missing in the new runs"
+expect_perf 1 slow.json "recorded: A/peak.mb: base 104.5, new 204.5"
 expect_lint lint-violations
 expect_lint lint-pdf-context
 expect_lint lint-clean

@@ -48,6 +48,27 @@ struct FrameLoopReport: CustomStringConvertible {
             + "allocations \(Self.summary(allocations))"
     }
 
+    /// The samples of the run for the baseline compare (D-172, D-177). Late frames and uncovered
+    /// frames are counts, which the compare records without a gate.
+    var samples: [String: Double] {
+        [
+            "main.p99.ms": Self.percentile(mainThread, 0.99),
+            "render.p50.ms": Self.percentile(renderThread, 0.5),
+            "render.p99.ms": Self.percentile(renderThread, 0.99),
+            "gpu.p50.ms": Self.percentile(gpu, 0.5),
+            "gpu.p99.ms": Self.percentile(gpu, 0.99),
+            "late.count": Double(lateIntervals),
+            "uncovered.count": Double(uncoveredFrames),
+        ]
+    }
+
+    /// Returns the value at `fraction` of the sorted values, as `summary` takes it, or 0.
+    static func percentile(_ values: [Double], _ fraction: Double) -> Double {
+        guard !values.isEmpty else { return 0 }
+        let sorted = values.sorted()
+        return sorted[min(sorted.count - 1, Int(Double(sorted.count - 1) * fraction))]
+    }
+
     /// Returns the mean, the median, the 99th percentile, and the largest value.
     static func summary(_ values: [Double]) -> String {
         guard !values.isEmpty else { return "none" }

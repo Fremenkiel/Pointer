@@ -49,13 +49,14 @@ final class PreviewsAfterRestoreTests: XCTestCase {
         }
         try await task.value
         let seconds = start.duration(to: clock.now) / .seconds(1)
+        let peak = Double(available - min(available, lowest)) / 1_048_576
         let line = String(
             format: "previews of %d cards after a restore: %.2f s, %.1f ms each, peak %.0f MB",
             count,
             seconds,
             seconds * 1_000 / Double(count),
-            Double(available - min(available, lowest)) / 1_048_576
+            peak
         )
-        XCTContext.runActivity(named: line) { _ in }
+        PerformanceRecord.attach(["previews.s": seconds, "peak.mb": peak], line: line)
     }
 }

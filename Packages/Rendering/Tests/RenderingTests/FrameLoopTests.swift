@@ -113,6 +113,9 @@ final class FrameLoopTests: XCTestCase {
             report.description
         )
         XCTContext.runActivity(named: line) { _ in }
+        var samples = report.samples
+        samples["preview.ms"] = (end - begin) * 1000
+        PerformanceRecord.attach(samples)
         XCTAssertGreaterThan(end, begin, "The preview arrived in the measured time")
         XCTAssertEqual(report.lateIntervals, 0, line)
     }
@@ -144,6 +147,7 @@ final class FrameLoopTests: XCTestCase {
         let probe = FrameLoopProbe(renderer: renderer, view: view, motion: motion, start: start)
         let report = probe.run()
         XCTContext.runActivity(named: "\(name): \(report)") { _ in }
+        PerformanceRecord.attach(report.samples)
         // The previews of the cards load during the run. They end before the next test.
         for _ in 0..<5_000 where renderer.isLoadingPreviews {
             RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.001))

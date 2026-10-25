@@ -95,6 +95,7 @@ final class ExportPerformanceTests: XCTestCase {
             Double(data.count) / 1_048_576
         )
         XCTContext.runActivity(named: line) { _ in }
+        PerformanceRecord.attach(["export.s": seconds, "peak.mb": megabytes])
         guard let budget else { return }
         XCTAssertLessThanOrEqual(seconds, budget, line)
     }

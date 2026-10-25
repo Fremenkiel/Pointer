@@ -45,7 +45,7 @@ final class PointArenaPerformanceTests: XCTestCase {
                 arena.buffers.count,
                 largestFootprint >> 20
             )
-            XCTContext.runActivity(named: line) { _ in }
+            PerformanceRecord.attach(["upload.slowest.ms": slowest], line: line)
             XCTAssertLessThanOrEqual(slowest, Self.maxUploadMilliseconds, line)
             XCTAssertLessThanOrEqual(
                 largestFootprint,
@@ -83,6 +83,7 @@ final class PointArenaPerformanceTests: XCTestCase {
                 arena.footprint >> 20
             )
             XCTContext.runActivity(named: line) { _ in }
+            PerformanceRecord.attach(["eviction.slowest.ms": slowest])
             XCTAssertLessThan(slowest, Self.maxEvictionMilliseconds, line)
             XCTAssertEqual(missing, 0, line)
         #endif

@@ -46,6 +46,21 @@ final class BackupBudgetTests: XCTestCase {
             try await repository.restore(from: checked, stop: RestoreStop())
             await importer.discard(checked)
         }
+        let line = Self.report(backUp: backUp, restore: restore)
+        XCTAssertLessThanOrEqual(backUp.seconds, Self.backUpBudgetSeconds, line)
+        XCTAssertLessThanOrEqual(restore.seconds, Self.restoreBudgetSeconds, line)
+        XCTAssertLessThanOrEqual(backUp.megabytes, Self.memoryBudgetMegabytes, line)
+        XCTAssertLessThanOrEqual(restore.megabytes, Self.memoryBudgetMegabytes, line)
+        _ = try await repository.open { _ in }
+    }
+
+    /// Writes the times and the memory of both as an activity and as samples (D-172).
+    ///
+    /// - Returns: The line of the activity.
+    private static func report<First, Second>(
+        backUp: Measure<First>,
+        restore: Measure<Second>
+    ) -> String {
         let line = String(
             format: "D-56 back up now: %.3f s, peak memory %.0f MB; restore: %.3f s, %.0f MB",
             backUp.seconds,
@@ -54,11 +69,13 @@ final class BackupBudgetTests: XCTestCase {
             restore.megabytes
         )
         XCTContext.runActivity(named: line) { _ in }
-        XCTAssertLessThanOrEqual(backUp.seconds, Self.backUpBudgetSeconds, line)
-        XCTAssertLessThanOrEqual(restore.seconds, Self.restoreBudgetSeconds, line)
-        XCTAssertLessThanOrEqual(backUp.megabytes, Self.memoryBudgetMegabytes, line)
-        XCTAssertLessThanOrEqual(restore.megabytes, Self.memoryBudgetMegabytes, line)
-        _ = try await repository.open { _ in }
+        PerformanceRecord.attach([
+            "back-up.s": backUp.seconds,
+            "back-up-peak.mb": backUp.megabytes,
+            "restore.s": restore.seconds,
+            "restore-peak.mb": restore.megabytes,
+        ])
+        return line
     }
 
     /// The time, the peak memory growth, and the result of `body` after steady memory.

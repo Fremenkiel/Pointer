@@ -23,6 +23,7 @@ extension OpenAnimationTests {
             name: "an empty card"
         )
         XCTContext.runActivity(named: open.text) { _ in }
+        var samples = Self.flightSamples("open", late: open.late, held: open.held)
         // The product owner accepted 1 late frame at the start of this flight in full runs
         // (m6-fix-plan.md section 6.6). M10 traces it (D-125).
         Self.expectNoLateFrame(open.late, open.text, accepted: "D-125")
@@ -34,6 +35,8 @@ extension OpenAnimationTests {
             name: "an empty card"
         )
         XCTContext.runActivity(named: leave.text) { _ in }
+        samples.merge(Self.flightSamples("leave", late: leave.late, held: leave.held)) { $1 }
+        PerformanceRecord.attach(samples)
         // The first frames of a leave wait for the driver to wire new memory, and under the load
         // of a full run one of them can miss (D-137). M10 traces the rest of the wait.
         Self.expectNoLateFrame(leave.late, leave.text, accepted: "D-137")

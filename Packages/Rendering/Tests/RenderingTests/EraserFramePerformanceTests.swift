@@ -81,7 +81,8 @@ final class EraserFramePerformanceTests: XCTestCase {
                 median(gpu),
                 gpu.max() ?? 0
             )
-            XCTContext.runActivity(named: line) { _ in }
+            let samples = ["cpu.p50.ms": median(cpu), "gpu.p50.ms": median(gpu)]
+            PerformanceRecord.attach(samples, line: line)
             XCTAssertLessThan(median(cpu), 3, line)
             XCTAssertLessThan(median(gpu), 4, line)
         #endif

@@ -50,6 +50,9 @@ final class SnapshotPerformanceTests: XCTestCase {
                 Self.summary(saveTimes)
             )
             XCTContext.runActivity(named: line) { _ in }
+            var samples = Self.samples(saveTimes)
+            samples["snapshot.ms"] = snapshotTime
+            PerformanceRecord.attach(samples)
             XCTAssertGreaterThan(saveTimes.count, 0, line)
             XCTAssertLessThanOrEqual(saveTimes.max() ?? 0, Self.saveBudgetMilliseconds, line)
         #endif
@@ -71,12 +74,24 @@ final class SnapshotPerformanceTests: XCTestCase {
             }
             let line = "no snapshot: saves: " + Self.summary(saveTimes)
             XCTContext.runActivity(named: line) { _ in }
+            PerformanceRecord.attach(Self.samples(saveTimes))
             XCTAssertLessThanOrEqual(saveTimes.max() ?? 0, Self.saveBudgetMilliseconds, line)
         #endif
     }
 
     /// Returns the median, the 99th percentile, the slowest time with its index, and the count
     /// of slow saves.
+    /// The median, the 99th percentile, and the slowest save, for the baseline (D-172).
+    private static func samples(_ times: [Double]) -> [String: Double] {
+        let sorted = times.sorted()
+        guard let slowest = sorted.last else { return [:] }
+        return [
+            "save.median.ms": sorted[sorted.count / 2],
+            "save.p99.ms": sorted[min(sorted.count - 1, Int(Double(sorted.count - 1) * 0.99))],
+            "save.slowest.ms": slowest,
+        ]
+    }
+
     private static func summary(_ times: [Double]) -> String {
         let sorted = times.sorted()
         guard let slowest = sorted.last, let index = times.firstIndex(of: slowest) else {

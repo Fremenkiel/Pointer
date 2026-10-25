@@ -1,0 +1,52 @@
+[
+ {
+  "A/t.ms": 11.4,
+  "A/peak.mb": 200,
+  "A/late.count": 3
+ },
+ {
+  "A/t.ms": 11.5,
+  "A/peak.mb": 201,
+  "A/late.count": 3
+ },
+ {
+  "A/t.ms": 11.6,
+  "A/peak.mb": 202,
+  "A/late.count": 3
+ },
+ {
+  "A/t.ms": 11.700000000000001,
+  "A/peak.mb": 203,
+  "A/late.count": 3
+ },
+ {
+  "A/t.ms": 11.8,
+  "A/peak.mb": 204,
+  "A/late.count": 3
+ },
+ {
+  "A/t.ms": 11.9,
+  "A/peak.mb": 205,
+  "A/late.count": 3
+ },
+ {
+  "A/t.ms": 12.0,
+  "A/peak.mb": 206,
+  "A/late.count": 3
+ },
+ {
+  "A/t.ms": 12.1,
+  "A/peak.mb": 207,
+  "A/late.count": 3
+ },
+ {
+  "A/t.ms": 12.200000000000001,
+  "A/peak.mb": 208,
+  "A/late.count": 3
+ },
+ {
+  "A/t.ms": 12.3,
+  "A/peak.mb": 209,
+  "A/late.count": 3
+ }
+]

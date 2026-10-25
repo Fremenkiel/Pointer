@@ -458,4 +458,8 @@ If the user reaches a limit, the app shows a short message. It never crashes and
 | Previews of a screen of cards after a restore | Recorded, no budget (D-157) | `PreviewsAfterRestoreTests`: 100 offscreen previews of children with 2,000 strokes, with one `PreviewMaker` |
 | Erase, undo, or redo of 1,000 strokes in one gesture | Under 33 ms, 16 ms as a goal (D-75) | `EraseUndoPerformanceTests`: from the lift or the call until the GPU completes the first frame that holds the result (D-74) |
 
-Performance tests run on a real iPad. If a measure is more than 10% worse than its baseline, the test fails.
+Performance tests run on a real iPad. Each budget above is a hard limit in its test.
+
+Each performance test also writes its samples to the result bundle through `PerformanceRecord` (D-172). One run is one new process of the performance suites alone (D-177). `make perf-baseline` runs 10 runs and writes the baseline file of the iPad model to `Performance/Baselines/`. `make perf-compare` runs 10 new runs and compares the median of each time with a two-sided Mann-Whitney test (`Scripts/perf.swift`). A time fails if its median is more than 10 % worse than the baseline and p < 0.01. With p from 0.01 to 0.05, the target adds 10 runs and compares again. A memory peak and a count are recorded without a gate, and the allocation tests keep their hard limits. The baseline file changes only by a commit that the product owner approves, and again after an update of iPadOS or Xcode.
+
+The compare has a limit of detection. In a simulation of 10,000 trials with 10 runs against 10, a change of exactly 10 % failed in 15 to 49 % of the trials, for a spread (CV) of 12 % to 5 %. A change of 20 % failed in 64 to 100 %. The false alarms stayed at or below 0.3 % per sample. The medians of erase, undo, and redo spread by 6 to 10 %, so the compare finds about 20 % there. See D-177.

@@ -66,7 +66,8 @@ final class OpenAnimationTests: XCTestCase {
         try await Self.waitForDrawn(parent)
         let card = try XCTUnwrap(Self.cardNearestToCenter(of: parent))
         let open = try await Self.measureOpen(of: card, from: parent, in: composition)
-        XCTContext.runActivity(named: open.text) { _ in }
+        let samples = Self.flightSamples("open", late: open.late, held: open.held)
+        PerformanceRecord.attach(samples, line: open.text)
         XCTAssertEqual(open.late, 0, open.text)
         XCTAssertEqual(open.child.camera.zoom, Limits.standardZoom)
     }
@@ -139,7 +140,8 @@ final class OpenAnimationTests: XCTestCase {
         let child = try await Self.waitForCanvas(card.childCanvasID, in: composition)
         try await Self.waitForDrawn(child)
         let line = try await Self.measureLeave(of: child, card: card, in: composition)
-        XCTContext.runActivity(named: line.text) { _ in }
+        let samples = Self.flightSamples("leave", late: line.late, held: line.held)
+        PerformanceRecord.attach(samples, line: line.text)
         // The first frames of a leave wait for the driver to wire new memory, and under the load
         // of a full run one of them can miss (D-137). M10 traces the rest of the wait.
         Self.expectNoLateFrame(line.late, line.text, accepted: "D-137")

@@ -66,6 +66,7 @@ final class CanvasLifetimeTests: XCTestCase {
             Self.rounds
         )
         XCTContext.runActivity(named: text) { _ in }
+        PerformanceRecord.attach(["growth.mb": grown])
         XCTAssertLessThan(grown, Self.growthLimitMegabytes, text)
     }
 

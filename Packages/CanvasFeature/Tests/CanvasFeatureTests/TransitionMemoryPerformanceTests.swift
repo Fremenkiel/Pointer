@@ -26,6 +26,12 @@ final class TransitionMemoryPerformanceTests: XCTestCase {
             measure.isParentFreed ? "yes" : "no"
         )
         XCTContext.runActivity(named: line) { _ in }
+        PerformanceRecord.attach([
+            "parent-held.mb": measure.parentHeldMegabytes,
+            "open-peak.mb": measure.openPeakMegabytes,
+            "open-held.mb": measure.heldAfterOpenMegabytes,
+            "leave-peak.mb": measure.leavePeakMegabytes,
+        ])
         XCTAssertTrue(measure.isParentFreed, "The closed parent screen stays in memory")
         XCTAssertLessThanOrEqual(measure.openPeakMegabytes, Self.openBudgetMegabytes, line)
         XCTAssertLessThanOrEqual(measure.leavePeakMegabytes, Self.leaveBudgetMegabytes, line)

@@ -1,0 +1,52 @@
+[
+ {
+  "A/t.ms": 10.0,
+  "A/peak.mb": 100,
+  "A/late.count": 0
+ },
+ {
+  "A/t.ms": 10.1,
+  "A/peak.mb": 101,
+  "A/late.count": 0
+ },
+ {
+  "A/t.ms": 10.2,
+  "A/peak.mb": 102,
+  "A/late.count": 0
+ },
+ {
+  "A/t.ms": 10.3,
+  "A/peak.mb": 103,
+  "A/late.count": 0
+ },
+ {
+  "A/t.ms": 10.4,
+  "A/peak.mb": 104,
+  "A/late.count": 0
+ },
+ {
+  "A/t.ms": 10.5,
+  "A/peak.mb": 105,
+  "A/late.count": 0
+ },
+ {
+  "A/t.ms": 10.6,
+  "A/peak.mb": 106,
+  "A/late.count": 0
+ },
+ {
+  "A/t.ms": 10.7,
+  "A/peak.mb": 107,
+  "A/late.count": 0
+ },
+ {
+  "A/t.ms": 10.8,
+  "A/peak.mb": 108,
+  "A/late.count": 0
+ },
+ {
+  "A/t.ms": 10.9,
+  "A/peak.mb": 109,
+  "A/late.count": 0
+ }
+]

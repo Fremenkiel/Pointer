@@ -46,6 +46,10 @@ final class StrokeStoreMemoryTests: XCTestCase {
             content.count
         )
         XCTContext.runActivity(named: line) { _ in }
+        PerformanceRecord.attach([
+            "store.mb": Double(storeBytes) / Double(1 << 20),
+            "heap.mb": Double(heapBytes) / Double(1 << 20),
+        ])
         XCTAssertLessThanOrEqual(storeBytes, Self.maxStoreBytes, line)
         XCTAssertEqual(store.count, content.count)
     }

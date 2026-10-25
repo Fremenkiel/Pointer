@@ -47,6 +47,10 @@ final class DeviceStatePerformanceTests: XCTestCase {
                 times.count
             )
             XCTContext.runActivity(named: line) { _ in }
+            PerformanceRecord.attach([
+                "read.median.ms": times[times.count / 2],
+                "read.slowest.ms": times.last ?? 0,
+            ])
         #endif
     }
 

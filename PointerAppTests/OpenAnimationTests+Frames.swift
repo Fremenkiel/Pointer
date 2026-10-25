@@ -12,6 +12,12 @@ extension OpenAnimationTests {
         let held: Int
     }
 
+    /// The late and the held frames of a flight as samples, which the compare records without a
+    /// gate (D-172, D-177).
+    static func flightSamples(_ flight: String, late: Int, held: Int) -> [String: Double] {
+        ["\(flight)-late.count": Double(late), "\(flight)-held.count": Double(held)]
+    }
+
     /// The late frames of the child and the places of the late frames of the parent, for a
     /// report line: "(child late 1 of 8.3 20.1, parent late at 2:16.7)".
     static func lateDetail(child: FrameLoopReport, parent: FrameLoopReport) -> String {

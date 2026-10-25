@@ -23,6 +23,10 @@ final class CanvasMemoryPerformanceTests: XCTestCase {
             open.peakMegabytes
         )
         XCTContext.runActivity(named: line) { _ in }
+        PerformanceRecord.attach([
+            "held.mb": open.heldMegabytes,
+            "peak.mb": open.peakMegabytes,
+        ])
         XCTAssertLessThanOrEqual(open.peakMegabytes, Self.budgetMegabytes, line)
     }
 }

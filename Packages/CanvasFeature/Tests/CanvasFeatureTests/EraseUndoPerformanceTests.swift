@@ -72,6 +72,14 @@ final class EraseUndoPerformanceTests: XCTestCase {
         let steps = ["erase", "undo", "redo"].map { report(times[$0] ?? [], name: $0) }
         // A failure names all three steps, so one run gives the whole result (m4-fix-plan.md 0.1).
         let summary = steps.map(\.line).joined(separator: "; ")
+        var samples: [String: Double] = [:]
+        for name in ["empty change", "erase", "undo", "redo"] {
+            let values = (times[name] ?? []).sorted()
+            let key = name == "empty change" ? "empty" : name
+            samples["\(key).median.ms"] = PerformanceRecord.median(values) ?? 0
+            samples["\(key).slowest.ms"] = values.last ?? 0
+        }
+        PerformanceRecord.attach(samples)
         XCTContext.runActivity(named: "steps: " + summary) { _ in }
         for (slowest, _) in steps {
             XCTAssertLessThan(slowest, Self.budgetMilliseconds, summary)

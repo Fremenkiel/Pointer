@@ -103,6 +103,10 @@ final class LibrarySavePerformanceTests: XCTestCase {
             times.count
         )
         XCTContext.runActivity(named: line) { _ in }
+        PerformanceRecord.attach([
+            "save.median.ms": times[times.count / 2],
+            "save.slowest.ms": times.last ?? 0,
+        ])
         return line
     }
 }

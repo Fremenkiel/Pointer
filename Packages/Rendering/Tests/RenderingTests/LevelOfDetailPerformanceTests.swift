@@ -66,6 +66,7 @@ final class LevelOfDetailPerformanceTests: XCTestCase {
             // warms it up.
             _ = medianTime(rig: rig, slots: slots, target: target)
             var reference: [UInt8]?
+            var samples: [String: Double] = [:]
             for (spacing, usesSmoothPieces) in Self.variants {
                 rig.encoder.minimumPixelSpacing = spacing
                 rig.encoder.usesSmoothPieces = usesSmoothPieces
@@ -85,8 +86,11 @@ final class LevelOfDetailPerformanceTests: XCTestCase {
                     difference
                 )
                 XCTContext.runActivity(named: line) { _ in }
+                let smooth = usesSmoothPieces ? "-smooth" : ""
+                samples[String(format: "spacing-%.2f%@.gpu.ms", spacing, smooth)] = time
                 XCTAssertLessThanOrEqual(difference, Self.maxDifference, line)
             }
+            PerformanceRecord.attach(samples)
         #endif
     }
 

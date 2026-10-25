@@ -41,6 +41,7 @@ final class TextHitTestPerformanceTests: XCTestCase {
         let elapsed = (CACurrentMediaTime() - start) * 1_000
         let line = String(format: "first tap below 10,000 stacked boxes: %.2f ms", elapsed)
         XCTContext.runActivity(named: line) { _ in }
+        PerformanceRecord.attach(["first-tap.ms": elapsed])
         XCTAssertNil(hit)
         XCTAssertLessThan(elapsed, Self.budgetMilliseconds, line)
     }

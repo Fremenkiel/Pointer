@@ -33,6 +33,10 @@ final class CanvasOpenPerformanceTests: XCTestCase {
             times.count
         )
         XCTContext.runActivity(named: line) { _ in }
+        PerformanceRecord.attach([
+            "open.median.ms": times[times.count / 2],
+            "open.slowest.ms": times.last ?? 0,
+        ])
         XCTAssertLessThanOrEqual(times.last ?? .infinity, Self.budgetMilliseconds, line)
     }
 }
