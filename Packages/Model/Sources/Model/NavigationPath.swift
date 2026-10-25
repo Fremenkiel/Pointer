@@ -27,14 +27,8 @@ public struct NavigationPath: Hashable, Sendable {
         cards.last.map(CanvasID.init) ?? CanvasID(workspace)
     }
 
-    /// The canvas above the current canvas, or `nil` on the root canvas.
-    public var parentCanvas: CanvasID? {
-        guard !cards.isEmpty else { return nil }
-        return cards.count == 1 ? CanvasID(workspace) : CanvasID(cards[cards.count - 2])
-    }
-
     /// Whether "New card" may add a card here: false at level `Limits.maxDepth` (CARD-09).
-    public var canAddCard: Bool { level < Limits.maxDepth }
+    var canAddCard: Bool { level < Limits.maxDepth }
 
     /// Returns the path into the child canvas of `card`.
     ///

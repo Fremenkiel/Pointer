@@ -18,14 +18,6 @@ struct TransformTests {
         #expect(point == Point(x: 2 * 1 - 1 * 2 + 10, y: 0.5 * 1 + 3 * 2 - 4))
     }
 
-    @Test("A transform then its inverse gives the identity")
-    func inverse() {
-        let roundTrip = skew.then(skew.inverted())
-        let point = roundTrip.apply(to: Point(x: 12.5, y: -3))
-        #expect(abs(point.x - 12.5) < 1e-12)
-        #expect(abs(point.y + 3) < 1e-12)
-    }
-
     @Test("then applies the first transform first")
     func order() {
         let scale = Transform(scale: 2, translation: .zero)

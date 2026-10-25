@@ -69,22 +69,4 @@ public struct Transform: Hashable, Codable, Sendable {
         )
         return result
     }
-
-    /// Returns the inverse transform.
-    ///
-    /// - Precondition: The determinant is not zero.
-    /// - Returns: The transform that maps each image back to its point.
-    public func inverted() -> Transform {
-        let determinant = determinant
-        precondition(determinant != 0, "Transform \(self) has no inverse")
-        precondition(determinant.isFinite, "Transform \(self) has a determinant that is not finite")
-        return Transform(
-            a: d / determinant,
-            b: -b / determinant,
-            c: -c / determinant,
-            d: a / determinant,
-            tx: (c * ty - d * tx) / determinant,
-            ty: (b * tx - a * ty) / determinant
-        )
-    }
 }

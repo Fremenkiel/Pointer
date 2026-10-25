@@ -129,7 +129,7 @@ func split(_ stroke: Stroke, by center: Point, radius: Double) -> [StrokePart] {
 
 ### 3.7 Scope
 
-- `SCOPE-01` Access control is as strict as possible. The default is `private`. Use `internal` only for a declaration that another file in the package uses. Use `public` only for a declaration that another package uses. Enforcement: review, and Periphery-style dead code checks in CI.
+- `SCOPE-01` Access control is as strict as possible. The default is `private`. Use `internal` only for a declaration that another file in the package uses. Use `public` only for a declaration that another package uses. Enforcement: review, and `make unused`: the SwiftLint analyzer rule `unused_declaration` on the compiler log of the clean build (D-174). A declaration that only tests or shaders read has a local exception with the reason.
 - `SCOPE-02` Classes are `final` unless a subclass exists. Enforcement: lint.
 - `SCOPE-03` `let` before `var`. A `var` that never changes is an error. Enforcement: compiler.
 - `SCOPE-04` SwiftUI property wrappers (`@State`, `@Environment`, `@Binding` storage) are `private`. Enforcement: lint (Infomaniak rule).

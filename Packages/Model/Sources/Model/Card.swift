@@ -57,7 +57,7 @@ public struct Card: Identifiable, Hashable, Sendable {
     }
 
     /// The size of a new card in canvas points, the same at each zoom (D-101, D-118).
-    public static let defaultSize = Size(width: 320, height: 224)
+    static let defaultSize = Size(width: 320, height: 224)
 
     /// The ID of the child canvas.
     public var childCanvasID: CanvasID { CanvasID(id) }
@@ -98,7 +98,7 @@ public struct Card: Identifiable, Hashable, Sendable {
     }
 
     /// Returns a copy with the tombstone flag `isDeleted` and the change time `time`.
-    public func marking(deleted isDeleted: Bool, at time: HybridTimestamp) -> Card {
+    func marking(deleted isDeleted: Bool, at time: HybridTimestamp) -> Card {
         let copy = Card(
             self,
             meta: meta.changed(at: time, isDeleted: isDeleted),

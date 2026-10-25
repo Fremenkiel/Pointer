@@ -25,8 +25,11 @@ struct LevelOfDetail: Equatable {
     /// The pieces per segment.
     let piecesPerSegment: Int
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// The number of draw instances: one per piece.
     var instanceCount: Int { (effectivePointCount - 1) * piecesPerSegment }
+    // swiftlint:enable unused_declaration
 
     /// Computes the level of detail of a stroke. Tests pass another `minimumPixelSpacing` to
     /// compare values (docs/m2-fix-plan.md, phase 0).

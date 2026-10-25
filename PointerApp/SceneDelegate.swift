@@ -1,8 +1,11 @@
 import UIKit
 
+// Info.plist names the class, and UIKit makes it (SCOPE-01).
+// swiftlint:disable unused_declaration
 /// The scene delegate. It makes the window, composes the root view controller, and passes the
 /// changes of the scene state to the composition.
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    // swiftlint:enable unused_declaration
     /// The window of the scene. UIKit reads this property.
     var window: UIWindow?
     private var composition: AppComposition?

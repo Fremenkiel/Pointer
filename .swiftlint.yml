@@ -16,6 +16,10 @@ disabled_rules:
   - todo # replaced by the custom rule doc_04_todo
   - trailing_comma # swift format adds trailing commas (STYLE-04)
 
+# SCOPE-01: code without a reader (D-174). `make unused` runs it on the log of a clean build.
+analyzer_rules:
+  - unused_declaration
+
 opt_in_rules:
   - fallthrough
   - force_unwrapping

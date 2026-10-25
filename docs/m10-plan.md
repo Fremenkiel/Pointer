@@ -673,3 +673,11 @@ The reading found a fault: the assert that counts the rows of a save ran in a `d
 | Model | 90.78 % | 91.94 % |
 | InkEngine | 92.70 % | 93.91 % |
 | Persistence | 90.46 % | 90.96 % |
+
+### 6.10 Dead code (task 1.6, part 1)
+
+The SwiftLint analyzer rule `unused_declaration` works on the compiler log of the clean build of the app and its packages. It read 284 files in 40 s and found 27 declarations. `make unused` now runs it in `make check`, so SCOPE-01 keeps its tool (D-174). The analyzer does not see the tests and the shaders:
+
+- Removed, because nothing reads them: `navigate(to:camera:)` of the app, `ToolState.isTextEnabled`, `Transform.inverted()`, `NavigationPath.parentCanvas`, and the empty `BackupFeature` namespace.
+- Kept with a local exception and its reason: 20 probes that only tests read, for example `LiveStrokeHandoff.liveStrokeCount` and `SQLiteLibraryRepository.settle()`, the class `SceneDelegate` that Info.plist names, and the fields of the structs that the shaders read.
+- Made internal: 12 public declarations of Geometry, Model, and InkEngine that no other package reads, among them `StrokeHitTest` and `StrokeSplitter`. `BezierSegment`, `CanvasNode`, `CameraFlight.standardDuration`, and `GridCell.maxCoordinate` stay public, because public signatures or inlinable code use them.

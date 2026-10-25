@@ -38,8 +38,11 @@ final class HoverDotLayer {
     /// The center of the shown mark, or `nil` while the layer is hidden.
     var shownCenter: CGPoint? { layer.isHidden ? nil : layer.position }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// `true` while the layer holds the outline circle of the eraser.
     var showsRing: Bool { isRing }
+    // swiftlint:enable unused_declaration
 
     /// Shows `mark` at its center, or hides the layer for `nil`. The path changes only when the
     /// shape changes, at a tool change. A move allocates nothing in Pointer code (PERF-01).

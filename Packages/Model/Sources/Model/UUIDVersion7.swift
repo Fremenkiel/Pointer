@@ -45,8 +45,11 @@ public enum UUIDVersion7 {
         Int(uuid.uuid.6 >> 4)
     }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// Returns the time in milliseconds of a version 7 UUID.
-    public static func millis(of uuid: UUID) -> UInt64 {
+    static func millis(of uuid: UUID) -> UInt64 {
+        // swiftlint:enable unused_declaration
         let bytes = uuid.uuid
         let parts = [bytes.0, bytes.1, bytes.2, bytes.3, bytes.4, bytes.5]
         return parts.reduce(UInt64(0)) { ($0 << 8) | UInt64($1) }

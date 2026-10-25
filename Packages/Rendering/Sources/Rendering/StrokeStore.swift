@@ -66,8 +66,11 @@ final class StrokeStore {
     /// The number of strokes, without the removed ones.
     var count: Int { slotByID.count }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// The entries of the block lists, the live and the dead ones.
     var blockListCount: Int { blockSpacings.count }
+    // swiftlint:enable unused_declaration
 
     /// Adds a stroke and returns its slot. A stroke that the store holds keeps its slot.
     ///
@@ -341,9 +344,12 @@ extension StrokeStore {
         assert(count <= total, "The load adds each stroke once")
     }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// The bytes that the lists, the slot table, and the grid of the store hold, from their
     /// capacities. The points of the strokes belong to the content and do not count (D-167).
     var storageByteCount: Int {
+        // swiftlint:enable unused_declaration
         let strokeLists =
             infos.storageByteCount + points.storageByteCount + ownsBlocks.storageByteCount
         let blockLists =

@@ -209,24 +209,6 @@ extension AppComposition {
         container.showUpButton(level > 0 ? { [weak self] in self?.leave() } : nil)
     }
 
-    /// Loads the canvas of `target` and shows it at the camera that `camera` gives for its
-    /// content.
-    private func navigate(
-        to target: NavigationPath,
-        camera: (CanvasContent) -> Camera
-    ) async {
-        guard let repository else { return }
-        do {
-            onLoadStarted?(target.currentCanvas)
-            let content = try await repository.content(of: target.currentCanvas)
-            guard !Task.isCancelled else { return }
-            try show(target, content: content, camera: camera(content))
-        } catch {
-            logger.error("The canvas of a card did not open: \(error)")
-            container.showMessage(AppStrings.canvasFailed)
-        }
-    }
-
     /// Shows the canvas of `target` with its content at `camera`, notes the path, and shows the
     /// up button inside a card (architecture.md 6.4).
     ///

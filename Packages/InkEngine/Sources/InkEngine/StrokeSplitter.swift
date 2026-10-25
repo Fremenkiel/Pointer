@@ -7,7 +7,7 @@ import Model
 /// of the curve at the cut becomes the new end point (D-65). The end rule of the curve then makes
 /// the part end exactly at the cut. The new end point gets the force and the time of the curve at
 /// the cut. A part whose curve is shorter than the stroke width is dropped (D-71).
-public enum StrokeSplitter {
+enum StrokeSplitter {
     /// The samples per segment for the length of a part. The length only decides the drop of a
     /// short part, so a few samples are enough.
     static let lengthSamplesPerSegment = 4

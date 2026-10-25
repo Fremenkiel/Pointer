@@ -9,7 +9,7 @@ public enum CanvasNode: Hashable, Sendable {
 
     /// The code points of the text or the title, the cost of the node in the history budget
     /// (D-88). A card without a title counts 0.
-    public var textLength: Int {
+    var textLength: Int {
         switch self {
         case .textBox(let box): TextLength.of(box.text)
         case .card(let card): card.title.map(TextLength.of) ?? 0

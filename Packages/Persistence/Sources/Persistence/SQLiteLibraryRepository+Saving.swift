@@ -49,8 +49,11 @@ extension SQLiteLibraryRepository {
         assert(pending.isEmpty || scheduledSave != nil, "Pending rows need a scheduled save")
     }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// Waits for the scheduled save if its time has come. Tests use it after they move the timer.
     func settle() async {
+        // swiftlint:enable unused_declaration
         guard let task = scheduledSave, let lastAttempt else { return }
         guard configuration.timer.now() >= lastAttempt + Self.saveInterval else { return }
         await task.value

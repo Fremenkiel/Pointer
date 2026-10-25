@@ -83,7 +83,7 @@ public struct TextBox: Identifiable, Hashable, Sendable {
     }
 
     /// Returns a copy with the tombstone flag `isDeleted` and the change time `time`.
-    public func marking(deleted isDeleted: Bool, at time: HybridTimestamp) -> TextBox {
+    func marking(deleted isDeleted: Bool, at time: HybridTimestamp) -> TextBox {
         let copy = TextBox(
             self,
             meta: meta.changed(at: time, isDeleted: isDeleted),

@@ -42,7 +42,6 @@ struct NavigationPathTests {
         let pushed = try path.pushing(card)
         #expect(pushed.level == count + 1)
         #expect(pushed.currentCanvas == CanvasID(card))
-        #expect(pushed.parentCanvas == path.currentCanvas)
         #expect(pushed.popping() == path)
     }
 
@@ -53,14 +52,5 @@ struct NavigationPathTests {
         let popped = path.popping()
         #expect(popped.cards == Array(cards.dropLast()))
         #expect(popped.workspace == Self.workspace)
-    }
-
-    @Test("The root canvas has no parent, and level 1 has the root canvas as parent")
-    func parent() throws {
-        let root = try NavigationPath(workspace: Self.workspace)
-        #expect(root.parentCanvas == nil)
-        #expect(root.currentCanvas == CanvasID(Self.workspace))
-        let child = try root.pushing(Fixtures.id(20))
-        #expect(child.parentCanvas == CanvasID(Self.workspace))
     }
 }

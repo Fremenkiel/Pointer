@@ -60,10 +60,13 @@ struct PencilKitStrokeConverter {
         max(0, 2 * (pointSize - monolineSizeOffset))
     }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// Returns the point size that draws a line of `width` points (the inverse of fact 2).
     ///
     /// - Precondition: `width` is positive.
     static func pointSize(drawingWidth width: Double) -> Double {
+        // swiftlint:enable unused_declaration
         precondition(width > 0, "Width must be positive, got \(width)")
         return width / 2 + monolineSizeOffset
     }

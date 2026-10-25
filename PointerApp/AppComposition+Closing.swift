@@ -76,11 +76,14 @@ extension AppComposition {
         await previewStore?.close()
     }
 
+    // Only the tests close a whole composition. The restore closes its parts (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// Closes the composition: `closeScreens()`, a last save, the library, and the device
     /// state. Then the preview cache goes (D-157).
     ///
     /// - Throws: `ModelError` of the last save. The library then stays open.
     func close() async throws(ModelError) {
+        // swiftlint:enable unused_declaration
         await closeScreens()
         try await repository?.saveNow()
         await repository?.close()

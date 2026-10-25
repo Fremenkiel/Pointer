@@ -108,6 +108,8 @@ final class GlyphAtlas {
         return min(max(exponent, exponentRange.lowerBound), exponentRange.upperBound)
     }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// Returns the place of a glyph at a scale, and draws it into a page if it is new. The frame
     /// marks the page as used.
     ///
@@ -115,6 +117,7 @@ final class GlyphAtlas {
     /// - Returns: The place, or `nil` if the budget holds no new page. The glyph then does not
     ///   show in this frame, and the log has the fault.
     func placement(
+        // swiftlint:enable unused_declaration
         of glyph: CGGlyph,
         font: UIFont,
         exponent: Int,

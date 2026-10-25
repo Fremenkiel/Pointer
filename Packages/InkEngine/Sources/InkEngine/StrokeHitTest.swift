@@ -8,7 +8,7 @@ import Model
 /// The test skips each segment whose hull is far from the path, because a B-spline segment stays
 /// inside the hull of its 4 points. It samples the other segments and refines each change between
 /// covered and free with a bisection.
-public enum StrokeHitTest {
+enum StrokeHitTest {
     /// The most samples per segment. A segment is never longer than a few eraser radii in use.
     static let maxSamplesPerSegment = 64
     /// The sample spacing in parts of the covered distance (the radius plus half the width).

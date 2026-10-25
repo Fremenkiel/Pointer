@@ -27,7 +27,7 @@ public struct StrokeCurve: Sendable {
     /// Returns the control point at `index`, with the phantom points at -1 and at `count`.
     ///
     /// - Precondition: `index` is in `-1...count`.
-    public func extendedControlPoint(at index: Int) -> Point {
+    func extendedControlPoint(at index: Int) -> Point {
         let count = controlPoints.count
         precondition(
             index >= -1 && index <= count,

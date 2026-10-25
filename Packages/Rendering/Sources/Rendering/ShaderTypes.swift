@@ -1,5 +1,7 @@
 /// One stroke in the draw list, 32 bytes. The layout matches `StrokeDrawEntry` in Shaders.metal.
 struct StrokeDrawEntry: Equatable {
+    // The shaders read the fields, and the analyzer of Swift does not see them (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// The stroke origin minus the reference point, in canvas points.
     var origin: SIMD2<Float>
     /// The index of the first point of the run in the arena.
@@ -53,6 +55,7 @@ struct StrokeDrawEntry: Equatable {
         return UInt32(stride) | UInt32(pieces - 1) << piecesShift | UInt32(nextOffset)
             << offsetShift
     }
+    // swiftlint:enable unused_declaration
 }
 
 /// The values of one ink draw. The layout matches `InkUniforms` in Shaders.metal.
@@ -67,8 +70,11 @@ struct InkUniforms {
     var entryCount: UInt32
     /// Half the width of the edge ramp, in pixels.
     var edge: Float
+    // The shaders read the padding, and the analyzer of Swift does not see it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// Keeps the size at 32 bytes.
     var padding: Float = 0
+    // swiftlint:enable unused_declaration
 }
 
 /// The values of the composite pass. The layout matches `CompositeUniforms` in Shaders.metal.

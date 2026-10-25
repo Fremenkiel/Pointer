@@ -41,8 +41,11 @@ final class LiveStrokeHandoff {
         self.converter = converter
     }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// The number of strokes in the live drawing.
     var liveStrokeCount: Int { canvasView.drawing.strokes.count }
+    // swiftlint:enable unused_declaration
 
     /// Hands off each new stroke of the drawing. The canvas calls it when the drawing changes.
     ///

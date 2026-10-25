@@ -38,8 +38,11 @@ public final class CanvasSessions {
         self.pointBudget = pointBudget
     }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// The number of sessions.
     var count: Int { sessions.count }
+    // swiftlint:enable unused_declaration
 
     /// The control points of the histories of all sessions.
     var pointCount: Int { sessions.values.reduce(0) { $0 + $1.history.pointCount } }
@@ -49,8 +52,11 @@ public final class CanvasSessions {
         sessions[canvasID] != nil
     }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// Returns the session of a canvas, or an empty session for a new canvas.
     func session(for canvasID: CanvasID) -> CanvasSession {
+        // swiftlint:enable unused_declaration
         sessions[canvasID] ?? CanvasSession()
     }
 

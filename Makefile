@@ -14,10 +14,11 @@ DEVICE_TEST := xcodebuild test -project $(PROJECT) -scheme $(SCHEME) -configurat
 	-destination 'id=$(DEVICE)' -derivedDataPath $(DEVICE_DATA) -allowProvisioningUpdates \
 	ENABLE_TESTABILITY=YES
 
-.PHONY: check build analyze test snapshots coverage format lint layers density nesting self-test plist \
+.PHONY: check build unused analyze test snapshots coverage format lint layers density nesting \
+	self-test plist \
 	perf-baseline perf-compare validation
 
-check: build analyze test snapshots format lint layers density nesting self-test plist
+check: build unused analyze test snapshots format lint layers density nesting self-test plist
 	@echo "All checks passed."
 
 # BUILD-01, BUILD-02: the targets treat warnings as errors. Swift 6 keeps some diagnostics of
@@ -29,11 +30,18 @@ build:
 	@rm -rf $(CLEAN_BUILD)
 	@mkdir -p $(CLEAN_BUILD)
 	@xcodebuild -project $(PROJECT) -scheme $(SCHEME) -derivedDataPath $(CLEAN_BUILD) \
-		-destination 'generic/platform=iOS' -quiet CODE_SIGNING_ALLOWED=NO build \
+		-destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build \
 		> $(CLEAN_BUILD)/build.log 2>&1 || { cat $(CLEAN_BUILD)/build.log; exit 1; }
 	@if grep -E '^/.*: warning:' $(CLEAN_BUILD)/build.log; then \
 		echo "Build warnings above (BUILD-02, D-132)."; exit 1; fi
 	@echo "build: 0 warnings"
+
+# SCOPE-01: no declaration without a reader (D-174). The SwiftLint analyzer rule
+# unused_declaration reads the compiler log of the clean build of `make build`. A declaration that
+# only the tests or the shaders read has a local exception with the reason.
+unused: build
+	swiftlint analyze --strict --quiet --compiler-log-path $(CLEAN_BUILD)/build.log
+	@echo "unused: 0 findings"
 
 # BUILD-04: zero analyzer findings.
 analyze:

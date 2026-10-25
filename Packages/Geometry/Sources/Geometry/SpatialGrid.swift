@@ -21,8 +21,11 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     /// The most cells that one item can touch. It bounds the loops of `insert` and `remove`
     /// (FLOW-03, D-158).
     public let maxCellsPerItem: Int
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// The largest cell coordinate. Coordinates further out land in the edge cells.
-    public static var maxCellCoordinate: Int { GridCell.maxCoordinate }
+    static var maxCellCoordinate: Int { GridCell.maxCoordinate }
+    // swiftlint:enable unused_declaration
 
     // The removal is inlinable, so that a caller in another module gets code for its own ID
     // type. Unspecialized, 2,000 removals took 72 ms on the Mac (M4 task 3.8).
@@ -54,8 +57,11 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
         return bytes
     }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// The number of cells that hold at least one item.
-    public var occupiedCellCount: Int { cells.count }
+    var occupiedCellCount: Int { cells.count }
+    // swiftlint:enable unused_declaration
 
     /// Reserves room for `count` items, so that a load grows the item table once (PERF-01).
     ///

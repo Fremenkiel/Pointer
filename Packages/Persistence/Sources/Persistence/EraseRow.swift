@@ -14,11 +14,14 @@ enum EraseRow {
             is_deleted = excluded.is_deleted
         """
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// Reads one erase record by stroke ID. The live load of a canvas never reads erase records
     /// (review A-07). Tests and the later change upload read them.
     static let selectByStroke: StaticString = """
         SELECT stroke_id, erased, modified, is_deleted FROM stroke_erase WHERE stroke_id = ?
         """
+    // swiftlint:enable unused_declaration
 
     /// Binds `record` to the parameters of `upsert`.
     ///
@@ -36,10 +39,13 @@ enum EraseRow {
         assert(binder.count == statement.parameterCount, "Erase record binds all parameters")
     }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// Reads the current row of `selectByStroke`.
     ///
     /// - Throws: `PersistenceError.corruptRow` if a column does not give a valid record.
     static func read(from statement: SQLiteStatement) throws(PersistenceError) -> EraseRecord {
+        // swiftlint:enable unused_declaration
         precondition(statement.columnCount == columnCount, "Not a erase record read")
         var reader = RowReader(statement, table: "stroke_erase")
         let strokeID: StrokeID = try reader.identifier()

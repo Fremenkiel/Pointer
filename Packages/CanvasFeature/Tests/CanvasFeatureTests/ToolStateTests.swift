@@ -40,17 +40,16 @@ struct ToolStateTests {
         state.isEditingEnabled = true
         #expect(state.isDrawingEnabled == (tool == .pen))
         #expect(state.isErasingEnabled == (tool == .eraser))
-        #expect(state.isTextEnabled == (tool == .text))
     }
 
     @Test("The text tool turns off the pen and the eraser, and the editing flag stops it")
     func textTool() {
         var state = ToolState()
         state.select(.text)
-        #expect(state.isTextEnabled)
+        #expect(state.selected == .text)
         #expect(!state.isDrawingEnabled)
         #expect(!state.isErasingEnabled)
         state.isEditingEnabled = false
-        #expect(!state.isTextEnabled)
+        #expect(!state.isDrawingEnabled && !state.isErasingEnabled)
     }
 }

@@ -62,11 +62,17 @@ extension SQLiteLibraryRepository {
         checkpointRequest = nil
     }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// The pages of the WAL after the last commit. Tests use it.
     var walPageCount: Int { connection?.walPages ?? 0 }
+    // swiftlint:enable unused_declaration
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// Waits until the running checkpoint of the checkpointer ends. Tests use it.
     func waitForCheckpoint() async {
+        // swiftlint:enable unused_declaration
         await checkpointRequest?.value
     }
 }

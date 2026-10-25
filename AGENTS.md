@@ -77,6 +77,7 @@ Run the commands from the repository root. They need Xcode 27 and SwiftLint 0.65
 ```
 make build       # build the app for iOS, warnings are errors
 make analyze     # xcodebuild analyze, zero findings
+make unused      # SCOPE-01: declarations without a reader, on the log of make build
 make test        # Tier A tests on the Mac, then PointerDeviceTests on the iPad
 make snapshots   # the snapshot tests in PointerDeviceTests on the iPad (D-77)
 make format      # swift format lint

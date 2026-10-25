@@ -62,8 +62,11 @@ final class PointArena {
     /// The bytes in use, rounded up to the size classes.
     var usedBytes: Int { allocator.usedPoints * Self.bytesPerPoint }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// The number of slabs of all buffers.
     var slabCount: Int { allocator.slabCount }
+    // swiftlint:enable unused_declaration
 
     /// The bytes of all buffers.
     var footprint: Int { allocator.slabCount * Self.bytesPerSlab }

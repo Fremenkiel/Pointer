@@ -5,7 +5,7 @@ extension CanvasContent {
     /// The bounds of the live content: the bounds of the strokes, the frames of the cards, and
     /// the origins of the text boxes. `Model` has no text layout, so a text box counts by its
     /// top-left corner. `nil` for an empty canvas.
-    public var contentBounds: Rect? {
+    var contentBounds: Rect? {
         var low = Point(x: Double.infinity, y: Double.infinity)
         var high = Point(x: -Double.infinity, y: -Double.infinity)
         func include(_ rect: Rect) {
