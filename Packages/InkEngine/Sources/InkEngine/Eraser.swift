@@ -5,11 +5,6 @@ import os
 
 /// Turns one eraser gesture into one `EraseStrokes` command (architecture.md 4.4, D-30).
 public enum Eraser {
-    /// The fewest candidates of one chunk of the split. Fewer strokes run on one thread.
-    static let minimumChunk = 64
-    /// The most chunks of the split. The iPad Pro (M4) has 4 performance cores.
-    static let maxChunks = 8
-
     /// The control points on each side of a cut whose segments change with it (D-65, D-72).
     static let changedPointsPerSide = 3
     /// The distance up to which the end of a part is the end of its old stroke, in canvas
@@ -125,12 +120,15 @@ public enum Eraser {
     /// Returns the strokes that the path covers, with the shapes of their parts, in the order of
     /// `strokes`.
     private static func split(_ strokes: [Stroke], along path: EraserPath) -> [Cut] {
-        let chunkCount = min(max(strokes.count / minimumChunk, 1), maxChunks)
-        let chunkSize = (strokes.count + chunkCount - 1) / max(chunkCount, 1)
+        // The chunks of the split follow `ParallelChunks`, as the layouts of a load do.
+        let chunkCount = ParallelChunks.count(of: strokes.count)
         let results = OSAllocatedUnfairLock(initialState: [[Cut]](repeating: [], count: chunkCount))
         DispatchQueue.concurrentPerform(iterations: chunkCount) { chunk in
-            let range =
-                min(chunk * chunkSize, strokes.count)..<min((chunk + 1) * chunkSize, strokes.count)
+            let range = ParallelChunks.range(
+                of: chunk,
+                chunkCount: chunkCount,
+                itemCount: strokes.count
+            )
             var local: [Cut] = []
             for stroke in strokes[range] {
                 let covered = StrokeHitTest.coveredRanges(of: stroke, by: path)

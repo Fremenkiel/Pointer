@@ -891,3 +891,15 @@ Four alternating pairs of the base 619beb3 and the changes of tasks 3.1 and 3.3 
 ### 6.35 The sort keys (task 6.3, item 3)
 
 - `FractionalIndex.between` at an end of the list now adds or takes one unit at the fourth digit, or at the last digit of a longer key (D-182). `SortKeyAppendTests` makes 1,000,000 appends and 100,000 prepends: the old code failed both with `sortKeyNeedsRebalance` (the appends after 3,874 keys), and the new keys are at most 4 digits long. data-model.md section 6 says so. The end-key cases of `FractionalIndexTests` now hold the keys of the new rule.
+
+### 6.37 Tests at each limit (task 6.1)
+
+- `ParallelChunks` in Model holds the numbers of the chunks of the erase split and of the layouts of a load, which `Eraser` and `TextStore` kept as two copies of 64 and 8. `ParallelChunksTests` covers each bound and one past it.
+- New tests at the bound and one step past it: the stored zoom at exactly 0.25 and 8 and the next `Double` past each (`DeviceStateLimitTests`), a stored path of `Limits.maxDepth` cards and of one more, a stroke and a card title reach exactly at `Limits.maxCanvasCoordinate` and one step past it (`ItemBoundTests`), and `InkPoints` of `Limits.maxPointsPerStroke + 1` points as an exit test (`StrokeTests`).
+- `RecordTests`, `ConstraintTests`, and `GridBoundTests` use the names of the limits, not their values. Geometry does not import Model, so `GridBoundTests` names the cell size with a note on its source.
+
+### 6.36 The history budget in bytes (task 6.3, item 4)
+
+- The history counts bytes, not points (D-183). `HistoryCost` gives 17 bytes per control point plus 192 bytes for each stroke, the measure of D-183, and the UTF-8 bytes plus 192 bytes for each text. A measure on the Mac in a release build gave the text bytes of D-88: a text box of 200 ASCII characters held 256 bytes of heap and its value of 144 bytes, one of 10,000 CJK characters 32,787 bytes and 144, within 5 % of the formula for texts of 200 characters and more.
+- The budgets are 64 MiB per canvas and 256 MiB for all canvases, the "about 67 MB" and "about 270 MB" of D-76. The shown canvas reports the bytes of its history to `CanvasSessions` after each step and when it takes its session, so the stored sessions make room for it. Before, a taken history counted nowhere until the canvas left.
+- `HistoryByteBudgetTests` holds 500 steps of 4,000 strokes of 2 points: the old point budget kept 2,000,000 such strokes, about 452 MB, and the test failed on 619beb3. The byte budget keeps them inside 64 MiB. `CanvasSessionsTests.shownCanvasCounts` covers the shown canvas.

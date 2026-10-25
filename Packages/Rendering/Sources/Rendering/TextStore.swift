@@ -32,11 +32,6 @@ final class TextStore {
     /// The number of text boxes.
     var count: Int { entries.count }
 
-    /// The fewest boxes of one thread in a load.
-    static let minimumChunk = 64
-    /// The most threads of a load. The iPad Pro (M4) has 4 performance cores.
-    static let maxChunks = 8
-
     /// A text box with its layout, made off the render thread at a load (D-92).
     struct LaidOut: Sendable {
         let box: TextBox
@@ -55,9 +50,9 @@ final class TextStore {
         return zip(boxes, layouts).map { LaidOut(box: $0, layout: $1) }
     }
 
-    /// Runs `transform` on each item in up to `maxChunks` chunks on several threads, and returns
-    /// the results in the order of the items. The text boxes and the card titles of a load use
-    /// it (D-92).
+    /// Runs `transform` on each item in the chunks of `ParallelChunks` on several threads, and
+    /// returns the results in the order of the items. The text boxes and the card titles of a
+    /// load use it (D-92).
     ///
     /// - Precondition: The items are at most `Limits.maxNodesPerCanvas`.
     static func inChunks<Item: Sendable, Result: Sendable>(
@@ -65,15 +60,16 @@ final class TextStore {
         _ transform: @Sendable (Item) -> Result
     ) -> [Result] {
         precondition(items.count <= Limits.maxNodesPerCanvas, "Too many items in one load")
-        let chunkCount = min(max(items.count / minimumChunk, 1), maxChunks)
-        let chunkSize = (items.count + chunkCount - 1) / chunkCount
-        assert(chunkCount * chunkSize >= items.count, "The chunks cover each item")
+        let chunkCount = ParallelChunks.count(of: items.count)
         let results = OSAllocatedUnfairLock(
             initialState: [[Result]](repeating: [], count: chunkCount)
         )
         DispatchQueue.concurrentPerform(iterations: chunkCount) { chunk in
-            let range =
-                min(chunk * chunkSize, items.count)..<min((chunk + 1) * chunkSize, items.count)
+            let range = ParallelChunks.range(
+                of: chunk,
+                chunkCount: chunkCount,
+                itemCount: items.count
+            )
             let local = items[range].map(transform)
             results.withLock { $0[chunk] = local }
         }
