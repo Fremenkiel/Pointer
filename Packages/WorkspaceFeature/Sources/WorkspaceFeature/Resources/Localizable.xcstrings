@@ -1,12 +1,12 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "A name has 1 to 120 characters.": {
+    "A name has 1 to %@ characters.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A name has 1 to 120 characters."
+            "value": "A name has 1 to %@ characters."
           }
         }
       }
@@ -121,12 +121,12 @@
         }
       }
     },
-    "The library holds 1,000 workspaces. Delete one to make a new one.": {
+    "The library holds %@ workspaces. Delete one to make a new one.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The library holds 1,000 workspaces. Delete one to make a new one."
+            "value": "The library holds %@ workspaces. Delete one to make a new one."
           }
         }
       }

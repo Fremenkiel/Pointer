@@ -1,4 +1,5 @@
 import Foundation
+import Model
 
 /// The user-facing text of the selector, from the String Catalog of the package (STYLE-05).
 enum WorkspaceStrings {
@@ -26,14 +27,18 @@ enum WorkspaceStrings {
     static var selectorLabel: String { String(localized: "Workspaces", bundle: .module) }
     /// The message when the library holds the most workspaces.
     static var limitReached: String {
-        String(
-            localized: "The library holds 1,000 workspaces. Delete one to make a new one.",
+        let limit = Limits.maxWorkspaces.formatted()
+        return String(
+            localized: "The library holds \(limit) workspaces. Delete one to make a new one.",
             bundle: .module
         )
     }
     /// The message when a name is empty or too long.
     static var invalidTitle: String {
-        String(localized: "A name has 1 to 120 characters.", bundle: .module)
+        String(
+            localized: "A name has 1 to \(Limits.maxTitleLength.formatted()) characters.",
+            bundle: .module
+        )
     }
     /// The message when the library opens read-only.
     static var readOnly: String {

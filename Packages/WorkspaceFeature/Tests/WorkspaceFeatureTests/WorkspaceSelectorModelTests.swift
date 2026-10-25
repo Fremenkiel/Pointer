@@ -1,6 +1,7 @@
 import Model
 import Testing
-import WorkspaceFeature
+
+@testable import WorkspaceFeature
 
 @MainActor
 @Suite("Workspace selector model")
@@ -159,6 +160,13 @@ struct WorkspaceSelectorModelTests {
         await fixture.model.start(lastWorkspace: nil)
         #expect(fixture.model.message == .storageFailed)
         #expect(fixture.model.current == nil)
+    }
+
+    @Test("The limit messages show the limits of Limits (STYLE-03)")
+    func limitMessages() {
+        #expect(WorkspaceStrings.limitReached.contains(Limits.maxWorkspaces.formatted()))
+        #expect(WorkspaceStrings.invalidTitle.contains(Limits.maxTitleLength.formatted()))
+        #expect(!WorkspaceStrings.limitReached.contains("%"))
     }
 
     static func three() throws -> [Workspace] {
