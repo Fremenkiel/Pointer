@@ -388,7 +388,7 @@ In edit mode, the undo and redo of the buttons, the palette, and Command-Z go to
 2. Make one page with the size of the bounds in a Core Graphics PDF context, `CGContext(consumer:mediaBox:_:)` (D-139). If a side is longer than 14,400 points (the PDF page limit of 200 inches), one uniform scale fits the whole page, the line widths included (D-142).
 3. Fill the page white (decision D-13).
 4. Draw each stroke as one `CGPath` of cubic Bézier segments. The exporter converts each piece of the B-spline to one Bézier segment, which is exact (decision D-26). Use `setLineCap(.round)`, `setLineJoin(.round)`, the stroke width, and black.
-5. Draw each text box in black. `TextLayout` gives the font, the line ranges, and the baselines, so the PDF has the lines of the screen. Draw each line with `CTLineDraw`, so that the PDF keeps the text and you can select and search it (D-140). Color emoji stay as the system draws them: bitmap images with searchable text (D-142). Flip the text matrix for the PDF coordinate system.
+5. Draw each text box in black, in the order of the page: top to bottom, then left to right, then by ID (D-185). `TextLayout` gives the font, the line ranges, and the baselines, so the PDF has the lines of the screen. Draw each line with `CTLineDraw`, so that the PDF keeps the text and you can select and search it (D-140). Color emoji stay as the system draws them: bitmap images with searchable text (D-142). Flip the text matrix for the PDF coordinate system.
 
 The PDF contains no cards (decision D-13). The exporter does not draw card frames, titles, or child content.
 

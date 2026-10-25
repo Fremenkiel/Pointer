@@ -796,3 +796,8 @@ Each frame of a flight now marks the preview slot of the opened card as used, so
 | M9 3.2.11 | The busy path of the hard-limit checkpoint | `passiveCheckpointBusy` above. A writer cannot keep running while a blocking checkpoint holds the lock, so the test covers the start of the busy path at the connection. |
 
 The 160 tests of Persistence pass on the Mac.
+
+### 6.26 Strings and the PDF (task 2.8)
+
+- The messages at the workspace limit and of an invalid name take their numbers from `Limits` as format arguments, with the same visible text. The selector snapshots pass unchanged, and a test makes sure that the messages show the numbers of `Limits` (`T-28-new2.xcresult`).
+- The PDF writes its text boxes in the order of the page (D-185). `PDFTextTests.pageOrder` covers the order, and the PDF suites pass (`T-28b.xcresult`).

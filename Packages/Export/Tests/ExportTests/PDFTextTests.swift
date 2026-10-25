@@ -57,6 +57,19 @@ struct PDFTextTests {
         #expect(alpha.bounds(for: page).minY > charlie.bounds(for: page).minY)
     }
 
+    @Test("The page writes its text boxes top to bottom, then left to right (D-185)")
+    func pageOrder() throws {
+        let boxes = [
+            try ExportContent.textBox("lower left", at: Point(x: 0, y: 100)),
+            try ExportContent.textBox("upper right", at: Point(x: 200, y: 0)),
+            try ExportContent.textBox("upper left", at: Point(x: 0, y: 0)),
+            try ExportContent.textBox("lower right", at: Point(x: 200, y: 100)),
+        ]
+        let content = try ExportContent.content(textBoxes: boxes)
+        let order = PDFExporter.pageOrder(of: content.textBoxes.values).map(\.text)
+        #expect(order == ["upper left", "upper right", "lower left", "lower right"])
+    }
+
     /// Draws the text of the content on a flipped page of 1,000 by 1,000 points, as the exporter
     /// does, and reads the PDF back.
     private static func document(of content: CanvasContent) throws -> PDFDocument? {

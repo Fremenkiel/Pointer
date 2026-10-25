@@ -8,6 +8,18 @@ extension PDFExporter {
     /// The text boxes between two checks for a cancel.
     static let cancelCheckBoxes = 64
 
+    /// Returns the text boxes in the order of the page: top to bottom, then left to right, then
+    /// by ID (D-185). Each export of one canvas then writes the same order, and a reader of the
+    /// stream or a later tag tree reads the text as a page.
+    static func pageOrder(of boxes: some Collection<TextBox>) -> [TextBox] {
+        precondition(boxes.count <= Limits.maxNodesPerCanvas, "Too many text boxes: \(boxes.count)")
+        return boxes.sorted { first, second in
+            if first.origin.y != second.origin.y { return first.origin.y < second.origin.y }
+            if first.origin.x != second.origin.x { return first.origin.x < second.origin.x }
+            return first.id.rawValue.uuidString < second.id.rawValue.uuidString
+        }
+    }
+
     /// Draws the text of each text box in black, line by line, at the baselines of the screen.
     ///
     /// `TextLayout` gives the lines, so the PDF breaks the lines where the screen does. Each line
@@ -25,7 +37,7 @@ extension PDFExporter {
         context.setFillColor(CGColor(gray: 0, alpha: 1))
         // The page is flipped, so the text matrix flips the glyphs upright again (D-140).
         context.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
-        for (index, box) in content.textBoxes.values.enumerated() {
+        for (index, box) in pageOrder(of: content.textBoxes.values).enumerated() {
             if index.isMultiple(of: cancelCheckBoxes), Task.isCancelled { throw .cancelled }
             let left = box.origin.x - pageOrigin.x
             let top = box.origin.y - pageOrigin.y
