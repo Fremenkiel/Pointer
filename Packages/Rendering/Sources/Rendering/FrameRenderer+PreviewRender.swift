@@ -14,7 +14,7 @@ extension FrameRenderer {
                 previewRenderer = try PreviewRenderer(resources: resources)
             } catch {
                 logger.error("The preview targets failed: \(String(describing: error))")
-                request.completion(nil)
+                request.endWithoutImage()
                 return
             }
         }
@@ -97,7 +97,7 @@ extension FrameRenderer {
             let resolve = commandBuffer.makeRenderCommandEncoder(descriptor: pass),
             let blit = Self.resolve(resolve, renderer: renderer, commandBuffer: commandBuffer)
         else {
-            job.request.completion(nil)
+            job.request.endWithoutImage()
             return
         }
         blit.copy(

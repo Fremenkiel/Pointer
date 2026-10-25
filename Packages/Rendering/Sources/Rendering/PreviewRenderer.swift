@@ -117,10 +117,10 @@ final class PreviewRenderer {
     /// `nil`, because the newer request wins.
     func start(_ request: PreviewRenderRequest, viewSize: Size) {
         precondition(request.size > 0 && request.size <= Self.side, "Size \(request.size)")
-        job?.request.completion(nil)
+        job?.request.endWithoutImage()
         job = nil
         guard viewSize.width > 0, viewSize.height > 0 else {
-            request.completion(nil)
+            request.endWithoutImage()
             return
         }
         let placement = Self.placement(

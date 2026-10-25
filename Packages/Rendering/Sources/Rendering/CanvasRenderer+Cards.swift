@@ -34,7 +34,7 @@ extension CanvasRenderer {
             completion: completion
         )
         engine.post { box in
-            box.previewRender?.completion(nil)
+            box.previewRender?.endWithoutImage()
             box.previewRender = request
         }
     }
