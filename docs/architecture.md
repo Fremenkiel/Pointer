@@ -189,7 +189,7 @@ The renderer encodes its frames on a render thread (D-42). The types work togeth
 2. `RenderThread` runs a `CAMetalDisplayLink` on its own run loop. Each update of the link gives the drawable of the frame, so `nextDrawable()` never blocks the main thread.
 3. `RenderEngine` holds the frame work (`FrameRenderer`) behind one lock and an inbox behind a second lock.
 4. `CanvasRenderer` is the main-actor side. It writes the camera, the viewport, and new strokes into the inbox as values. It never waits for a frame.
-5. At the start of each frame, the render thread takes the inbox and draws. The handoff callback returns to the main actor (section 4.2).
+5. At the start of each frame, the render thread takes the inbox and draws. The handoff callback returns to the main actor (section 4.2). After the frame, the render thread gives the emptied lists back to the inbox, so a change of one item allocates nothing. A drag step of a text box or a card posts the one item with `placeTextBox` or `placeCard`, without an array (m10-plan.md task 3.1).
 
 `FrameRenderer` owns `CommittedLayer`, `InkEncoder`, `StrokeStore`, and `DrawListRing`. These types have no actor isolation. One thread at a time uses them: the render thread in the app, or the thread of a test.
 

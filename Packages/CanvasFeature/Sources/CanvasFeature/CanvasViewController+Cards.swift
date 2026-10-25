@@ -35,7 +35,7 @@ extension CanvasViewController {
         }
         move.current = moved
         textEditing.cardMove = move
-        renderer.changeCards(removing: [], adding: [moved])
+        renderer.placeCard(moved)
     }
 
     /// Ends a long press beside the text boxes: a move of a card records one step, and a card
@@ -55,7 +55,7 @@ extension CanvasViewController {
     func cancelCardMove() {
         guard let move = textEditing.cardMove else { return }
         textEditing.cardMove = nil
-        renderer.changeCards(removing: [], adding: [move.card])
+        renderer.placeCard(move.card)
     }
 
     private func presentMenu(at location: CGPoint) {
@@ -137,7 +137,7 @@ extension CanvasViewController {
             logger.error("A card step did not apply: \(String(describing: error))")
         }
         if let shown = content.cards[id] {
-            renderer.changeCards(removing: [], adding: [shown])
+            renderer.placeCard(shown)
         } else {
             renderer.changeCards(removing: [id], adding: [])
         }

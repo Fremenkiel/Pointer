@@ -181,8 +181,18 @@ public final class CanvasRenderer {
     public func changeTextBoxes(removing removed: [TextBoxID], adding added: [TextBox]) {
         precondition(removed.count + added.count <= Limits.maxNodesPerCanvas, "Too many boxes")
         precondition(added.allSatisfy { $0.origin.isFinite }, "A text box origin is not finite")
-        let edit = TextEdit(removed: removed, added: added)
+        let edit = TextEdit.change(removed: removed, added: added)
         engine.post { box in box.textEdits.append(edit) }
+    }
+
+    /// Puts one text box in the place of the box with the same ID, or adds it: a step of a move,
+    /// or the show of a box after an edit. It allocates nothing once the inbox holds room for
+    /// the edits of a frame (PERF-01).
+    ///
+    /// - Precondition: The origin of the box is finite.
+    public func placeTextBox(_ textBox: TextBox) {
+        precondition(textBox.origin.isFinite, "A text box origin is not finite")
+        engine.post { box in box.textEdits.append(.place(textBox)) }
     }
 
     /// Adds finished strokes. `onPresented` runs after the first frame that shows them.
@@ -316,9 +326,10 @@ public final class CanvasRenderer {
     private func deliverCompletions(upTo handoff: UInt64, time: Double) {
         precondition(handoff <= lastHandoff, "Handoff \(handoff) was never sent")
         let count = completions.prefix { $0.handoff <= handoff }.count
-        let due = completions.prefix(count)
+        // A loop by index holds no slice of the list, so the removal copies nothing (PERF-01,
+        // m10-plan.md task 3.1). A callback can add a handoff, which goes to the end.
+        for index in 0..<count { completions[index].callback(time) }
         completions.removeFirst(count)
-        for entry in due { entry.callback(time) }
         assert(completions.allSatisfy { $0.handoff > handoff }, "A due completion still waits")
     }
 
@@ -326,9 +337,9 @@ public final class CanvasRenderer {
     private func deliver(upTo handoff: UInt64) {
         precondition(handoff <= lastHandoff, "Handoff \(handoff) was never sent")
         let count = callbacks.prefix { $0.handoff <= handoff }.count
-        let due = callbacks.prefix(count)
+        // A loop by index, as in `deliverCompletions`.
+        for index in 0..<count { callbacks[index].callback() }
         callbacks.removeFirst(count)
-        for entry in due { entry.callback() }
         assert(callbacks.allSatisfy { $0.handoff > handoff }, "A due handoff is still waiting")
     }
 }

@@ -48,25 +48,31 @@ extension FrameRenderer {
     /// Applies one text edit: it changes the text store and notes the old and the new bounds
     /// for a text redraw in the next frame (D-82).
     func apply(_ edit: TextEdit) {
-        precondition(
-            edit.removed.count + edit.added.count <= Limits.maxNodesPerCanvas,
-            "Too many text boxes in one edit"
-        )
-        if textLoadsInFlight > 0 {
-            textEditedDuringLoad.formUnion(edit.removed)
-            textEditedDuringLoad.formUnion(edit.added.map(\.id))
+        switch edit {
+        case .change(let removed, let added):
+            precondition(
+                removed.count + added.count <= Limits.maxNodesPerCanvas,
+                "Too many text boxes in one edit"
+            )
+            for id in removed {
+                if textLoadsInFlight > 0 { textEditedDuringLoad.insert(id) }
+                guard let bounds = texts.remove(id) else { continue }
+                dirtyTextArea = dirtyTextArea.map { Self.union($0, bounds) } ?? bounds
+            }
+            for box in added { place(box) }
+        case .place(let box):
+            place(box)
         }
-        for id in edit.removed {
-            guard let bounds = texts.remove(id) else { continue }
-            dirtyTextArea = dirtyTextArea.map { Self.union($0, bounds) } ?? bounds
-        }
-        for box in edit.added {
-            let earlier = texts.add(box)
-            guard let bounds = texts.entries[box.id]?.bounds else { continue }
-            let area = earlier.map { Self.union($0, bounds) } ?? bounds
-            dirtyTextArea = dirtyTextArea.map { Self.union($0, area) } ?? area
-        }
-        assert(edit.added.allSatisfy { texts.entries[$0.id] != nil }, "Each added box is held")
+    }
+
+    /// Puts a box in the store and notes its old and new bounds for the text redraw.
+    private func place(_ box: TextBox) {
+        if textLoadsInFlight > 0 { textEditedDuringLoad.insert(box.id) }
+        let earlier = texts.add(box)
+        assert(texts.entries[box.id] != nil, "The placed box \(box.id) is held")
+        guard let bounds = texts.entries[box.id]?.bounds else { return }
+        let area = earlier.map { Self.union($0, bounds) } ?? bounds
+        dirtyTextArea = dirtyTextArea.map { Self.union($0, area) } ?? area
     }
 
     /// Starts the redraw of the text that changed since the last frame, and goes on with a

@@ -175,7 +175,7 @@ extension CanvasViewController: UITextViewDelegate {
             logger.error("An edit of a text box did not apply: \(String(describing: error))")
         }
         if let shown = content.textBoxes[edit.id] {
-            renderer.changeTextBoxes(removing: [], adding: [shown])
+            renderer.placeTextBox(shown)
         }
         historyDidChange()
         assert(!textEditing.isEditing, "The edit ended")

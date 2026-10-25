@@ -87,7 +87,16 @@ extension CanvasRenderer {
     public func changeCards(removing removed: [CardID], adding added: [Card]) {
         precondition(removed.count + added.count <= Limits.maxNodesPerCanvas, "Too many cards")
         precondition(added.allSatisfy { $0.frame.origin.isFinite }, "A card frame is not finite")
-        let edit = CardEdit(removed: removed, added: added)
+        let edit = CardEdit.change(removed: removed, added: added)
         engine.post { box in box.cardEdits.append(edit) }
+    }
+
+    /// Puts one card in the place of the card with the same ID, or adds it: a step of a drag. It
+    /// allocates nothing once the inbox holds room for the edits of a frame (PERF-01).
+    ///
+    /// - Precondition: The frame of the card is finite.
+    public func placeCard(_ card: Card) {
+        precondition(card.frame.origin.isFinite, "A card frame is not finite")
+        engine.post { box in box.cardEdits.append(.place(card)) }
     }
 }

@@ -18,6 +18,8 @@ struct RenderInbox {
     var textLoadsInFlight = 0
     /// The changes of the text boxes, in order.
     var textEdits: [TextEdit] = []
+    /// The text edit list that the last frame gave back, kept for reuse (PERF-01).
+    var spareTextEdits: [TextEdit] = []
     /// The cards of a load with their title layouts, made off the render thread (D-92).
     var laidOutCards: [CardStore.LaidOut] = []
     /// The number of cards that the waiting card load reserves room for, or `nil`.
@@ -26,6 +28,8 @@ struct RenderInbox {
     var cardLoadsInFlight = 0
     /// The changes of the cards, in order.
     var cardEdits: [CardEdit] = []
+    /// The card edit list that the last frame gave back, kept for reuse (PERF-01).
+    var spareCardEdits: [CardEdit] = []
     /// The previews that the loader decoded and no frame took yet (D-97).
     var decodedPreviews: [DecodedPreview] = []
     /// The newest request of a preview of this canvas that no frame took yet (D-97).
@@ -177,10 +181,12 @@ struct RenderInbox {
         viewport = nil
         loaded = []
         laidOutText = []
-        textEdits = []
+        textEdits = spareTextEdits
+        spareTextEdits = []
         laidOutCards = []
         cardReserve = nil
-        cardEdits = []
+        cardEdits = spareCardEdits
+        spareCardEdits = []
         decodedPreviews = []
         previewRender = nil
         transitionStart = nil

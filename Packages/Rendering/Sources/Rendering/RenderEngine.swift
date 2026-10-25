@@ -153,10 +153,8 @@ final class RenderEngine: Sendable {
             )
         }
         assert(result.didDraw || !result.needsMore, "A frame without work asks for more frames")
-        // The sample list goes back to the inbox, so the next frame allocates no list (PERF-01).
-        var samples: [Point] = []
-        swap(&samples, &input.eraserSamples)
-        samples.removeAll(keepingCapacity: true)
+        // The lists go back to the inbox, so the next frame allocates no list (PERF-01).
+        let spares = input.emptyLists()
         inbox.withLock { box in
             box.strokeCount = result.count
             box.rendererHasWork = result.needsMore
@@ -167,9 +165,7 @@ final class RenderEngine: Sendable {
             box.previewUploadsWaiting = result.previewUploadsWaiting
             // Without a source, the wanted previews never go to a loader (D-97).
             box.hasPreviewsToRequest = previewSource != nil && result.hasPreviewsToRequest
-            if box.spareEraserSamples.capacity < samples.capacity {
-                box.spareEraserSamples = samples
-            }
+            box.keep(spares)
         }
         requestPreviews()
         if let record = result.record { input.observer?.didRender(record) }

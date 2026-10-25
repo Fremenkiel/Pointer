@@ -18,25 +18,31 @@ extension FrameRenderer {
     /// Applies one card edit: it changes the card store and notes the old and the new bounds for
     /// a green redraw in the next frame, which draws the cards and the text there again (D-96).
     func apply(_ edit: CardEdit) {
-        precondition(
-            edit.removed.count + edit.added.count <= Limits.maxNodesPerCanvas,
-            "Too many cards in one edit"
-        )
-        if cards.loadsInFlight > 0 {
-            cards.editedDuringLoad.formUnion(edit.removed)
-            cards.editedDuringLoad.formUnion(edit.added.map(\.id))
+        switch edit {
+        case .change(let removed, let added):
+            precondition(
+                removed.count + added.count <= Limits.maxNodesPerCanvas,
+                "Too many cards in one edit"
+            )
+            for id in removed {
+                if cards.loadsInFlight > 0 { cards.editedDuringLoad.insert(id) }
+                previews?.forget(id)
+                guard let bounds = cards.remove(id) else { continue }
+                dirtyTextArea = dirtyTextArea.map { Self.union($0, bounds) } ?? bounds
+            }
+            for card in added { place(card) }
+        case .place(let card):
+            place(card)
         }
-        for id in edit.removed {
-            previews?.forget(id)
-            guard let bounds = cards.remove(id) else { continue }
-            dirtyTextArea = dirtyTextArea.map { Self.union($0, bounds) } ?? bounds
-        }
-        for card in edit.added {
-            let earlier = cards.add(card)
-            guard let bounds = cards.entries[card.id]?.bounds else { continue }
-            let area = earlier.map { Self.union($0, bounds) } ?? bounds
-            dirtyTextArea = dirtyTextArea.map { Self.union($0, area) } ?? area
-        }
-        assert(edit.added.allSatisfy { cards.entries[$0.id] != nil }, "Each added card is held")
+    }
+
+    /// Puts a card in the store and notes its old and new bounds for the green redraw.
+    private func place(_ card: Card) {
+        if cards.loadsInFlight > 0 { cards.editedDuringLoad.insert(card.id) }
+        let earlier = cards.add(card)
+        assert(cards.entries[card.id] != nil, "The placed card \(card.id) is held")
+        guard let bounds = cards.entries[card.id]?.bounds else { return }
+        let area = earlier.map { Self.union($0, bounds) } ?? bounds
+        dirtyTextArea = dirtyTextArea.map { Self.union($0, area) } ?? area
     }
 }

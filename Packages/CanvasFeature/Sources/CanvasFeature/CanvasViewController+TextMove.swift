@@ -70,7 +70,7 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
         }
         move.current = moved
         textEditing.move = move
-        renderer.changeTextBoxes(removing: [], adding: [moved])
+        renderer.placeTextBox(moved)
     }
 
     /// Ends a move with one step, or opens the menu if the finger did not move (TOOL-08).
@@ -87,7 +87,7 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
             logger.error("A move of a text box did not apply: \(String(describing: error))")
         }
         if let shown = content.textBoxes[move.box.id] {
-            renderer.changeTextBoxes(removing: [], adding: [shown])
+            renderer.placeTextBox(shown)
         }
         assert(textEditing.move == nil, "The move ended")
     }
@@ -96,7 +96,7 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
     func cancelTextMove() {
         guard let move = textEditing.move else { return }
         textEditing.move = nil
-        renderer.changeTextBoxes(removing: [], adding: [move.box])
+        renderer.placeTextBox(move.box)
     }
 
     private func showTextMenu(for box: TextBox, at location: CGPoint) {

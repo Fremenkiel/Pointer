@@ -13,16 +13,16 @@ struct RenderInput: Sendable {
     let laidOutText: [TextStore.LaidOut]
     /// The loads whose layouts still run off the render thread.
     let textLoadsInFlight: Int
-    /// The changes of the text boxes, in order.
-    let textEdits: [TextEdit]
+    /// The changes of the text boxes, in order. The list goes back to the inbox (PERF-01).
+    var textEdits: [TextEdit]
     /// The cards of a load with their title layouts (D-92).
     let laidOutCards: [CardStore.LaidOut]
     /// The number of cards that a card load reserves room for, or `nil`.
     let cardReserve: Int?
     /// The loads whose title layouts still run off the render thread.
     let cardLoadsInFlight: Int
-    /// The changes of the cards, in order.
-    let cardEdits: [CardEdit]
+    /// The changes of the cards, in order. The list goes back to the inbox (PERF-01).
+    var cardEdits: [CardEdit]
     /// The previews that the loader decoded (D-97).
     let decodedPreviews: [DecodedPreview]
     /// A request of a preview of this canvas, or `nil` (D-97).
@@ -68,5 +68,37 @@ struct RenderInput: Sendable {
             || endsFlight || eraserStart != nil
             || !eraserSamples.isEmpty || endsEraser
             || eraserReady != nil
+    }
+}
+
+/// The emptied lists of a frame, which go back to the inbox for reuse (PERF-01).
+struct SpareLists {
+    var eraserSamples: [Point] = []
+    var textEdits: [TextEdit] = []
+    var cardEdits: [CardEdit] = []
+}
+
+extension RenderInput {
+    /// Moves the lists out of the input and empties them with their capacity. The edit lists go
+    /// back too, so a drag step allocates no list (m10-plan.md task 3.1).
+    mutating func emptyLists() -> SpareLists {
+        var spares = SpareLists()
+        swap(&spares.eraserSamples, &eraserSamples)
+        swap(&spares.textEdits, &textEdits)
+        swap(&spares.cardEdits, &cardEdits)
+        spares.eraserSamples.removeAll(keepingCapacity: true)
+        spares.textEdits.removeAll(keepingCapacity: true)
+        spares.cardEdits.removeAll(keepingCapacity: true)
+        return spares
+    }
+}
+
+extension RenderInbox {
+    /// Keeps each spare list that holds more room than the list that the inbox keeps.
+    mutating func keep(_ spares: SpareLists) {
+        let samples = spares.eraserSamples
+        if spareEraserSamples.capacity < samples.capacity { spareEraserSamples = samples }
+        if spareTextEdits.capacity < spares.textEdits.capacity { spareTextEdits = spares.textEdits }
+        if spareCardEdits.capacity < spares.cardEdits.capacity { spareCardEdits = spares.cardEdits }
     }
 }

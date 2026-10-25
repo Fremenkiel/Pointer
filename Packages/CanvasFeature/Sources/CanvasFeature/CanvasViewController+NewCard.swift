@@ -35,7 +35,7 @@ extension CanvasViewController {
         }
         textEditing.pendingDrag = nil
         textEditing.pendingCard = card
-        renderer.changeCards(removing: [], adding: [card])
+        renderer.placeCard(card)
         assert(content.cards[card.id] == nil, "The pending card is not content yet")
     }
 
@@ -62,7 +62,7 @@ extension CanvasViewController {
         drag.current = moved
         textEditing.pendingDrag = drag
         textEditing.pendingCard = moved
-        renderer.changeCards(removing: [], adding: [moved])
+        renderer.placeCard(moved)
     }
 
     /// Ends the drag of the pending card. A lift places it with one undo step. A cancelled drag,
@@ -74,7 +74,7 @@ extension CanvasViewController {
         let hasMoved = drag.current.frame.origin != drag.card.frame.origin
         guard isPlaced, hasMoved, isEditingEnabled else {
             textEditing.pendingCard = drag.card
-            renderer.changeCards(removing: [], adding: [drag.card])
+            renderer.placeCard(drag.card)
             return
         }
         textEditing.pendingCard = nil
@@ -143,7 +143,7 @@ extension CanvasViewController {
                 sortKey: nextCardSortKey()
             )
             send(try perform(AddCard(card: card)))
-            renderer.changeCards(removing: [], adding: [card])
+            renderer.placeCard(card)
             assert(content.cards[card.id] != nil, "The new card is live")
         } catch CommandError.nodeLimitReached {
             onMessage(CanvasStrings.nodeLimit)
