@@ -81,6 +81,9 @@ final class GlyphAtlas {
 
     /// Returns the number of a font, and gives a new font the next number.
     func fontID(of font: UIFont) -> Int32 {
+        // Each layout names `TextLayout.baseFont` first, so an identity check finds it without
+        // the name and the hash: 0.43 ms per 5,000 boxes per pass before (m10-plan.md task 3.5).
+        if font === TextLayout.baseFont { return 0 }
         precondition(!font.fontName.isEmpty, "A font has a name")
         if let known = fontIDs[font.fontName] { return known }
         let next = Int32(fontIDs.count)
@@ -275,6 +278,9 @@ final class GlyphAtlas {
     private func insert(_ raster: GlyphRaster, key: Key, page index: Int) -> Placement {
         precondition(raster.width > 0 && raster.height > 0, "Only a bitmap goes into a page")
         guard var page = pages[index] else { preconditionFailure("Page \(index) is gone") }
+        // The page leaves the list while it changes, so its key list has one owner and grows in
+        // place. A copy per glyph made 4,000 inserts take 807 µs (m10-plan.md task 3.5).
+        pages[index] = nil
         let width = raster.width + 2 * Self.padding
         let height = raster.height + 2 * Self.padding
         if page.shelfX + width > page.texture.width {
