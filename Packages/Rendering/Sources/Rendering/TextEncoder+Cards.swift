@@ -95,7 +95,6 @@ extension TextEncoder {
             ring.append(contentsOf: borderQuads)
             borderQuads.removeAll(keepingCapacity: true)
         }
-        assert(borderQuads.isEmpty && previewQuads.isEmpty, "The runs took the quads")
     }
 
     /// Draws the preview run of the pass from the atlas: a preview quad samples its slot and

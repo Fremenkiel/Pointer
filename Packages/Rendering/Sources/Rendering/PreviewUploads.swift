@@ -24,7 +24,6 @@ final class PreviewUploads {
             buffers.append(buffer)
         }
         self.buffers = buffers
-        assert(self.buffers.count == DrawListRing.bufferCount, "One buffer per frame in flight")
     }
 
     /// The buffer of the current frame.
@@ -36,7 +35,6 @@ final class PreviewUploads {
         precondition(!buffers.isEmpty, "The uploads hold their buffers")
         index = (index + 1) % buffers.count
         used = 0
-        assert(used == 0, "A new frame has the whole buffer")
     }
 
     /// Copies `pixels` into the buffer of the frame.
@@ -47,7 +45,6 @@ final class PreviewUploads {
         let offset = used
         write(pixels, at: offset)
         used += pixels.count
-        assert(used <= Self.capacity, "The staging buffer holds the pixels")
         return offset
     }
 }

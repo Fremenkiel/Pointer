@@ -49,6 +49,11 @@ public final class CanvasRenderer {
         configuration: RendererConfiguration = RendererConfiguration(),
         previews: (any PreviewSource)? = nil
     ) throws(RenderingError) {
+        precondition(
+            configuration.instanceBudgetPerFrame > 0 && configuration.drawListCapacity > 0,
+            "The configuration values are positive, got \(configuration.instanceBudgetPerFrame) "
+                + "and \(configuration.drawListCapacity)"
+        )
         let relay = HandoffRelay()
         engine = try RenderEngine(
             configuration: configuration,
@@ -69,7 +74,6 @@ public final class CanvasRenderer {
         self.configuration = configuration
         self.relay = relay
         relay.renderer = self
-        assert(relay.renderer === self, "The relay reaches the renderer")
     }
 
     /// The number of strokes that the renderer held after its last frame.
@@ -196,7 +200,6 @@ public final class CanvasRenderer {
             box.editHandoff = handoff
             box.editsWantCompletion = box.editsWantCompletion || wantsCompletion
         }
-        assert(!callbacks.isEmpty, "The change waits for its frame")
     }
 
     /// Tells the renderer whether the eraser is the tool. The mask texture of the eraser exists

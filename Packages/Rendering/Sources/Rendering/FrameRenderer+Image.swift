@@ -17,7 +17,6 @@ extension FrameRenderer {
             blue: Double(background.z),
             alpha: 1
         )
-        assert(color.alpha == 1, "A drawable is opaque")
         return color
     }
 
@@ -110,7 +109,6 @@ extension FrameRenderer {
             destinationBytesPerImage: size.width * size.height
         )
         blit.endEncoding()
-        assert(readback.length >= size.width * size.height, "One byte per pixel of the image")
         return readback
     }
 

@@ -29,7 +29,6 @@ final class GlyphRing {
         }
         self.capacity = capacity
         self.buffers = buffers
-        assert(self.buffers.count == DrawListRing.bufferCount, "One glyph buffer per draw list")
     }
 
     /// The buffer of the current frame.
@@ -43,7 +42,6 @@ final class GlyphRing {
         precondition(!buffers.isEmpty, "The ring holds its buffers")
         index = (index + 1) % DrawListRing.bufferCount
         used = 0
-        assert(remaining == capacity, "A new frame has the whole buffer")
     }
 
     /// Writes glyph quads at the end of the current frame in one copy.
@@ -53,6 +51,5 @@ final class GlyphRing {
         precondition(used + glyphs.count <= capacity, "Glyph buffer is full at \(capacity) quads")
         write(glyphs, at: used)
         used += glyphs.count
-        assert(used <= capacity, "The glyph buffer passed its capacity")
     }
 }

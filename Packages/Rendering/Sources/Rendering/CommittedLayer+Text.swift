@@ -87,7 +87,6 @@ extension CommittedLayer {
         cards.grid.forEachItem(touching: listed) { textRedrawIDs.append(.card($0)) }
         texts.grid.forEachItem(touching: listed) { textRedrawIDs.append(.textBox($0)) }
         textRedraw = TextRedraw(target: front, scissor: scissor)
-        assert(textRedraw != nil, "A change in the front texture starts a redraw")
     }
 
     /// Draws the boxes of a running text redraw until the glyph buffer is full. The first pass
@@ -115,7 +114,6 @@ extension CommittedLayer {
         let isDone = redraw.cursor >= textRedrawIDs.count
         textRedraw = isDone ? nil : redraw
         if isDone { textRedrawArea = nil }
-        assert(isDone == (textRedraw == nil), "A done text redraw ends")
     }
 
     private static func joined(_ first: Rect, _ second: Rect) -> Rect {

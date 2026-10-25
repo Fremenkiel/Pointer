@@ -29,7 +29,6 @@ struct EntryBuckets {
         guard lists.count < bufferCount else { return }
         lists.append(contentsOf: repeatElement([], count: bufferCount - lists.count))
         instances.append(contentsOf: repeatElement(0, count: bufferCount - instances.count))
-        assert(lists.count == bufferCount, "One list per buffer")
     }
 
     /// The instances of one list so far.

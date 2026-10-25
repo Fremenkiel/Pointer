@@ -117,6 +117,11 @@ final class StrokeStore {
             blockBends.append(contentsOf: repeatElement(.nan, count: count))
             return first..<(first + count)
         }
+        precondition(
+            old.firstBlock + old.blockCount <= first,
+            "The blocks of the reused slot lie in the list, got \(old.firstBlock) + "
+                + "\(old.blockCount) of \(first)"
+        )
         let range = old.firstBlock..<(old.firstBlock + count)
         // A copy in place: a slice of the same array would make Swift copy the whole array.
         for offset in 0..<count {
@@ -124,7 +129,6 @@ final class StrokeStore {
         }
         blockSpacings.removeLast(count)
         for index in range { blockBends[index] = .nan }
-        assert(blockSpacings.count == first, "The reused range left new spacings behind")
         return range
     }
 
@@ -352,7 +356,6 @@ extension StrokeStore {
         let bytes =
             strokeLists + blockLists + slotLists + slotByID.storageByteCount
             + grid.storageByteCount
-        assert(bytes >= strokeLists + blockLists, "The sum holds each list")
         return bytes
     }
 }

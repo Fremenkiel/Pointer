@@ -303,6 +303,5 @@ final class TextEncoder {
         } else {
             runs.append(run)
         }
-        assert(runs.last?.count == run.count, "The run list ends with the run")
     }
 }

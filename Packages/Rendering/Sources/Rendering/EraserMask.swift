@@ -59,7 +59,6 @@ struct EraserMask {
     mutating func append(_ point: Point) {
         guard isActive, samples.count < Self.maxSamples, point.isFinite else { return }
         samples.append(point)
-        assert(samples.count <= Self.maxSamples, "Too many eraser samples")
     }
 
     /// Ends the gesture. The composite pass stops to use the mask.
@@ -68,7 +67,6 @@ struct EraserMask {
         samples.removeAll(keepingCapacity: true)
         stampedCount = 0
         stampedFor = nil
-        assert(!hasStamps, "An ended gesture has no stamps")
     }
 
     /// Stamps the new samples into `mask`, with the mapping of `front`.
@@ -107,7 +105,6 @@ struct EraserMask {
         encoder.endEncoding()
         stampedCount = samples.count
         stampedFor = target
-        assert(hasStamps, "The mask holds the stamps of the gesture")
     }
 
     /// Returns the capsule from the sample before `index` to `index` in mask pixels.

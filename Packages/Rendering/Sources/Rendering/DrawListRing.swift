@@ -81,6 +81,5 @@ final class DrawListRing {
         precondition(used + entries.count <= capacity, "Draw list is full at \(capacity) entries")
         write(entries, at: used)
         used += entries.count
-        assert(used <= capacity, "The draw list passed its capacity")
     }
 }

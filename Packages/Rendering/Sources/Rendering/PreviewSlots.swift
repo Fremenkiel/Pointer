@@ -49,7 +49,6 @@ struct PreviewSlots {
         }
         states = counts.map { [State](repeating: .free, count: $0) }
         lastUsed = counts.map { [UInt64](repeating: 0, count: $0) }
-        assert(states.count == Self.sides.count, "One state list per level")
     }
 
     /// The number of slots at all levels: the bound of the eviction loop.

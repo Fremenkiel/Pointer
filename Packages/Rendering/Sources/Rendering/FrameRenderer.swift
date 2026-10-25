@@ -235,7 +235,6 @@ final class FrameRenderer {
     func releaseCommittedLayer() {
         layer = nil
         needsNewLayer = true
-        assert(layer == nil, "The committed textures go")
     }
 
     /// A drawable of a new size, for example after a rotation, makes new textures.
@@ -259,7 +258,6 @@ final class FrameRenderer {
             logger.error("Committed layer failed: \(String(describing: error))")
             return nil
         }
-        assert(layer != nil, "A committed layer exists after the setup")
         return layer
     }
 
@@ -307,9 +305,12 @@ final class FrameRenderer {
         guard waitingHandoff > 0, let layer, layer.front != nil, pendingSlots.isEmpty,
             !layer.isRedrawing
         else { return }
+        assert(
+            commandBuffer.status == .notEnqueued,
+            "The handlers go on before the commit, status \(commandBuffer.status.rawValue)"
+        )
         let handoff = waitingHandoff
         waitingHandoff = 0
-        assert(handoff > 0, "A handoff number starts at 1")
         let onPresented = onPresented
         // The handler and its hop to the main queue run only for a change that asks (P-08).
         if waitingCompletion {

@@ -24,7 +24,6 @@ extension FrameRenderer {
         } catch {
             logger.error("The preview atlas failed: \(String(describing: error))")
         }
-        assert(previews == nil || textEncoder.previews === previews, "The encoder sees the atlas")
     }
 
     /// Takes the results of the loader. The next frame uploads them.
@@ -32,7 +31,6 @@ extension FrameRenderer {
         guard let previews, !decoded.isEmpty else { return }
         precondition(decoded.count <= Limits.maxNodesPerCanvas, "Too many previews in a frame")
         previews.pending.append(contentsOf: decoded)
-        assert(previews.pending.count >= decoded.count, "The results wait for their upload")
     }
 
     /// Copies the waiting previews into the atlas with one blit, as far as the staging buffer of
@@ -82,6 +80,5 @@ extension FrameRenderer {
         precondition(previews.wanted.count <= previews.requestLimit, "Too many new requests")
         body(previews.wanted, area)
         previews.wanted.removeAll(keepingCapacity: true)
-        assert(previews.wanted.isEmpty, "The requests went to the loader")
     }
 }

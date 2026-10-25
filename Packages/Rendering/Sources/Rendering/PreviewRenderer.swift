@@ -133,6 +133,5 @@ final class PreviewRenderer {
             target: target,
             image: placement.image
         )
-        assert(job != nil, "A request starts a job")
     }
 }

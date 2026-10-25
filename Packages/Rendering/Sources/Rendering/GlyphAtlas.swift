@@ -77,7 +77,6 @@ final class GlyphAtlas {
         self.byteBudget = byteBudget
         table = Array(repeating: nil, count: Self.exponentRange.count * Self.tableGlyphs)
         fontIDs[TextLayout.baseFont.fontName] = 0
-        assert(fontIDs.count == 1, "SF Mono has the number 0")
     }
 
     /// Returns the number of a font, and gives a new font the next number.
@@ -86,7 +85,6 @@ final class GlyphAtlas {
         if let known = fontIDs[font.fontName] { return known }
         let next = Int32(fontIDs.count)
         fontIDs[font.fontName] = next
-        assert(fontIDs.count == Int(next) + 1, "Each font has one number")
         return next
     }
 
@@ -95,7 +93,6 @@ final class GlyphAtlas {
         precondition(frame > 0, "Frames count from 1")
         guard page >= 0, pages.indices.contains(page) else { return }
         pages[page]?.lastFrame = frame
-        assert(pages[page] == nil || pages[page]?.lastFrame == frame, "The page has the frame")
     }
 
     /// Returns the scale exponent for a number of pixels per canvas point: the next power of two
@@ -177,7 +174,6 @@ final class GlyphAtlas {
     private func setTable(_ row: Int, _ glyph: Int, _ placement: Placement) {
         precondition(glyph >= 0 && glyph < Self.tableGlyphs, "Glyph \(glyph) is outside the table")
         table[row * Self.tableGlyphs + glyph] = placement
-        assert(table[row * Self.tableGlyphs + glyph] == placement, "The table holds the place")
     }
 
     /// The pixels per canvas point of a scale exponent.
@@ -227,7 +223,6 @@ final class GlyphAtlas {
         for _ in 0..<8 where side < wanted && side < pageSides.upperBound {
             side *= 2
         }
-        assert(pageSides.contains(side), "A page side stays inside its range")
         return side
     }
 

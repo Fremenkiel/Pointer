@@ -37,7 +37,6 @@ struct PreviewDecoder {
         let height = min(image.height, step)
         guard width > 0, height > 0, draw(image, width: width, height: height) else { return nil }
         let pixels = Array(buffer[0..<(width * height)])
-        assert(pixels.count == width * height, "One byte per pixel")
         return Image(width: width, height: height, pixels: pixels)
     }
 

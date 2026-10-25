@@ -84,7 +84,6 @@ extension FrameRenderer {
             dirtyTextArea = nil
         }
         layer.continueTextRedraw(text: textEncoder, context: context)
-        assert(dirtyTextArea == nil, "The change of the frame is taken")
     }
 
     /// Applies the eraser input of a frame: a start, new samples in view space, and an end, in

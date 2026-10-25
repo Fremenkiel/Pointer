@@ -43,7 +43,6 @@ extension GlyphRaster {
             // Safe: both arrays hold one element, and the count is 1.
             CTFontDrawGlyphs(font, &glyphs, &positions, 1, context)
         }
-        assert(pixels.count == width * height, "The bitmap keeps its size")
         return pixels
     }
 

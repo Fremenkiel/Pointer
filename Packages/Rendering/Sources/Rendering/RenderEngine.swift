@@ -76,7 +76,6 @@ final class RenderEngine: Sendable {
             change(&box)
             let signalsCamera = box.isWaitingForCamera && box.hasNewCamera
             if signalsCamera { box.isWaitingForCamera = false }
-            assert(!box.isWaitingForCamera || !box.hasNewCamera, "A waiting frame misses a camera")
             guard box.isSleeping, let wake = box.wake else { return (nil, signalsCamera) }
             box.isSleeping = false
             return (wake, signalsCamera)

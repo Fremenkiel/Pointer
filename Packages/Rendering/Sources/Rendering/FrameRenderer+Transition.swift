@@ -66,7 +66,6 @@ extension FrameRenderer {
         current.isFrozen = true
         transition = current
         releaseCommittedLayer()
-        assert(layer == nil, "An open frees the committed textures")
     }
 
     private func encodeFreeze(

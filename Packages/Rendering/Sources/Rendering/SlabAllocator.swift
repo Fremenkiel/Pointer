@@ -57,7 +57,6 @@ struct SlabAllocator {
         guard let index = classSizes.firstIndex(where: { $0 >= points }) else {
             preconditionFailure("No size class holds \(points) points")
         }
-        assert(classSizes[index] >= points, "Class \(index) is too small for \(points) points")
         return index
     }
 

@@ -77,10 +77,13 @@ public final class InkView: UIView {
             layer: metalLayer,
             frameRates: Self.frameRates
         )
+        assert(
+            metalLayer.device != nil,
+            "The renderer set up the layer before the render thread starts"
+        )
         thread.start()
         renderThread = thread
         updateLink = makeUpdateLink()
-        assert(updateLink?.isEnabled == true, "The step link runs while the view has a window")
     }
 
     /// Updates the drawable size and the viewport of the renderer.

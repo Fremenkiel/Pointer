@@ -125,7 +125,6 @@ final class PreviewAtlas {
         unavailable.remove(card)
         guard let entry = entries.removeValue(forKey: card) else { return }
         slots.free(entry.slot)
-        assert(entries[card] == nil, "The card left the atlas")
     }
 
     private func place(_ preview: DecodedPreview, frame: UInt64) -> Entry? {

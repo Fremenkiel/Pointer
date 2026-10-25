@@ -101,7 +101,6 @@ final class CommittedLayer {
         self.drawableHeight = drawableHeight
         self.fallback = fallback
         buildSlots.reserveCapacity(Self.initialSlotCapacity)
-        assert(textures.count == 2, "The layer alternates two textures")
     }
 
     /// Makes the mask texture if it is needed and missing, and drops it if it is not needed
@@ -110,7 +109,6 @@ final class CommittedLayer {
         guard isNeeded != (mask != nil) else { return }
         guard isNeeded else {
             mask = nil
-            assert(mask == nil, "A mask that is not needed is dropped")
             return
         }
         let texture = textures[0]
@@ -248,6 +246,10 @@ final class CommittedLayer {
     /// if the area lies outside the target.
     static func scissor(for area: Rect, in target: InkTarget) -> MTLScissorRect? {
         let pixels = target.pixelsPerCanvasPoint
+        precondition(
+            pixels > 0 && pixels.isFinite,
+            "A target has pixels per canvas point, got \(pixels)"
+        )
         let texture = target.canvasRect
         let minX = ((area.minX - texture.minX) * pixels - redrawMarginPixels).rounded(.down)
         let minY = ((area.minY - texture.minY) * pixels - redrawMarginPixels).rounded(.down)
@@ -258,7 +260,6 @@ final class CommittedLayer {
         let low = (x: min(max(minX, 0), width), y: min(max(minY, 0), height))
         let high = (x: min(max(maxX, 0), width), y: min(max(maxY, 0), height))
         guard high.x > low.x, high.y > low.y else { return nil }
-        assert(low.x >= 0 && low.y >= 0, "Scissor starts outside the texture")
         return MTLScissorRect(
             x: Int(low.x),
             y: Int(low.y),

@@ -103,7 +103,6 @@ extension FrameRenderer {
         if let previewRenderer { return previewRenderer }
         let made = try PreviewRenderer(resources: resources)
         previewRenderer = made
-        assert(made.job == nil, "Offscreen targets have no job")
         return made
     }
 

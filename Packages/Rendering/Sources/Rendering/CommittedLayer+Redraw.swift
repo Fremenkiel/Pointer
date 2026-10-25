@@ -48,7 +48,6 @@ extension CommittedLayer {
             draw($0, slots: buildRedrawSlots, encoder: encoder, context: context)
         }
         if !isRedrawing { redrawArea = nil }
-        assert(isRedrawing || redrawArea == nil, "A done redraw keeps no area")
     }
 
     /// Lists the strokes of `area` in a target, or returns `nil` if the area misses it.
