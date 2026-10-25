@@ -104,6 +104,12 @@ struct PreviewSlots {
         return nil
     }
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
+    /// The last frame that used `slot`.
+    func lastUse(of slot: Slot) -> UInt64 { lastUsed[slot.level][slot.index] }
+    // swiftlint:enable unused_declaration
+
     /// Notes that the frame `frame` drew the preview of `slot`.
     mutating func markUsed(_ slot: Slot, frame: UInt64) {
         assert(owner(of: slot) != nil, "Only a used slot is drawn")

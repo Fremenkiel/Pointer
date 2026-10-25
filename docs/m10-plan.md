@@ -771,3 +771,7 @@ Two faults of my own tests came up on the way. A last read of the fake library w
 ### 6.21 A screen with more cards than slots (task 2.5, item 6)
 
 `PreviewCrowdTests` draws 2,000 cards of 64 by 48 points at zoom 0.25 on a drawable of the 11-inch screen. The frame loop came to rest after 127 frames with 2,000 reads of the source, one per card (`T-25-crowd2.xcresult`). The atlas holds a slot of 128 pixels for each of these cards, so no slot of a drawn card is evicted, and the measured case has no fault. The test stays as a guard.
+
+### 6.22 The preview of the opened card during a flight (task 2.5, item 2)
+
+Each frame of a flight now marks the preview slot of the opened card as used, so a full atlas keeps that slot while the flight draws it. `PreviewRequestTests.openMarksSlot` read a last use at frame 3 while the flight drew frame 4 on the old code (`T-25b-old.xcresult`). With the change, it and the transition and open suites pass, 11 of 11 (`T-25b-new.xcresult`).

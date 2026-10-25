@@ -116,4 +116,26 @@ struct PreviewRequestTests {
         }
         #expect(attempts == [1, 2, 1])
     }
+
+    @Test("Each frame of an open marks the preview slot of the opened card as used")
+    func openMarksSlot() async throws {
+        let source = FakePreviews(data: try FakePreviews.png(width: 128, height: 96))
+        let renderer = try CanvasRenderer(previews: source)
+        let layer = Self.layer(for: renderer)
+        let card = try Self.cards(1)[0]
+        renderer.camera = Camera(center: card.frame.center, zoom: 1)
+        renderer.load([card])
+        try await Self.settle(renderer, layer: layer)
+        renderer.beginOpen(of: card.id)
+        for _ in 0..<5 {
+            _ = renderer.renderFrame(into: layer, deadline: nil)
+        }
+        let uses = renderer.engine.withRenderer { frames -> [UInt64] in
+            guard let previews = frames.previews, let entry = previews.entries[card.id] else {
+                return []
+            }
+            return [previews.slots.lastUse(of: entry.slot), frames.frame]
+        }
+        #expect(uses.count == 2 && uses.first == uses.last, "Last use and frame: \(uses)")
+    }
 }

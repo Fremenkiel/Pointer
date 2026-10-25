@@ -109,6 +109,11 @@ extension FrameRenderer {
     ) {
         guard let transition else { return }
         precondition(texture.pixelFormat == InkResources.drawableFormat, "Drawable is BGRA")
+        // The frame draws the preview of the opened card, so a full atlas must keep its slot
+        // during the flight (review after M8, section 3.2, item 6).
+        if let previews, let entry = previews.entries[transition.card] {
+            previews.markUsed(entry, frame: frame)
+        }
         assert(source == nil || source?.texture !== texture, "A pass never reads its target")
         let pass = compositePass
         pass.colorAttachments[0].texture = texture
