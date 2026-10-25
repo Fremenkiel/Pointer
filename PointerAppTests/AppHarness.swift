@@ -186,7 +186,7 @@ final class AppHarness {
 
     /// Makes a library of a new device at `path` with one workspace and one card at the time of
     /// `wallClock`, and closes it.
-    private static func fillLibrary(
+    static func fillLibrary(
         at path: String,
         folder: URL,
         wallClock: StoppedWallClock

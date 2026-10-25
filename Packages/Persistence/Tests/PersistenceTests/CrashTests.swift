@@ -50,7 +50,7 @@ struct CrashTests {
 
     /// Returns the folder of the build products: the parent of the test bundle, where the
     /// helper binary lies.
-    private static func productsFolder() throws -> URL {
+    static func productsFolder() throws -> URL {
         var url = Bundle.module.bundleURL
         for _ in 0..<maxLines where url.pathExtension != "xctest" {
             url = url.deletingLastPathComponent()

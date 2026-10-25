@@ -152,7 +152,9 @@ final class AppComposition {
     }
 
     /// Opens the library. If a restored library does not open, it restores the pre-restore
-    /// snapshot of `handoff`, which hands the app to a new composition (task 2.2, item 4).
+    /// snapshot, which hands the app to a new composition (task 2.2, item 4). The snapshot comes
+    /// from `handoff`, or from the restore marker after a stop of the process during a restore
+    /// (D-180). A good open removes the marker.
     ///
     /// - Returns: The launch, or `nil` after the way back.
     private func openLibrary(
@@ -160,13 +162,21 @@ final class AppComposition {
         device: DeviceID,
         handoff: Handoff?
     ) async throws -> LibraryLaunch? {
+        let marker = RestoreMarker(libraryPath: files.library, backupsFolder: files.backups)
         do {
-            return try await openLibrary(files, device: device)
+            let launch = try await openLibrary(files, device: device)
+            do {
+                try marker.remove()
+            } catch {
+                logger.error("The restore marker stays: \(error)")
+            }
+            return launch
         } catch {
-            guard let handoff, let fallback = handoff.fallback else { throw error }
+            guard let fallback = handoff?.fallback ?? marker.snapshot() else { throw error }
             logger.fault("The restored library did not open: \(error)")
             await deviceStore?.close()
-            guard await undoRestore(from: fallback, files: files, handoff: handoff) else {
+            let back = handoff ?? Handoff(lastClock: nil, message: nil, fallback: fallback)
+            guard await undoRestore(from: fallback, files: files, handoff: back) else {
                 throw error
             }
             return nil

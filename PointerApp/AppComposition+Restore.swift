@@ -54,6 +54,10 @@ extension AppComposition {
         let fallback: URL
         do throws(PersistenceError) {
             fallback = try await writer.writePreRestoreSnapshot()
+            // The marker comes before the copy, so that a launch after a stop of the process
+            // finds the way back (D-180).
+            try RestoreMarker(libraryPath: files.library, backupsFolder: files.backups)
+                .write(snapshot: fallback)
         } catch {
             await importer.discard(checked)
             return refuse(BackupMessage(error))
@@ -114,9 +118,14 @@ extension AppComposition {
     func undoRestore(from fallback: URL, files: AppFiles, handoff: Handoff) async -> Bool {
         guard let repository else { return false }
         let importer = SnapshotImport(temporaryFolder: files.temporary)
+        // The way back has extra time of its own. A stop rolls its copy back too, and the marker
+        // then gives the next launch the same way back (D-180).
+        let stop = RestoreStop()
+        let extraTime = ExtraTime("Undo restore", time: backgroundTime) { stop.stop() }
+        defer { extraTime.end() }
         do {
             let checked = try await importer.copyAndCheck(fallback)
-            try await repository.restore(from: checked, stop: RestoreStop())
+            try await repository.restore(from: checked, stop: stop)
             await importer.discard(checked)
         } catch {
             logger.fault("The way back after a failed restore failed: \(error)")

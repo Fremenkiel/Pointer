@@ -911,3 +911,10 @@ Four alternating pairs of the base 619beb3 and the changes of tasks 3.1 and 3.3 
 - `CardMenuSnapshotTests.testStrokeLimitMessage` compares the message as an alert with its reference, made on the iPad.
 - `CameraControllerTests.centerExactlyAtBound` covers `Limits.maxCameraCoordinate` exactly at the bound and one step past it (task 6.1, the gaps on the iPad).
 
+
+### 6.39 A restore after a stop of the process (task 6.3, D-180)
+
+- Before the copy, the restore writes the marker `library.sqlite.restoring` with the name of the pre-restore snapshot and flushes it with `fsync`. A good open removes it. At a launch, a marker and a library that does not open run the way back from the named snapshot and show `restoreUndone`. The way back has extra time of its own. storage.md section 7.5, steps 4 and 9, say so.
+- `RestoreCrashTests` (Mac) stops the helper process with `SIGKILL` after the marker, during the copy, and after `SQLITE_DONE`. Each case opens with the old or the new content and passes `integrity_check`, and the marker names a snapshot that exists.
+- `RestoreMarkerTests` (iPad) launches with a marker and a restored library whose clock row is damaged, as the process stopped before the way back in memory ran. The old code showed "libraryFailed" ("The launch failed: … hex clock value of 7 characters"). The new code restores the snapshot, shows `restoreUndone`, and removes the marker. A first form of the test wrote bytes that are no SQLite file, and the way back failed on it. A stop never leaves such a file, because the copy switches only at `SQLITE_DONE`, so the test now uses the case that can happen.
+- The peak of a restore at the stroke limit (D-180, item 5): `BackupBudgetTests.testRestorePeakOfStrokeLimit` restores a library of 200,000 strokes of 60 points, 271 MB. In 3 runs it took 0.48 to 0.56 s, with a peak of 9 to 11 MB of the 5,012 to 5,065 MB available. The 78 MB peak of the Mac measure in D-180 was the footprint of the whole helper process. The peak is far from the memory limit, so the copy needs no new decision.
