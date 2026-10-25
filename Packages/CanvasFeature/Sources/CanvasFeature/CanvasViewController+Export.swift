@@ -24,9 +24,15 @@ extension CanvasViewController {
         )
         historyControls.isExporting = true
         canvasExport.task = Task { [weak self] in
-            let result = await Task.detached {
+            let export = Task.detached {
                 Result { () throws(ExportError) -> Data in try PDFExporter.pdfData(of: content) }
-            }.value
+            }
+            // The export is no child task, so a cancel of this task reaches it by hand.
+            let result = await withTaskCancellationHandler {
+                await export.value
+            } onCancel: {
+                export.cancel()
+            }
             self?.finishExport(result, name: name)
         }
     }
@@ -54,6 +60,9 @@ extension CanvasViewController {
             canvasExport.share(exportItemProvider(for: data, name: name))
         case .failure(.emptyCanvas):
             onMessage(CanvasStrings.exportEmpty)
+        case .failure(.cancelled):
+            // The canvas closed during the export, so no sheet opens.
+            break
         case .failure(let error):
             // The entry names the error only, never the content (SAFE-06).
             logger.error("The PDF export failed: \(String(describing: error))")

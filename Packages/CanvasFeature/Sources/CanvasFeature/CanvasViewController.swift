@@ -207,6 +207,8 @@ public final class CanvasViewController: UIViewController {
         guard parent == nil else { return }
         endSession()
         rowChannel?.finish()
+        // An export of 200,000 strokes holds about 1 GB of points for up to 17 s.
+        canvasExport.task?.cancel()
     }
 
     /// Takes the key commands of the hardware keyboard.

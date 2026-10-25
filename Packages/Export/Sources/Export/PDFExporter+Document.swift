@@ -18,8 +18,9 @@ extension PDFExporter {
     /// its argument and is not bound to an actor, so the canvas runs it off the main actor (D-138).
     ///
     /// - Returns: The PDF data.
-    /// - Throws: `ExportError.emptyCanvas` if the content has no stroke and no text box, and
-    ///   `ExportError.pdfContextFailed` if Core Graphics makes no PDF context.
+    /// - Throws: `ExportError.emptyCanvas` if the content has no stroke and no text box,
+    ///   `ExportError.pdfContextFailed` if Core Graphics makes no PDF context, and
+    ///   `ExportError.cancelled` if the task is cancelled.
     public static func pdfData(of content: CanvasContent) throws(ExportError) -> Data {
         let interval = signposter.beginInterval("Export")
         defer { signposter.endInterval("Export", interval) }
@@ -36,8 +37,8 @@ extension PDFExporter {
         // The canvas has y down and the PDF has y up. One scale fits the whole page (D-142).
         context.translateBy(x: 0, y: layout.height)
         context.scaleBy(x: layout.scale, y: -layout.scale)
-        drawStrokes(of: content, from: bounds.origin, in: context)
-        drawText(of: content, from: bounds.origin, in: context)
+        try drawStrokes(of: content, from: bounds.origin, in: context)
+        try drawText(of: content, from: bounds.origin, in: context)
         context.endPDFPage()
         context.closePDF()
         assert(data.length > 0, "The PDF of \(content.canvasID) is not empty")

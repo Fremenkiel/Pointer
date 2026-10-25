@@ -19,7 +19,7 @@ struct PDFTextTests {
                 ExportContent.textBox(second, at: Point(x: 0, y: 200)),
             ]
         )
-        let document = try #require(Self.document(of: content))
+        let document = try #require(try Self.document(of: content))
         let words = [
             "let", "tree", "buildTree(from:", "nodes)", "return", "tree.depth", "rotation",
         ]
@@ -36,7 +36,7 @@ struct PDFTextTests {
         let content = try ExportContent.content(
             textBoxes: [ExportContent.textBox(text, at: Point(x: 0, y: 0))]
         )
-        let document = try #require(Self.document(of: content))
+        let document = try #require(try Self.document(of: content))
         let pageText = try #require(document.page(at: 0)?.string)
         for word in ["tree", "🌳", "node", "漢字かな", "한글", "leaf"] {
             #expect(pageText.contains(word), "\(word)")
@@ -49,7 +49,7 @@ struct PDFTextTests {
         let content = try ExportContent.content(
             textBoxes: [ExportContent.textBox("alpha\nbravo\ncharlie", at: Point(x: 0, y: 0))]
         )
-        let document = try #require(Self.document(of: content))
+        let document = try #require(try Self.document(of: content))
         let page = try #require(document.page(at: 0))
         let alpha = try #require(document.findString("alpha", withOptions: []).first)
         let charlie = try #require(document.findString("charlie", withOptions: []).first)
@@ -59,7 +59,7 @@ struct PDFTextTests {
 
     /// Draws the text of the content on a flipped page of 1,000 by 1,000 points, as the exporter
     /// does, and reads the PDF back.
-    private static func document(of content: CanvasContent) -> PDFDocument? {
+    private static func document(of content: CanvasContent) throws -> PDFDocument? {
         let data = NSMutableData()
         var box = CGRect(x: 0, y: 0, width: 1_000, height: 1_000)
         guard let consumer = CGDataConsumer(data: data as CFMutableData),
@@ -68,7 +68,7 @@ struct PDFTextTests {
         context.beginPDFPage(nil)
         context.translateBy(x: 0, y: box.height)
         context.scaleBy(x: 1, y: -1)
-        PDFExporter.drawText(of: content, from: Point(x: -50, y: -50), in: context)
+        try PDFExporter.drawText(of: content, from: Point(x: -50, y: -50), in: context)
         context.endPDFPage()
         context.closePDF()
         return PDFDocument(data: data as Data)

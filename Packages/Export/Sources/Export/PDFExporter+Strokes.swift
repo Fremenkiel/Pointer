@@ -32,19 +32,25 @@ extension PDFExporter {
         return path
     }
 
+    /// The strokes between two checks for a cancel: a check costs an atomic read.
+    static let cancelCheckStrokes = 1_024
+
     /// Draws each stroke of the content in black, with its width and round caps and joins.
     ///
     /// - Precondition: `pageOrigin` is finite.
+    /// - Throws: `ExportError.cancelled` if the task is cancelled.
     static func drawStrokes(
         of content: CanvasContent,
         from pageOrigin: Point,
         in context: CGContext
-    ) {
+    ) throws(ExportError) {
         precondition(pageOrigin.isFinite, "Page origin of \(content.canvasID) is not finite")
         context.setStrokeColor(CGColor(gray: 0, alpha: 1))
         context.setLineCap(.round)
         context.setLineJoin(.round)
-        for stroke in content.strokes.values {
+        for (index, stroke) in content.strokes.values.enumerated() {
+            // A closed canvas cancels its export, which can hold 1 GB of points for 17 s.
+            if index.isMultiple(of: cancelCheckStrokes), Task.isCancelled { throw .cancelled }
             context.addPath(path(of: stroke, from: pageOrigin))
             context.setLineWidth(CGFloat(stroke.width))
             context.strokePath()

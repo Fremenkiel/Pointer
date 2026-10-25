@@ -4,4 +4,7 @@ public enum ExportError: Error, Equatable, Sendable {
     case emptyCanvas
     /// Core Graphics did not make the PDF context.
     case pdfContextFailed
+    /// The task of the export was cancelled, for example at the close of its canvas (review
+    /// after M9, section 3.2, item 9).
+    case cancelled
 }

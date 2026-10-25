@@ -779,3 +779,8 @@ Each frame of a flight now marks the preview slot of the opened card as used, so
 ### 6.23 The screen size of a new preview (task 2.5, item 5)
 
 `PreviewFiles` now reads the size of the canvas screen at each render, through a closure of the main actor, instead of the size at its creation. `PreviewFilesTests` renders the same ink for two canvases, before and after a change of the size from landscape to portrait. With the old fixed size, both previews were the same 937 bytes (`T-25c-old.xcresult`). With the change, the second preview follows the new size, and the app suites of the navigation pass (`T-25c-new.xcresult`). The files of earlier previews keep their region until the next event that writes a preview (D-111).
+
+### 6.24 Lifetimes (task 2.6)
+
+- `RowChannel` finishes its stream in `deinit`, so a channel that goes without `finish()` frees its consumer and the library. `RowChannelTests` found the library alive with the old code (`T-26-old.xcresult`). A send after the end now also writes a log entry.
+- The close of a canvas cancels its export, the canvas forwards the cancel to the detached task of the PDF, and `PDFExporter` throws `ExportError.cancelled` at the next check. `ExportCancelTests` cancels an export of 200,000 handwriting strokes after 200 ms. The old export ended 14.23 s after the cancel with a whole PDF (`T-26b-old.xcresult`). The new one ends within 1 s with `.cancelled` (`T-26b-new.xcresult`).
