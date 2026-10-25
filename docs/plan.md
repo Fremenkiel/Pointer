@@ -188,6 +188,8 @@ Review after M9, 2026-10-24: [review-2026-10-24-m9.md](review-2026-10-24-m9.md).
 
 ## M10: Hardening
 
+The tasks are in [m10-plan.md](m10-plan.md). The product owner decided D-175 to D-187 on 2026-10-25.
+
 - Limits: each limit in [architecture.md](architecture.md) section 10 has a test at the limit and at the limit plus one.
 - UI tests for the main flows.
 - Performance baselines for all budgets.

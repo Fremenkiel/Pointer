@@ -1,6 +1,6 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-114 to D-119 on 2026-10-22. D-115 replaced D-09 and D-100, and D-117 replaced D-08. The M6 fix plan raised D-120 to D-122 on 2026-10-22, and the product owner decided them on the same day, then D-123 and D-124. The review before M7 raised D-125 to D-131 on 2026-10-22, and the product owner decided them on the same day. D-130 replaced the rule of D-07. The review after M7 raised D-138 to D-142 for M8 on 2026-10-23, and the product owner decided them with the recommendations on the same day. The M8 plan raised D-143 on the same day. Task 2.7 raised D-144 on the same day. The product owner decided D-143 and D-144 with the recommendations on the same day. The close of M8 raised D-145 on the same day, and the product owner decided it on 2026-10-24. The M8 fix plan raised D-146 on 2026-10-24, and the product owner decided it on the same day. The M8 fix plan raised D-147 on the same day, and the product owner decided it on the same day. The review after M8 raised D-148 to D-161 on 2026-10-24 ([review-2026-10-24.md](review-2026-10-24.md)), and the M9 research raised D-162 to D-165 on the same day. The product owner decided D-148 to D-165 on the same day, with the recommendations except D-161. Tasks 1.3 and 3 of the M9 plan raised D-166 and D-167 on the same day, and the product owner decided them with the recommendations. The review after M9 raised D-168 to D-171 on 2026-10-24 ([review-2026-10-24-m9.md](review-2026-10-24-m9.md)). The product owner decided them on the same day, with the recommendations except D-168. On 2026-10-25, research for the review raised D-172 to D-174, and the product owner decided them and D-132. D-173 changes the rule CONTRACT-02 and D-174 the enforcement of five rules of code-of-code.md.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-114 to D-119 on 2026-10-22. D-115 replaced D-09 and D-100, and D-117 replaced D-08. The M6 fix plan raised D-120 to D-122 on 2026-10-22, and the product owner decided them on the same day, then D-123 and D-124. The review before M7 raised D-125 to D-131 on 2026-10-22, and the product owner decided them on the same day. D-130 replaced the rule of D-07. The review after M7 raised D-138 to D-142 for M8 on 2026-10-23, and the product owner decided them with the recommendations on the same day. The M8 plan raised D-143 on the same day. Task 2.7 raised D-144 on the same day. The product owner decided D-143 and D-144 with the recommendations on the same day. The close of M8 raised D-145 on the same day, and the product owner decided it on 2026-10-24. The M8 fix plan raised D-146 on 2026-10-24, and the product owner decided it on the same day. The M8 fix plan raised D-147 on the same day, and the product owner decided it on the same day. The review after M8 raised D-148 to D-161 on 2026-10-24 ([review-2026-10-24.md](review-2026-10-24.md)), and the M9 research raised D-162 to D-165 on the same day. The product owner decided D-148 to D-165 on the same day, with the recommendations except D-161. Tasks 1.3 and 3 of the M9 plan raised D-166 and D-167 on the same day, and the product owner decided them with the recommendations. The review after M9 raised D-168 to D-171 on 2026-10-24 ([review-2026-10-24-m9.md](review-2026-10-24-m9.md)). The product owner decided them on the same day, with the recommendations except D-168. On 2026-10-25, research for the review raised D-172 to D-174, and the product owner decided them and D-132. D-173 changes the rule CONTRACT-02 and D-174 the enforcement of five rules of code-of-code.md. The M10 plan raised D-175 to D-187 on 2026-10-25 ([m10-plan.md](m10-plan.md) section 5), and the product owner decided them with the recommendations on the same day.
 
 Status values: Open, Decided, Replaced.
 
@@ -182,6 +182,19 @@ Status values: Open, Decided, Replaced.
 | D-172 | Performance baselines (M10 acceptance 1) | a committed baseline file for the M4 iPad and a compare script: the median of at least 10 runs, more than 10 % worse, and a Mann-Whitney test with p < 0.01. The budgets stay hard limits | Decided (2026-10-25) |
 | D-173 | The count of contract checks (CONTRACT-02) | one real check in each Tier A and B function of more than 10 lines, after JPL rule 16. Delete the checks that restate the line before them. Report the average without a limit | Decided (2026-10-25) |
 | D-174 | Enforcement that code-of-code.md names but that does not exist | tools for FLOW-04, SAFE-03, SAFE-02, and TEST-02, and no Periphery: dead code through SwiftLint `unused_declaration` or review | Decided (2026-10-25) |
+| D-175 | Which constructs count as one level of nesting (FLOW-04) | each body of `if`, `else`, `guard`, `for`, `while`, `repeat`, `switch`, `do`, `catch`, or a closure adds one level. A `case` adds none, and `else if` stays flat | Decided (2026-10-25) |
+| D-176 | Which exit of a `guard` counts as an error exit (CONTRACT-02) | `throw`, `preconditionFailure`, `precondition`, and `assert` count. Another value counts with `// contract: error value`. Body lines without blank and comment lines | Decided (2026-10-25) |
+| D-177 | What one run of D-172 is, and which tests the baseline holds | one run is one process of the performance suites alone. 10 against 10, 10 more at p from 0.01 to 0.05. Time samples only. Outside `make check` | Decided (2026-10-25) |
+| D-178 | The form of the UI tests | an XCUITest target for the finger flows with `-uiTestLibrary`, the draw step in process, waits on an accessibility value | Decided (2026-10-25) |
+| D-179 | What Dynamic Type in the chrome covers | text scales to AX5, icon buttons keep their size with the Large Content Viewer, custom actions, A11Y-01 and A11Y-02 | Decided (2026-10-25) |
+| D-180 | A restore after a stop of the process | a marker file with the snapshot name, and the way back at the next launch | Decided (2026-10-25) |
+| D-181 | The stroke limit message and a grid budget per canvas | "This canvas holds no more ink. Erase some ink or draw in a card." No message for the erase. No grid budget | Decided (2026-10-25) |
+| D-182 | The rebalance of sort keys | no rebalance. Appends add one unit at a width of at least 4 digits | Decided (2026-10-25) |
+| D-183 | The history budget of the shown canvas, in points or bytes | the shown canvas inside `CanvasSessions`, counted in bytes: 17 × n + 192 per stroke | Decided (2026-10-25) |
+| D-184 | A fix of a race without a deterministic test (TEST-03) | hook closures that stay in Release and are `nil` in the app, a custom serial executor for actor races, a lint rule for hooks | Decided (2026-10-25) |
+| D-185 | The order of the text boxes in the PDF | top to bottom, then left to right, then by ID | Decided (2026-10-25) |
+| D-186 | `make validation` in `make check` | a separate target with API and shader validation, at each close and for each change of the render code | Decided (2026-10-25) |
+| D-187 | The allow list of the per-function check of TEST-02 | the script skips the message autoclosures. The list holds at most 3 functions | Decided (2026-10-25) |
 
 ## Details
 
@@ -1818,6 +1831,231 @@ Status values: Open, Decided, Replaced.
   - SAFE-02: a SwiftLint custom rule fails on `_ = try?` and on a statement that starts with `try?`. Review covers the other forms.
   - TEST-02: `Scripts/coverage.swift` reads the count of each function from `llvm-cov export` and fails on a Tier A function that no test runs, with a short allow list.
   - SCOPE-01: no Periphery. M10 tries the SwiftLint analyzer rule `unused_declaration`. If it does not work on the packages of the project, the text of SCOPE-01 names review only.
+
+### D-175 Which constructs count as one level of nesting (FLOW-04)
+
+- Raised by the M10 plan on 2026-10-25, task 1.3. Decided by the product owner on 2026-10-25: the recommendation.
+- Facts: D-174 asks for a SwiftSyntax tool that counts the depth of control flow and fails above 3. It names `if`, `guard`, `for`, `while`, `repeat`, `switch`, `do`, and closures, and leaves the exact count to M10. The SwiftLint rule `nesting` counts only nested types and functions.
+- Open points: do `else` and `catch` add a level? Does a `case` add a level below its `switch`? Does an `else if` stay at the level of its `if`? Where does a nested function start?
+- Options: (a) each body adds one level: `if`, `else`, `guard`, `for`, `while`, `repeat`, `switch`, `do`, `catch`, and a closure. A `case` adds none. An `else if` stays at the level of its `if`. A nested function starts at 0. (b) As (a), but a `guard` body does not count, because it only exits. (c) As (a), but a `case` adds one level.
+- Research, 2026-10-25:
+  - SonarSource Cognitive Complexity 1.7 raises the nesting for `if`, `else if`, `else`, `switch`, loops, `catch`, and lambdas. A `switch` with all its cases is one level (<https://www.sonarsource.com/docs/CognitiveComplexity.pdf>).
+  - ESLint `max-depth` and Checkstyle `NestedIfDepth` keep an `else if` at the level of its `if`. ESLint adds no level for a `case` (<https://github.com/eslint/eslint/blob/main/lib/rules/max-depth.js>, <https://github.com/checkstyle/checkstyle/blob/master/src/main/java/com/puppycrawl/tools/checkstyle/checks/coding/NestedIfDepthCheck.java>).
+  - clang-tidy `readability-function-size` counts each brace block, also the body of a lambda (<https://github.com/llvm/llvm-project/blob/main/clang-tools-extra/clang-tidy/readability/FunctionSizeCheck.cpp>).
+  - No source treats the body of an early exit in a special way.
+- Measured on 2026-10-25 with a SwiftSyntax 604.0.0 tool in a release build, over 1,413 functions of `Packages/*/Sources` and `PointerApp`. The tool ran in 0.22 s, and its first build took about 120 s.
+
+| Option | Functions above 3 |
+|---|---|
+| (a) | 2: `RowChannel.swift:23` (depth 5) and `WorkspaceList.swift:20` (depth 4) |
+| (b) `guard` body not counted | 2 |
+| (c) `case` adds a level | 5 |
+| (d) closures not counted | 1, and it hides the depth of 5 in `RowChannel` |
+
+- Recommendation: (a). It matches the tools above on each open point. (b) changes no result, (c) adds 3 findings that no tool above reports, and (d) hides a real `Task` closure of 5 levels. The fix of the 2 findings is small: a helper function in `RowChannel` and a subview in `WorkspaceList`.
+
+### D-176 Which exit of a `guard` counts as an error exit (CONTRACT-02)
+
+- Raised by the M10 plan on 2026-10-25, task 1.1. Decided by the product owner on 2026-10-25: the recommendation.
+- Facts: D-173 counts a `guard` that throws or returns "a value that the contract of the function names as an error". The script cannot read a contract. Today it counts each `guard` that returns any value, also `return []`. D-173 also says "more than 10 lines" without a rule for blank lines and comment lines. The script counts all lines between the braces today.
+- Options: (a) the script counts `throw`, `return nil`, `return false`, a `return` of `.failure`, and `preconditionFailure`. Another error value counts with the comment `// contract: error value` on the `return` line. (b) only `throw` and `preconditionFailure`. (c) each `guard` with a `return` of a value, as today.
+- Line count options: (1) all lines between the braces, as today. (2) lines without blank lines and comment lines, as SwiftLint counts `function_body_length`.
+- Research, 2026-10-25:
+  - JPL rule 16: an assertion checks "anomalous conditions that should never happen in real-life executions" (<https://yurichev.com/mirrors/C/JPL_Coding_Standard_C.pdf>).
+  - The Swift error handling rationale models a "simple domain error" with an optional return value, and a recoverable error with `throws` (<https://github.com/swiftlang/swift/blob/main/docs/ErrorHandlingRationale.md>).
+  - SwiftLint 0.65.1 counts the body lines of `function_body_length` without blank lines and comment lines (<https://github.com/realm/SwiftLint/blob/0.65.1/Source/SwiftLintCore/Extensions/SwiftLintFile+BodyLineCount.swift>).
+- Measured on 2026-10-25 with a changed copy of the script, Tier A and B. A nested function counts once. `precondition` and `assert` count in each option.
+
+| | Functions of more than 10 lines | Without a check, option (a) | (b) | (c) |
+|---|---|---|---|---|
+| Lines (1), all lines | 304 | 4 | 7 | 4 |
+| Lines (2), without blank and comment lines | 297 | 4 | 7 | 4 |
+
+- The exits of all `guard` statements in Tier A and B are these. `throw` 128, `return` without a value 85, `return nil` 57, another value 26, `preconditionFailure` 22, `continue` 21, `return false` 19, `break` 10, `return true` 7, `return []` 6, and an enum case 5. No `return .failure` exists.
+- Most of the 19 `return false` exits answer a question, for example "no hit" or "no work" (`StrokeHitTest.swift:157`, `CommittedLayer.swift:179`). They are not errors.
+- Recommendation: (b) with the marker, and (2). `throw`, `preconditionFailure`, `precondition`, and `assert` count by themselves. A `return nil`, a `return false`, or another value counts only with `// contract: error value` on the `return` line. This follows JPL and the Swift rationale, and it costs a check or a marker in 3 more functions: `SnapshotFiles.swift:98`, `DeviceStateStore.swift:93`, and `PreviewImage.swift:35`. Lines (2) is the count of SIZE-01.
+
+### D-177 What one run of D-172 is, and which tests the baseline holds
+
+- Raised by the M10 plan on 2026-10-25, tasks 0.3, 0.4, and 8.2. Decided by the product owner on 2026-10-25: the recommendation.
+- Facts: D-172 compares "the median of at least 10 runs". A full run of `PointerDeviceTests` takes about 8 minutes, and the order of its suites changes the measures (D-145). The allocation tests count exact numbers with a limit of 0 or of a bare frame. `FrameLoopTests` reports late frames without a limit.
+- Options: (a) a run is one run of the performance suites alone, with `-only-testing`, 10 runs for the baseline and 10 for the compare. (b) a run is a full run of `PointerDeviceTests`. (c) each test repeats its measure 10 times in one run.
+- Open points: whether the allocation counts join the baseline, whether `make perf-compare` joins `make check`, and when the baseline file changes.
+- Research, 2026-10-25:
+  - Georges et al. (OOPSLA 2007): iterations in one process are not independent, so the spread must come from separate runs of the process (<https://dri.es/files/oopsla07-georges.pdf>). Kalibera and Jones (ISMM 2013): repeat at the highest level that has random variation (<https://kar.kent.ac.uk/33611/45/p63-kaliber.pdf>).
+  - Chromium Pinpoint starts with 10 attempts per change and doubles them up to 160 while the result is unknown (<https://chromium.googlesource.com/catapult/+/HEAD/dashboard/dashboard/pinpoint/models/job_state.py>). WebKit splits 20 iterations into 4 processes (<https://bugs.webkit.org/show_bug.cgi?id=111726>).
+  - Android runs device benchmarks in a nightly build, not at each commit (<https://developer.android.com/training/testing/continuous-integration/automation>). Xcode and Mozilla change a baseline by a manual step.
+- Computed on 2026-10-25 with the exact two-sided Mann-Whitney test without ties. The smallest p is 0.0079 for 5 runs against 5, and 1.08e-5 for 10 against 10. With 5 runs, the two sets must separate fully to reach p < 0.01.
+- Simulated on 2026-10-25, 10,000 trials per row, the rule of D-172 with 10 runs against 10:
+
+| True change | CV 5 % | CV 8 % | CV 12 % |
+|---|---|---|---|
+| None (false alarm) | 0.0 % | 0.2 % | 0.3 % |
+| 10 % slower | 49 % | 34 % | 15 % |
+| 15 % slower | 96 % | 74 % | 37 % |
+| 20 % slower | 100 % | 95 % | 64 % |
+
+- The spread of the device measures in the plans: the open of D-56 has a CV of 1.4 to 3.5 %. The slowest erase has about 5 %, and the medians of erase, undo, and redo 6 to 10 %. The memory peak of an export has about 20 %.
+- Measured on the iPad on 2026-10-25: one run of the 24 performance suites alone took 286 s, with 51 tests (`T-q-perf-1.xcresult`). 10 runs take about 48 minutes.
+- Fact from the table: a change of exactly 10 % fails the compare in about half of the cases at best. The median of the new runs is above 10 % only half of the time. The rule finds 15 % at a CV of 5 %, and 20 % at a CV of 8 %.
+- Recommendation: (a), with these details:
+  1. A run is one `xcodebuild test-without-building` of the performance suites alone, as a new process. Each test reports the median of its own repetitions as one sample.
+  2. The baseline holds the time samples. The memory peaks and the late-frame counts are recorded without a gate. The allocation counts stay hard limits, because they are exact numbers.
+  3. 10 runs against 10. If p is from 0.01 to 0.05, run 10 more runs of each build, as Pinpoint does.
+  4. Alternate the runs of the base and the new build where both exist, so that the heat of the iPad affects both.
+  5. `make perf-compare` runs at each close of a milestone and for each change that claims an effect on performance. It is not a part of `make check`.
+  6. The baseline file records the commit, the iPadOS version, and the Xcode version. It changes only by a commit that the product owner approves, and again after an update of iPadOS or Xcode.
+  7. architecture.md section 12 states the detection limits of the table, so that "fails at 10 %" does not promise more than the test gives.
+
+### D-178 The form of the UI tests
+
+- Raised by the M10 plan on 2026-10-25, task 7.1. Decided by the product owner on 2026-10-25: the recommendation.
+- Facts: code-of-code.md section 3.11 asks for UI tests of these flows: create a workspace, draw, open a card, leave a card, undo, and export. No UI test target exists. XCUITest runs out of process and makes only finger touches. No API makes Apple Pencil touches, and a finger never draws (TOOL-03). The tests of `PointerAppTests` run in process and can read the renderer state.
+- Options: (a) a new XCUITest target `PointerUITests` for the finger flows. A launch argument starts the app on an empty library in a temporary folder, as `-fillStrokes` does (D-55). The draw step runs in process. (b) all flows in process in `PointerDeviceTests`, with real controls and UIKit events. (c) an XCUITest target with a test-only way to draw.
+- Research, 2026-10-25:
+  - The XCTest and XCUIAutomation interfaces of the Xcode 27.1 SDK have no API for a pencil touch. `XCUICoordinate` gives finger gestures only (<https://developer.apple.com/documentation/xctest/xcuicoordinate>). The only tool that makes stylus events, Lyft Hammer, uses private API and "should never be included in a production app" (<https://github.com/lyft/Hammer>).
+  - Apple: "Continue to use XCTest for user interface tests and performance tests" (<https://developer.apple.com/documentation/xctest>). WWDC18 session 417: a UI test waits on a state, never on a fixed delay (<https://developer.apple.com/videos/play/wwdc2018/417/>). The Xcode 27 SDK has `XCUIElement.wait(for:toEqual:timeout:)`.
+  - Infomaniak kMail and kDrive start each UI test with launch arguments that reset the data (<https://github.com/Infomaniak/ios-kMail/tree/main/MailUITests>). Proton Drive has a set of launch flags for UI tests (<https://github.com/ProtonDriveApps/ios-drive/blob/main/PDCore/PDCoreIOS/Constants/UITestsFlag.swift>). Threema has no public UI test target.
+  - On the iPad, the app under test uses the container of the real library of the product owner. A launch argument that moves all files into a new temporary folder is thus required.
+- Recommendation: (a), with three details:
+  1. The launch argument `-uiTestLibrary <token>` makes `AppFiles` in `tmp/UITest-<token>`, as `AppHarness` does. It never touches the real library.
+  2. The draw step runs in process. The XCUITest checks TOOL-03: a finger drag pans and leaves no stroke.
+  3. An element with a known identifier shows `isLoading` of task 2.1 as its accessibility value, and the tests wait on it with `wait(for:toEqual:timeout:)`.
+
+### D-179 What Dynamic Type in the chrome covers
+
+- Raised by the M10 plan on 2026-10-25, task 7.2. Decided by the product owner on 2026-10-25: the recommendation.
+- Facts: plan.md M10 asks for "Dynamic Type in the chrome". The product specification has no requirement for accessibility. The selector has fixed sizes: `selectorTitleWidth` 260, `selectorListWidth` 300, and `selectorListHeight` 480. The canvas buttons show icons only.
+- Options: (a) the text of the selector, the menus, and the messages scales up to the largest accessibility size. The icon buttons keep their size and show the Large Content Viewer (`UILargeContentViewerInteraction`), as the system bars do. (b) all chrome scales, also the icon buttons. (c) only the text sizes up to the largest size that is not an accessibility size.
+- Research, 2026-10-25:
+  - The App Store criteria for the "Larger Text" label are these. Text grows "to at least 200% or the maximum font size for the system", without overlap or severe truncation. Apple says that tab bars do not grow and names the Large Content Viewer for them (<https://developer.apple.com/help/app-store-connect/manage-app-accessibility/larger-text-evaluation-criteria>).
+  - WWDC19 session 261: "Scaling with dynamic type is always preferred", and the Large Content Viewer is only "for UI that can't scale" (<https://developer.apple.com/videos/play/wwdc2019/261/>).
+  - The VoiceOver criteria: a label holds no control type and no state, and a context menu needs the same actions as custom actions (<https://developer.apple.com/help/app-store-connect/manage-app-accessibility/voiceover-evaluation-criteria>).
+  - WCAG 2.2 SC 1.4.4 asks for 200 %. For native software, WCAG2ICT sets the platform text sizes as the target (<https://www.w3.org/TR/wcag2ict-22/>).
+  - `@ScaledMetric` and `UIFontMetrics.scaledValue(for:)` scale a fixed size with the text (<https://developer.apple.com/documentation/swiftui/scaledmetric>).
+- Code facts: `ChromeIcon` uses the font `.headline` in a fixed frame of 44 by 44 points. Its symbol thus already grows and clips at the accessibility sizes. The workspace rows have `.lineLimit(1)` in a fixed width of 300 points. The checkmark of a row has no label.
+- Recommendation: (a), made concrete:
+  1. The selector text, the menus, the alerts, and the messages scale up to the largest size, AX5. The selector sizes scale with `@ScaledMetric` and stay inside the screen. The list scrolls, and a row takes up to 2 lines at the accessibility sizes.
+  2. The icon buttons of the canvas and the workspace button keep a fixed symbol size and show the Large Content Viewer.
+  3. Rename and delete get `accessibilityAction(named:)`. The checkmark is hidden from VoiceOver, and the row keeps the trait `.isSelected`.
+  4. The snapshot tests run at AX5.
+  5. The product specification gets A11Y-01 (VoiceOver labels and actions) and A11Y-02 (Dynamic Type and the Large Content Viewer).
+
+### D-180 A restore after a stop of the process
+
+- Raised by the review after M9 (section 3.1, item 5), and by the M10 plan on 2026-10-25. Decided by the product owner on 2026-10-25: the recommendation.
+- Facts: suppose that the restored library does not open, and the process ends before the way back. The next launch then shows "libraryFailed" without the selector. No restore command is then reachable. The pre-restore snapshot exists.
+- Options: (a) a marker file before the copy. At the next launch, a marker with a library that does not open restores the pre-restore snapshot and shows a message. (b) the screen of "libraryFailed" offers a restore from a snapshot. (c) no change.
+- Research, 2026-10-25:
+  - The way back of D-20 exists only in memory (`Handoff.fallback` in `AppComposition`). At a cold launch, a failed open shows `libraryFailed` and no selector. The way back itself copies without extra time, so a stop during it leaves the library that does not open.
+  - SQLite holds the write transaction of a backup open until `SQLITE_DONE`, and an earlier `sqlite3_backup_finish` rolls it back (<https://www.sqlite.org/c3ref/backup_finish.html>).
+  - Firefox keeps a persistent flag and restores its places database from the newest backup at startup, without a question to the user (<https://searchfox.org/mozilla-central/source/toolkit/components/places/Database.cpp>).
+- Measured on the Mac on 2026-10-25, SQLite 3.50.6: a `SIGKILL` of a backup in steps of 1,024 pages into a live WAL database. A stop after step 1, 7, or 14 gave the old content. A stop at `SQLITE_DONE` or later, also during the `TRUNCATE` checkpoint, gave the new content. Each case passed `integrity_check`. The copy thus switches in one step at `SQLITE_DONE`.
+- Measured on the same run: the backup writes no WAL frame before `SQLITE_DONE`. A copy of a 62 MB source took a peak footprint of 78 MB. A large restore on the iPad can thus end by a memory stop, which rolls back.
+- Recommendation: (a), with these details:
+  1. Write the marker with the name of the pre-restore snapshot, with `fsync`, after the snapshot exists and before `sqlite3_backup_init`.
+  2. Delete the marker after the new composition opens the library.
+  3. At launch, a marker and a failed open run the way back from the named snapshot and show `restoreUndone`. A marker and a good open delete the marker.
+  4. The way back gets its own extra time. Its copy also switches only at `SQLITE_DONE`, so a stop during it tries again at the next launch.
+  5. Measure the peak memory of a restore of 200,000 strokes on the iPad. If it is near the memory limit, raise a new decision for the copy.
+
+### D-181 The stroke limit message and a grid budget per canvas
+
+- Raised by the review after M8 (section 3.1, item 4), the review after M9 (section 3.1, item 6), and the M10 plan on 2026-10-25. Decided by the product owner on 2026-10-25: the recommendation.
+- Facts: the pen at `maxStrokesPerCanvas` drops the stroke with a log line only. An erase past `maxStrokesAfterErase` removes whole strokes without a message. architecture.md section 10 asks for a short message. D-170 leaves a grid budget per canvas open: 200,000 strokes drawn at zoom 0.25 across the screen take about 9 GB of grid.
+- Options for the message: (a) "This canvas is full. Erase strokes or use a card." (b) another text from the product owner.
+- Options for the budget: (1) no grid budget in M10. (2) a budget of grid entries per canvas, checked at the pen and at the load.
+- Research, 2026-10-25:
+  - Apple HIG: "Avoid using an alert merely to provide information" and "Avoid displaying alerts for common, undoable actions" (<https://developer.apple.com/design/human-interface-guidelines/alerts>). An error message is clear "about what someone can do to fix it" (<https://developer.apple.com/design/human-interface-guidelines/writing>).
+  - The app has `nodeLimit`: "This canvas holds no more cards or text boxes." `AppViewController.showMessage` shows each message as an alert.
+- Measured on the Mac on 2026-10-25 with `SpatialGrid`, cells of 512 points, and 210,000 strokes. Handwriting of 1 to 4 cells takes 32 to 75 MB. A stroke across the 11-inch screen at zoom 0.25 (88 cells) takes 0.99 GB. The worst case of 1,089 cells takes 12.9 GB. The points of 210,000 strokes of 16,384 points take about 58 GB, so a grid budget alone does not bound the memory of a load.
+- Recommendation:
+  1. The message: "This canvas holds no more ink. Erase some ink or draw in a card." It has the form of `nodeLimit`, it names the action, and it has no number. The pen shows it once at each new pencil down at the limit, not at each sample.
+  2. An erase past `maxStrokesAfterErase` shows no message. It still erases, and the user can undo it.
+  3. No grid budget in M10. Suppose that a damaged file must never stop the app by memory. A new decision then sets a byte budget of the load for the points and the grid together.
+
+### D-182 The rebalance of sort keys
+
+- Raised by the review after M9 (section 3.1, item 7), and by the M10 plan on 2026-10-25. Decided by the product owner on 2026-10-25: the recommendation.
+- Facts: data-model.md section 6 asks for a rebalance, but the code is not built. A canvas gets equal keys after about 3,874 appends at one end. The record ID then breaks the tie.
+- Options: (a) build the rebalance in M10. One command gives new keys to all items of one layer of one canvas. It joins the step that needs it. (b) keep the fallback, and change data-model.md to say so.
+- Research, 2026-10-25:
+  - Figma does not rebalance (<https://www.figma.com/blog/realtime-editing-of-ordered-sequences/>). The library rocicorp/fractional-indexing does not rebalance. It grows the integer part of a key with a length head, so appends grow keys slowly (<https://github.com/rocicorp/fractional-indexing>). Jira LexoRank rebalances at 128 characters (<https://confluence.atlassian.com/adminjiraserver110/managing-lexorank-1627460961.html>).
+- Code facts: the app only appends keys, with `between(last, nil)` for cards, text boxes, and workspaces. The product has no reorder. `Rendering` and `Export` do not read `sortKey`. Cards and text draw with `max` blending (D-82), so the order does not change the image. The key decides only the hit tests, where the UUID version 7 of the newer item breaks a tie.
+- Measured on the Mac on 2026-10-25 with a copy of `FractionalIndex`:
+
+| Pattern | Keys before the limit of 64 |
+|---|---|
+| Appends at the end | 3,874 |
+| Inserts after the same key | 378 (not reachable in the app) |
+| Random inserts | no failure in 100,000, longest key 8 |
+| Appends after a rebalance of 10,000 keys | 3,744 |
+| Appends with the increment of option (c) | 1,000,000 with a longest key of 4 |
+
+- A rebalance of 10,000 keys took 1.3 to 1.5 ms. It rewrites each row with a new clock value, and it must be a command in the undo history. It holds each text twice in the history (D-88). It overwrites concurrent edits of a later sync.
+- New option (c): `after` and `before` add one unit at a width of at least 4 digits in base 62. The keys stay in the current format, and old keys stay valid. No rebalance.
+- Recommendation: (c). It follows Figma and rocicorp, and it removes the append limit that the app reaches. The fallback stays as the guard. data-model.md section 6 changes to say so.
+
+### D-183 The history budget of the shown canvas, in points or bytes
+
+- Raised by the review after M8 (section 3.1, item 5), the review after M9 (section 3.1, item 8), and the M10 plan on 2026-10-25. Decided by the product owner on 2026-10-25: the recommendation.
+- Facts: the history of the shown canvas is outside `CanvasSessions`, so the worst case is about 20,000,000 points, not 16,000,000. The budget counts points: 4,000,000 points take 67 MB as strokes of 300 points, and 433 MB as strokes of 2 points.
+- Options: (a) the shown canvas counts inside the budget of `CanvasSessions`. The budget counts bytes: points times 16 bytes plus 64 bytes per stroke, about 270 MB in total. (b) only the shown canvas joins the budget. (c) change the documents to the code.
+- Research, 2026-10-25:
+  - `UndoManager.levelsOfUndo`, Blink (1,000 steps), and Krita count steps. GIMP bounds the undo memory per image in MB (<https://docs.gimp.org/3.0/en/gimp-prefs-system-resources.html>). Emacs counts bytes (<https://doc.emacsen.de/31.1/var/undo-limit.html>). VS Code counts the bytes of each element plus 168 bytes (<https://github.com/microsoft/vscode/blob/main/src/vs/editor/common/model/editStack.ts>).
+- Measured on the Mac on 2026-10-25 in a release build. A `Stroke` of 2 points takes 226 bytes, 10 points 352, 300 points 5,280, and 16,384 points 278,656. The formula 17 × n + 192 bytes is within 3 % for each size. The formula of option (a), 16 × n + 64, counts 96 bytes for 2 points, less than half.
+- Recommendation: (a) with the measured formula. The shown canvas counts inside `CanvasSessions`. Each held stroke counts 17 × n + 192 bytes. The total stays near 270 MB, and one canvas near 67 MB. The bytes of the text of D-88 get their own measure in the task.
+
+### D-184 A fix of a race without a deterministic test (TEST-03)
+
+- Raised by the M10 plan on 2026-10-25, task 2.4. Decided by the product owner on 2026-10-25: the recommendation.
+- Facts: the camera wait of `RenderEngine` signals after the lock, so a late signal can stay (review after M8, section 3.2, item 4). `WorkspaceSelectorModel.rename` and `create` use an index from before an `await` (review after M9, section 3.2, item 10). No test can make these orders without a hook in the code.
+- Options: (a) a test hook that holds the thread at the gap, under `#if DEBUG`, and a test that uses it. (b) the fix with a comment that states the window, accepted without a test. (c) no fix.
+- Research, 2026-10-25:
+  - Chromium keeps test-only functions with the suffix `ForTesting` in the product build, and a check makes sure that only tests call them (<https://chromium.googlesource.com/chromium/src/+/main/styleguide/c++/c++.md>). Linux injects faults only into functions that the code marks (<https://docs.kernel.org/fault-injection/fault-injection.html>).
+  - SE-0392 lets a test give an actor a custom `SerialExecutor` that holds each job (<https://github.com/swiftlang/swift-evolution/blob/main/proposals/0392-custom-actor-executors.md>).
+  - Xcode offers ThreadSanitizer only on macOS and the simulator, not on an iOS device (<https://developer.apple.com/forums/thread/657671>). It finds data races only. The camera fault is an order fault with all state under a lock, so it does not find it.
+- Code facts: `#if DEBUG` is compiled out in the Release device runs. The repository already has hooks that stay in Release: `beforeCommit` and `beforeCheckpoint` of the repository and `WALCheckpointer`, and `beforeRename` of `SnapshotWriter`. Each is an optional `@Sendable` closure of an internal initializer, `nil` in the app.
+- Recommendation: a new option (d), the hook pattern of the repository:
+  1. `WorkspaceSelectorModel`: no hook in the product code. The fake library of the test runs on a custom serial executor that releases the jobs in the order of the test.
+  2. `RenderEngine`: an internal optional closure `afterCameraLock`, set by the initializer, between the inbox lock and the signal. The cost is one `nil` check, only when a camera signals.
+  3. A lint rule makes sure that only `Tests/` passes a hook that is not `nil`, as Chromium does.
+
+### D-185 The order of the text boxes in the PDF
+
+- Raised by the review after M9 (section 3.2, item 12), and by the M10 plan on 2026-10-25. Decided by the product owner on 2026-10-25: the recommendation.
+- Facts: the PDF writes the text boxes in the order of a `Dictionary`, which changes per launch. The order sets the order of copy, search, and VoiceOver in Preview. A sort of 10,000 boxes took 5.6 to 6.0 ms on the Mac.
+- Options: (a) top to bottom, then left to right, then by ID. (b) the sort key, as the canvas draws them.
+- Research, 2026-10-25:
+  - An untagged PDF leaves the reading order to the reader. Acrobat offers an inferred order, "left-to-right, top-to-bottom", or the raw order of the stream (<https://webaim.org/discussion/mail_message?id=26243>). In a tagged PDF, screen readers follow the tag order (<https://allyant.com/blog/pdf-tagging-and-reading-order/>).
+  - Core Graphics can write tags with `CGPDFContextBeginTag` since iOS 13. The product specification does not ask for tags.
+- Measured on the Mac on 2026-10-25: PDFs with three text boxes in each of 3 stream orders. Core Graphics and Core Text wrote them, as the exporter does. PDFKit `PDFDocument.string` gave the position order each time, also for a tagged file. Only overlapping boxes followed the stream order. The fact above that the order sets copy and search in Preview is thus true only for overlapping boxes. VoiceOver was not tested.
+- Recommendation: (a). Each export of one canvas then writes the same order. It matches the "left-to-right, top-to-bottom" mode of Acrobat and the readers of the raw stream. A later tagged PDF can use the same order for its tags. The cost is 5.6 to 6.0 ms for 10,000 boxes.
+
+### D-186 `make validation` in `make check`
+
+- Raised by the M10 plan on 2026-10-25, task 0.5. Decided by the product owner on 2026-10-25: the recommendation.
+- Facts: the review after M8 found a fault that only Metal API validation showed. Under validation, the allocation tests fail. A run of the render suites takes about 5 minutes.
+- Options: (a) a separate target that runs at each close of a milestone, as `make coverage` does. (b) a part of `make check`.
+- Research, 2026-10-25:
+  - Apple: API validation has "a small, but measurable, impact on CPU performance". Shader validation instruments each GPU function and makes the GPU slower (<https://developer.apple.com/documentation/xcode/validating-your-apps-metal-api-usage>, <https://developer.apple.com/documentation/xcode/validating-your-apps-metal-shader-usage>).
+  - ANGLE runs many tests with the Vulkan validation layers, and an error fails the test (<https://chromium.googlesource.com/angle/angle.git/+/refs/heads/main/doc/TestingAndProcesses.md>). Chromium runs a WebGPU suite with validation as a separate suite, and removed it from some bots under load (<https://chromium.googlesource.com/chromium/src/+/9effc8e3c72f8806771a04b0358f86135a25e708>). Android keeps the validation layers out of release builds (<https://developer.android.com/ndk/guides/graphics/validation-layer>).
+- Measured on the iPad on 2026-10-25: a full run of `PointerDeviceTests` with `TEST_RUNNER_MTL_DEBUG_LAYER=1` took 368 s (`T-q-validation-1.xcresult`). 435 of 440 tests passed, and 2 were the expected failures of D-125 and D-137. Only the 3 allocation tests of the review after M9 failed: the bare frame made 121 allocations, and the frames 128 to 132. No test reported a validation error.
+- Recommendation: (a), with one addition. `make validation` runs the full `PointerDeviceTests` without the allocation tests, with API validation and shader validation. It runs at each close of a milestone and for each change of `Rendering`, `Export`, the shaders, or the render code of `CanvasFeature`. The fault of the review after M8 showed only under validation, so a run per milestone alone is too seldom for such changes.
+
+### D-187 The allow list of the per-function check of TEST-02
+
+- Raised by the M10 plan on 2026-10-25, task 1.5. Decided by the product owner on 2026-10-25: the recommendation.
+- Facts: D-174 allows "a short allow list" for the Tier A functions that no test runs. It does not say which functions the list can hold or who approves it.
+- Options: (a) only a function that a Mac test cannot run. Examples are a `preconditionFailure` path, the crash helper, and a path that needs a full disk. Each entry names the reason, and the product owner reads the list in the pull request. (b) any function, with a reason.
+- Research, 2026-10-25:
+  - SQLite keeps its defensive code and marks it with `ALWAYS()` and `NEVER()`. It does not delete code to reach full coverage (<https://www.sqlite.org/testing.html>). LLVM source-based coverage has no exclusion in the source (<https://clang.llvm.org/docs/SourceBasedCodeCoverage.html>). Google: "90% is a good lower threshold" (<https://testing.googleblog.com/2020/08/code-coverage-best-practices.html>).
+  - A process that traps writes no coverage (<https://chromium.googlesource.com/chromium/src/+/main/docs/testing/code_coverage.md>).
+- Measured on the Mac on 2026-10-25, `swift test --enable-code-coverage` of the four Tier A packages: 445 functions have a count of 0. 434 of them are the message autoclosures of `precondition` and `assert`, which run only at a failure. 11 are real functions. 4 of them a test can run, and 2 are private rollbacks after a failed `COMMIT`. 1 is a compiler artifact of `SnapshotFiles.files`, and 4 belong to the crash helper, which the script already skips.
+- Recommendation: (a), with a rule for the autoclosures:
+  1. `Scripts/coverage.swift` skips the message autoclosures by their mangled suffix `fu<number>_`, not by list entries.
+  2. The allow list holds at most the 2 rollbacks (reason: a failed `COMMIT`) and the artifact of `SnapshotFiles.files`.
+  3. The 4 other functions get tests.
 
 ## Points in the request that conflict or are not complete
 
