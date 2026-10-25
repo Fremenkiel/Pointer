@@ -1,4 +1,5 @@
 import Model
+import os
 
 /// The open and the leave of a card on the renderer of the parent canvas (architecture.md 6.2
 /// and 6.3, D-98, D-108, D-109, D-110).
@@ -56,10 +57,32 @@ extension CanvasRenderer {
         }
     }
 
+    /// The most tries of the handoff of the parent image while frames hold the locks: with
+    /// `parentImageWait`, about 1 s. A frame holds its lock for a few milliseconds.
+    static let parentImageTries = 500
+    /// The wait before the next try of the handoff of the parent image.
+    static let parentImageWait = Duration.milliseconds(2)
+
     /// Gives the frozen copy of this parent to the renderer of its child at the end of an open,
-    /// for the pinch-out exit of the child (D-109).
+    /// for the pinch-out exit of the child (D-109). If a frame holds a lock, the handoff tries
+    /// again on a later turn of the main run loop, so the main actor never waits for a frame.
     public func giveParentImage(to child: CanvasRenderer) {
-        engine.giveParentImage(to: child.engine)
+        precondition(child !== self, "A parent gives its image to another renderer")
+        guard !engine.tryGiveParentImage(to: child.engine) else { return }
+        // A frame holds a lock. Each later turn tries again, once per open (PERF-02).
+        let (parent, child) = (engine, child.engine)
+        Task { @MainActor in
+            for _ in 0..<Self.parentImageTries {
+                do {
+                    try await Task.sleep(for: Self.parentImageWait)
+                } catch {
+                    return
+                }
+                if parent.tryGiveParentImage(to: child) { return }
+            }
+            Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
+                .error("The frozen parent image did not reach the child")
+        }
     }
 
     /// Plays `flight` on the render thread (D-121): each frame takes its camera, and the

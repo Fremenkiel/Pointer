@@ -747,3 +747,7 @@ The inbox now marks the loaded text, the loaded cards, and the decoded previews 
 ### 6.17 Completions after the locks (task 2.2)
 
 A preview request that ends without an image now calls its completion on a queue of its own (`PreviewRenderRequest.endWithoutImage()`), so the completion never runs under the inbox lock or the frame lock. The five places of review M9 3.2.2 use it. `PreviewCompletionLockTests` gives a completion that posts to its own renderer, and one that takes the frame work. Both crashed the app on the old code (`T-22-old.xcresult`). With the change, 16 tests of the preview, transition, and open suites pass, one of them the expected failure of D-125 (`T-22-new.xcresult`).
+
+### 6.18 The parent image without a wait on the main actor (task 2.3)
+
+`giveParentImage` tries both frame locks with `Mutex.withLockIfAvailable` (SE-0433). If a frame holds one of them, a task tries again every 2 ms, up to 500 times. The two render threads never hold both locks, so the nested tries cannot deadlock. `ParentImageHandoffTests` holds the frame lock of the parent for 200 ms on another thread. With the old code, the call on the main actor took 0.203 s (`T-23-old.xcresult`). With the change, it returns in under 20 ms, and the child gets the image after the lock (`T-23-new.xcresult`, 17 of 17 tests of the flight suites).

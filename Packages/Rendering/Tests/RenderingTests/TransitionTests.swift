@@ -162,6 +162,7 @@ struct TransitionTests {
         child.load([StrokeBuilder.stroke(line, seed: 4)])
         for _ in 0..<100 where child.renderFrame(into: childLayer, deadline: nil) {}
         renderer.giveParentImage(to: child)
+        // No frame holds a lock here, so the handoff runs in the call.
         let hasImage = child.engine.withRenderer { ($0.parentImage?.texture.width ?? 0) > 0 }
         #expect(hasImage, "The child keeps the frozen copy of the parent")
         var exit = PinchExit(

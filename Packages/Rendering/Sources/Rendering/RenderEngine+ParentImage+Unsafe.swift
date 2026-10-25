@@ -14,15 +14,25 @@ extension RenderEngine {
     }
 
     /// Moves the frozen copy of the parent frame from this engine to the engine of the child
-    /// after an open (D-109). Call it at the end of the open, after the crossfade.
-    func giveParentImage(to child: RenderEngine) {
+    /// after an open (D-109), if neither render thread holds its frame lock. The main actor
+    /// calls it, so it never waits for a frame (review after M9, section 3.2, item 3). The two
+    /// render threads never hold both locks, so the nested tries cannot deadlock.
+    ///
+    /// - Precondition: `child` is another engine.
+    /// - Returns: `false` if a frame held a lock and nothing moved. Then the caller tries again.
+    func tryGiveParentImage(to child: RenderEngine) -> Bool {
         precondition(child !== self, "A parent gives its image to another engine")
-        let box = core.withLock { parent -> ParentImageBox? in
-            guard let frozen = parent.transition?.frozen else { return nil }
+        let moved = core.withLockIfAvailable { parent -> Bool in
+            guard let frozen = parent.transition?.frozen else { return true }
+            let box = ParentImageBox(image: frozen)
+            let given = child.core.withLockIfAvailable { renderer -> Bool in
+                renderer.parentImage = box.image
+                return true
+            }
+            guard given == true else { return false }
             parent.transition?.frozen = nil
-            return ParentImageBox(image: frozen)
+            return true
         }
-        guard let box else { return }
-        child.core.withLock { renderer in renderer.parentImage = box.image }
+        return moved == true
     }
 }
