@@ -1,7 +1,7 @@
 /// The undo and redo lists of one canvas (architecture.md section 8, D-12).
 ///
 /// The history lives in memory while the app runs. It holds at most `Limits.maxHistoryDepth`
-/// steps and at most `pointBudget` control points (D-76), and drops the oldest step first. A new
+/// steps and at most `byteBudget` bytes (D-76, D-183), and drops the oldest step first. A new
 /// command clears the redo list.
 public struct History: Sendable {
     /// The result of a new step: the changed rows and the oldest steps that the history dropped.
@@ -17,17 +17,17 @@ public struct History: Sendable {
     public private(set) var undoSteps: [any CanvasCommand] = []
     /// The steps that a redo can apply again, the newest undo last.
     public private(set) var redoSteps: [any CanvasCommand] = []
-    /// The control points of all steps (D-76).
-    public private(set) var pointCount = 0
-    /// The most control points that the steps hold.
-    public let pointBudget: Int
+    /// The bytes of all steps (D-76, D-183).
+    public private(set) var byteCount = 0
+    /// The most bytes that the steps hold.
+    public let byteBudget: Int
 
     /// Makes an empty history.
     ///
-    /// - Precondition: `pointBudget` is not negative.
-    public init(pointBudget: Int = Limits.maxHistoryPointsPerCanvas) {
-        precondition(pointBudget >= 0, "A point budget is not negative, got \(pointBudget)")
-        self.pointBudget = pointBudget
+    /// - Precondition: `byteBudget` is not negative.
+    public init(byteBudget: Int = Limits.maxHistoryBytesPerCanvas) {
+        precondition(byteBudget >= 0, "A byte budget is not negative, got \(byteBudget)")
+        self.byteBudget = byteBudget
     }
 
     /// True if an undo has a step to revert.
@@ -37,7 +37,7 @@ public struct History: Sendable {
     public var canRedo: Bool { !redoSteps.isEmpty }
 
     /// Applies a new command and records it as the newest undo step. Past the step limit or the
-    /// point budget, the oldest steps go, also the new one if it alone passes the budget.
+    /// byte budget, the oldest steps go, also the new one if it alone passes the budget.
     ///
     /// - Throws: The `CommandError` of `apply`. The history and the content then stay as they
     ///   were.
@@ -49,17 +49,17 @@ public struct History: Sendable {
     ) throws(CommandError) -> Performed {
         let changes = try command.apply(to: &content, clock: &clock)
         var dropped = redoSteps
-        pointCount -= redoSteps.reduce(0) { $0 + $1.heldPointCount }
+        byteCount -= redoSteps.reduce(0) { $0 + $1.heldByteCount }
         redoSteps.removeAll()
         if undoSteps.count == Limits.maxHistoryDepth {
-            pointCount -= undoSteps[0].heldPointCount
+            byteCount -= undoSteps[0].heldByteCount
             dropped.append(undoSteps.removeFirst())
         }
         undoSteps.append(command)
-        pointCount += command.heldPointCount
-        dropped += dropOldest(toFit: pointBudget)
+        byteCount += command.heldByteCount
+        dropped += dropOldest(toFit: byteBudget)
         assert(undoSteps.count <= Limits.maxHistoryDepth, "History over its depth")
-        assert(pointCount <= pointBudget, "History over its point budget")
+        assert(byteCount <= byteBudget, "History over its byte budget")
         return Performed(changes: changes, dropped: dropped)
     }
 
@@ -95,28 +95,28 @@ public struct History: Sendable {
         return changes
     }
 
-    /// Drops the oldest steps until the history holds at most `budget` control points. The
+    /// Drops the oldest steps until the history holds at most `budget` bytes. The
     /// oldest undo steps go first, then the redo steps from the oldest one.
     ///
     /// - Precondition: `budget` is not negative.
     /// - Returns: The dropped steps, the oldest first.
     public mutating func dropOldest(toFit budget: Int) -> [any CanvasCommand] {
-        precondition(budget >= 0, "A point budget is not negative, got \(budget)")
-        guard pointCount > budget else { return [] }
+        precondition(budget >= 0, "A byte budget is not negative, got \(budget)")
+        guard byteCount > budget else { return [] }
         var undoDrops = 0
-        for step in undoSteps where pointCount > budget {
-            pointCount -= step.heldPointCount
+        for step in undoSteps where byteCount > budget {
+            byteCount -= step.heldByteCount
             undoDrops += 1
         }
         var dropped = Array(undoSteps.prefix(undoDrops))
         undoSteps.removeFirst(undoDrops)
         // The redo list holds the newest step first, so its oldest step is the last one.
-        for step in redoSteps.reversed() where pointCount > budget {
-            pointCount -= step.heldPointCount
+        for step in redoSteps.reversed() where byteCount > budget {
+            byteCount -= step.heldByteCount
             dropped.append(step)
         }
         redoSteps.removeLast(dropped.count - undoDrops)
-        assert(pointCount <= budget, "The history still passes \(budget) points")
+        assert(byteCount <= budget, "The history still passes \(budget) bytes")
         return dropped
     }
 

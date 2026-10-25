@@ -5,8 +5,8 @@
 public struct AddCard: CanvasCommand {
     /// The new card.
     public let card: Card
-    /// The code points of the title, counted as points of the history budget (D-88).
-    public let heldPointCount: Int
+    /// The bytes of the title (D-88, D-183).
+    public let heldByteCount: Int
 
     /// Makes the command.
     ///
@@ -14,7 +14,7 @@ public struct AddCard: CanvasCommand {
     public init(card: Card) {
         precondition(!card.meta.isDeleted, "AddCard needs a live card")
         self.card = card
-        heldPointCount = CanvasNode.card(card).textLength
+        heldByteCount = CanvasNode.card(card).heldByteCount
     }
 
     /// Holds no stroke.

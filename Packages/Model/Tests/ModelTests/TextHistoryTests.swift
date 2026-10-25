@@ -38,11 +38,12 @@ struct TextHistoryTests {
         var rig = CommandRig()
         var box = try RecordTests.textBox(text: String(repeating: "b", count: 5))
         try rig.content.add(box)
-        var history = History(pointBudget: 100)
-        // 9 steps of 5 + 5 code points take the history to 90.
+        let stepBytes = 2 * HistoryCost.bytes(ofText: "bbbbb")
+        var history = History(byteBudget: 10 * stepBytes)
+        // 9 steps of two texts of 5 bytes each take the history to 9 steps.
         _ = try Self.edit(9, codePoints: 5, history: &history, rig: &rig, box: &box)
-        #expect(history.pointCount == 90)
-        // The last step adds 5 + 5 or 5 + 6 code points: the bound, or the bound plus one.
+        #expect(history.byteCount == 9 * stepBytes)
+        // The last step holds texts of 5 and 5 or 5 and 6 bytes: the bound, or the bound plus one.
         let next = try box.editing(
             text: String(repeating: "c", count: 5 + over),
             at: rig.factory.clock.now()
@@ -52,19 +53,24 @@ struct TextHistoryTests {
             on: &rig.content,
             clock: &rig.factory.clock
         )
-        #expect(history.pointCount == (over == 0 ? 100 : 91))
+        #expect(history.byteCount == (over == 0 ? 10 : 9) * stepBytes + over)
         #expect(history.undoSteps.count == (over == 0 ? 10 : 9))
         #expect(performed.dropped.count == over)
     }
 
-    @Test("500 edits of 10,000 code points keep at most the budget of one canvas (D-88)")
+    @Test("500 edits of 10,000 code points keep at most the budget of one canvas (D-88, D-183)")
     func manyLargeEdits() throws {
         var rig = CommandRig()
         var box = try RecordTests.textBox(text: String(repeating: "b", count: 10_000))
         try rig.content.add(box)
         var history = History()
         _ = try Self.edit(500, codePoints: 10_000, history: &history, rig: &rig, box: &box)
-        #expect(history.pointCount <= Limits.maxHistoryPointsPerCanvas)
-        #expect(history.undoSteps.count == Limits.maxHistoryPointsPerCanvas / 20_000)
+        // A text of 10,000 ASCII characters takes about 10 KB, so the depth limit comes first.
+        let stepBytes = 2 * HistoryCost.bytes(ofText: String(repeating: "b", count: 10_000))
+        #expect(history.byteCount <= Limits.maxHistoryBytesPerCanvas)
+        #expect(
+            history.undoSteps.count
+                == min(Limits.maxHistoryDepth, Limits.maxHistoryBytesPerCanvas / stepBytes)
+        )
     }
 }

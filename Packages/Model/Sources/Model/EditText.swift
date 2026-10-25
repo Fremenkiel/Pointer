@@ -6,8 +6,8 @@ public struct EditText: CanvasCommand {
     public let old: TextBox
     /// The box after the edit.
     public let new: TextBox
-    /// The code points of both texts, counted as points of the history budget (D-88).
-    public let heldPointCount: Int
+    /// The bytes of both texts (D-88, D-183).
+    public let heldByteCount: Int
 
     /// Makes the command.
     ///
@@ -18,7 +18,7 @@ public struct EditText: CanvasCommand {
         precondition(!old.meta.isDeleted && !new.meta.isDeleted, "EditText needs live boxes")
         self.old = old
         self.new = new
-        heldPointCount = TextLength.of(old.text) + TextLength.of(new.text)
+        heldByteCount = HistoryCost.bytes(ofText: old.text) + HistoryCost.bytes(ofText: new.text)
     }
 
     /// Holds no stroke.

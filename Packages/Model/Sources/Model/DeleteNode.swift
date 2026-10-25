@@ -5,8 +5,8 @@
 public struct DeleteNode: CanvasCommand {
     /// The node before the delete.
     public let node: CanvasNode
-    /// The code points of the text or the title, counted as points of the history budget (D-88).
-    public let heldPointCount: Int
+    /// The bytes of the text or the title (D-88, D-183).
+    public let heldByteCount: Int
 
     /// Makes the command for a text box.
     ///
@@ -25,7 +25,7 @@ public struct DeleteNode: CanvasCommand {
     private init(node: CanvasNode) {
         precondition(!node.isDeleted, "DeleteNode needs a live node")
         self.node = node
-        heldPointCount = node.textLength
+        heldByteCount = node.heldByteCount
     }
 
     /// Holds no stroke.

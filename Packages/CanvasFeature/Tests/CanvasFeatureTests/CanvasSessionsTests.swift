@@ -4,28 +4,31 @@ import Testing
 
 @testable import CanvasFeature
 
-/// The point budget of the sessions of the app (D-76, M-01, M-02).
+/// The byte budget of the sessions of the app (D-76, D-183, M-01, M-02).
 @MainActor
 @Suite("Canvas sessions")
 struct CanvasSessionsTests {
     @Test(
-        "The sessions keep their point budget and drop the oldest steps of the oldest session",
+        "The sessions keep their byte budget and drop the oldest steps of the oldest session",
         arguments: [0, 1]
     )
-    func sessionPointBudget(over: Int) throws {
-        let sessions = CanvasSessions(pointBudget: 20)
+    func sessionByteBudget(over: Int) throws {
+        let three = HistoryCost.bytes(ofStroke: 3)
+        let four = HistoryCost.bytes(ofStroke: 4)
+        let sessions = CanvasSessions(byteBudget: 4 * three + 2 * four)
         let ids = (0..<3).map { _ in CanvasID(rawValue: UUID()) }
-        // Sessions of 6, 6, and 8 or 9 points: the bound, or the bound plus one.
+        // Sessions of strokes of 3, 3, and 4 and 4 or 5 points: the bound, or the bound plus 17.
         for (index, id) in ids.enumerated() {
             let steps = index == 2 ? [4, 4 + over] : [3, 3]
             sessions.save(try Self.session(canvas: id, stepPoints: steps), for: id)
         }
-        #expect(sessions.pointCount == (over == 0 ? 20 : 18))
+        let full = 4 * three + 2 * four
+        #expect(sessions.byteCount == (over == 0 ? full : full + 17 - three))
         #expect(sessions.session(for: ids[0]).history.undoSteps.count == (over == 0 ? 2 : 1))
         #expect(sessions.session(for: ids[2]).history.undoSteps.count == 2)
     }
 
-    @Test("Sessions of 5 full canvases keep at most 16,000,000 points (M-01)")
+    @Test("Sessions of 5 full canvases keep at most the byte budget (M-01, D-183)")
     func sessionsOfFullCanvases() throws {
         let sessions = CanvasSessions()
         let steps = Array(repeating: 300_000, count: 13)
@@ -33,8 +36,28 @@ struct CanvasSessionsTests {
             let id = CanvasID(rawValue: UUID())
             sessions.save(try Self.session(canvas: id, stepPoints: steps), for: id)
         }
-        #expect(sessions.pointCount <= Limits.maxHistoryPointsInSessions)
-        #expect(sessions.pointCount > Limits.maxHistoryPointsInSessions - 300_000)
+        let stepBytes = 20 * HistoryCost.bytes(ofStroke: 15_000)
+        #expect(sessions.byteCount <= Limits.maxHistoryBytesInSessions)
+        #expect(sessions.byteCount > Limits.maxHistoryBytesInSessions - stepBytes)
+    }
+
+    @Test("The history of the shown canvas counts inside the budget of all histories (D-183)")
+    func shownCanvasCounts() throws {
+        let three = HistoryCost.bytes(ofStroke: 3)
+        let sessions = CanvasSessions(byteBudget: 6 * three)
+        let ids = (0..<3).map { _ in CanvasID(rawValue: UUID()) }
+        for id in ids {
+            sessions.save(try Self.session(canvas: id, stepPoints: [3, 3]), for: id)
+        }
+        #expect(sessions.byteCount == 6 * three)
+        // The canvas of `ids[2]` comes on the screen: its history still counts.
+        let shown = sessions.take(for: ids[2])
+        #expect(sessions.shownByteCount == shown.history.byteCount)
+        // Its history grows by two steps, so the stored sessions give up two steps.
+        sessions.noteShownHistory(bytes: shown.history.byteCount + 2 * three)
+        #expect(sessions.byteCount + sessions.shownByteCount <= 6 * three)
+        #expect(sessions.session(for: ids[0]).history.undoSteps.isEmpty)
+        #expect(sessions.session(for: ids[1]).history.undoSteps.count == 2)
     }
 
     /// A session with one add step per entry of `stepPoints`, each of one stroke with that many

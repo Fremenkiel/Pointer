@@ -15,8 +15,8 @@ public struct EraseStrokes: CanvasCommand {
     /// parts show the same ink as the removed strokes, so the renderer redraws only this area
     /// at the erase, its undo, and its redo (D-66).
     public let area: Rect?
-    /// The control points of the removed strokes and the parts (D-76).
-    public let heldPointCount: Int
+    /// The bytes of the removed strokes and the parts (D-76, D-183).
+    public let heldByteCount: Int
 
     /// Makes the command.
     ///
@@ -33,8 +33,10 @@ public struct EraseStrokes: CanvasCommand {
         self.removed = removed
         self.parts = parts
         self.area = area
-        heldPointCount =
-            removed.reduce(0) { $0 + $1.points.count } + parts.reduce(0) { $0 + $1.points.count }
+        let bytes = { (strokes: [Stroke]) in
+            strokes.reduce(0) { $0 + HistoryCost.bytes(ofStroke: $1.points.count) }
+        }
+        heldByteCount = bytes(removed) + bytes(parts)
     }
 
     /// Calls `body` with the ID of each removed stroke and each part.

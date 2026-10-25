@@ -6,9 +6,8 @@ public struct MoveNode: CanvasCommand {
     public let from: CanvasNode
     /// The node after the move.
     public let to: CanvasNode
-    /// The code points of the text or the title, counted as points of the history budget
-    /// (D-88). Both values share one text.
-    public let heldPointCount: Int
+    /// The bytes of the text or the title (D-88, D-183). Both values share one text.
+    public let heldByteCount: Int
 
     /// Makes the command for a text box.
     ///
@@ -33,7 +32,7 @@ public struct MoveNode: CanvasCommand {
         precondition(!from.isDeleted && !to.isDeleted, "MoveNode needs live nodes")
         self.from = from
         self.to = to
-        heldPointCount = from.textLength
+        heldByteCount = from.heldByteCount
     }
 
     /// Holds no stroke.

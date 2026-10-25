@@ -158,17 +158,18 @@ struct CardCommandTests {
         }
     }
 
-    @Test("A card command holds the code points of its titles and no stroke (D-88)")
+    @Test("A card command holds the bytes of its titles and no stroke (D-88, D-183)")
     func heldCost() throws {
         let card = try Self.newCard(title: "abc")
         let untitled = try Self.newCard()
-        #expect(AddCard(card: card).heldPointCount == 3)
-        #expect(AddCard(card: untitled).heldPointCount == 0)
-        #expect(DeleteNode(card: card).heldPointCount == 3)
+        let item = HistoryCost.bytes(ofText: nil)
+        #expect(AddCard(card: card).heldByteCount == item + 3)
+        #expect(AddCard(card: untitled).heldByteCount == item)
+        #expect(DeleteNode(card: card).heldByteCount == item + 3)
         let renamed = try card.retitling("abcdefg", at: Fixtures.time)
-        #expect(RenameCard(old: card, new: renamed).heldPointCount == 10)
+        #expect(RenameCard(old: card, new: renamed).heldByteCount == 2 * item + 10)
         let moved = try card.moving(to: .zero, at: Fixtures.time)
-        #expect(MoveNode(from: card, to: moved).heldPointCount == 3)
+        #expect(MoveNode(from: card, to: moved).heldByteCount == item + 3)
         var strokes = 0
         let commands: [any CanvasCommand] = [
             AddCard(card: card), RenameCard(old: card, new: renamed), DeleteNode(card: card),
@@ -184,8 +185,8 @@ struct CardCommandTests {
     func node() throws {
         let card = try Self.newCard(title: "ab")
         let box = try RecordTests.textBox(text: "abcd")
-        #expect(CanvasNode.card(card).textLength == 2)
-        #expect(CanvasNode.textBox(box).textLength == 4)
+        #expect(CanvasNode.card(card).heldByteCount == HistoryCost.bytes(ofText: "ab"))
+        #expect(CanvasNode.textBox(box).heldByteCount == HistoryCost.bytes(ofText: "abcd"))
         #expect(!CanvasNode.card(card).isDeleted)
         #expect(CanvasNode.textBox(box.marking(deleted: true, at: Fixtures.time)).isDeleted)
         #expect(CanvasNode.card(card).canvasID == Fixtures.canvas)

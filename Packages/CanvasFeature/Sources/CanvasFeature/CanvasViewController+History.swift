@@ -47,6 +47,8 @@ extension CanvasViewController {
             // The dropped steps can no longer be undone, so their records leave memory (D-76).
             content.forgetRecords(of: history.unheldStrokeIDs(of: performed.dropped))
         }
+        // The shown history counts inside the budget of all histories (D-183).
+        sessions?.noteShownHistory(bytes: history.byteCount)
         historyDidChange()
         return performed.changes
     }

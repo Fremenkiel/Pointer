@@ -143,15 +143,16 @@ struct TextCommandTests {
         }
     }
 
-    @Test("A text command holds the code points of its texts and no stroke (D-88)")
+    @Test("A text command holds the bytes of its texts and no stroke (D-88, D-183)")
     func heldCost() throws {
         let box = try RecordTests.textBox(text: "abc")
         let edited = try box.editing(text: "abcdefg", at: Fixtures.time)
-        #expect(AddTextBox(textBox: box).heldPointCount == 3)
-        #expect(DeleteNode(textBox: box).heldPointCount == 3)
-        #expect(EditText(old: box, new: edited).heldPointCount == 10)
+        let item = HistoryCost.bytes(ofText: nil)
+        #expect(AddTextBox(textBox: box).heldByteCount == item + 3)
+        #expect(DeleteNode(textBox: box).heldByteCount == item + 3)
+        #expect(EditText(old: box, new: edited).heldByteCount == 2 * item + 10)
         let moved = try box.moving(to: .zero, at: Fixtures.time)
-        #expect(MoveNode(from: box, to: moved).heldPointCount == 3)
+        #expect(MoveNode(from: box, to: moved).heldByteCount == item + 3)
         var strokes = 0
         AddTextBox(textBox: box).forEachHeldStroke { _ in strokes += 1 }
         EditText(old: box, new: edited).forEachHeldStroke { _ in strokes += 1 }

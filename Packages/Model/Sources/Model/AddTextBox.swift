@@ -5,8 +5,8 @@
 public struct AddTextBox: CanvasCommand {
     /// The new text box.
     public let textBox: TextBox
-    /// The code points of the text, counted as points of the history budget (D-88).
-    public let heldPointCount: Int
+    /// The bytes of the text (D-88, D-183).
+    public let heldByteCount: Int
 
     /// Makes the command.
     ///
@@ -14,7 +14,7 @@ public struct AddTextBox: CanvasCommand {
     public init(textBox: TextBox) {
         precondition(!textBox.meta.isDeleted, "AddTextBox needs a live text box")
         self.textBox = textBox
-        heldPointCount = TextLength.of(textBox.text)
+        heldByteCount = HistoryCost.bytes(ofText: textBox.text)
     }
 
     /// Holds no stroke.

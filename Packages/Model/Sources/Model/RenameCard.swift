@@ -7,8 +7,8 @@ public struct RenameCard: CanvasCommand {
     public let old: Card
     /// The card after the rename.
     public let new: Card
-    /// The code points of both titles, counted as points of the history budget (D-88).
-    public let heldPointCount: Int
+    /// The bytes of both titles (D-88, D-183).
+    public let heldByteCount: Int
 
     /// Makes the command.
     ///
@@ -21,7 +21,7 @@ public struct RenameCard: CanvasCommand {
         precondition(new.title?.isEmpty != true, "RenameCard stores an empty title as nil")
         self.old = old
         self.new = new
-        heldPointCount = CanvasNode.card(old).textLength + CanvasNode.card(new).textLength
+        heldByteCount = CanvasNode.card(old).heldByteCount + CanvasNode.card(new).heldByteCount
     }
 
     /// Holds no stroke.

@@ -112,12 +112,13 @@ struct HistoryTests {
     }
 
     @Test(
-        "The history keeps its point budget and drops the oldest step past it (D-76)",
+        "The history keeps its byte budget and drops the oldest step past it (D-76, D-183)",
         arguments: [0, 1]
     )
-    func pointBudget(over: Int) throws {
+    func byteBudget(over: Int) throws {
         var rig = CommandRig()
-        var history = History(pointBudget: 100)
+        let stepBytes = HistoryCost.bytes(ofStroke: 10)
+        var history = History(byteBudget: 10 * stepBytes)
         var first: StrokeID?
         for _ in 0..<9 {
             let stroke = Self.stroke(&rig, points: Self.points(10))
@@ -134,7 +135,8 @@ struct HistoryTests {
             on: &rig.content,
             clock: &rig.factory.clock
         )
-        #expect(history.pointCount == (over == 0 ? 100 : 91))
+        let lastBytes = HistoryCost.bytes(ofStroke: 10 + over)
+        #expect(history.byteCount == (over == 0 ? 10 * stepBytes : 8 * stepBytes + lastBytes))
         #expect(history.undoSteps.count == (over == 0 ? 10 : 9))
         var dropped: [StrokeID] = []
         for step in performed.dropped {
@@ -143,12 +145,12 @@ struct HistoryTests {
         #expect(dropped == (over == 0 ? [] : [first].compactMap { $0 }))
     }
 
-    @Test("The default point budget is the limit of one canvas")
+    @Test("The default byte budget is the limit of one canvas")
     func defaultBudget() {
-        #expect(History().pointBudget == Limits.maxHistoryPointsPerCanvas)
+        #expect(History().byteBudget == Limits.maxHistoryBytesPerCanvas)
     }
 
-    @Test("500 steps of 300,000 points each keep at most 4,000,000 points (M-01)")
+    @Test("500 steps of 300,000 points each keep at most the byte budget (M-01, D-183)")
     func manyLargeSteps() throws {
         var rig = CommandRig()
         var history = History()
@@ -162,14 +164,16 @@ struct HistoryTests {
                 clock: &rig.factory.clock
             )
         }
-        #expect(history.pointCount <= Limits.maxHistoryPointsPerCanvas)
-        #expect(history.undoSteps.count == Limits.maxHistoryPointsPerCanvas / 300_000)
+        let stepBytes = 20 * HistoryCost.bytes(ofStroke: 15_000)
+        #expect(history.byteCount <= Limits.maxHistoryBytesPerCanvas)
+        #expect(history.undoSteps.count == Limits.maxHistoryBytesPerCanvas / stepBytes)
     }
 
     @Test("Dropped steps lose the records of their strokes, and held strokes keep them (M-02)")
     func droppedRecords() throws {
         var rig = CommandRig()
-        var history = History(pointBudget: 4)
+        // The budget holds two steps of one stroke of 2 points.
+        var history = History(byteBudget: 2 * HistoryCost.bytes(ofStroke: 2))
         let first = Self.stroke(&rig, points: Self.points(2))
         _ = try history.perform(
             AddStroke(strokes: [first]),
@@ -222,7 +226,7 @@ struct HistoryTests {
         _ = try history.undo(on: &rig.content, clock: &rig.factory.clock)
         let redo = try #require(history.redoSteps.first)
         // The budget keeps the erase on the redo list and drops the add from the undo list.
-        let dropped = history.dropOldest(toFit: redo.heldPointCount)
+        let dropped = history.dropOldest(toFit: redo.heldByteCount)
         #expect(dropped.count == 1)
         #expect(history.unheldStrokeIDs(of: dropped).isEmpty)
     }

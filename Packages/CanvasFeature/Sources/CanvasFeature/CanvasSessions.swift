@@ -27,15 +27,19 @@ public final class CanvasSessions {
     /// The canvases by last use, the most recent last.
     private var order: [CanvasID] = []
 
-    /// The most control points that the histories of all sessions hold (D-76).
-    let pointBudget: Int
+    /// The most bytes that the histories of all canvases hold, the shown one included (D-76,
+    /// D-183).
+    let byteBudget: Int
+    /// The bytes of the history of the canvas on the screen, which holds its session outside
+    /// the store until it leaves (D-183).
+    private(set) var shownByteCount = 0
 
     /// Makes an empty store.
     ///
-    /// - Precondition: `pointBudget` is not negative.
-    public init(pointBudget: Int = Limits.maxHistoryPointsInSessions) {
-        precondition(pointBudget >= 0, "A point budget is not negative, got \(pointBudget)")
-        self.pointBudget = pointBudget
+    /// - Precondition: `byteBudget` is not negative.
+    public init(byteBudget: Int = Limits.maxHistoryBytesInSessions) {
+        precondition(byteBudget >= 0, "A byte budget is not negative, got \(byteBudget)")
+        self.byteBudget = byteBudget
     }
 
     // Only the tests read it (SCOPE-01).
@@ -44,8 +48,19 @@ public final class CanvasSessions {
     var count: Int { sessions.count }
     // swiftlint:enable unused_declaration
 
-    /// The control points of the histories of all sessions.
-    var pointCount: Int { sessions.values.reduce(0) { $0 + $1.history.pointCount } }
+    /// The bytes of the histories of all stored sessions.
+    var byteCount: Int { sessions.values.reduce(0) { $0 + $1.history.byteCount } }
+
+    /// Notes the bytes of the history of the canvas on the screen, and drops the oldest steps of
+    /// the stored sessions until all histories fit the budget together (D-183). The shown
+    /// canvas calls it after each new step. Its own history keeps its own budget.
+    ///
+    /// - Precondition: `bytes` is not negative.
+    func noteShownHistory(bytes: Int) {
+        precondition(bytes >= 0, "A history holds no negative bytes, got \(bytes)")
+        shownByteCount = bytes
+        fitByteBudget()
+    }
 
     /// Returns `true` if the sessions hold the session of a canvas.
     func hasSession(for canvasID: CanvasID) -> Bool {
@@ -64,7 +79,12 @@ public final class CanvasSessions {
     /// canvas on the screen is then the only owner of its history, so its first step copies
     /// nothing (M-03). The canvas saves the session again when it leaves.
     func take(for canvasID: CanvasID) -> CanvasSession {
-        guard let session = sessions.removeValue(forKey: canvasID) else { return CanvasSession() }
+        guard let session = sessions.removeValue(forKey: canvasID) else {
+            shownByteCount = 0
+            return CanvasSession()
+        }
+        // The taken history still counts, now as the history of the shown canvas (D-183).
+        shownByteCount = session.history.byteCount
         order.removeAll { $0 == canvasID }
         assert(order.count == sessions.count, "Each session has one place in the order")
         return session
@@ -82,6 +102,7 @@ public final class CanvasSessions {
     public func removeAll() {
         sessions.removeAll()
         order.removeAll()
+        shownByteCount = 0
     }
 
     /// Keeps the session of a canvas and marks the canvas as the most recent one.
@@ -94,28 +115,31 @@ public final class CanvasSessions {
         sessions[canvasID] = session
         order.removeAll { $0 == canvasID }
         order.append(canvasID)
-        fitPointBudget()
+        // The canvas that leaves was the shown one, so its bytes are in the store now.
+        shownByteCount = 0
+        fitByteBudget()
         assert(order.count == sessions.count, "Each session has one place in the order")
     }
 
-    /// Drops the oldest steps of the least recently used sessions first until all histories
-    /// hold at most `pointBudget` control points. The erase records of the strokes that no kept
-    /// step holds go with them (D-76).
-    private func fitPointBudget() {
-        let start = pointCount
+    /// Drops the oldest steps of the least recently used sessions first until the stored
+    /// histories hold at most `byteBudget` less the bytes of the shown canvas. The erase records
+    /// of the strokes that no kept step holds go with them (D-76).
+    private func fitByteBudget() {
+        let budget = max(0, byteBudget - shownByteCount)
+        let start = byteCount
         var total = start
-        for canvasID in order where total > pointBudget {
+        for canvasID in order where total > budget {
             guard let index = sessions.index(forKey: canvasID) else { continue }
-            let before = sessions.values[index].history.pointCount
-            let target = max(0, before - (total - pointBudget))
+            let before = sessions.values[index].history.byteCount
+            let target = max(0, before - (total - budget))
             let dropped = sessions.values[index].history.dropOldest(toFit: target)
             let unheld = sessions.values[index].history.unheldStrokeIDs(of: dropped)
             for id in unheld {
                 sessions.values[index].erased.removeValue(forKey: id)
             }
-            total -= before - sessions.values[index].history.pointCount
+            total -= before - sessions.values[index].history.byteCount
         }
         if total < start { logger.notice("Old undo steps are dropped to save memory.") }
-        assert(total <= pointBudget, "The sessions still pass \(pointBudget) points")
+        assert(total <= budget, "The sessions still pass \(budget) bytes")
     }
 }
