@@ -72,22 +72,11 @@ final class RenderEngine: Sendable {
     /// The number of strokes in the renderer after its last frame.
     var strokeCount: Int { inbox.withLock { $0.strokeCount } }
 
-    /// `true` while a text layout of a load runs or waits for a frame (D-92).
-    var isLoadingText: Bool { inbox.withLock { $0.isLoadingText } }
-
-    /// `true` while a title layout of a card load runs or waits for a frame (D-92).
-    var isLoadingCards: Bool { inbox.withLock { $0.isLoadingCards } }
-
-    /// `true` while text, cards, or previews load, read under one lock, so that no wait on it
-    /// ends between the inbox and the frame work (review after M9, section 3.2, item 1).
-    var isLoading: Bool {
-        inbox.withLock { $0.isLoadingText || $0.isLoadingCards || $0.isLoadingPreviews }
-    }
-
     /// Applies a change to the inbox and wakes the frame loop if it sleeps.
     func post(_ change: (inout RenderInbox) -> Void) {
         let (wake, signalsCamera) = inbox.withLock { box -> ((@Sendable () -> Void)?, Bool) in
             change(&box)
+            assert(box.edits.isEmpty || box.editHandoff > 0, "Edits need a handoff number")
             let signalsCamera = box.isWaitingForCamera && box.hasNewCamera
             // The signal goes inside the lock. After the lock, a wait could time out and reset
             // first, and the late signal would end the next wait at once (review after M8,

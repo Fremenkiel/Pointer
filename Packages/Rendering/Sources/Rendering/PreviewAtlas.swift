@@ -37,6 +37,11 @@ final class PreviewAtlas {
     private(set) var unavailable: Set<CardID> = []
     /// The new requests of the current frame. Reused (PERF-01).
     var wanted: [PreviewRequest] = []
+    /// The requests past `requestLimit`, oldest first. A result moves the next one to `wanted`,
+    /// so no card waits for a later build to ask again (review after M8, section 3.2, item 5).
+    private(set) var deferred: [PreviewRequest] = []
+    /// The cards of `deferred`.
+    private var deferredCards: Set<CardID> = []
     /// The results that wait for an upload, oldest first.
     var pending: [DecodedPreview] = []
     /// The canvas area of the cards whose new previews wait for a green redraw. It waits while a
@@ -70,6 +75,8 @@ final class PreviewAtlas {
         entries.reserveCapacity(slots.slotCount)
         requested.reserveCapacity(requestLimit)
         wanted.reserveCapacity(requestLimit)
+        deferred.reserveCapacity(Self.deferredLimit)
+        deferredCards.reserveCapacity(Self.deferredLimit)
         pending.reserveCapacity(requestLimit)
         evicted.reserveCapacity(slots.slotCount)
     }
@@ -81,17 +88,41 @@ final class PreviewAtlas {
         return steps.first { Double($0) >= pixels } ?? steps[steps.count - 1]
     }
 
-    /// Asks for the preview of a card in the step `step`, unless a request of it waits, the card
-    /// has no preview file, or the limit of waiting requests is reached.
+    /// The most requests that wait past `requestLimit`: one per node of a canvas.
+    static let deferredLimit = Limits.maxNodesPerCanvas
+
+    /// Asks for the preview of a card in the step `step`, unless a request of it waits or the
+    /// card has no preview file. Past the limit of waiting requests, the request waits in
+    /// `deferred` for a result.
     func want(_ card: CardID, bounds: Rect, step: Int, cardAspect: Double) {
         precondition(Self.steps.contains(step), "Step \(step) is not a preview size")
-        guard !requested.contains(card), !unavailable.contains(card),
-            requested.count < requestLimit
-        else { return }
+        guard !requested.contains(card), !unavailable.contains(card) else { return }
+        let request = PreviewRequest(card: card, bounds: bounds, step: step, cardAspect: cardAspect)
+        guard requested.count < requestLimit else {
+            if deferred.count < Self.deferredLimit, deferredCards.insert(card).inserted {
+                deferred.append(request)
+            }
+            return
+        }
         requested.insert(card)
-        wanted.append(
-            PreviewRequest(card: card, bounds: bounds, step: step, cardAspect: cardAspect)
-        )
+        wanted.append(request)
+        assert(requested.count <= requestLimit, "At most \(requestLimit) requests wait")
+    }
+
+    /// Moves deferred requests to `wanted` while the limit has room.
+    private func moveDeferred() {
+        var taken = 0
+        for request in deferred where requested.count < requestLimit {
+            taken += 1
+            deferredCards.remove(request.card)
+            let hasStep = (entries[request.card]?.step ?? 0) >= request.step
+            guard !requested.contains(request.card), !unavailable.contains(request.card),
+                !hasStep
+            else { continue }
+            requested.insert(request.card)
+            wanted.append(request)
+        }
+        deferred.removeFirst(taken)
         assert(requested.count <= requestLimit, "At most \(requestLimit) requests wait")
     }
 
@@ -102,6 +133,7 @@ final class PreviewAtlas {
     func store(_ preview: DecodedPreview, frame: UInt64) -> Entry? {
         precondition(Self.steps.contains(preview.step), "Step \(preview.step) is no preview size")
         requested.remove(preview.card)
+        if !deferred.isEmpty { moveDeferred() }
         switch preview.outcome {
         case .dropped:
             return nil
@@ -123,6 +155,7 @@ final class PreviewAtlas {
     func forget(_ card: CardID) {
         assert(!requested.contains(card) || entries[card] == nil, "A requested card has no entry")
         unavailable.remove(card)
+        if deferredCards.remove(card) != nil { deferred.removeAll { $0.card == card } }
         guard let entry = entries.removeValue(forKey: card) else { return }
         slots.free(entry.slot)
     }

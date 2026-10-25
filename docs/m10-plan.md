@@ -759,3 +759,11 @@ A preview request that ends without an image now calls its completion on a queue
 - The lint rule `test_04_hooks_in_tests` fails on a hook that the product code sets.
 
 Two faults of my own tests came up on the way. A last read of the fake library waited for a job that the gated executor kept, and a spin as a `for ... where` loop ran all its steps, because such a loop only skips its body. Xcode stopped the first after a test time allowance of 60 s, and its spindump showed the waiting task.
+
+### 6.20 Previews, part 1 (task 2.5, items 1, 3, and 4)
+
+- Item 1: a wanted preview past the limit of 16 waiting requests now waits in a bounded list of the atlas, and each result moves the next one on. Before, only a later build or redraw asked again.
+- Item 3: a source without data gives `.dropped`, so the card asks again at the next build. Only data that does not decode gives `.unavailable`.
+- Item 4: a failed committed layer waits 120 calls before the next try and logs once per failure. The hook `beforeLayer` of the frame work lets a test refuse the textures, because only memory pressure makes Metal refuse them (D-184).
+
+`PreviewRequestTests` failed on the old behavior: 18 of 24 previews loaded, a missing preview was read once, and a failed layer was tried 30 times in 30 calls (`T-25-old.xcresult`). With the change, 36 of 36 tests of the preview, card, transition, loading, and frame-loop suites pass (`T-25-new.xcresult`).

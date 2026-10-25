@@ -61,8 +61,11 @@ final class PreviewLoader: Sendable {
         task.cancel()
     }
 
+    // Only the tests read it (SCOPE-01). The engine counts the requests in its inbox.
+    // swiftlint:disable unused_declaration
     /// `true` while a request waits or its decode runs.
     var isLoading: Bool { shared.state.withLock { !$0.queue.isEmpty || $0.inFlight > 0 } }
+    // swiftlint:enable unused_declaration
 
     /// Adds the requests of a frame. A request beyond `limit` waiting requests is dropped, and
     /// the atlas asks for it again in a later frame.
@@ -157,9 +160,14 @@ final class PreviewLoader: Sendable {
             return result(.dropped)
         }
         let canvas = CanvasID(request.card)
-        guard let data = await source.preview(of: canvas, cardAspect: request.cardAspect),
-            let image = decoder.decode(data, step: request.step)
-        else { return result(.unavailable) }
+        // A source without data can fail for a short time, for example a render in the
+        // background, so the card asks again later (review after M9, section 3.2, item 5).
+        guard let data = await source.preview(of: canvas, cardAspect: request.cardAspect) else {
+            return result(.dropped)
+        }
+        guard let image = decoder.decode(data, step: request.step) else {
+            return result(.unavailable)
+        }
         return result(.pixels(image.pixels), width: image.width, height: image.height)
     }
 }

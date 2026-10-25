@@ -39,6 +39,13 @@ final class FrameRenderer {
     var transition: FrameTransition?
     /// The frozen copy of the parent frame that a child keeps after its open (D-109).
     var parentImage: InkTarget?
+    /// The calls of `committedLayer(for:)` that still wait after a failed layer.
+    private var layerRetryWait = 0
+    /// The tries to make a committed layer, for the tests.
+    private(set) var layerAttempts = 0
+    /// Runs before each try to make a committed layer, and its error fails the try. Only the
+    /// tests set it, because only memory pressure makes Metal refuse the textures (D-184).
+    var beforeLayer: (@Sendable () throws(RenderingError) -> Void)?
     /// The pinch-out exit that runs, or `nil` (CARD-05).
     var pinchExit: PinchExit?
     /// The flight of the camera that the render thread plays, or `nil` (D-121).
@@ -242,8 +249,14 @@ final class FrameRenderer {
         needsNewLayer = true
     }
 
-    /// A drawable of a new size, for example after a rotation, makes new textures.
-    private func committedLayer(for drawableSize: CGSize) -> CommittedLayer? {
+    /// The calls of `committedLayer(for:)` that wait after a failed layer before the next try:
+    /// about 1 s of frames at 120 Hz. A failure repeats while its cause stays.
+    static let layerRetryCalls = 120
+
+    /// A drawable of a new size, for example after a rotation, makes new textures. After a
+    /// failure, the next try waits `layerRetryCalls` calls, and the log has one entry per
+    /// failure (review after M9, section 3.2, item 7).
+    func committedLayer(for drawableSize: CGSize) -> CommittedLayer? {
         let width = Int(drawableSize.width)
         let height = Int(drawableSize.height)
         assert(width >= 0 && height >= 0, "Drawable size \(width) x \(height) is negative")
@@ -251,7 +264,13 @@ final class FrameRenderer {
             return layer
         }
         guard width >= 1, height >= 1 else { return nil }
+        guard layerRetryWait == 0 else {
+            layerRetryWait -= 1
+            return nil
+        }
+        layerAttempts += 1
         do {
+            try beforeLayer?()
             layer = try CommittedLayer(
                 resources: resources,
                 drawableWidth: width,
@@ -261,6 +280,7 @@ final class FrameRenderer {
             needsNewLayer = false
         } catch {
             logger.error("Committed layer failed: \(String(describing: error))")
+            layerRetryWait = Self.layerRetryCalls
             return nil
         }
         return layer
