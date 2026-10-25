@@ -51,9 +51,12 @@ public enum Eraser {
             "A candidate stroke appears twice"
         )
         let pathBounds = path.bounds
-        // The hit test skips a stroke whose bounds miss the path, so no second filter runs
-        // here (P-10).
-        let cuts = split(candidates, along: path)
+        // A serial filter of the bounds first: a miss costs about 0.4 µs on the threads of the
+        // split and much less here (review M9 section 3.3, item 8, m10-plan.md task 3.2).
+        let near = candidates.filter {
+            $0.bounds.expanded(by: path.radius).intersects(pathBounds)
+        }
+        let cuts = split(near, along: path)
         guard !cuts.isEmpty else { return nil }
         var parts: [Stroke] = []
         for cut in cuts {
