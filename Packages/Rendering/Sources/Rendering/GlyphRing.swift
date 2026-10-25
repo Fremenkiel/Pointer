@@ -12,14 +12,20 @@ final class GlyphRing {
     /// The glyph quads that the current frame wrote.
     private(set) var used = 0
 
-    /// Makes the ring.
+    /// Makes the ring. An offscreen render waits for the GPU after each pass, so it needs one
+    /// buffer, not the three of the screen (m10-plan.md task 3.4).
     ///
-    /// - Precondition: `capacity` is positive.
+    /// - Precondition: `capacity` and `bufferCount` are positive.
     /// - Throws: `RenderingError.resourceUnavailable` if Metal cannot make a buffer.
-    init(device: any MTLDevice, capacity: Int) throws(RenderingError) {
+    init(
+        device: any MTLDevice,
+        capacity: Int,
+        bufferCount: Int = DrawListRing.bufferCount
+    ) throws(RenderingError) {
         precondition(capacity > 0, "Glyph capacity must be positive, got \(capacity)")
+        precondition(bufferCount > 0, "A ring holds a buffer, got \(bufferCount)")
         var buffers: [any MTLBuffer] = []
-        for _ in 0..<DrawListRing.bufferCount {
+        for _ in 0..<bufferCount {
             let length = capacity * MemoryLayout<GlyphInstance>.stride
             guard let buffer = device.makeBuffer(length: length, options: .storageModeShared) else {
                 throw .resourceUnavailable("glyph buffer of \(capacity) quads")
@@ -40,7 +46,7 @@ final class GlyphRing {
     /// Makes the next buffer the buffer of the frame. Call it after `DrawListRing.beginFrame`.
     func beginFrame() {
         precondition(!buffers.isEmpty, "The ring holds its buffers")
-        index = (index + 1) % DrawListRing.bufferCount
+        index = (index + 1) % buffers.count
         used = 0
     }
 

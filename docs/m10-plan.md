@@ -847,3 +847,24 @@ The cause of the render time was task 2.5 (a754c20). `PreviewAtlas.moveDeferred`
 | Card zoom, render p50 | 0.441 ms | 0.350 ms (-20.7 %, p = 0.029) |
 
 Both are back at the level of the base. The main-thread p99 values move by a few microseconds in both directions between runs, and two of them were unsure again. The fix runs on the render thread only. The compare of 10 runs in phase 8 decides them (D-177).
+
+### 6.31 Phase 3 against its base (tasks 3.1 and 3.3 to 3.6)
+
+Four alternating pairs of the base 619beb3 and the changes of tasks 3.1 and 3.3 to 3.6 ran the hot-path suites, the memory suites, and the new measures (`T-P3-alt-*`). 77 measures passed, and none failed.
+
+| Measure | Base | Phase 3 |
+|---|---|---|
+| Allocations of a drag step of a text box and of a card (3.1) | 2 and 2 | 0 and 0 |
+| Metal memory that the preview maker keeps (3.4) | 16.78 MB | 0.98 MB |
+| Preview of a D-56 child, first and second | 0.054 s, 0.050 s | 0.053 s, 0.050 s |
+| 100 previews after a restore | 0.297 s | 0.281 s |
+| 4,000 glyph inserts with their rasters (3.5) | 40.14 ms | 38.76 ms (p = 0.029) |
+| Text pass of D-56 (3.5) | 0.844 ms | 0.812 ms (p = 0.029) |
+| Open of D-56, median | 248.6 ms | 252.7 ms (p = 0.11) |
+| Memory of a D-56 canvas | 353.5 MB | 349.3 MB |
+
+- Task 3.3 keeps one command queue per renderer and shares only the compiled pipelines. One shared queue would also have put the offscreen previews and both renderers of a card flight into one GPU order, which changes the scheduling of D-137.
+- The card zoom of `FrameLoopTests` was unsure in these pairs: render p50 from 0.356 to 0.407 ms (+14.2 %, p = 0.029). The cause was a change of task 3.4 in that build: `TextEncoder.ring` had become a variable, so that the offscreen preview could put a larger ring in place. A stored variable of a class costs a dynamic exclusivity check at each access in a release build, and the text pass reads the ring for each card. The ring is a constant again, and the offscreen preview makes a new encoder when it needs a larger ring. Four new pairs of `FrameLoopTests` against 619beb3 (`T-P3b-alt-*`): card zoom render p50 0.354 to 0.341 ms (-3.4 %), card pan 0.397 to 0.375 ms (-5.3 %), card pan at zoom 1 0.118 to 0.111 ms (-6.1 %), each with p = 0.029.
+- The text pan of `FrameLoopTests` has two modes in base runs and new runs alike: a run with 5 builds has a render p50 of about 0.23 ms, and a run with 10 builds about 2.23 ms. The median of 4 pairs then depends on how many runs of each side fall into each mode (base 1.227 ms, new 2.233 ms, p = 0.11, in `T-P3b-alt-*`). The compare of 10 runs in phase 8 decides it (D-177).
+- The text filter of the offscreen preview had a gap older than M10: it compared the bare origin of a box, but the glyphs reach half a line past the line box, as the bounds of the store do. A region that ended in that margin dropped a box whose glyphs reached into it. `PreviewTextFilterTests` failed 43 times on 619beb3 (`T-32-old`) and passes now. The filter now also drops a box that ends above the region, with one line height per UTF-16 unit as the bound.
+

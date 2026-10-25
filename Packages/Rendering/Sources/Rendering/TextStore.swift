@@ -110,6 +110,12 @@ final class TextStore {
         return earlier
     }
 
+    /// Removes all boxes, for the next offscreen preview (m10-plan.md task 3.4).
+    func removeAll() {
+        entries.removeAll(keepingCapacity: true)
+        grid = SpatialGrid(cellSize: grid.cellSize, maxCellsPerItem: grid.maxCellsPerItem)
+    }
+
     /// Removes a text box.
     ///
     /// - Returns: The bounds of the removed box, or `nil` if the store does not hold it.

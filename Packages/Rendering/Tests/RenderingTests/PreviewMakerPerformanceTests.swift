@@ -1,5 +1,6 @@
 import Foundation
 import Geometry
+import Metal
 import Model
 import XCTest
 import os
@@ -20,9 +21,18 @@ final class PreviewMakerPerformanceTests: XCTestCase {
             cards: ExportPerformanceTests.cards(count: 5_000)
         )
         // The app keeps one maker, so the second preview shows the cost without the Metal setup.
+        let device = try XCTUnwrap(MTLCreateSystemDefaultDevice())
+        let before = device.currentAllocatedSize
         let maker = PreviewMaker()
         try await measure(content, name: "D-56, first of a maker", maker: maker)
         try await measure(content, name: "D-56, second of the maker", maker: maker)
+        // The Metal memory that the maker keeps between previews (m10-plan.md task 3.4).
+        let kept = Double(device.currentAllocatedSize - min(before, device.currentAllocatedSize))
+        let megabytes = kept / 1_048_576
+        let line = String(format: "Metal memory that the maker keeps: %.1f MB", megabytes)
+        XCTContext.runActivity(named: line) { _ in }
+        PerformanceRecord.attach(["kept.mb": megabytes])
+        withExtendedLifetime(maker) {}
     }
 
     /// Renders the preview in a detached task and records the time and the memory growth.

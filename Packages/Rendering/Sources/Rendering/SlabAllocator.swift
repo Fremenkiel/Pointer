@@ -60,6 +60,23 @@ struct SlabAllocator {
         return index
     }
 
+    /// Returns the slabs that blocks for strokes of `pointCounts` points fill, with one partial
+    /// slab per size class at most. The worst case of all classes took 5.9 MB for 2,000 strokes
+    /// of 60 points that need 1.0 MB (review M9 section 3.3, item 4, m10-plan.md task 3.4).
+    static func slabsNeeded<Counts: Sequence<Int>>(pointCounts: Counts) -> Int {
+        var blocks = [Int](repeating: 0, count: classCount)
+        for points in pointCounts {
+            blocks[classIndex(forPoints: points)] += 1
+        }
+        var slabs = 0
+        for (index, count) in blocks.enumerated() where count > 0 {
+            let perSlab = slabPoints / classSizes[index]
+            slabs += (count + perSlab - 1) / perSlab
+        }
+        assert(slabs <= blocks.reduce(0, +), "A block never needs more than one slab")
+        return slabs
+    }
+
     /// Returns the point slots of one block of a size class.
     static func classPoints(_ classIndex: Int) -> Int {
         classSizes[classIndex]

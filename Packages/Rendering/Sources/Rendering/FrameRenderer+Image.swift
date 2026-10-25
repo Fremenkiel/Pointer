@@ -53,7 +53,12 @@ extension FrameRenderer {
             throw .resourceUnavailable("command buffer")
         }
         let target = InkTarget(texture: coverage, camera: camera, displayScale: displayScale)
-        let encoder = try encodeStrokes(strokes, target: target, commandBuffer: commandBuffer)
+        let encoder = try Self.encodeStrokes(
+            strokes,
+            target: target,
+            commandBuffer: commandBuffer,
+            resources: resources
+        )
         let text = try encodeText(
             textBoxes,
             cards: cards,
@@ -73,10 +78,11 @@ extension FrameRenderer {
     /// - Precondition: The image lies inside the targets.
     /// - Throws: `RenderingError.resourceUnavailable` if Metal gives no buffer or no encoder.
     /// - Returns: The buffer that holds the image after the GPU completes `commandBuffer`.
-    func encodeReadback(
+    static func encodeReadback(
         of preview: PreviewRenderer,
         image: MTLRegion,
-        commandBuffer: any MTLCommandBuffer
+        commandBuffer: any MTLCommandBuffer,
+        resources: InkResources
     ) throws(RenderingError) -> any MTLBuffer {
         let size = image.size
         precondition(
@@ -114,15 +120,15 @@ extension FrameRenderer {
 
     /// Draws all strokes in one pass with a store of their own. The encoder must live until the
     /// GPU completes, because it owns the arena. The pass clears the target if `clear` is set.
-    func encodeStrokes(
+    static func encodeStrokes(
         _ strokes: [Stroke],
         target: InkTarget,
         commandBuffer: any MTLCommandBuffer,
-        clear: Bool = true
+        clear: Bool = true,
+        resources: InkResources
     ) throws(RenderingError) -> InkEncoder {
-        let points = strokes.reduce(0) { $0 + $1.points.count }
-        // A block holds at most twice its points, and each size class can leave one partial slab.
-        let slabs = (points * 2) / SlabAllocator.slabPoints + SlabAllocator.classCount + 1
+        // The arena takes the slabs of the blocks of these strokes, at least one.
+        let slabs = max(SlabAllocator.slabsNeeded(pointCounts: strokes.lazy.map(\.points.count)), 1)
         let arena = try PointArena(
             device: resources.device,
             initialSlabs: slabs,
@@ -204,7 +210,7 @@ extension FrameRenderer {
 
     /// Returns the cards and the text boxes to draw: all of them in the given order, or with a
     /// `region`, the ones whose bounds touch it.
-    private static func greenItems(
+    static func greenItems(
         cards: CardStore,
         boxes: TextStore,
         order: ([Card], [TextBox]),

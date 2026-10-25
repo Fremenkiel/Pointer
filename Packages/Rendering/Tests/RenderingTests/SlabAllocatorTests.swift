@@ -82,4 +82,21 @@ struct SlabAllocatorTests {
         #expect(block.start == SlabAllocator.slabPoints)
         #expect(allocator.slabCount == 2)
     }
+
+    @Test(
+        "The slabs of a pass hold all its blocks, and less than the worst case of all classes",
+        arguments: [[60], [300, 300, 1_000], [16_384, 1, 17, 60, 300]]
+    )
+    func slabsOfPass(pattern: [Int]) throws {
+        let counts = (0..<2_000).map { pattern[$0 % pattern.count] }
+        let slabs = SlabAllocator.slabsNeeded(pointCounts: counts)
+        var allocator = SlabAllocator(slabCount: slabs)
+        for points in counts {
+            let block = allocator.allocate(points: points)
+            #expect(block != nil, "A block of \(points) points fits")
+        }
+        let points = counts.reduce(0, +)
+        let worst = (points * 2) / SlabAllocator.slabPoints + SlabAllocator.classCount + 1
+        #expect(slabs < worst, "\(slabs) slabs against \(worst)")
+    }
 }

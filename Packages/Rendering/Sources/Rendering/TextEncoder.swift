@@ -188,7 +188,7 @@ final class TextEncoder {
 
     /// Returns the quads that an item writes into the glyph buffer, or `nil` if its store does
     /// not hold it: the glyphs of a box, or the border and the title glyphs of a card.
-    private func quadCount(of item: GreenItem) -> Int? {
+    func quadCount(of item: GreenItem) -> Int? {
         switch item {
         case .textBox(let id):
             return store.entries[id]?.layout.glyphs.count

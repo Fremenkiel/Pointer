@@ -2,90 +2,8 @@ import Geometry
 import Metal
 import Model
 
-/// The offscreen render of the preview of a canvas that is not on the screen (D-97, D-157).
+/// The checks of the offscreen preview of a canvas that is not on the screen (D-97, D-157).
 extension FrameRenderer {
-    /// Renders the preview of the items of `content` that touch the region of `placement`, with
-    /// the passes of `renderImage`. Cards show their frames and titles without previews. The
-    /// strokes draw in passes whose points fit `previewArenaByteBudget`. It blocks until the
-    /// GPU completes (m6-plan.md task 3.3, item 6).
-    ///
-    /// - Precondition: The content keeps the node limit.
-    /// - Throws: `RenderingError` if a Metal object fails.
-    /// - Returns: The gray image of the placement.
-    func renderPreviewImage(
-        of content: CanvasContent,
-        placement: PreviewRenderer.Placement
-    ) throws(RenderingError) -> PreviewImage {
-        let nodes = content.cards.count + content.textBoxes.count
-        precondition(nodes <= Limits.maxNodesPerCanvas, "Too many nodes: \(nodes)")
-        let region = placement.region
-        let preview = try offscreenTargets()
-        let target = InkTarget(texture: preview.coverage, camera: placement.camera, displayScale: 1)
-        let strokes = content.strokes.values.filter { $0.bounds.intersects(region) }
-        try encodeStrokePasses(strokes, target: target)
-        guard let commandBuffer = resources.queue.makeCommandBuffer() else {
-            throw .resourceUnavailable("command buffer")
-        }
-        // The title of a card lies above and beside its frame, as in the grid of the screen.
-        let cardRegion = region.expanded(by: Limits.cardTitleReach)
-        let text = try encodeText(
-            content.textBoxes.values.filter { Self.mayTouch($0, region) },
-            cards: content.cards.values.filter { $0.frame.intersects(cardRegion) },
-            target: target,
-            commandBuffer: commandBuffer,
-            region: region
-        )
-        let size = placement.image.size
-        let readback = try encodeReadback(
-            of: preview,
-            image: placement.image,
-            commandBuffer: commandBuffer
-        )
-        commandBuffer.commit()
-        commandBuffer.waitUntilCompleted()
-        withExtendedLifetime(text) {}
-        try Self.checkCompleted(commandBuffer)
-        let image = PreviewRenderer.readImage(of: readback, width: size.width, height: size.height)
-        guard let image else { throw .resourceUnavailable("preview readback") }
-        return image
-    }
-
-    /// Draws `strokes` in passes of one command buffer each, so that the arena of a pass keeps
-    /// `previewArenaByteBudget`. The first pass clears the target, also without a stroke. Each
-    /// pass waits for the GPU, and its arena goes before the next one comes.
-    private func encodeStrokePasses(
-        _ strokes: [Stroke],
-        target: InkTarget
-    ) throws(RenderingError) {
-        let passes = PreviewPasses.split(strokes, byteBudget: configuration.previewArenaByteBudget)
-        precondition(!passes.isEmpty, "The first pass clears the target")
-        for (index, pass) in passes.enumerated() {
-            guard let commandBuffer = resources.queue.makeCommandBuffer() else {
-                throw .resourceUnavailable("command buffer")
-            }
-            let ink = try encodeStrokes(
-                pass,
-                target: target,
-                commandBuffer: commandBuffer,
-                clear: index == 0
-            )
-            commandBuffer.commit()
-            commandBuffer.waitUntilCompleted()
-            withExtendedLifetime(ink) {}
-            try Self.checkCompleted(commandBuffer)
-        }
-        assert(passes.joined().count == strokes.count, "Each stroke draws in one pass")
-    }
-
-    /// Throws if the GPU did not complete `commandBuffer`, for example because the app went to
-    /// the background. The readback buffer then holds no image, and a black preview must not
-    /// reach the cache (review after M9).
-    private static func checkCompleted(
-        _ commandBuffer: any MTLCommandBuffer
-    ) throws(RenderingError) {
-        try checkCompleted(status: commandBuffer.status, error: commandBuffer.error)
-    }
-
     /// Throws for a `status` other than `.completed`, with the text of `error`.
     static func checkCompleted(
         status: MTLCommandBufferStatus,
@@ -97,21 +15,22 @@ extension FrameRenderer {
         }
     }
 
-    /// The preview targets of the offscreen renders. The first render makes them, and later
-    /// renders reuse them. The offscreen renderer never runs the preview jobs of the screen.
-    private func offscreenTargets() throws(RenderingError) -> PreviewRenderer {
-        if let previewRenderer { return previewRenderer }
-        let made = try PreviewRenderer(resources: resources)
-        previewRenderer = made
-        return made
-    }
-
     /// Returns true if the text of `box` can touch `region`. A box lays out its lines down and
     /// to the right of its origin, at most `TextStyle.maxWidth` wide, so a box that starts
-    /// below the region or far to one side stays out. The text store then checks the bounds.
+    /// below the region or far to one side stays out. A line holds one UTF-16 unit at least, so
+    /// a box has at most one line more than its units, each `TextLayout.lineHeight` high, and a
+    /// box that ends above the region stays out too (m10-plan.md task 3.4). The glyphs can
+    /// reach `TextStore.boundsMargin` lines past the line box on each side, as the bounds of the
+    /// store do. The text store then checks the bounds.
     static func mayTouch(_ box: TextBox, _ region: Rect) -> Bool {
-        box.origin.y <= region.maxY && box.origin.x <= region.maxX
-            && box.origin.x + TextStyle.maxWidth >= region.minX
+        let lines = Double(box.text.utf16.count + 1)
+        let margin = TextLayout.lineHeight * TextStore.boundsMargin
+        let top = box.origin.y - margin
+        let bottom = box.origin.y + lines * TextLayout.lineHeight + margin
+        let left = box.origin.x - margin
+        let right = box.origin.x + TextStyle.maxWidth + margin
+        return top <= region.maxY && bottom >= region.minY && left <= region.maxX
+            && right >= region.minX
     }
 }
 
