@@ -737,3 +737,9 @@ Eight alternating pairs of `OpenAnimationTests` alone ran on the commit before M
 | Leave of the empty card | 0 | 0 |
 
 The late frame at place 41 is older than M10. It is a second fault of the flights, at the frame before the swap to the child. Task 5.1 traces it with the late frame at place 0.
+
+### 6.16 One lock for the loading flags (task 2.1)
+
+The inbox now marks the loaded text, the loaded cards, and the decoded previews from the take until the end of their frame. It also counts the preview requests that the loader holds, mirrors the uploads that wait in the frame work, and notes the requests that the last frame left for the loader. `isLoadingText`, `isLoadingCards`, `isLoadingPreviews`, and the new `isLoading` read this one state under the inbox lock. The main actor no longer takes the frame lock for `isLoadingPreviews`.
+
+`LoadingStateTests` reads the flags in a hook between the take and the apply (D-184). With the old definitions of the flags, all 3 tests failed: each flag read `false` after the take (`T-21-old.xcresult`). With the change, 47 of 47 tests of the loading, preview, card, text, transition, and frame-loop suites pass (`T-21-new2.xcresult`). A first run found a fault of the change itself: without a preview source, the wanted previews of a frame never go to a loader, so `isLoading` stayed `true`. The flag now counts them only with a source.

@@ -75,6 +75,32 @@ struct RenderInbox {
     /// Watches each frame. Only the tests set it.
     var observer: (any FrameObserving)?
 
+    /// `true` from the take of loaded text until the end of its frame, so the text counts as
+    /// loading between the inbox and the frame work (review after M9, section 3.2, item 1).
+    var isTextInFrame = false
+    /// `true` from the take of loaded cards until the end of their frame.
+    var areCardsInFrame = false
+    /// `true` from the take of decoded previews until the end of their frame.
+    var arePreviewsInFrame = false
+    /// The decoded previews that wait in the frame work for their upload, after the last frame.
+    var previewUploadsWaiting = 0
+    /// `true` if the last frame left preview requests for the loader.
+    var hasPreviewsToRequest = false
+    /// The preview requests that the loader holds or decodes. A delivery counts one down.
+    var previewRequestsOut = 0
+
+    /// `true` while a text layout of a load runs, waits, or waits for its frame (D-92).
+    var isLoadingText: Bool { textLoadsInFlight > 0 || !laidOutText.isEmpty || isTextInFrame }
+
+    /// `true` while a title layout of a card load runs, waits, or waits for its frame (D-92).
+    var isLoadingCards: Bool { cardLoadsInFlight > 0 || !laidOutCards.isEmpty || areCardsInFrame }
+
+    /// `true` while a preview waits for the loader, decodes, or waits for its upload (D-97).
+    var isLoadingPreviews: Bool {
+        previewRequestsOut > 0 || hasPreviewsToRequest || !decodedPreviews.isEmpty
+            || arePreviewsInFrame || previewUploadsWaiting > 0
+    }
+
     /// The number of strokes in the renderer after the last frame.
     var strokeCount = 0
     /// `true` if the renderer needed more frames after the last frame.
@@ -100,6 +126,10 @@ struct RenderInbox {
     /// Moves the waiting changes out. The camera stays as the newest value.
     mutating func take() -> RenderInput {
         precondition(edits.isEmpty || editHandoff > 0, "Edits need a handoff number")
+        // The flags hold until the end of the frame, which applies the taken items.
+        isTextInFrame = !laidOutText.isEmpty
+        areCardsInFrame = !laidOutCards.isEmpty
+        arePreviewsInFrame = !decodedPreviews.isEmpty
         let input = RenderInput(
             camera: hasNewCamera ? camera : nil,
             viewport: viewport,

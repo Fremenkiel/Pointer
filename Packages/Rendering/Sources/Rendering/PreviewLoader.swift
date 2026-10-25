@@ -66,17 +66,23 @@ final class PreviewLoader: Sendable {
 
     /// Adds the requests of a frame. A request beyond `limit` waiting requests is dropped, and
     /// the atlas asks for it again in a later frame.
-    func request(_ requests: [PreviewRequest], area: Rect) {
+    ///
+    /// - Returns: The number of requests that the loader took. It delivers each of them once.
+    func request(_ requests: [PreviewRequest], area: Rect) -> Int {
         precondition(requests.count <= Limits.maxNodesPerCanvas, "Too many preview requests")
-        guard !requests.isEmpty else { return }
-        shared.state.withLock { current in
+        guard !requests.isEmpty else { return 0 }
+        let taken = shared.state.withLock { current -> Int in
             current.area = area
+            var taken = 0
             for request in requests where current.queue.count < limit {
                 current.queue.append(request)
+                taken += 1
             }
             assert(current.queue.count <= limit, "At most \(limit) requests wait")
+            return taken
         }
         signal.yield()
+        return taken
     }
 
     /// Serves the requests until the loader goes.

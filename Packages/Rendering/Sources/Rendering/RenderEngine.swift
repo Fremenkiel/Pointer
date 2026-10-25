@@ -30,6 +30,9 @@ final class RenderEngine: Sendable {
     let previewRequestLimit: Int
     /// The loader of the previews, made at the first request.
     let previewLoader = Mutex<PreviewLoader?>(nil)
+    /// Runs on the render thread after each frame took the inbox and before it applies the
+    /// input. Only the tests set it (D-184).
+    private let afterTake: (@Sendable (RenderEngine) -> Void)?
 
     /// Makes the engine on the system GPU.
     ///
@@ -38,7 +41,8 @@ final class RenderEngine: Sendable {
         configuration: RendererConfiguration,
         previewSource: (any PreviewSource)? = nil,
         onCompleted: @escaping @Sendable (UInt64, Double) -> Void = { _, _ in },
-        onPresented: @escaping @Sendable (UInt64) -> Void
+        onPresented: @escaping @Sendable (UInt64) -> Void,
+        afterTake: (@Sendable (RenderEngine) -> Void)? = nil
     ) throws(RenderingError) {
         let renderer = try FrameRenderer(
             configuration: configuration,
@@ -49,6 +53,7 @@ final class RenderEngine: Sendable {
         core = Mutex(renderer)
         self.previewSource = previewSource
         previewRequestLimit = configuration.previewRequestLimit
+        self.afterTake = afterTake
         assert(
             core.withLock { $0.resources.device === device },
             "The engine uses the GPU of its frames"
@@ -63,13 +68,15 @@ final class RenderEngine: Sendable {
     var strokeCount: Int { inbox.withLock { $0.strokeCount } }
 
     /// `true` while a text layout of a load runs or waits for a frame (D-92).
-    var isLoadingText: Bool {
-        inbox.withLock { $0.textLoadsInFlight > 0 || !$0.laidOutText.isEmpty }
-    }
+    var isLoadingText: Bool { inbox.withLock { $0.isLoadingText } }
 
     /// `true` while a title layout of a card load runs or waits for a frame (D-92).
-    var isLoadingCards: Bool {
-        inbox.withLock { $0.cardLoadsInFlight > 0 || !$0.laidOutCards.isEmpty }
+    var isLoadingCards: Bool { inbox.withLock { $0.isLoadingCards } }
+
+    /// `true` while text, cards, or previews load, read under one lock, so that no wait on it
+    /// ends between the inbox and the frame work (review after M9, section 3.2, item 1).
+    var isLoading: Bool {
+        inbox.withLock { $0.isLoadingText || $0.isLoadingCards || $0.isLoadingPreviews }
     }
 
     /// Applies a change to the inbox and wakes the frame loop if it sleeps.
@@ -135,6 +142,7 @@ final class RenderEngine: Sendable {
         precondition(drawableSize.width.isFinite && drawableSize.height.isFinite, "Size not finite")
         waitForCameraIfMoving()
         var input = inbox.withLock { $0.take() }
+        afterTake?(self)
         let result = core.withLock { renderer -> FrameResult in
             Self.draw(
                 input,
@@ -153,6 +161,12 @@ final class RenderEngine: Sendable {
             box.strokeCount = result.count
             box.rendererHasWork = result.needsMore
             box.isFlying = result.isFlying
+            box.isTextInFrame = false
+            box.areCardsInFrame = false
+            box.arePreviewsInFrame = false
+            box.previewUploadsWaiting = result.previewUploadsWaiting
+            // Without a source, the wanted previews never go to a loader (D-97).
+            box.hasPreviewsToRequest = previewSource != nil && result.hasPreviewsToRequest
             if box.spareEraserSamples.capacity < samples.capacity {
                 box.spareEraserSamples = samples
             }
@@ -176,7 +190,10 @@ final class RenderEngine: Sendable {
         var needsMore = false
         var record: FrameRecord?
         if !input.hasChange && !isFlying && !renderer.needsMoreFrames {
-            return FrameResult(didDraw: false, needsMore: false, count: renderer.store.count)
+            var result = FrameResult(didDraw: false, needsMore: false, count: renderer.store.count)
+            result.previewUploadsWaiting = renderer.previews?.pending.count ?? 0
+            result.hasPreviewsToRequest = renderer.hasPreviewsToRequest
+            return result
         } else if let observer = input.observer {
             // The closure goes straight to `measure`, so it does not escape and allocates no box
             // for `needsMore` (PERF-01).
@@ -201,7 +218,9 @@ final class RenderEngine: Sendable {
             needsMore: needsMore || isFlying,
             count: renderer.store.count,
             record: record,
-            isFlying: isFlying
+            isFlying: isFlying,
+            previewUploadsWaiting: renderer.previews?.pending.count ?? 0,
+            hasPreviewsToRequest: renderer.hasPreviewsToRequest
         )
     }
 
@@ -312,4 +331,8 @@ private struct FrameResult: Sendable {
     var record: FrameRecord?
     /// `true` while a flight of the camera runs or changed the frame (D-121).
     var isFlying = false
+    /// The decoded previews that wait for their upload after the frame (D-97).
+    var previewUploadsWaiting = 0
+    /// `true` if the frame left preview requests for the loader (D-97).
+    var hasPreviewsToRequest = false
 }

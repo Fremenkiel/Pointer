@@ -75,6 +75,12 @@ extension FrameRenderer {
     }
 
     /// Gives the new requests of the frame to the loader.
+    /// `true` if the last frame left preview requests that `takeWantedPreviews` gives away.
+    var hasPreviewsToRequest: Bool {
+        guard let previews, previewArea != nil else { return false }
+        return !previews.wanted.isEmpty
+    }
+
     func takeWantedPreviews(_ body: ([PreviewRequest], Rect) -> Void) {
         guard let previews, !previews.wanted.isEmpty, let area = previewArea else { return }
         precondition(previews.wanted.count <= previews.requestLimit, "Too many new requests")

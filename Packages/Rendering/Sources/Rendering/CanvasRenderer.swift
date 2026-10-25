@@ -45,9 +45,23 @@ public final class CanvasRenderer {
     ///
     /// - Precondition: The configuration values are positive.
     /// - Throws: `RenderingError` if the device has no GPU or a Metal object fails.
-    public init(
+    public convenience init(
         configuration: RendererConfiguration = RendererConfiguration(),
         previews: (any PreviewSource)? = nil
+    ) throws(RenderingError) {
+        try self.init(configuration: configuration, previews: previews, afterTake: nil)
+    }
+
+    /// Makes a renderer as `init(configuration:previews:)` does, with a hook that runs on the
+    /// render thread between the take of the inbox and the apply of the frame. Only the tests
+    /// pass a hook (D-184).
+    ///
+    /// - Precondition: The configuration values are positive.
+    /// - Throws: `RenderingError` if the device has no GPU or a Metal object fails.
+    init(
+        configuration: RendererConfiguration,
+        previews: (any PreviewSource)?,
+        afterTake: (@Sendable (RenderEngine) -> Void)?
     ) throws(RenderingError) {
         precondition(
             configuration.instanceBudgetPerFrame > 0 && configuration.drawListCapacity > 0,
@@ -69,7 +83,8 @@ public final class CanvasRenderer {
                 DispatchQueue.main.async {
                     MainActor.assumeIsolated { relay.renderer?.deliver(upTo: handoff) }
                 }
-            }
+            },
+            afterTake: afterTake
         )
         self.configuration = configuration
         self.relay = relay
@@ -82,6 +97,10 @@ public final class CanvasRenderer {
     /// `true` while the text of a load is laid out off the render thread or waits for a frame
     /// (D-92). `needsMoreFrames` does not count it, so the first frame does not wait for it.
     public var isLoadingText: Bool { engine.isLoadingText }
+
+    /// `true` while text, cards, or previews load or wait for their frame, read under one lock
+    /// (review after M9, section 3.2, item 1). A test or a UI test waits on it.
+    public var isLoading: Bool { engine.isLoading }
 
     /// `true` if the renderer has work for more frames: a change, a build, or a stroke that
     /// waits.
