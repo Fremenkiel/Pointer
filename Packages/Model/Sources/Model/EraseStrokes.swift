@@ -74,20 +74,21 @@ public struct EraseStrokes: CanvasCommand {
 
     /// Removes the parts and puts the cut strokes back.
     ///
-    /// The undo fails at the limit only if it adds more strokes than it removes.
+    /// The undo takes the canvas up to `Limits.maxStrokesAfterErase`, because the state that it
+    /// gives back existed one step before (D-159).
     ///
     /// - Throws: `CommandError.strokeNotLive` if a part is not live,
     ///   `CommandError.strokeAlreadyLive` if a removed stroke is live,
     ///   `CommandError.eraseRecordMissing` if the content has no erase record of a removed
-    ///   stroke, or `CommandError.strokeLimitReached` if the undo grows the canvas past the
-    ///   limit. The content then stays as it was.
+    ///   stroke, or `CommandError.strokeLimitReached` if the undo grows the canvas past
+    ///   `Limits.maxStrokesAfterErase`. The content then stays as it was.
     /// - Returns: The erase records of the parts and the tombstones of the removed strokes.
     public func revert(
         on content: inout CanvasContent,
         clock: inout HybridClock
     ) throws(CommandError) -> [LibraryChange] {
         let count = content.strokes.count - parts.count + removed.count
-        guard count <= Limits.maxStrokesPerCanvas || removed.count <= parts.count else {
+        guard count <= Limits.maxStrokesAfterErase || removed.count <= parts.count else {
             throw .strokeLimitReached
         }
         let time = clock.now()
