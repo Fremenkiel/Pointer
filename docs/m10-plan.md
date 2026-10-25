@@ -824,3 +824,7 @@ The measures ran in release builds on the Mac, with the median of 11 to 31 repea
 - The sets of the two checks cost 0.04 ms and 0.13 ms of an erase of 1.73 ms (command and apply). A stroke twice in a release build fails the apply with `strokeNotLive` or `strokeAlreadyLive`, and the apply rolls the content back.
 - A threshold of 64 built tables in the cells of handwriting and made the load of 200,000 strokes take 14 ms. A threshold of 1,024 leaves those cells as they were. The cells of D-56 hold about 170 strokes, so its open builds no table. Only a cell of more than 1,024 entries pays for its table at the load.
 - `ErasePrefilterTests` makes sure that misses among the candidates change nothing in the command. `CrowdedCellTests` covers the threshold and the threshold plus one, and random removals with inserts after them.
+
+### 6.29 Small allocations (task 3.6)
+
+- The load of a canvas counts its strokes, cards, and text boxes with one query and reserves room for them in `CanvasContent`. The count includes erased and deleted rows, so it is an upper bound, and the limits of a canvas cap it. In a release build on the Mac, the count of 20,000 strokes took 0.24 ms, and the reserve cut the growth of the stroke table from 1.8 ms to 0.8 ms. The whole load went from 36.0 to 39.6 ms to 32.6 to 35.0 ms in three runs each.

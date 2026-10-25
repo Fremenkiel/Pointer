@@ -34,6 +34,9 @@ final class LibraryStatements {
     let selectPathCards: SQLiteStatement
     /// Holds `TextBoxRow.selectLive`, which reads the live text boxes of a canvas.
     let selectTextBoxes: SQLiteStatement
+    /// Counts the strokes, cards, and text boxes of a canvas, erased and deleted rows included,
+    /// for the reserve of a load.
+    let countCanvasRows: SQLiteStatement
     /// Writes the last timestamp of the clock to the `library` table.
     let writeLastTimestamp: SQLiteStatement
 
@@ -68,6 +71,13 @@ final class LibraryStatements {
         selectCards = try connection.prepare(CardRow.selectLive)
         selectPathCards = try connection.prepare(CardRow.selectPath)
         selectTextBoxes = try connection.prepare(TextBoxRow.selectLive)
+        countCanvasRows = try connection.prepare(
+            """
+            SELECT (SELECT count(*) FROM stroke WHERE canvas_id = ?1),
+                (SELECT count(*) FROM card WHERE canvas_id = ?1),
+                (SELECT count(*) FROM text_box WHERE canvas_id = ?1)
+            """
+        )
         writeLastTimestamp = try connection.prepare(
             """
             INSERT INTO library (key, value) VALUES ('lastTimestamp', ?)
@@ -87,6 +97,7 @@ final class LibraryStatements {
         assert(selectPathCards.parameterCount == Int32(Limits.maxDepth), "Path read shape")
         assert(upsertTextBox.parameterCount == TextBoxRow.parameterCount, "Text box write shape")
         assert(selectTextBoxes.columnCount == TextBoxRow.columnCount, "Text box read shape")
+        assert(countCanvasRows.parameterCount == 1, "Row count shape")
         assert(
             upsertWorkspace.parameterCount == WorkspaceRow.parameterCount,
             "Workspace write shape"

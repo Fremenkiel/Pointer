@@ -23,6 +23,17 @@ public struct CanvasContent: Sendable {
     /// The number of cards plus text boxes.
     public var nodeCount: Int { cards.count + textBoxes.count }
 
+    /// Reserves room for the rows of a load, so that each table grows once (PERF-01,
+    /// m10-plan.md task 3.6). A count past a limit of the canvas reserves the limit.
+    ///
+    /// - Precondition: The counts are not negative.
+    public mutating func reserveCapacity(strokes: Int, cards: Int, textBoxes: Int) {
+        precondition(strokes >= 0 && cards >= 0 && textBoxes >= 0, "A negative reserve")
+        self.strokes.reserveCapacity(min(strokes, Limits.maxStrokesAfterErase))
+        self.cards.reserveCapacity(min(cards, Limits.maxNodesPerCanvas))
+        self.textBoxes.reserveCapacity(min(textBoxes, Limits.maxNodesPerCanvas))
+    }
+
     /// Adds a stroke.
     ///
     /// The load of a canvas passes `Limits.maxStrokesAfterErase`, because an erase can pass the

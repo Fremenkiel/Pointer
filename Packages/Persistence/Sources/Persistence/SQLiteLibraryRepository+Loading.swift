@@ -63,6 +63,7 @@ extension SQLiteLibraryRepository {
             read: StrokeRow.read
         )
         try storage { () throws(PersistenceError) in
+            try reserveRows(of: canvasID, in: &content, statement: statements.countCanvasRows)
             try readRows(cards) { (card: Card) throws(ModelError) in try content.add(card) }
             try readRows(textBoxes) { (box: TextBox) throws(ModelError) in try content.add(box) }
             try readRows(strokes) { (stroke: Stroke) throws(ModelError) in
@@ -167,6 +168,27 @@ extension SQLiteLibraryRepository {
             }
         }
         if skipped > 0 { report(.rowsSkipped(table: query.table, count: skipped)) }
+    }
+
+    /// Reserves room in `content` for the rows of the canvas. The count costs 0.24 ms and saves
+    /// about 1 ms of table growth for 20,000 strokes on the Mac (m10-plan.md task 3.6).
+    ///
+    /// - Throws: `PersistenceError` if the bind or the step fails.
+    private func reserveRows(
+        of canvasID: CanvasID,
+        in content: inout CanvasContent,
+        statement: SQLiteStatement
+    ) throws(PersistenceError) {
+        var binder = try RowBinder(statement)
+        defer { resetAfterRead(statement) }
+        try binder.bind(canvasID)
+        // The reserve only saves time, so the load goes on without it.
+        guard try statement.step() else { return }
+        content.reserveCapacity(
+            strokes: max(Int(statement.int64(at: 0)), 0),
+            cards: max(Int(statement.int64(at: 1)), 0),
+            textBoxes: max(Int(statement.int64(at: 2)), 0)
+        )
     }
 
     /// Resets a read, so the WAL file can be checkpointed. A failed reset is only logged.

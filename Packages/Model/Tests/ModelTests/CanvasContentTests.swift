@@ -96,4 +96,18 @@ struct CanvasContentTests {
         #expect(Limits.minCardWidth == 64)
         #expect(Limits.minCardHeight == 48)
     }
+
+    @Test(
+        "A reserve keeps room for the counts, up to the limits of a canvas",
+        arguments: [0, Limits.maxNodesPerCanvas, Limits.maxNodesPerCanvas + 1]
+    )
+    func reserve(nodes: Int) {
+        var content = CanvasContent(canvasID: Fixtures.canvas)
+        content.reserveCapacity(strokes: nodes * 30, cards: nodes, textBoxes: nodes)
+        let nodeRoom = min(nodes, Limits.maxNodesPerCanvas)
+        #expect(content.cards.capacity >= nodeRoom)
+        #expect(content.textBoxes.capacity >= nodeRoom)
+        #expect(content.strokes.capacity >= min(nodes * 30, Limits.maxStrokesAfterErase))
+        #expect(content.cards.capacity < 2 * Limits.maxNodesPerCanvas, "The limit bounds the room")
+    }
 }
