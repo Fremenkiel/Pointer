@@ -344,13 +344,12 @@ final class FrameRenderer {
         )
         let handoff = waitingHandoff
         waitingHandoff = 0
-        let onPresented = onPresented
         // The handler and its hop to the main queue run only for a change that asks (P-08).
         if waitingCompletion {
             let onCompleted = onCompleted
             commandBuffer.whenCompleted { buffer in onCompleted(handoff, buffer.gpuEndTime) }
             waitingCompletion = false
         }
-        drawable.addPresentedHandler { _ in onPresented(handoff) }
+        PresentedHandoffs.attach(handoff, to: drawable, onPresented: onPresented)
     }
 }
