@@ -118,12 +118,14 @@ struct FractionalIndexTests {
     }
 
     @Test(
-        "A key at an end adds one to the first digit that can grow",
+        "A key at an end adds or takes one unit at the fourth digit (D-182)",
         arguments: [
-            EndCase(low: "V", expected: "W"), EndCase(low: "zV", expected: "zW"),
-            EndCase(low: "z", expected: "z1"), EndCase(high: "V", expected: "U"),
-            EndCase(high: "1z", expected: "1y"), EndCase(high: "1", expected: "0z"),
-            EndCase(high: "01", expected: "00z"),
+            EndCase(low: "V", expected: "V001"), EndCase(low: "zV", expected: "zV01"),
+            EndCase(low: "z", expected: "z001"), EndCase(low: "V00z", expected: "V01"),
+            EndCase(low: "zzzz", expected: "zzzz1"), EndCase(low: "V0Z5K", expected: "V0Z5L"),
+            EndCase(high: "V", expected: "Uzzz"), EndCase(high: "1z", expected: "1yzz"),
+            EndCase(high: "1", expected: "0zzz"), EndCase(high: "01", expected: "00zz"),
+            EndCase(high: "0001", expected: "0000z"),
         ]
     )
     func endKeys(endCase: EndCase) throws {

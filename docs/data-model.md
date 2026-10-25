@@ -109,9 +109,9 @@ struct FractionalIndex: Hashable, Comparable, Sendable {
 
 - `FractionalIndex.between(_:_:)` returns a key that sorts between two keys. Either argument can be `nil` for "start" or "end".
 - If two devices make the same key, the record ID breaks the tie.
-- The key length has a limit of 64 characters (`Limits.maxSortKeyLength`). If a new key needs more, `between` throws `ModelError.sortKeyNeedsRebalance`. A longer key must trigger a rebalance of all keys on that canvas, in one command. The rebalance is not built yet: the new card and the new text box then take the last key again, and the record ID breaks the tie in the hit tests (review after M9, M10).
+- The key length has a limit of 64 characters (`Limits.maxSortKeyLength`). If a new key needs more, `between` throws `ModelError.sortKeyNeedsRebalance`. The app has no rebalance (D-182): the new card and the new text box then take the last key again, and the record ID breaks the tie in the hit tests. The app only appends, and the step at the ends keeps such keys short, so it does not reach the limit in practice.
 - A key never ends with the digit "0". Thus a key always fits between two different keys.
-- Between two keys, `between` takes the midpoint of David Greenspan ("Implementing Fractional Indexing", 2020). At an end of the list, it adds one to the first digit that can grow, or takes one from the first digit above 1. A list that grows at one end then needs a new digit only every 60 keys.
+- Between two keys, `between` takes the midpoint of David Greenspan ("Implementing Fractional Indexing", 2020). At an end of the list, it adds or takes one unit at the fourth digit, or at the last digit of a longer key (`FractionalIndex.stepWidth`, D-182). The keys of 1,000,000 appends at one end are at most 4 digits long. Before, a list that grew at one end reached 64 digits after 3,874 keys. Old keys stay valid.
 
 Workspaces use the key for their order in the selector. Cards and text boxes use it for their drawing order within their layer.
 

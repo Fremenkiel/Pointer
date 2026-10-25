@@ -4,11 +4,17 @@
 /// ASCII order, so keys compare as bytes (data-model.md section 6). A key is never empty, has at
 /// most `Limits.maxSortKeyLength` digits, and never ends with "0". Without a trailing "0", a key
 /// always fits between two different keys. The midpoint follows David Greenspan, "Implementing
-/// Fractional Indexing", 2020. At the ends of the list, a new key adds one to the first digit
-/// that can grow, so a list that grows at one end uses a new digit only every 60 keys.
+/// Fractional Indexing", 2020. At the ends of the list, a new key adds or takes one unit at the
+/// digit `stepWidth`, or at the last digit of a longer key (D-182). Appends at one end thus keep
+/// keys of 4 digits for about seven million keys.
 public struct FractionalIndex: Hashable, Comparable, Sendable {
     /// The digits of the key.
     public let rawValue: String
+
+    /// The digit at which a key at an end of the list adds or takes one unit (D-182). The keys
+    /// of 1,000,000 appends are at most 4 digits long. Before, a list that grew at one end
+    /// reached `Limits.maxSortKeyLength` after 3,874 keys.
+    static let stepWidth = 4
 
     /// The digits in ascending order.
     private static let alphabet = Array(
@@ -74,23 +80,45 @@ public struct FractionalIndex: Hashable, Comparable, Sendable {
         return key
     }
 
-    /// Returns the digits of a key after `low`: one more in the first digit below the largest
-    /// digit, or `low` plus the digit 1.
+    /// Returns the digits of a key after `low`: `low` plus one unit at its last digit, with at
+    /// least `stepWidth` digits, or `low` plus the digit 1 if all digits are the largest.
     private static func after(_ low: [Int]) -> [Int] {
         let largest = alphabet.count - 1
-        guard let index = low.firstIndex(where: { $0 < largest }) else { return low + [1] }
-        let result = low.prefix(index) + [low[index] + 1]
-        return Array(result)
+        var digits = low + Array(repeating: 0, count: max(0, stepWidth - low.count))
+        // The carry walks at most once over the digits.
+        for index in digits.indices.reversed() {
+            guard digits[index] == largest else {
+                digits[index] += 1
+                return withoutTrailingZeros(digits)
+            }
+            digits[index] = 0
+        }
+        return low + [1]
     }
 
-    /// Returns the digits of a key before `high`: one less in the first digit above 1, or
-    /// `high` with its last digit 1 replaced by 0 and the largest digit.
+    /// Returns the digits of a key before `high`: `high` less one unit at its last digit, with
+    /// at least `stepWidth` digits. If that leaves no digit above zero, `high` with its last
+    /// digit 1 replaced by 0 and the largest digit.
     private static func before(_ high: [Int]) -> [Int] {
         assert(high.last != 0, "Key \(high) ends with zero")
-        guard let index = high.firstIndex(where: { $0 > 1 }) else {
-            return high.dropLast() + [0, alphabet.count - 1]
+        let largest = alphabet.count - 1
+        var digits = high + Array(repeating: 0, count: max(0, stepWidth - high.count))
+        // The borrow walks at most once over the digits.
+        for index in digits.indices.reversed() {
+            guard digits[index] == 0 else {
+                digits[index] -= 1
+                let result = withoutTrailingZeros(digits)
+                return result.isEmpty ? high.dropLast() + [0, largest] : result
+            }
+            digits[index] = largest
         }
-        return Array(high.prefix(index) + [high[index] - 1])
+        return high.dropLast() + [0, largest]
+    }
+
+    /// Returns `digits` without the zeros at its end, which add nothing to a fraction.
+    private static func withoutTrailingZeros(_ digits: [Int]) -> [Int] {
+        guard let last = digits.lastIndex(where: { $0 != 0 }) else { return [] }
+        return Array(digits[...last])
     }
 
     /// Returns the digits between `low` and `high`, where a missing low digit counts as zero and
