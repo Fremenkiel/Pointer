@@ -806,3 +806,21 @@ The 160 tests of Persistence pass on the Mac.
 
 - `EraseStrokes.revert` accepts up to `Limits.maxStrokesAfterErase` (D-159). The undo of a cutting erase and a whole-stroke erase at 200,000 strokes failed at each try with the old code, and it passes now.
 - The 30-day purge reports the canvases that it removes in `LibraryLaunch.removedCanvases`, and the launch removes their preview files. `RepositoryLaunchTests.removedCanvases` covers the report on the Mac. `PurgedPreviewTests.removesPurged` found both preview files of a purged workspace on the old code (`T-29-old.xcresult`) and passes on the new code (`T-29-new.xcresult`). The previews of a tombstone of one day stay.
+
+### 6.28 The erase (task 3.2)
+
+The measures ran in release builds on the Mac, with the median of 11 to 31 repeats, three runs each.
+
+| Change | Case | Before | After |
+|---|---|---|---|
+| The duplicate checks of `Eraser.command` and `EraseStrokes.init` move to `assert` | `Eraser.command` of 1,000 strokes cut in two | 1.18 to 1.29 ms | 1.02 to 1.07 ms |
+| A serial filter of the bounds before the split | 1,000 hits and 19,000 misses | 7.3 to 10.4 ms | 0.99 to 1.06 ms |
+| A serial filter of the bounds before the split | 1,000 hits, no misses | 0.99 to 1.00 ms | 1.01 to 1.02 ms |
+| A position table in a cell of more than 1,024 entries | Remove the 1,000 oldest of 20,000 in one cell | 5.80 ms | 0.13 ms |
+| The same | Remove 1,000 of 20,000 strokes of handwriting | 0.135 ms | 0.125 ms |
+| The same | Insert 200,000 strokes of handwriting, about 330 per cell | 8.9 ms, 35.5 MB | 8.7 ms, 35.5 MB |
+| The same | Insert 200,000 strokes into one cell | 11.6 ms, 42.1 MB | 18.2 ms, 50.5 MB |
+
+- The sets of the two checks cost 0.04 ms and 0.13 ms of an erase of 1.73 ms (command and apply). A stroke twice in a release build fails the apply with `strokeNotLive` or `strokeAlreadyLive`, and the apply rolls the content back.
+- A threshold of 64 built tables in the cells of handwriting and made the load of 200,000 strokes take 14 ms. A threshold of 1,024 leaves those cells as they were. The cells of D-56 hold about 170 strokes, so its open builds no table. Only a cell of more than 1,024 entries pays for its table at the load.
+- `ErasePrefilterTests` makes sure that misses among the candidates change nothing in the command. `CrowdedCellTests` covers the threshold and the threshold plus one, and random removals with inserts after them.

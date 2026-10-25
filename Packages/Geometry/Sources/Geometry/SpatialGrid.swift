@@ -16,6 +16,64 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
         }
     }
 
+    /// The entries of one cell. A cell of more than `indexedCellCount` entries also keeps the
+    /// position of each entry, so that a removal finds it without a scan (m10-plan.md task 3.2).
+    @usableFromInline
+    struct Cell: Sendable {
+        @usableFromInline var entries: [Entry]
+        /// The position of each entry in `entries`, or `nil` in a small cell.
+        @usableFromInline var positions: [ID: Int]?
+
+        @inlinable
+        init(entry: Entry) {
+            entries = [entry]
+            positions = nil
+        }
+
+        /// Appends an entry. The cell keeps the positions of its entries once it holds more
+        /// than `indexedCellCount` entries.
+        @inlinable
+        mutating func append(_ entry: Entry) {
+            entries.append(entry)
+            if positions != nil {
+                positions?[entry.id] = entries.count - 1
+            } else if entries.count > SpatialGrid.indexedCellCount {
+                var table: [ID: Int] = [:]
+                table.reserveCapacity(entries.count * 2)
+                for (position, old) in entries.enumerated() { table[old.id] = position }
+                positions = table
+            }
+            assert(positions.map { $0.count == entries.count } ?? true, "Each entry has a position")
+        }
+
+        /// Removes the entry of `id`.
+        ///
+        /// - Returns: `false` if the cell does not hold `id`.
+        @inlinable
+        mutating func remove(_ id: ID) -> Bool {
+            // A small cell scans from the end: an undo or a redo removes the strokes that the
+            // step before added, and those are the last entries of their cells.
+            guard let index = positions?[id] ?? entries.lastIndex(where: { $0.id == id }) else {
+                return false  // contract: error value
+            }
+            let last = entries.count - 1
+            if positions != nil {
+                positions?[entries[last].id] = index
+                positions?.removeValue(forKey: id)
+            }
+            entries.swapAt(index, last)
+            entries.removeLast()
+            assert(positions.map { $0.count == entries.count } ?? true, "Each entry has a position")
+            return true
+        }
+    }
+
+    /// The entries above which a cell keeps the positions of its entries. A scan costs about
+    /// 0.6 ns per entry on the Mac. At 64, the cells of dense handwriting (about 330 entries)
+    /// built tables, and a load of 200,000 items took 14 ms instead of 9 ms. At 1,024, only a
+    /// crowded cell pays: 1,000 removals from a cell of 20,000 take 0.13 ms instead of 5.8 ms.
+    @usableFromInline static var indexedCellCount: Int { 1_024 }
+
     /// The side length of a cell, in canvas points.
     public let cellSize: Double
     /// The most cells that one item can touch. It bounds the loops of `insert` and `remove`
@@ -31,7 +89,7 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     // type. Unspecialized, 2,000 removals took 72 ms on the Mac (M4 task 3.8).
     /// The entries of each occupied cell.
     /// The bounds of each item.
-    @usableFromInline var cells: [GridCell: [Entry]] = [:]
+    @usableFromInline var cells: [GridCell: Cell] = [:]
     @usableFromInline var boundsByID: [ID: Rect] = [:]
 
     /// Makes an empty grid.
@@ -53,7 +111,9 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     /// The bytes of the cell table, the cell lists, and the bounds table, from their
     /// capacities (D-167).
     public var storageByteCount: Int {
-        let lists = cells.values.reduce(0) { $0 + $1.storageByteCount }
+        let lists = cells.values.reduce(0) {
+            $0 + $1.entries.storageByteCount + ($1.positions?.storageByteCount ?? 0)
+        }
         assert(lists >= boundsByID.count * MemoryLayout<Entry>.stride, "Each item is in a cell")
         let bytes = cells.storageByteCount + lists + boundsByID.storageByteCount
         return bytes
@@ -98,7 +158,7 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
                 if let index = cells.index(forKey: cell) {
                     cells.values[index].append(entry)
                 } else {
-                    cells[cell] = [entry]
+                    cells[cell] = Cell(entry: entry)
                 }
             }
         }
@@ -139,12 +199,12 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
             for row in range.rows {
                 for column in range.columns {
                     let cell = GridCell(column: column, row: row)
-                    report(cell, entries: cells[cell], query: rect, body)
+                    report(cell, entries: cells[cell]?.entries, query: rect, body)
                 }
             }
         } else {
-            for (cell, entries) in cells where range.contains(cell) {
-                report(cell, entries: entries, query: rect, body)
+            for (cell, content) in cells where range.contains(cell) {
+                report(cell, entries: content.entries, query: rect, body)
             }
         }
     }
@@ -176,21 +236,17 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     mutating func removeEntry(_ id: ID, from cell: GridCell) {
         // One lookup, and the cell changes in place through `values`. The optional chain of
         // before made 5 to 6 lookups and about 6 allocations per cell (P-02).
-        // The search starts at the end: an undo or a redo removes the strokes that the step
-        // before added, and those are the last entries of their cells.
-        guard let slot = cells.index(forKey: cell),
-            let index = cells.values[slot].lastIndex(where: { $0.id == id })
-        else {
+        guard let slot = cells.index(forKey: cell), cells.values[slot].remove(id) else {
             assertionFailure("Grid cell \(cell) does not hold \(id)")
             return
         }
-        let last = cells.values[slot].count - 1
-        cells.values[slot].swapAt(index, last)
-        cells.values[slot].removeLast()
-        if cells.values[slot].isEmpty {
+        if cells.values[slot].entries.isEmpty {
             cells.remove(at: slot)
         }
-        assert(cells[cell]?.contains { $0.id == id } != true, "Grid cell \(cell) still holds \(id)")
+        assert(
+            cells[cell]?.entries.contains { $0.id == id } != true,
+            "Grid cell \(cell) still holds \(id)"
+        )
     }
 
     /// Returns the cell coordinate of a canvas coordinate.
