@@ -15,7 +15,7 @@ DEVICE_TEST := xcodebuild test -project $(PROJECT) -scheme $(SCHEME) -configurat
 	ENABLE_TESTABILITY=YES
 
 .PHONY: check build analyze test snapshots coverage format lint layers density self-test plist \
-	perf-baseline perf-compare
+	perf-baseline perf-compare validation
 
 check: build analyze test snapshots format lint layers density self-test plist
 	@echo "All checks passed."
@@ -141,6 +141,20 @@ perf-compare:
 			.build/Perf/compare-*.xcresult; status=$$?; \
 	fi; \
 	exit $$status
+
+# D-186: PointerDeviceTests with Metal API validation and shader validation. Each validation error
+# stops the test. Validation adds allocations to each frame and slows the GPU, so the allocation
+# suites and the performance suites do not run here. Run it at each close of a milestone and for
+# each change of the render code. Keep the iPad unlocked during the run.
+ALLOCATION_SUITES := EditAllocationTests EraserSampleAllocationTests FrameAllocationTests \
+	GridAllocationTests HoverSampleAllocationTests PreviewAllocationTests \
+	TextEditFrameAllocationTests TextMoveAllocationTests TextPassAllocationTests \
+	TransitionAllocationTests ZoomFrameAllocationTests
+validation:
+	TEST_RUNNER_MTL_DEBUG_LAYER=1 TEST_RUNNER_MTL_SHADER_VALIDATION=1 $(DEVICE_TEST) -quiet \
+		-only-testing:PointerDeviceTests \
+		$(foreach suite,$(ALLOCATION_SUITES) $(PERF_SUITES),-skip-testing:PointerDeviceTests/$(suite))
+	@echo "validation: done"
 
 # STYLE-04. The fixtures hold deliberate violations, so the formatter skips them.
 format:

@@ -610,3 +610,7 @@ The allocation tests of a frame, an open frame, and a flight frame stayed at 15,
 Each performance test of section 2.1 now attaches its samples through `PerformanceRecord`. `RenderingPerformanceTests` times its passes with `ContinuousClock`, so a throw fails the test (M9 3.4.4). One run of the 24 performance suites alone gave 180 samples in 317 s: 127 times that the compare gates and 53 memory sizes and counts that it records (`.build/Perf/probe-1.xcresult`). A compare of that run with itself passed with exit code 0.
 
 `Scripts/perf.swift` gives the exact two-sided p of the Mann-Whitney test at the critical values of the published table for 10 runs against 10: U = 16 gives p 0.0089 and U = 17 gives 0.011, U = 23 gives 0.043 and U = 24 gives 0.052. The self-test runs six cases: the same code, a slower time, U = 16, U = 23 (exit code 3), a missing time, and a recorded memory peak.
+
+### 6.4 Metal validation (task 0.5)
+
+`make validation` passed in 73 s on 2026-10-25 (`T-05-validation.log`). It runs `PointerDeviceTests` with API validation and shader validation, without the 11 allocation suites and the 24 performance suites. A run of `FrameAllocationTests` alone with the same settings shows that validation is on: the bare frame makes 237 allocations, against 15 without validation and 121 with API validation alone (`T-05-proof.xcresult`).

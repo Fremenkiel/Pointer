@@ -88,6 +88,7 @@ make check       # all of the above, the full check
 make coverage    # line coverage of TEST-02, a separate device run (D-120)
 make perf-baseline  # 10 runs of the performance suites on the iPad, writes the baseline (D-172, D-177)
 make perf-compare   # 10 new runs against the baseline, about 50 minutes (D-172, D-177)
+make validation  # PointerDeviceTests with Metal API and shader validation, at each close (D-186)
 ```
 
 `make test` and `make snapshots` use the connected iPad Pro 11-inch (M4) in Release. To use another iPad, set `DEVICE` to its UDID, for example `make test DEVICE=00008132-000018993E8B801C`. Before a device run, make sure that the iPad is unlocked: `xcrun devicectl device info lockState --device <UDID>` must print `passcodeRequired: false`.
