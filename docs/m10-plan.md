@@ -767,3 +767,7 @@ Two faults of my own tests came up on the way. A last read of the fake library w
 - Item 4: a failed committed layer waits 120 calls before the next try and logs once per failure. The hook `beforeLayer` of the frame work lets a test refuse the textures, because only memory pressure makes Metal refuse them (D-184).
 
 `PreviewRequestTests` failed on the old behavior: 18 of 24 previews loaded, a missing preview was read once, and a failed layer was tried 30 times in 30 calls (`T-25-old.xcresult`). With the change, 36 of 36 tests of the preview, card, transition, loading, and frame-loop suites pass (`T-25-new.xcresult`).
+
+### 6.21 A screen with more cards than slots (task 2.5, item 6)
+
+`PreviewCrowdTests` draws 2,000 cards of 64 by 48 points at zoom 0.25 on a drawable of the 11-inch screen. The frame loop came to rest after 127 frames with 2,000 reads of the source, one per card (`T-25-crowd2.xcresult`). The atlas holds a slot of 128 pixels for each of these cards, so no slot of a drawn card is evicted, and the measured case has no fault. The test stays as a guard.
