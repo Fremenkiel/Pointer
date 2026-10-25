@@ -643,3 +643,22 @@ The old script failed or passed the new fixtures for the wrong reason. It counte
 ### 6.6 The nesting check (task 1.3)
 
 `make nesting` builds the SwiftSyntax tool in `Scripts/Nesting` and checks 285 files in 0.05 s. The first build takes about 2 minutes. It found the 2 functions of the research of D-175: the initializer of `RowChannel` at 5 levels and the body of `WorkspaceList` at 4 levels. The consumer of `RowChannel` now hands each item to a function of its own, and the rows of `WorkspaceList` are a view property of their own. The fixture `nesting-deep` fails at 4 levels, and `nesting-ok` passes at 3 levels with an `else if` chain, a `case`, a `catch`, and a nested function. The 38 device tests of the selector, the navigation, the restore, and the history passed after the split (`T-13-subset.xcresult`). `make layers` reports no finding: the SwiftSyntax package is outside the app and its packages.
+
+### 6.7 Real checks in each package (task 1.2)
+
+Three readers listed the checks that a reader can prove from the lines around them, one per package group. Each removal was read again before it went. The checks of compile-time constants moved into `LayoutConstantTests`, so a change of a layout still fails a test.
+
+| Package | Removed | Added | Kept from the list | Average after (report only) |
+|---|---|---|---|---|
+| Geometry | 8 | 0 | 0 | 1.85 |
+| Model | 19 | 1 | 0 | 2.13 |
+| InkEngine | 14 | 1 | 3: a NaN of extreme coordinates can fail them | 1.71 |
+| Persistence | 22 | 4 | 0 | 1.86 |
+| Export | 3 | 0 | 0 | 1.60 |
+| Rendering | 47 | 5 | 1: its proof is 100 lines away | 1.87 |
+
+The reading found a fault: the assert that counts the rows of a save ran in a `defer`, so a save that failed in the middle trapped in a Debug build. `RepositorySavingTests.failureInsideWrite` stopped at "Wrote 1 of 2 rows" before the fix (commit 4fe3b9b). `make check` passed with the iPad in 8 minutes 25 seconds with all changes (`T-12-check.log`).
+
+### 6.8 The lint rules of SAFE-02 and SAFE-03 (task 1.4)
+
+`safe_02_dropped_try` and `safe_03_discardable_result` fire on the new lines of the fixture `lint-violations`. The code had two dropped `try?` statements, both in the cleanup of test folders (`TemporaryFolder`, `NavigationTests`). They now record the error. All 12 `@discardableResult` attributes already had a documentation comment.

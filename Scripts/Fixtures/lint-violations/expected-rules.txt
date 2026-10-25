@@ -15,6 +15,8 @@ force_cast
 force_try
 force_unwrapping
 implicitly_unwrapped_optional
+safe_02_dropped_try
+safe_03_discardable_result
 safe_06_logging
 safe_07_fatal_error
 safe_08_conditional_compilation

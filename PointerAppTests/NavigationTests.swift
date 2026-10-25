@@ -39,8 +39,12 @@ struct NavigationTests {
                 Issue.record("The last save of the test library failed: \(error)")
             }
             await repository.close()
-            // swiftlint:disable:next arch_04_file_system
-            try? FileManager().removeItem(at: folder)
+            do {
+                // swiftlint:disable:next arch_04_file_system
+                try FileManager().removeItem(at: folder)
+            } catch {
+                Issue.record("The test library stays behind: \(error)")
+            }
         }
     }
 

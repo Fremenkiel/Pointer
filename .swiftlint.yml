@@ -212,6 +212,19 @@ custom_rules:
     message: "Swift keeps a bad capture in a Metal handler as a warning (D-132). Call whenCompleted(_:) instead."
     severity: error
 
+  safe_02_dropped_try:
+    name: "SAFE-02"
+    regex: '^[ \t]*(?:_[ \t]*=[ \t]*)?try\?'
+    match_kinds: [keyword]
+    message: "This try? drops the error in silence (D-174). Use do-catch and log the error, or handle the nil on the next line."
+    severity: error
+
+  safe_03_discardable_result:
+    name: "SAFE-03"
+    regex: '^(?![ \t]*///)[^\n]*\n[ \t]*@discardableResult\b'
+    message: "A @discardableResult needs a documentation comment that gives the reason (D-174). Add the /// comment above it."
+    severity: error
+
   flow_03_while_true:
     name: "FLOW-03"
     regex: '\bwhile\s+true\b'

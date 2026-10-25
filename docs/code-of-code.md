@@ -117,8 +117,8 @@ func split(_ stroke: Stroke, by center: Point, radius: Double) -> [StrokePart] {
 ### 3.6 Safety
 
 - `SAFE-01` No force unwrap (`!`), no `try!`, no `as!`, no implicitly unwrapped optionals. This applies in tests too: use `try #require(...)`. Enforcement: lint, severity error.
-- `SAFE-02` No `try?` that drops an error in silence. `try?` is allowed only with a handler for the `nil` case in the same statement or the next one. Enforcement: review.
-- `SAFE-03` No `@discardableResult` without a documentation comment that gives the reason. Enforcement: lint.
+- `SAFE-02` No `try?` that drops an error in silence. `try?` is allowed only with a handler for the `nil` case in the same statement or the next one. Enforcement: lint fails on `_ = try?` and on a statement that starts with `try?` (D-174), and review covers the other forms.
+- `SAFE-03` No `@discardableResult` without a documentation comment that gives the reason. Enforcement: lint fails on a `@discardableResult` without a `///` line before it (D-174).
 - `SAFE-04` Errors are typed. Each package has one error enum. Functions use typed throws (`throws(PersistenceError)`) where the error set is known. Enforcement: review.
 - `SAFE-05` Integer conversions from external data use `init(exactly:)` or a `guard` on the range. No unchecked `Int(someUInt64)` on file data or database data. Enforcement: review.
 - `SAFE-10` SQL uses prepared statements with bound parameters. No SQL text built from values with string interpolation. Each SQLite result code is compared with the expected code, and a mismatch throws `PersistenceError` with `sqlite3_errmsg`. Enforcement: lint bans `sqlite3_exec` with an interpolated string, and review.

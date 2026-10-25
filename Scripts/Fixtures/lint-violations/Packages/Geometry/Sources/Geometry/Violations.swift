@@ -20,6 +20,16 @@ public struct Violations {
         buffer.addScheduledHandler { _ in }
     }
 
+    /// Errors that SAFE-02 bans: a dropped `try?` (D-174).
+    func dropped() {
+        _ = try? JSONSerialization.jsonObject(with: Data())
+        try? JSONSerialization.jsonObject(with: Data())
+    }
+
+    // A discardable result without a documentation comment (SAFE-03).
+    @discardableResult
+    func undocumented() -> Int { 1 }
+
     /// Jumps that FLOW-02 and FLOW-03 ban.
     func flow(_ value: Int) -> Int {
         outer: for item in 0..<value {
