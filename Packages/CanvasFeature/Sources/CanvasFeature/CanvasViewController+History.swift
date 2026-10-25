@@ -121,10 +121,10 @@ extension CanvasViewController {
         of command: (any CanvasCommand)?,
         isUndo: Bool
     ) -> (removed: [StrokeID], added: [Stroke])? {
+        // Only the delta of the step is built (PERF-01, m10-plan.md task 3.6).
         if let erase = command as? EraseStrokes {
-            let undoDelta = (erase.parts.map(\.id), erase.removed)
-            let redoDelta = (erase.removed.map(\.id), erase.parts)
-            return isUndo ? undoDelta : redoDelta
+            guard isUndo else { return (erase.removed.map(\.id), erase.parts) }
+            return (erase.parts.map(\.id), erase.removed)
         }
         if let add = command as? AddStroke {
             return isUndo ? (add.strokes.map(\.id), []) : ([], add.strokes)

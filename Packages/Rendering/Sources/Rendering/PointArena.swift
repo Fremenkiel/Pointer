@@ -91,7 +91,9 @@ final class PointArena {
         if let block = allocator.allocate(points: points) {
             return block
         }
-        let state = signposter.beginInterval("ArenaGrow", "\(self.buffers.count + 1) buffers")
+        // A static name only: an interval with a message built a string at each growth
+        // (m10-plan.md task 3.6).
+        let state = signposter.beginInterval("ArenaGrow")
         defer { signposter.endInterval("ArenaGrow", state) }
         guard addBuffer() else { return nil }
         let block = allocator.allocate(points: points)

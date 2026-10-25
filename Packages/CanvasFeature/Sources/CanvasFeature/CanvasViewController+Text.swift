@@ -137,7 +137,8 @@ extension CanvasViewController: UITextViewDelegate {
 
     /// Returns a sort key after the keys of all boxes, so that a new box is on top.
     private func nextTextSortKey() -> FractionalIndex {
-        let last = content.textBoxes.values.map(\.sortKey).max()
+        // The largest key without a list of all keys (PERF-01, m10-plan.md task 3.6).
+        let last = content.textBoxes.values.max { $0.sortKey < $1.sortKey }?.sortKey
         do {
             return try FractionalIndex.between(last, nil)
         } catch {
