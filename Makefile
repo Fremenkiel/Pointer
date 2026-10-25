@@ -130,7 +130,8 @@ PERF_SUITES := CanvasOpenPerformanceTests CanvasMemoryPerformanceTests \
 	TextLayoutPerformanceTests PreviewMakerPerformanceTests PreviewsAfterRestoreTests \
 	StrokeStoreMemoryTests BackupBudgetTests SnapshotPerformanceTests \
 	LibrarySavePerformanceTests DeviceStatePerformanceTests SQLiteSpeedTests \
-	ExportPerformanceTests OpenAnimationTests FlightStallTests CanvasLifetimeTests
+	ExportPerformanceTests OpenAnimationTests FlightStallTests CanvasLifetimeTests \
+	TextBuildPerformanceTests GlyphInsertPerformanceTests
 PERF_BASELINE := Performance/Baselines/iPad16,4.json
 perf-baseline:
 	Scripts/perf-runs.sh baseline 1 $(PERF_RUNS) $(DEVICE) $(PERF_SUITES)

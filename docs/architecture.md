@@ -289,6 +289,26 @@ Text does not join the eraser mask (D-66, D-82). The committed textures hold the
 
 The text font is SF Mono, 17 points at zoom 1.0 (decision D-15).
 
+#### 5.4.1 Proposed design: stored glyph quads (D-94 option (b), not approved)
+
+This section is a proposal of task 4.1 of [m10-plan.md](m10-plan.md). The product owner approves it before any code. D-188 to D-190 hold its open choices.
+
+The problem: a build of the D-56 text writes one quad per glyph on the CPU. At zoom 0.25 that is about a million glyphs. `TextBuildPerformanceTests` measured a whole build on the iPad Pro 11-inch (M4) on 2026-10-25: at zoom 0.25, 46 to 71 ms of CPU in 24 to 32 frames of at most 2.4 ms each; at zoom 1, 7.8 to 7.9 ms in 4 frames. Each frame keeps the build budget of 2 ms (D-105), so the build takes up to a quarter of a second, and a pan over the text shows uncovered screen meanwhile (D-94).
+
+The idea: the quads of a box stay in a GPU buffer after their first build, as the points of a stroke stay in the point arena. A later build writes one small record per box, and the GPU makes the quads of the frame from the stored quads.
+
+1. A stored run. The quads of one box at one atlas exponent form a run. The run is the unit that the buffer stores, evicts, and builds again. The key of a run is the text box ID or the card ID, and the exponent.
+2. The space of a stored quad. A quad of today holds target pixels, so it is valid for one camera only. A stored quad holds canvas points relative to the origin of its box: the offset of the glyph corner, the size of the glyph, the place of the bitmap in its page, and the page. A run is thus valid at each camera of its exponent. A move of the box changes only the origin, which the record of the frame carries.
+3. The atlas place after a page drop. A glyph never moves inside a live page, because the shelves of a page never compact. `drop` frees a page index, and a later page can take the same index. Each page gets a generation number, which a drop raises. A run keeps the pages that it reads with their generations, up to 4 inline, and the exponent epoch past that. A record of a run whose page generation changed builds the run again before the frame uses it. A drop happens only past the atlas budget of 16 MB, so normal notes never rebuild for it.
+4. One draw for pages of different sizes. All pages of one exponent have the same side (`GlyphAtlas.pageSide(exponent:)`), and a frame draws one exponent. The proposal puts the pages of the atlas in one `MTLHeap` and reads them through an argument buffer of texture handles (`MTLTexture.gpuResourceID`, Metal 3). The encoder then makes the heap resident once with `useHeap`, and a quad names its page by index. D-189 holds the other option: a texture array per exponent.
+5. The quads of the frame. A compute pass turns the records of the frame into the glyph instances of today, in target pixels, in the glyph ring of the frame. The glyph shaders and the glyph pipeline stay as they are. A record holds the start and the count of a run in the buffer, and the origin of the box in target pixels: 16 bytes. 5,000 boxes write 80 KB per frame, not about 32 MB. D-190 holds the other option: a vertex shader that reads the stored quads with a per-box transform.
+6. Dense font numbers off the render thread. The layout runs off the render thread (D-92), but the atlas gives font numbers on it. A process-wide font table behind a lock gives each font a dense number at the layout. SF Mono keeps the number 0. A layout calls the table once per fallback font, which is rare.
+7. The buffer. Runs live in a list of `MTLBuffer` objects of 16 MB with `.storageModeShared`, with a slab allocator in quad counts, as the point arena (section 5.3). A run is built on the render thread at the first frame that draws its box at its exponent, because only that thread places glyphs in the atlas. An edit of the text of a box frees its runs. A move keeps them. A delete frees them. Past the byte budget of D-188, a clock sweep evicts the runs that no recent frame drew, never a run of a frame in flight.
+8. The memory of D-56. A stored quad takes 32 bytes: two `float2` values in canvas points, two `ushort2` values in page pixels, a `ushort` page index, and padding. A million glyphs at one exponent take 32 MB. A pan at zoom 0.25 and a zoom to 1 hold two exponents, 64 MB. D-188 holds the budget.
+9. The cards. The title of a card is a run like a box. The border quad and the preview quad of a card stay in the record path of today.
+
+The expected cost: a record per box takes about 50 to 100 ns of CPU, so the 5,000 boxes of D-56 take about 0.5 ms, and a build of the text fits one frame. The first build of each run still places its glyphs in the atlas, as today. The build measure decides the result: the whole build of the D-56 text at zoom 0.25 and 1 must fit the budget of 2 ms of one frame after the runs exist, and the pan over the text must have fewer uncovered frames. The snapshot tests of text keep their references (task 4.2).
+
 ### 5.5 Cards
 
 A card on its parent canvas has these parts:

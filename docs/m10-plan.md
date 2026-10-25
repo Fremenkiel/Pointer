@@ -874,3 +874,8 @@ Four alternating pairs of the base 619beb3 and the changes of tasks 3.1 and 3.3 
 - `FrameKindAllocationTests` counts the Pointer allocations of a handoff frame, an eraser frame, and a redraw frame against a pan frame. The tracer counted the GPU driver (`AGXMetal…`) and `FramePacing` as Pointer code, so both now count as Metal work (D-43). A pan frame makes 1 Pointer allocation, the block of its completed handler. An eraser frame makes the same. A handoff frame and a redraw frame made 3 more: the closure of the presented handler with its block, and one in `InkEncoder.appendEntries` for the new stroke. The presented handler now captures nothing and finds its handoff in a table of the process by the identity of the drawable, so it makes only the block (task 3.6). The bound is the pan frame plus 2.
 - `RenderEngine.draw` now counts the apply of the inbox and the frame in one measure, and the frame renderer holds the observer as a reference, not a closure, so a frame with an observer makes no closure.
 - `RendererLifetimeTests` makes sure that a renderer and its frame work go away after frames with a handoff, text, cards, and previews.
+
+### 6.33 The design of the glyph quads (task 4.1)
+
+- The design is in architecture.md section 5.4.1. It answers the six blockers of review M9 section 4. D-188 to D-190 hold its open choices. Task 4.2 waits for the approval of the product owner.
+- `TextBuildPerformanceTests` measures a whole build of the D-56 text (`T-33`): at zoom 0.25, 46.05 and 71.27 ms of CPU in 24 and 32 frames, each frame at most 2.39 ms; at zoom 1, 7.93 and 7.77 ms in 4 frames. Each frame keeps the build budget of 2 ms, so the build of the zoom 0.25 text takes up to a quarter of a second.
