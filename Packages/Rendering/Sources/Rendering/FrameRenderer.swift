@@ -55,6 +55,8 @@ final class FrameRenderer {
     let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     /// The committed layer, or `nil` before the first frame with a drawable size.
     private(set) var layer: CommittedLayer?
+    /// The lists of the layer that a leave released, for the next layer (m10-plan.md task 3.3).
+    var spareLayerLists = LayerLists()
     /// The new strokes that the next frame draws into the front texture.
     var pendingSlots: [Int] = []
     /// The newest handoff whose strokes wait for the screen, or 0 if none waits.
@@ -112,7 +114,7 @@ final class FrameRenderer {
         precondition(configuration.drawListCapacity > 0, "The draw list must hold entries")
         precondition(configuration.buildTimeBudget > 0, "The build time budget must be positive")
         guard let device = MTLCreateSystemDefaultDevice() else { throw .noDevice }
-        resources = try InkResources(device: device)
+        resources = try InkResources.shared(device: device)
         self.configuration = configuration
         self.onPresented = onPresented
         self.onCompleted = onCompleted
@@ -245,6 +247,7 @@ final class FrameRenderer {
     /// Frees the committed textures and the eraser mask, for an open (D-110). A later frame
     /// without a transition makes new ones.
     func releaseCommittedLayer() {
+        if let layer { spareLayerLists = layer.takeLists() }
         layer = nil
         needsNewLayer = true
     }
@@ -271,12 +274,17 @@ final class FrameRenderer {
         layerAttempts += 1
         do {
             try beforeLayer?()
-            layer = try CommittedLayer(
+            let made = try CommittedLayer(
                 resources: resources,
                 drawableWidth: width,
                 drawableHeight: height,
                 fallback: layer?.shown
             )
+            // The lists move only after the new layer exists, so a failure keeps the old one
+            // whole (m10-plan.md task 3.3).
+            made.adopt(layer?.takeLists() ?? spareLayerLists)
+            spareLayerLists = LayerLists()
+            layer = made
             needsNewLayer = false
         } catch {
             logger.error("Committed layer failed: \(String(describing: error))")

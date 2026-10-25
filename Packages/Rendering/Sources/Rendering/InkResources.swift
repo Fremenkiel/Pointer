@@ -45,6 +45,32 @@ final class InkResources {
     /// A texture of one pixel for a pass argument that a frame does not read.
     let placeholder: any MTLTexture
 
+    /// Makes resources with the pipelines of `other` and a command queue of their own, so
+    /// that each renderer keeps its own GPU order (m10-plan.md task 3.3).
+    ///
+    /// - Throws: `RenderingError.resourceUnavailable` if the device makes no queue.
+    init(sharingPipelinesOf other: InkResources) throws(RenderingError) {
+        guard let queue = other.device.makeCommandQueue() else {
+            throw .resourceUnavailable("command queue")
+        }
+        device = other.device
+        self.queue = queue
+        inkPipeline = other.inkPipeline
+        compositePipeline = other.compositePipeline
+        compositeMaskedPipeline = other.compositeMaskedPipeline
+        eraserPipeline = other.eraserPipeline
+        clearPipeline = other.clearPipeline
+        clearTextPipeline = other.clearTextPipeline
+        glyphPipeline = other.glyphPipeline
+        cardBorderPipeline = other.cardBorderPipeline
+        previewResolvePipeline = other.previewResolvePipeline
+        freezePipeline = other.freezePipeline
+        transitionPipeline = other.transitionPipeline
+        cardPreviewPipeline = other.cardPreviewPipeline
+        pinchPipeline = other.pinchPipeline
+        placeholder = other.placeholder
+    }
+
     /// Makes the resources on a device.
     ///
     /// - Throws: `RenderingError` if the queue, the shader library, or a pipeline fails.
@@ -86,37 +112,6 @@ final class InkResources {
             channel: .all,
             format: Self.maskFormat
         )
-    }
-
-    /// The ink pipeline blends with `max` (D-38, review A-06). The result of a pixel is the
-    /// larger of the old and the new coverage, so overlaps do not get brighter, edges cut no
-    /// notches, and the draw order does not matter. The ink writes the red channel and the text
-    /// writes the green channel of the committed texture (D-82).
-    private static func makeInkPipeline(
-        device: any MTLDevice,
-        library: any MTLLibrary,
-        functions: (vertex: String, fragment: String) = ("inkVertex", "inkFragment"),
-        channel: MTLColorWriteMask = .red,
-        format: MTLPixelFormat = committedFormat
-    ) throws(RenderingError) -> any MTLRenderPipelineState {
-        let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.label = functions.vertex
-        descriptor.vertexFunction = library.makeFunction(name: functions.vertex)
-        descriptor.fragmentFunction = library.makeFunction(name: functions.fragment)
-        guard let attachment = descriptor.colorAttachments[0] else {
-            throw .pipelineFailed("ink color attachment")
-        }
-        attachment.pixelFormat = format
-        attachment.writeMask = channel
-        attachment.isBlendingEnabled = true
-        attachment.rgbBlendOperation = .max
-        attachment.alphaBlendOperation = .max
-        attachment.sourceRGBBlendFactor = .one
-        attachment.destinationRGBBlendFactor = .one
-        attachment.sourceAlphaBlendFactor = .one
-        attachment.destinationAlphaBlendFactor = .one
-        assert(attachment.rgbBlendOperation == .max, "Ink blends with max (D-38)")
-        return try makePipeline(device: device, descriptor: descriptor)
     }
 
     /// Makes a pipeline into the drawable with the full-screen vertex shader and `fragment`.
@@ -238,7 +233,7 @@ final class InkResources {
         return try makePipeline(device: device, descriptor: descriptor)
     }
 
-    private static func makePipeline(
+    static func makePipeline(
         device: any MTLDevice,
         descriptor: MTLRenderPipelineDescriptor
     ) throws(RenderingError) -> any MTLRenderPipelineState {

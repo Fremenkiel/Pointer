@@ -55,7 +55,7 @@ final class CommittedLayer {
     private var lastCamera: Camera?
     private var stillFrames = 0
     /// The strokes of the build, in drawing order. Reused, so a build allocates nothing.
-    private var buildSlots: [Int] = []
+    var buildSlots: [Int] = []
     /// The text boxes and the cards of the build. Reused like `buildSlots`.
     var buildTextIDs: [GreenItem] = []
     /// The text boxes and the cards of the green redraw of the front texture. Reused like
