@@ -46,9 +46,7 @@ final class FlightStallTests: XCTestCase {
         try await block.value
         let samples = OpenAnimationTests.flightSamples("open", late: open.late, held: open.held)
         PerformanceRecord.attach(samples, line: open.text)
-        // The late frame at place 0 of an open, as in D-125, also comes here in full runs. M10
-        // traces it. The held frames stay strict.
-        OpenAnimationTests.expectNoLateFrame(open.late, open.text, accepted: "D-125")
+        XCTAssertEqual(open.late, 0, open.text)
         XCTAssertEqual(open.held, 0, open.text)
         try await OpenAnimationTests.waitForDrawn(open.child)
     }

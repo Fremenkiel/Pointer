@@ -55,13 +55,15 @@ final class FrameLoopCollector: FrameObserving {
     private struct State {
         var window: ClosedRange<Double> = 0...0
         var frameIndex = 0
-        var presented: [Double] = []
+        /// The presented time of each frame by its index, 0 for a frame that never showed.
+        var presentedByFrame: [Int: Double] = [:]
+        /// The frames whose target lies in the measured time.
+        var windowFrames: Set<Int> = []
         var gpu: [Double] = []
         var allocations: [Double] = []
         var renderThread: [Double] = []
         var targets: [Double] = []
         var gpuSpans: [(start: Double, end: Double)] = []
-        var dropped = 0
         var builds = 0
         var uncovered = 0
         var frames = 0
@@ -101,9 +103,14 @@ final class FrameLoopCollector: FrameObserving {
     }
 
     func willCommit(_ commandBuffer: any MTLCommandBuffer, drawable: any CAMetalDrawable) {
-        let measuresGPU = state.withLock { $0.frameIndex.isMultiple(of: 2) }
+        let (index, measuresGPU) = state.withLock {
+            ($0.frameIndex, $0.frameIndex.isMultiple(of: 2))
+        }
+        // The present belongs to this frame. A frame from before the measured time can show
+        // inside it, and a sorted list of all presents then counted the first frame as late
+        // (m10-plan.md task 5.1).
         drawable.addPresentedHandler { [self] presented in
-            record(presentedAt: presented.presentedTime)
+            record(presentedAt: presented.presentedTime, frame: index)
         }
         guard measuresGPU else { return }
         commandBuffer.whenCompleted { [self] buffer in
@@ -116,11 +123,8 @@ final class FrameLoopCollector: FrameObserving {
     }
 
     /// A presented time of 0 marks a frame that the display never showed.
-    private func record(presentedAt time: Double) {
-        state.withLock {
-            if time > 0 && $0.window.contains(time) { $0.presented.append(time) }
-            if time == 0 { $0.dropped += 1 }
-        }
+    private func record(presentedAt time: Double, frame: Int) {
+        state.withLock { $0.presentedByFrame[frame] = time }
     }
 
     func didRender(_ record: FrameRecord) {
@@ -131,6 +135,7 @@ final class FrameLoopCollector: FrameObserving {
                 return
             }
             state.frames += 1
+            state.windowFrames.insert(state.frameIndex)
             state.renderThread.append(record.cpuMilliseconds)
             state.targets.append(record.targetTime)
             if record.front != state.lastFront { state.builds += 1 }
@@ -149,14 +154,15 @@ final class FrameLoopCollector: FrameObserving {
     /// Fills the render-thread values of a report.
     func fill(_ report: inout FrameLoopReport) {
         state.withLock { state in
-            let times = state.presented.sorted()
+            let presented = state.windowFrames.compactMap { state.presentedByFrame[$0] }
+            let times = presented.filter { $0 > 0 }.sorted()
             report.intervals = zip(times.dropFirst(), times).map { ($0 - $1) * 1000 }
             report.gpu = state.gpu
             report.allocations = state.allocations
             report.renderThread = state.renderThread
             report.presentedTimes = times
             report.targetTimes = state.targets
-            report.droppedFrames = state.dropped
+            report.droppedFrames = presented.filter { $0 == 0 }.count
             report.gpuSpans = state.gpuSpans.sorted { $0.start < $1.start }
             report.builds = state.builds
             report.uncoveredFrames = state.uncovered

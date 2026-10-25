@@ -109,9 +109,7 @@ final class OpenAnimationTests: XCTestCase {
         let line = try await Self.measureLeave(of: child, card: card, in: composition)
         let samples = Self.flightSamples("leave", late: line.late, held: line.held)
         PerformanceRecord.attach(samples, line: line.text)
-        // The first frames of a leave wait for the driver to wire new memory, and under the load
-        // of a full run one of them can miss (D-137). M10 traces the rest of the wait.
-        Self.expectNoLateFrame(line.late, line.text, accepted: "D-137")
+        XCTAssertEqual(line.late, 0, line.text)
     }
 
     /// Runs the leave and returns its report line and its late frames.

@@ -47,17 +47,6 @@ extension OpenAnimationTests {
             + ", GPU " + gpu.joined(separator: " ") + ", dropped \(report.droppedFrames)"
     }
 
-    /// Checks that a flight has no late frame, as an expected failure that is not strict: the
-    /// product owner accepted one late frame of `decision` in full runs, and M10 traces it
-    /// (D-125, D-137).
-    static func expectNoLateFrame(_ late: Int, _ text: String, accepted decision: String) {
-        let options = XCTExpectedFailure.Options()
-        options.isStrict = false
-        XCTExpectFailure("The accepted late frame of \(decision)", options: options) {
-            XCTAssertEqual(late, 0, text)
-        }
-    }
-
     /// The frames around each late interval (m10-plan.md task 5.1): for frames two before to two
     /// after, the target and the presented time in milliseconds after the first target, the
     /// render-thread time, and the GPU spans that start near the target.
