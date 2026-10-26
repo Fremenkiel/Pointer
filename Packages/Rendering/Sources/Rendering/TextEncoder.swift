@@ -60,7 +60,7 @@ final class TextEncoder {
     let ring: GlyphRing
     /// The stored glyph runs, or `nil` for the CPU path only (architecture.md 5.4.1).
     var stored: StoredText?
-    /// The expansion capacity and the run budget of the stored runs that the encoder makes at
+    /// The stored quads per frame and the run budget of the stored runs that the encoder makes at
     /// the first layout that needs them, or `nil` for the CPU path only.
     let storedLimits: (capacity: Int, runBudget: Int)?
     /// `true` after a layout of `StoredText.minimumGlyphs` glyphs or more took the CPU path,
@@ -156,7 +156,6 @@ final class TextEncoder {
         flushBorders()
         let draws = !runs.isEmpty || borderRun != nil || previewRun != nil || hasStoredRecords
         if draws || options.clearsScissor {
-            expandStored(context.commandBuffer, target: target, exponent: exponent)
             encode(
                 into: context.commandBuffer,
                 target: target,

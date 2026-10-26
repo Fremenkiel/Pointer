@@ -2,8 +2,8 @@ import Geometry
 import Metal
 import QuartzCore
 
-/// The stored glyph runs of a text pass: a record per box, the expansion into glyph quads, and
-/// one draw over the atlas pages of the heap (architecture.md 5.4.1, D-94, D-189, D-190).
+/// The stored glyph runs of a text pass: a record per box, and one draw over the atlas pages of
+/// the heap that makes the glyph quads (architecture.md 5.4.1, D-94, D-189, D-190).
 extension TextEncoder {
     /// The outcome of the stored path for one layout.
     enum StoredOutcome {

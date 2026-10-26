@@ -508,21 +508,12 @@ struct GlyphRecord {
     uint buffer;          // buffer of the run in the store
 };
 
-struct ExpandUniforms {
+struct StoredUniforms {
     float scale;          // target pixels per canvas point
     float ratio;          // target pixels per atlas pixel
     uint recordCount;
-    uint quadCount;
     float lineHeight;     // canvas points
     float ascent;         // canvas points
-};
-
-// One expanded glyph: its corner, its bitmap, and its page. 20 bytes.
-struct PagedGlyph {
-    packed_float2 position;  // top-left corner in the target, pixels
-    ushort2 atlasOrigin;
-    ushort2 atlasSize;
-    uint page;
 };
 
 struct PagedGlyphUniforms {
@@ -542,68 +533,51 @@ struct RunBuffers {
     const device StoredGlyph *buffers[32];
 };
 
-// Turns the records of a pass into glyph quads in target pixels, one vertex per quad, in a pass
-// without rasterization. The arithmetic is the one of the CPU path in TextEncoder.writeQuads. A
-// compute pass did the same work, but its first dispatch held about 38 MB of graphics memory of
-// the driver on the iPad, and a vertex pass holds none (architecture.md 5.4.1).
-vertex void expandGlyphs(uint index [[vertex_id]],
-                         constant ExpandUniforms &uniforms [[buffer(0)]],
-                         const device GlyphRecord *records [[buffer(1)]],
-                         constant RunBuffers &runs [[buffer(2)]],
-                         const device GlyphPlace *places [[buffer(3)]],
-                         device PagedGlyph *out [[buffer(4)]]) {
-    if (index >= uniforms.quadCount) {
-        return;
-    }
-    // The last record whose prefix is at or below the index.
-    uint low = 0;
-    uint high = uniforms.recordCount;
-    while (high - low > 1) {
-        uint middle = (low + high) / 2;
-        if (records[middle].prefix <= index) {
-            low = middle;
-        } else {
-            high = middle;
-        }
-    }
-    GlyphRecord record = records[low];
-    uint slot = record.runStart + (index - record.prefix);
-    StoredGlyph glyph = runs.buffers[record.buffer][slot];
-    GlyphPlace place = places[glyph.place];
-    float2 position = float2(glyph.x, float(glyph.line) * uniforms.lineHeight + uniforms.ascent);
-    float2 corner = record.base + position * uniforms.scale + place.bearing * uniforms.ratio;
-    PagedGlyph result;
-    result.position = packed_float2(rint(corner));
-    result.atlasOrigin = place.atlasOrigin;
-    result.atlasSize = place.atlasSize;
-    result.page = place.page;
-    out[index] = result;
-}
-
 struct PagedGlyphVertexOut {
     float4 position [[position]];
     float2 atlasPoint;    // atlas pixels
     uint page [[flat]];
 };
 
-// One expanded glyph: a quad that shows its bitmap from its page.
+// One stored glyph of a text pass: a quad that shows its bitmap from its page. The instance
+// is the glyph in the pass. The shader finds the last record whose prefix is at or below it,
+// reads the stored glyph and its place, and makes the quad with the arithmetic of the CPU path
+// in TextEncoder.writeQuads. A vertex pass of its own did this work into a buffer before, and
+// it cost about 1 ms of GPU time per text pass (D-190).
 vertex PagedGlyphVertexOut pagedGlyphVertex(uint vertexID [[vertex_id]],
                                             uint instanceID [[instance_id]],
-                                            const device PagedGlyph *glyphs [[buffer(0)]],
-                                            constant PagedGlyphUniforms &uniforms [[buffer(1)]]) {
-    PagedGlyph glyph = glyphs[instanceID];
+                                            constant PagedGlyphUniforms &uniforms [[buffer(1)]],
+                                            constant StoredUniforms &stored [[buffer(3)]],
+                                            const device GlyphRecord *records [[buffer(4)]],
+                                            constant RunBuffers &runs [[buffer(5)]],
+                                            const device GlyphPlace *places [[buffer(6)]]) {
+    uint low = 0;
+    uint high = stored.recordCount;
+    while (high - low > 1) {
+        uint middle = (low + high) / 2;
+        if (records[middle].prefix <= instanceID) {
+            low = middle;
+        } else {
+            high = middle;
+        }
+    }
+    GlyphRecord record = records[low];
+    StoredGlyph glyph = runs.buffers[record.buffer][record.runStart + (instanceID - record.prefix)];
+    GlyphPlace place = places[glyph.place];
+    float2 baseline = float2(glyph.x, float(glyph.line) * stored.lineHeight + stored.ascent);
+    float2 origin = rint(record.base + baseline * stored.scale + place.bearing * stored.ratio);
     float2 corner = float2((vertexID & 1) ? 1.0 : 0.0, (vertexID & 2) ? 1.0 : 0.0);
-    float2 atlasSize = float2(glyph.atlasSize);
-    float2 pixel = float2(glyph.position) + corner * atlasSize * uniforms.ratio;
+    float2 atlasSize = float2(place.atlasSize);
+    float2 pixel = origin + corner * atlasSize * uniforms.ratio;
     PagedGlyphVertexOut out;
     out.position = float4(pixel.x / uniforms.targetSize.x * 2.0 - 1.0,
                           1.0 - pixel.y / uniforms.targetSize.y * 2.0, 0.0, 1.0);
-    out.atlasPoint = float2(glyph.atlasOrigin) + corner * atlasSize;
-    out.page = glyph.page;
+    out.atlasPoint = float2(place.atlasOrigin) + corner * atlasSize;
+    out.page = place.page;
     return out;
 }
 
-// The coverage of an expanded glyph from its page. All pages of a pass have the same side.
+// The coverage of a stored glyph from its page. All pages of a pass have the same side.
 fragment half4 pagedGlyphFragment(PagedGlyphVertexOut in [[stage_in]],
                                   constant GlyphPages &atlas [[buffer(2)]],
                                   constant PagedGlyphUniforms &uniforms [[buffer(1)]]) {

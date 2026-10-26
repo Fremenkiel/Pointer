@@ -2090,6 +2090,7 @@ Status values: Open, Decided, Replaced.
   - (b) The vertex shader reads the stored quads directly. Each glyph then needs the index of its box record, a new shader, and a draw per run or a search per vertex.
 - Recommendation: (a). It changes the least code that the snapshot tests cover. The compute pass writes about 32 MB of instances for D-56 at zoom 0.25. Task 4.3 measures its GPU time against the glyph pass of today.
 - Change after the decision, measured on the iPad on 2026-10-25: the expansion runs as a vertex function in a render pass without rasterization, not as a compute pass. The first compute dispatch held about 38 MB more graphics memory of the driver for the D-56 open (184 MB against 146 MB), and the open passed the memory budget of D-93 (380 MB). The vertex pass does the same work with the same arithmetic and holds no extra memory. The shaders of the CPU path stay as they are.
+- Second change, decided by the product owner on 2026-10-26: option (b), with a search per vertex. In the normal state of the iPad, the vertex pass cost about 1 ms of GPU time per text pass. The text pan GPU p99 rose by 16 % against the code before phase 4 (2.57 to 2.98 ms, 5 pairs). A search with buckets of 64 quads and an expansion buffer per frame changed nothing. The vertex shader of the paged glyph draw now finds the record of its glyph and makes the quad. The expansion pass, its pipeline, and its buffer of 1.3 MB go. The measures are in section 6.44 of [m10-plan.md](m10-plan.md).
 
 ### D-191 The palm radius of the UI tests
 

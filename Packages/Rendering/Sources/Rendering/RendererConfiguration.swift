@@ -90,10 +90,10 @@ public struct RendererConfiguration: Sendable {
     ///
     /// - Precondition: 0, or from one slab of runs to 32 MB.
     public var glyphRunByteBudget = 32 << 20
-    /// The expanded glyph quads of the stored runs per frame (architecture.md 5.4.1): the quads
-    /// of `glyphCapacity`, 1.3 MB of GPU memory. 262,144 quads built the D-56 text in fewer
-    /// frames, but the GPU p99 of a text pan rose by 46 %. With 65,536 it stays within 10 % of
-    /// the CPU path.
+    /// The stored glyph quads that the passes of one frame draw at most (architecture.md
+    /// 5.4.1): the quads of `glyphCapacity`. 262,144 quads built the D-56 text in fewer frames,
+    /// but the GPU p99 of a text pan rose by 46 %. 32,768 and 16,384 raised the GPU p50 of a
+    /// text pan and its uncovered frames (m10-plan.md section 6.44).
     public var storedGlyphCapacity = 65_536
 
     /// Makes a configuration.

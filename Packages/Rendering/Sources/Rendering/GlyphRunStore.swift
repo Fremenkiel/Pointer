@@ -3,7 +3,7 @@ import Model
 
 /// The stored glyph runs of the text: the quads of one box or card title at one atlas exponent,
 /// in canvas points from the top-left corner of the box, in shared buffers of 1 MB (architecture.md
-/// 5.4.1, D-94, D-188). The expansion reads the buffers through a table of their GPU addresses,
+/// 5.4.1, D-94, D-188). The draw reads the buffers through a table of their GPU addresses,
 /// so the store grows in small steps.
 ///
 /// A `SlabAllocator` hands out the ranges in quads, as for the points of the strokes. A run is
@@ -50,7 +50,7 @@ final class GlyphRunStore {
     /// The slabs of one buffer.
     let slabsPerBuffer: Int
     private(set) var buffers: [any MTLBuffer] = []
-    /// The GPU address of each buffer, for the expansion.
+    /// The GPU address of each buffer, for the draw of the stored glyphs.
     let addresses: any MTLBuffer
     private var allocator = SlabAllocator(slabCount: 0)
     private(set) var runs: [Key: Run] = [:]

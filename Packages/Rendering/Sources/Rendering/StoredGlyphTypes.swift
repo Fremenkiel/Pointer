@@ -50,38 +50,21 @@ struct GlyphRecord {
     var buffer: UInt32
 }
 
-/// The values of one expansion of the records of a pass. The layout matches `ExpandUniforms` in
-/// Shaders.metal.
-struct ExpandUniforms {
+/// The values that turn the stored glyphs of a pass into quads in the vertex shader of the
+/// paged glyph draw. The layout matches `StoredUniforms` in Shaders.metal.
+struct StoredUniforms {
     /// The pixels per canvas point of the target.
     var scale: Float
     /// The target pixels per atlas pixel.
     var ratio: Float
     /// The records of the pass.
     var recordCount: UInt32
-    /// The quads of all records of the pass.
-    var quadCount: UInt32
     /// The height of a line and the distance from its top to the baseline, in canvas points.
     var lineHeight: Float
     var ascent: Float
 }
 
-/// One glyph quad that the expansion writes: its corner in target pixels, its bitmap, and its
-/// page. The layout matches `PagedGlyph` in Shaders.metal: 20 bytes. The vertex shader takes
-/// the size from the bitmap and the ratio of the pass.
-struct PagedGlyph {
-    // The expansion writes the fields and the shaders read them, and the analyzer of Swift sees
-    // neither (SCOPE-01).
-    // swiftlint:disable unused_declaration
-    var x: Float
-    var y: Float
-    var atlasOrigin: SIMD2<UInt16>
-    var atlasSize: SIMD2<UInt16>
-    var page: UInt32
-    // swiftlint:enable unused_declaration
-}
-
-/// The values of one draw of expanded quads. The layout matches `PagedGlyphUniforms` in
+/// The values of one draw of stored glyphs. The layout matches `PagedGlyphUniforms` in
 /// Shaders.metal.
 struct PagedGlyphUniforms {
     /// The size of the target texture, in pixels.

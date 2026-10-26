@@ -1,56 +1,13 @@
 import Metal
 
-/// The GPU part of the stored runs of a text pass: the expansion of the records and the draw of
-/// the expanded quads (architecture.md 5.4.1, D-189, D-190).
+/// The GPU part of the stored runs of a text pass: one draw whose vertex shader turns the
+/// records into glyph quads (architecture.md 5.4.1, D-189, D-190).
 extension TextEncoder {
     /// `true` if the current pass holds records of stored runs.
     var hasStoredRecords: Bool { !(stored?.records.isEmpty ?? true) }
 
-    /// Encodes the vertex pass that turns the records of the pass into glyph quads at the free
-    /// part of the expansion buffer. Call it before the render pass of the text. Metal tracks the
-    /// buffer, so the draw of the text waits for the writes.
-    func expandStored(_ commandBuffer: any MTLCommandBuffer, target: InkTarget, exponent: Int) {
-        guard let stored, !stored.records.isEmpty else { return }
-        let pixels = target.pixelsPerCanvasPoint
-        precondition(pixels > 0, "A target has pixels per canvas point, got \(pixels)")
-        guard let places = atlas.pageTable?.places, let records = stored.writeRecords(),
-            let output = stored.outputBuffer()
-        else {
-            assertionFailure("Metal gave no buffer for the glyph expansion")
-            return
-        }
-        guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: stored.expandPass)
-        else {
-            assertionFailure("Metal gave no encoder for the glyph expansion")
-            return
-        }
-        encoder.setRenderPipelineState(resources.expandGlyphsPipeline)
-        encoder.setVertexValue(
-            ExpandUniforms(
-                scale: Float(pixels),
-                ratio: Float(pixels / GlyphAtlas.scale(of: exponent)),
-                recordCount: UInt32(stored.records.count),
-                quadCount: UInt32(stored.passQuads),
-                lineHeight: Float(TextLayout.lineHeight),
-                ascent: Float(TextLayout.ascent)
-            ),
-            index: 0
-        )
-        encoder.setVertexBuffer(records.buffer, offset: records.offset, index: 1)
-        // The shader reads the run buffers through their addresses, so they must be resident.
-        encoder.setVertexBuffer(stored.runs.addresses, offset: 0, index: 2)
-        encoder.useResources(stored.runs.buffers, usage: .read, stages: .vertex)
-        encoder.setVertexBuffer(places, offset: 0, index: 3)
-        encoder.setVertexBuffer(
-            output,
-            offset: stored.used * MemoryLayout<PagedGlyph>.stride,
-            index: 4
-        )
-        encoder.drawPrimitives(type: .point, vertexStart: 0, vertexCount: stored.passQuads)
-        encoder.endEncoding()
-    }
-
-    /// Draws the expanded quads of the pass in one draw over the pages of the heap.
+    /// Draws the stored glyphs of the pass in one draw over the pages of the heap. The vertex
+    /// shader reads the records, the runs, and the places, and makes each quad.
     func drawStored(
         _ encoder: any MTLRenderCommandEncoder,
         target: InkTarget,
@@ -58,8 +15,12 @@ extension TextEncoder {
         exponent: Int
     ) {
         guard let stored, stored.passQuads > 0, let table = atlas.pageTable,
-            let output = stored.output
+            let places = table.places
         else { return }
+        guard let records = stored.writeRecords() else {
+            assertionFailure("Metal gave no buffer for the glyph records")
+            return
+        }
         assert(targetSize.x > 0 && targetSize.y > 0, "A target has pixels")
         let side = Float(GlyphAtlas.pageSide(exponent: exponent))
         let pixels = target.pixelsPerCanvasPoint
@@ -69,12 +30,22 @@ extension TextEncoder {
             ratio: Float(pixels / GlyphAtlas.scale(of: exponent))
         )
         encoder.setRenderPipelineState(resources.pagedGlyphPipeline)
-        encoder.setVertexBuffer(
-            output,
-            offset: stored.used * MemoryLayout<PagedGlyph>.stride,
-            index: 0
-        )
         encoder.setVertexValue(uniforms, index: 1)
+        encoder.setVertexValue(
+            StoredUniforms(
+                scale: Float(pixels),
+                ratio: Float(pixels / GlyphAtlas.scale(of: exponent)),
+                recordCount: UInt32(stored.records.count),
+                lineHeight: Float(TextLayout.lineHeight),
+                ascent: Float(TextLayout.ascent)
+            ),
+            index: 3
+        )
+        encoder.setVertexBuffer(records.buffer, offset: records.offset, index: 4)
+        // The shader reads the run buffers through their addresses, so they must be resident.
+        encoder.setVertexBuffer(stored.runs.addresses, offset: 0, index: 5)
+        encoder.useResources(stored.runs.buffers, usage: .read, stages: .vertex)
+        encoder.setVertexBuffer(places, offset: 0, index: 6)
         encoder.setFragmentValue(uniforms, index: 1)
         encoder.setFragmentBuffer(table.buffer, offset: 0, index: 2)
         encoder.useHeaps(table.heaps, stages: .fragment)
