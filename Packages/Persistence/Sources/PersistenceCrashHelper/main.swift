@@ -15,6 +15,12 @@ let strokeInterval = Duration.milliseconds(10)
 /// The control points of each stroke.
 let pointsPerStroke = 300
 
+/// The waits of 1 ms for a SIGKILL of the own process to land: at most 1 second (FLOW-03). The
+/// restore mode runs before the code below this line, so its constants must stand above it.
+let maxStopWaits = 1_000
+/// The exit status of a helper that the SIGKILL did not stop.
+let missedStopStatus: Int32 = 2
+
 let arguments = CommandLine.arguments
 if arguments.count == 7, arguments[1] == "restore" {
     await runRestore(Array(arguments.dropFirst(2)))
@@ -64,6 +70,17 @@ for index in 0..<maxStrokes {
     try await Task.sleep(for: strokeInterval)
 }
 
+/// Stops the process with SIGKILL now. The signal can land on another thread and let the
+/// caller run on to `exit` (POSIX `kill`), so the caller waits for the stop. If the stop does
+/// not come, the helper exits with `missedStopStatus`.
+func stopNow() -> Never {
+    kill(getpid(), SIGKILL)
+    for _ in 0..<maxStopWaits {
+        usleep(1_000)
+    }
+    exit(missedStopStatus)
+}
+
 /// Stops the process with SIGKILL 0.5 ms from now, from a thread of its own. The stop lands in
 /// the copy, which runs in steps of pages on the calling task.
 func stopDuringCopy() {
@@ -107,12 +124,12 @@ func runRestore(_ values: [String]) async {
         _ = try await repository.open { _ in }
         let fallback = try await writer.writePreRestoreSnapshot()
         try RestoreMarker(libraryPath: library, backupsFolder: backups).write(snapshot: fallback)
-        if step == "marker" { kill(getpid(), SIGKILL) }
+        if step == "marker" { stopNow() }
         let checked = try await SnapshotImport(temporaryFolder: temporary)
             .copyAndCheck(URL(filePath: picked))
         if step == "copy" { stopDuringCopy() }
         try await repository.restore(from: checked, stop: RestoreStop())
-        if step == "done" { kill(getpid(), SIGKILL) }
+        if step == "done" { stopNow() }
     } catch {
         exit(EXIT_FAILURE)
     }

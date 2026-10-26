@@ -36,7 +36,10 @@ struct RestoreCrashTests {
         ]
         try process.run()
         process.waitUntilExit()
-        #expect(process.terminationReason == .uncaughtSignal, "The helper stopped at \(step)")
+        #expect(
+            process.terminationReason == .uncaughtSignal,
+            "The helper stopped at \(step), status \(process.terminationStatus)"
+        )
 
         let marker = RestoreMarker(libraryPath: library, backupsFolder: backups)
         let fallback = try #require(marker.snapshot(), "The marker survives the stop")
