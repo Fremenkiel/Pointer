@@ -59,7 +59,7 @@ The script `Scripts/check-layers.swift` reads `swift package dump-package` for e
 
 Dependencies flow down. Features get repositories and services through their initializers. No singletons exist, except the ones that Apple provides.
 
-The UI test target `PointerUITests` imports XCTest only and drives the app in a new process (D-178). The launch argument `-uiTestLibrary <token>` makes `AppFiles` put all files into `tmp/UITest-<token>/`, so that a UI test never touches the real library. With this argument only, `PointerApp` adds `UITestProbe`: five accessibility elements that give the state of the shown canvas (`uiTest.loading`, `uiTest.strokes`, `uiTest.cards`, `uiTest.level`, and `uiTest.camera`). The tests wait on these values, never on a fixed time.
+The UI test target `PointerUITests` imports XCTest only and drives the app in a new process (D-178). The launch argument `-uiTestLibrary <token>` makes `AppFiles` put all files into `tmp/UITest-<token>/`, so that a UI test never touches the real library. The test process cannot reach the container of the app, so each launch with the argument removes the folders of the earlier UI tests. With this argument only, `PointerApp` adds `UITestProbe`: five accessibility elements that give the state of the shown canvas (`uiTest.loading`, `uiTest.strokes`, `uiTest.cards`, `uiTest.level`, and `uiTest.camera`). The tests wait on these values, never on a fixed time.
 
 ## 4. Input pipeline
 

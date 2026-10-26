@@ -52,21 +52,24 @@ extension AppFiles {
     /// The launch argument of the UI tests: `-uiTestLibrary <token>` (D-178).
     static let uiTestKey = "uiTestLibrary"
 
+    /// The start of the name of each folder of a UI test in `tmp/`.
+    static let uiTestPrefix = "UITest-"
+
     /// Finds the folders of a UI test: one new folder `tmp/UITest-<token>/` holds all files, so
-    /// that a UI test never touches the real library (D-178).
+    /// that a UI test never touches the real library (D-178). It removes the folders of the
+    /// earlier UI tests, because the test process cannot reach the container of the app.
     ///
     /// - Precondition: `token` has 1 to 64 letters, digits, and hyphens.
-    /// - Throws: The error of `FileManager` if the folder cannot be made.
+    /// - Throws: The error of `FileManager` if a folder cannot be read, removed, or made.
     static func uiTest(token: String, _ files: FileManager) throws -> AppFiles {
         precondition(
             (1...64).contains(token.count)
                 && token.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-") },
             "A UI test token has 1 to 64 letters, digits, and hyphens"
         )
-        let folder = files.temporaryDirectory.appending(
-            path: "UITest-\(token)",
-            directoryHint: .isDirectory
-        )
+        let name = uiTestPrefix + token
+        try removeUITestFolders(except: name, files)
+        let folder = files.temporaryDirectory.appending(path: name, directoryHint: .isDirectory)
         let temporary = folder.appending(path: "tmp", directoryHint: .isDirectory)
         try files.createDirectory(at: temporary, withIntermediateDirectories: true)
         return AppFiles(
@@ -76,5 +79,15 @@ extension AppFiles {
             backups: folder.appending(path: "Backups", directoryHint: .isDirectory),
             previews: folder.appending(path: "previews", directoryHint: .isDirectory)
         )
+    }
+
+    /// Removes each folder `tmp/UITest-*` except the folder `kept`.
+    ///
+    /// - Throws: The error of `FileManager` if `tmp/` cannot be read or a folder not removed.
+    private static func removeUITestFolders(except kept: String, _ files: FileManager) throws {
+        let names = try files.contentsOfDirectory(atPath: files.temporaryDirectory.path())
+        for name in names where name.hasPrefix(uiTestPrefix) && name != kept {
+            try files.removeItem(at: files.temporaryDirectory.appending(path: name))
+        }
     }
 }
