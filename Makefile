@@ -59,15 +59,18 @@ analyze:
 
 # Tier A tests run on the Mac. Package tests cannot run on a device, so the tests of the other
 # packages run in PointerDeviceTests on the iPad (D-77). The UI tests of PointerUITests run on the
-# iPad after them, each in a new process of the app on a temporary library (D-178). Keep the iPad
-# unlocked during the run.
+# iPad first, each in a new process of the app on a temporary library (D-178). The iPad asks for
+# its passcode before the UI tests, so they come early in the run (D-192). Keep the iPad unlocked
+# during the run.
 test:
 	@for package in $(TIER_A); do \
 		if [ -d Packages/$$package/Tests ]; then \
 			swift test --package-path Packages/$$package || exit 1; \
 		fi; \
 	done
-	$(DEVICE_TEST) -quiet -only-testing:PointerDeviceTests -only-testing:PointerUITests
+	@echo "test: enter the passcode on the iPad when it asks to enable UI Automation (D-192)"
+	$(DEVICE_TEST) -quiet -only-testing:PointerUITests
+	$(DEVICE_TEST) -quiet -only-testing:PointerDeviceTests
 	@echo "test: done"
 
 # TEST-07: the snapshot tests run in PointerDeviceTests on the iPad and compare against the

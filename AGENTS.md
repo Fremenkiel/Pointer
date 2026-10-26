@@ -81,7 +81,7 @@ Run the commands from the repository root. They need Xcode 27 and SwiftLint 0.65
 make build       # build the app for iOS, warnings are errors
 make analyze     # xcodebuild analyze, zero findings
 make unused      # SCOPE-01: declarations without a reader, on the log of make build
-make test        # Tier A tests on the Mac, then PointerDeviceTests and PointerUITests on the iPad
+make test        # Tier A tests on the Mac, then PointerUITests and PointerDeviceTests on the iPad
 make snapshots   # the snapshot tests in PointerDeviceTests on the iPad (D-77)
 make format      # swift format lint
 make lint        # swiftlint --strict
@@ -97,7 +97,7 @@ make perf-compare   # 10 new runs against the baseline, about 50 minutes (D-172,
 make validation  # PointerDeviceTests with Metal API and shader validation, at each close (D-186)
 ```
 
-`make test` and `make snapshots` use the connected iPad Pro 11-inch (M4) in Release. To use another iPad, set `DEVICE` to its UDID, for example `make test DEVICE=00008132-000018993E8B801C`. Before a device run, make sure that the iPad is unlocked: `xcrun devicectl device info lockState --device <UDID>` must print `passcodeRequired: false`.
+`make test` and `make snapshots` use the connected iPad Pro 11-inch (M4) in Release. To use another iPad, set `DEVICE` to its UDID, for example `make test DEVICE=00008132-000018993E8B801C`. Before a device run, make sure that the iPad is unlocked: `xcrun devicectl device info lockState --device <UDID>` must print `passcodeRequired: false`. Before the UI tests, the iPad asks for its passcode to enable UI Automation. Enter it on the iPad, or the UI tests fail after about one minute (D-192).
 
 ## Working rules
 
