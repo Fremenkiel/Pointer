@@ -151,14 +151,6 @@ final class GlyphRunStore {
         return (buffer, block.start - buffer * quadsPerBuffer)
     }
 
-    /// Frees all runs after the frames in flight, for example after a change of the canvas.
-    func removeAll(frame: UInt64) {
-        for key in Array(runs.keys) {
-            release(key, frame: frame)
-        }
-        assert(runs.isEmpty, "No run stays")
-    }
-
     /// Takes a run out of the list. Its block is free after the frames in flight.
     private func release(_ key: Key, frame: UInt64) {
         guard let run = runs.removeValue(forKey: key) else { return }

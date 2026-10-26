@@ -54,9 +54,6 @@ final class GlyphPageTable {
         maxHeaps = (byteBudget + chunkBytes - 1) / chunkBytes + 1
     }
 
-    /// The bytes of all heaps.
-    var heapBytes: Int { heaps.reduce(0) { $0 + $1.size } }
-
     /// Returns a page texture from a heap, from a new heap if none has room, or `nil` if all
     /// heaps are full.
     func makeTexture(_ descriptor: MTLTextureDescriptor) -> (any MTLTexture)? {

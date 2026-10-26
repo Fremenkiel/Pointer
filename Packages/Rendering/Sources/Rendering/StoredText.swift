@@ -5,7 +5,7 @@ import Model
 /// 5.4.1, D-94, D-190).
 ///
 /// A pass writes one `GlyphRecord` per box into the record buffer of the frame. Before the draw,
-/// a compute pass turns the records into `PagedGlyph` quads in `output`. All frames share
+/// a vertex pass turns the records into `PagedGlyph` quads in `output`. All frames share
 /// `output`: it is a tracked GPU buffer, so Metal lets the expansion of a frame wait for the
 /// draws of the frame before, and the CPU never writes it. The buffers start at the first pass
 /// with records and grow with the passes, so that a canvas with little text holds little memory.

@@ -7,7 +7,11 @@ struct StoredGlyph {
     var x: Float
     /// The line of the glyph, from 0.
     var line: UInt16
+    // The shaders read the padding, and the analyzer of Swift does not see it (SCOPE-01).
+    // swiftlint:disable unused_declaration
+    /// Keeps the size at 12 bytes.
     var padding: UInt16 = 0
+    // swiftlint:enable unused_declaration
     /// The index of the placement of the bitmap.
     var place: UInt32
 }
@@ -23,7 +27,11 @@ struct GlyphPlace {
     var atlasSize: SIMD2<UInt16>
     /// The index of the page in the atlas.
     var page: UInt32
+    // The shaders read the padding, and the analyzer of Swift does not see it (SCOPE-01).
+    // swiftlint:disable unused_declaration
+    /// Keeps the size at 24 bytes.
     var padding: UInt32 = 0
+    // swiftlint:enable unused_declaration
 }
 
 /// The record of one stored run in a text pass: where the run lies and where its box lies in
@@ -62,11 +70,15 @@ struct ExpandUniforms {
 /// page. The layout matches `PagedGlyph` in Shaders.metal: 20 bytes. The vertex shader takes
 /// the size from the bitmap and the ratio of the pass.
 struct PagedGlyph {
+    // The expansion writes the fields and the shaders read them, and the analyzer of Swift sees
+    // neither (SCOPE-01).
+    // swiftlint:disable unused_declaration
     var x: Float
     var y: Float
     var atlasOrigin: SIMD2<UInt16>
     var atlasSize: SIMD2<UInt16>
     var page: UInt32
+    // swiftlint:enable unused_declaration
 }
 
 /// The values of one draw of expanded quads. The layout matches `PagedGlyphUniforms` in
