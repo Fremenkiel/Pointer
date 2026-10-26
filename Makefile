@@ -167,7 +167,8 @@ perf-compare:
 ALLOCATION_SUITES := EditAllocationTests EraserSampleAllocationTests FrameAllocationTests \
 	GridAllocationTests HoverSampleAllocationTests PreviewAllocationTests \
 	TextEditFrameAllocationTests TextMoveAllocationTests TextPassAllocationTests \
-	TransitionAllocationTests ZoomFrameAllocationTests
+	TransitionAllocationTests ZoomFrameAllocationTests FrameKindAllocationTests \
+	DragPostAllocationTests GestureAllocationTests
 validation:
 	TEST_RUNNER_MTL_DEBUG_LAYER=1 TEST_RUNNER_MTL_SHADER_VALIDATION=1 $(DEVICE_TEST) -quiet \
 		-only-testing:PointerDeviceTests \
