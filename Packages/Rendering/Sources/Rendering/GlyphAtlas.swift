@@ -286,6 +286,11 @@ final class GlyphAtlas {
         return byteCount + bytes <= byteBudget
     }
 
+    /// Drops the page at `index`: its placements, its table entries, and its bytes. The
+    /// generation of the index grows, so that a stored run of the old page builds again. An
+    /// empty slot is no error.
+    ///
+    /// - Precondition: `index` is an index of `pages`.
     func drop(_ index: Int) {
         precondition(pages.indices.contains(index), "Page \(index) is outside the list")
         guard let page = pages[index] else { return }

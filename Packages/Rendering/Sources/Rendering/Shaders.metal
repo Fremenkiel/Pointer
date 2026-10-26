@@ -532,7 +532,7 @@ struct PagedGlyphUniforms {
 };
 
 // The pages of the glyph atlas as texture handles, written by the CPU with gpuResourceID
-// (Metal 3). The atlas holds at most this many pages; see GlyphAtlas.maxPages.
+// (Metal 3). The table holds at most this many pages, GlyphPageTable.capacity.
 struct GlyphPages {
     array<texture2d<float>, 256> pages;
 };

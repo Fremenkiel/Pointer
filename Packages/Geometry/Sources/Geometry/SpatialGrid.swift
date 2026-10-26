@@ -24,6 +24,7 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
         /// The position of each entry in `entries`, or `nil` in a small cell.
         @usableFromInline var positions: [ID: Int]?
 
+        /// Makes a small cell with one entry and no position table.
         @inlinable
         init(entry: Entry) {
             entries = [entry]

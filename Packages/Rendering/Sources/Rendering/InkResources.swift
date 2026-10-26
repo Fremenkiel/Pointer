@@ -242,6 +242,11 @@ final class InkResources {
         return try makePipeline(device: device, descriptor: descriptor)
     }
 
+    /// Makes a render pipeline from `descriptor`.
+    ///
+    /// - Precondition: The first color attachment has a pixel format.
+    /// - Throws: `RenderingError.pipelineFailed` without a vertex or a fragment function, or if
+    ///   Metal cannot make the pipeline.
     static func makePipeline(
         device: any MTLDevice,
         descriptor: MTLRenderPipelineDescriptor
