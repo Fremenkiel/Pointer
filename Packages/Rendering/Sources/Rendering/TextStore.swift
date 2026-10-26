@@ -16,6 +16,9 @@ final class TextStore {
         let layout: TextLayout
         /// The bounds in canvas space, with a margin for the glyphs that leave the line box.
         let bounds: Rect
+        /// The version of the layout. A new layout gets a new version, so that its stored glyph
+        /// runs build again, and a move keeps it (architecture.md 5.4.1).
+        let version: UInt32
     }
 
     /// The part of a line height that glyphs can reach outside the box, for accents and
@@ -31,6 +34,8 @@ final class TextStore {
 
     /// The number of text boxes.
     var count: Int { entries.count }
+    /// The version of the last new layout.
+    private var lastVersion: UInt32 = 0
 
     /// A text box with its layout, made off the render thread at a load (D-92).
     struct LaidOut: Sendable {
@@ -87,7 +92,7 @@ final class TextStore {
     func add(_ box: TextBox) -> Rect? {
         precondition(box.origin.isFinite, "Text box \(box.id) has an origin that is not finite")
         if let earlier = entries[box.id], earlier.text == box.text {
-            return insert(box, layout: earlier.layout)
+            return insert(box, layout: earlier.layout, version: earlier.version)
         }
         return insert(box, layout: TextLayout(text: box.text))
     }
@@ -97,10 +102,22 @@ final class TextStore {
     /// - Returns: The bounds of the box before the change, or `nil` for a new box.
     @discardableResult  // A load needs no old bounds.
     func insert(_ box: TextBox, layout: TextLayout) -> Rect? {
+        lastVersion &+= 1
+        return insert(box, layout: layout, version: lastVersion)
+    }
+
+    /// Adds a box with its layout and the version of that layout.
+    private func insert(_ box: TextBox, layout: TextLayout, version: UInt32) -> Rect? {
         let earlier = remove(box.id)
         let margin = TextLayout.lineHeight * Self.boundsMargin
         let bounds = Rect(origin: box.origin, size: layout.size).expanded(by: margin)
-        entries[box.id] = Entry(origin: box.origin, text: box.text, layout: layout, bounds: bounds)
+        entries[box.id] = Entry(
+            origin: box.origin,
+            text: box.text,
+            layout: layout,
+            bounds: bounds,
+            version: version
+        )
         grid.insert(box.id, bounds: bounds)
         assert(grid.count == entries.count, "The grid holds each text box")
         return earlier

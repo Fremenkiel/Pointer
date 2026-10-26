@@ -36,7 +36,9 @@ final class TextBuildPerformanceTests: XCTestCase {
         XCTAssertFalse(renderer.isLoadingText, "The text loaded")
         var values: [String: Double] = [:]
         for zoom in [Limits.minZoom, Limits.standardZoom] {
-            for (index, center) in [Point(x: -1_000, y: 0), Point(x: 1_000, y: 0)].enumerated() {
+            // The third build goes back to the place of the first one, where the runs exist.
+            let centers = [Point(x: -1_000, y: 0), Point(x: 1_000, y: 0), Point(x: -1_000, y: 0)]
+            for (index, center) in centers.enumerated() {
                 let camera = Camera(center: center, zoom: zoom)
                 let build = try measureBuild(renderer, layer, camera: camera)
                 let line = String(
@@ -48,8 +50,9 @@ final class TextBuildPerformanceTests: XCTestCase {
                     build.slowest
                 )
                 XCTContext.runActivity(named: line) { _ in }
-                guard index == 1 else { continue }
-                let key = zoom < 1 ? "zoom-0.25" : "zoom-1"
+                guard index > 0 else { continue }
+                // Run 2 keeps the keys of the baseline. Run 3 is the build where the runs exist.
+                let key = (zoom < 1 ? "zoom-0.25" : "zoom-1") + (index == 2 ? ".back" : "")
                 values["\(key).cpu.ms"] = build.cpu
                 values["\(key).slowest.ms"] = build.slowest
                 values["\(key).frames.count"] = Double(build.frames)

@@ -36,7 +36,7 @@ final class TextEncoder {
 
     /// The pipelines and the device.
     let resources: InkResources
-    private let store: TextStore
+    let store: TextStore
     /// The cards of the canvas, for the cards in the list of a pass (D-96).
     let cards: CardStore
     /// The coverage of a card border (D-96).
@@ -58,6 +58,14 @@ final class TextEncoder {
     let atlas: GlyphAtlas
     /// The glyph buffers of the frames in flight.
     let ring: GlyphRing
+    /// The stored glyph runs, or `nil` for the CPU path only (architecture.md 5.4.1).
+    var stored: StoredText?
+    /// The expansion capacity and the run budget of the stored runs that the encoder makes at
+    /// the first layout that needs them, or `nil` for the CPU path only.
+    let storedLimits: (capacity: Int, runBudget: Int)?
+    /// `true` after a layout of `StoredText.minimumGlyphs` glyphs or more took the CPU path,
+    /// because the stored runs did not exist yet. The next pass makes them.
+    var wantsStored = false
     /// The runs of the current pass, reused (PERF-01).
     var runs: [Run] = []
     /// The glyph quads of one box, reused and copied into the buffer in one step.
@@ -79,15 +87,20 @@ final class TextEncoder {
         cards: CardStore = CardStore(),
         atlas: GlyphAtlas,
         ring: GlyphRing,
+        stored: StoredText? = nil,
+        storedLimits: (capacity: Int, runBudget: Int)? = nil,
         borderCoverage: Float = RendererConfiguration.defaultCardBorderCoverage,
         fillCoverage: Float = RendererConfiguration.defaultCardFillCoverage
     ) {
+        precondition(stored == nil || atlas.pageTable != nil, "Stored runs need a page table")
         precondition(borderCoverage > 0 && borderCoverage < 1, "Border \(borderCoverage)")
         self.resources = resources
         self.store = store
         self.cards = cards
         self.atlas = atlas
         self.ring = ring
+        self.stored = stored
+        self.storedLimits = storedLimits
         self.borderCoverage = borderCoverage
         self.fillCoverage = fillCoverage
         runs.reserveCapacity(Self.initialRunCapacity)
@@ -99,6 +112,7 @@ final class TextEncoder {
     /// Starts a frame. Call it after `InkEncoder.beginFrame`, which waits for a free buffer.
     func beginFrame() {
         ring.beginFrame()
+        stored?.beginFrame(now: CACurrentMediaTime())
     }
 
     /// Encodes the text boxes and the cards of `ids` from `cursor` on until the glyph buffer of
@@ -126,20 +140,31 @@ final class TextEncoder {
         defer { previews = atlas }
         var position = cursor
         let exponent = GlyphAtlas.exponent(pixelsPerCanvasPoint: target.pixelsPerCanvasPoint)
+        if wantsStored { startStored() }
+        stored?.beginPass(deadline: options.deadline)
         for item in ids[cursor...] {
-            guard let needed = quadCount(of: item) else {
+            guard let room = room(for: item) else {
                 position += 1
                 continue
             }
-            guard needed + borderQuads.count + previewQuads.count <= ring.remaining else { break }
+            guard room.cpu || room.stored else { break }
             guard !Self.isPastDeadline(position - cursor, options.deadline) else { break }
-            append(item, target: target, exponent: exponent, frame: context.frame)
+            let place = Place(target: target, exponent: exponent, frame: context.frame)
+            guard append(item, place, allowsCPU: room.cpu) else { break }
             position += 1
         }
         flushBorders()
-        if !runs.isEmpty || borderRun != nil || previewRun != nil || options.clearsScissor {
-            encode(into: context.commandBuffer, target: target, options: options)
+        let draws = !runs.isEmpty || borderRun != nil || previewRun != nil || hasStoredRecords
+        if draws || options.clearsScissor {
+            expandStored(context.commandBuffer, target: target, exponent: exponent)
+            encode(
+                into: context.commandBuffer,
+                target: target,
+                exponent: exponent,
+                options: options
+            )
         }
+        stored?.endPass()
         assert(position >= cursor, "A text pass never goes back")
         assert(ring.used <= ring.capacity, "The glyphs fit the buffer of the frame")
         return position
@@ -184,32 +209,6 @@ final class TextEncoder {
             scale: Float(pixels),
             ratio: Float(pixels / GlyphAtlas.scale(of: exponent))
         )
-    }
-
-    /// Returns the quads that an item writes into the glyph buffer, or `nil` if its store does
-    /// not hold it: the glyphs of a box, or the border and the title glyphs of a card.
-    func quadCount(of item: GreenItem) -> Int? {
-        switch item {
-        case .textBox(let id):
-            return store.entries[id]?.layout.glyphs.count
-        case .card(let id):
-            guard let entry = cards.entries[id] else { return nil }
-            assert((entry.layout == nil) == (entry.titleOrigin == nil), "A title has its place")
-            // A border quad, a preview quad, and the title glyphs.
-            return 2 + (entry.layout?.glyphs.count ?? 0)
-        }
-    }
-
-    /// Writes the quads of one item into the pass.
-    private func append(_ item: GreenItem, target: InkTarget, exponent: Int, frame: UInt64) {
-        switch item {
-        case .textBox(let id):
-            guard let entry = store.entries[id] else { return }
-            append(entry.layout, at: entry.origin, target: target, exponent: exponent, frame: frame)
-        case .card(let id):
-            guard let entry = cards.entries[id] else { return }
-            appendCard(id, entry: entry, target: target, exponent: exponent, frame: frame)
-        }
     }
 
     /// Writes the glyph quads of one layout with its top-left corner at `origin` into the buffer

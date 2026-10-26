@@ -15,6 +15,8 @@ final class CardStore {
         /// The bounds in canvas space: the frame and the title above it, with a margin for the
         /// border and for the glyphs that leave the line box.
         let bounds: Rect
+        /// The version of the title layout, as `TextStore.Entry.version` (architecture.md 5.4.1).
+        let version: UInt32
 
         /// The top-left corner of the title: the last line of the title sits on the top edge of
         /// the frame.
@@ -45,6 +47,8 @@ final class CardStore {
 
     /// The number of cards.
     var count: Int { entries.count }
+    /// The version of the last new title layout.
+    private var lastVersion: UInt32 = 0
 
     /// Lays out the titles of the cards of a load in the chunks of the text load, off the render
     /// thread (D-92).
@@ -92,7 +96,7 @@ final class CardStore {
         precondition(card.frame.origin.isFinite, "Card \(card.id) has a frame that is not finite")
         assert(card.frame.size.width >= Limits.minCardWidth, "Card \(card.id) is too narrow")
         if let earlier = entries[card.id], earlier.title == card.title {
-            return insert(card, layout: earlier.layout)
+            return insert(card, layout: earlier.layout, version: earlier.version)
         }
         return insert(card, layout: Self.titleLayout(of: card.title))
     }
@@ -102,6 +106,12 @@ final class CardStore {
     /// - Returns: The bounds of the card before the change, or `nil` for a new card.
     @discardableResult  // A load needs no old bounds.
     func insert(_ card: Card, layout: TextLayout?) -> Rect? {
+        lastVersion &+= 1
+        return insert(card, layout: layout, version: lastVersion)
+    }
+
+    /// Adds a card with its title layout and the version of that layout.
+    private func insert(_ card: Card, layout: TextLayout?, version: UInt32) -> Rect? {
         precondition(card.frame.origin.isFinite, "Card \(card.id) has a frame that is not finite")
         let earlier = remove(card.id)
         var bounds = card.frame
@@ -122,7 +132,8 @@ final class CardStore {
             frame: card.frame,
             title: card.title,
             layout: layout,
-            bounds: bounds
+            bounds: bounds,
+            version: version
         )
         grid.insert(card.id, bounds: bounds)
         assert(grid.count == entries.count, "The grid holds each card")

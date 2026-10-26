@@ -128,15 +128,7 @@ final class FrameRenderer {
         let ring = try DrawListRing(device: device, capacity: configuration.drawListCapacity)
         encoder = InkEncoder(resources: resources, store: store, ring: ring)
         compositePass.colorAttachments[0].clearColor = Self.clearColor(configuration.background)
-        textEncoder = TextEncoder(
-            resources: resources,
-            store: texts,
-            cards: cards,
-            atlas: GlyphAtlas(device: device, byteBudget: configuration.glyphAtlasByteBudget),
-            ring: try GlyphRing(device: device, capacity: configuration.glyphCapacity),
-            borderCoverage: configuration.cardBorderCoverage,
-            fillCoverage: configuration.cardFillCoverage
-        )
+        textEncoder = try Self.makeTextEncoder(resources, configuration, stores: (texts, cards))
         pendingSlots.reserveCapacity(Self.pendingCapacity)
     }
 

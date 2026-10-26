@@ -84,6 +84,17 @@ public struct RendererConfiguration: Sendable {
     /// The glyph quads per frame. A text box holds at most `Limits.maxTextLength` glyphs, so a
     /// frame holds several boxes.
     public var glyphCapacity: Int
+    /// The byte budget of the stored glyph runs of the screen (D-188): 32 MB hold about 2.8
+    /// million quads of 12 bytes, the D-56 text at two atlas exponents. 0 turns the stored runs
+    /// off.
+    ///
+    /// - Precondition: 0, or from one slab of runs to 32 MB.
+    public var glyphRunByteBudget = 32 << 20
+    /// The expanded glyph quads of the stored runs per frame (architecture.md 5.4.1): the quads
+    /// of `glyphCapacity`, 1.3 MB of GPU memory. 262,144 quads built the D-56 text in fewer
+    /// frames, but the GPU p99 of a text pan rose by 46 %. With 65,536 it stays within 10 % of
+    /// the CPU path.
+    public var storedGlyphCapacity = 65_536
 
     /// Makes a configuration.
     public init(

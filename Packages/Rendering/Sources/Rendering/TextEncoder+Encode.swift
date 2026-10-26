@@ -11,10 +11,12 @@ extension TextEncoder {
     func encode(
         into commandBuffer: any MTLCommandBuffer,
         target: InkTarget,
+        exponent: Int,
         options: Options
     ) {
         precondition(
-            !runs.isEmpty || borderRun != nil || previewRun != nil || options.clearsScissor,
+            !runs.isEmpty || borderRun != nil || previewRun != nil || hasStoredRecords
+                || options.clearsScissor,
             "A text pass draws or clears"
         )
         assert(runs.allSatisfy { $0.count > 0 }, "Each glyph run holds a glyph")
@@ -40,6 +42,7 @@ extension TextEncoder {
         let radius = RendererConfiguration.cardCornerRadius * target.pixelsPerCanvasPoint
         encodePreviews(encoder, targetSize: targetSize, radius: Float(radius))
         encodeGlyphRuns(encoder, targetSize: targetSize)
+        drawStored(encoder, target: target, targetSize: targetSize, exponent: exponent)
         encoder.endEncoding()
     }
 

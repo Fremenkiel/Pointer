@@ -478,3 +478,138 @@ fragment float4 pinchFragment(CompositeVertexOut in [[stage_in]],
     float border = clamp(u.borderHalfWidth + 0.5 - abs(distance), 0.0, 1.0) * u.borderCoverage;
     return float4(mix(u.background.rgb, float3(1.0), max(value, border)), 1.0);
 }
+
+// The stored glyph quads (architecture.md 5.4.1, D-94, D-189, D-190). The layouts match
+// StoredGlyphTypes.swift.
+
+// One glyph of a stored run: its baseline x and line in the box, and its placement. 12 bytes.
+struct StoredGlyph {
+    float x;              // baseline x, canvas points from the left side of the box
+    ushort line;          // line of the glyph, from 0
+    ushort padding;
+    uint place;           // index in the places of the atlas
+};
+
+// The place of one glyph bitmap. 24 bytes.
+struct GlyphPlace {
+    float2 bearing;       // bitmap corner from the baseline point, atlas pixels
+    ushort2 atlasOrigin;  // bitmap corner in the page, pixels
+    ushort2 atlasSize;    // bitmap size, pixels
+    uint page;            // page index in the atlas
+    uint padding;
+};
+
+// One stored run in a text pass. 24 bytes.
+struct GlyphRecord {
+    float2 base;          // top-left corner of the box, target pixels
+    uint runStart;        // first quad of the run in its buffer
+    uint count;           // quads of the run
+    uint prefix;          // quads of the records before this one
+    uint buffer;          // buffer of the run in the store
+};
+
+struct ExpandUniforms {
+    float scale;          // target pixels per canvas point
+    float ratio;          // target pixels per atlas pixel
+    uint recordCount;
+    uint quadCount;
+    float lineHeight;     // canvas points
+    float ascent;         // canvas points
+};
+
+// One expanded glyph: its corner, its bitmap, and its page. 20 bytes.
+struct PagedGlyph {
+    packed_float2 position;  // top-left corner in the target, pixels
+    ushort2 atlasOrigin;
+    ushort2 atlasSize;
+    uint page;
+};
+
+struct PagedGlyphUniforms {
+    float2 targetSize;    // pixels
+    float2 atlasSize;     // pixels of the atlas pages
+    float ratio;          // target pixels per atlas pixel
+};
+
+// The pages of the glyph atlas as texture handles, written by the CPU with gpuResourceID
+// (Metal 3). The atlas holds at most this many pages; see GlyphAtlas.maxPages.
+struct GlyphPages {
+    array<texture2d<float>, 256> pages;
+};
+
+// The buffers of the stored runs by their GPU addresses; see GlyphRunStore.maxBuffers.
+struct RunBuffers {
+    const device StoredGlyph *buffers[32];
+};
+
+// Turns the records of a pass into glyph quads in target pixels, one vertex per quad, in a pass
+// without rasterization. The arithmetic is the one of the CPU path in TextEncoder.writeQuads. A
+// compute pass did the same work, but its first dispatch held about 38 MB of graphics memory of
+// the driver on the iPad, and a vertex pass holds none (architecture.md 5.4.1).
+vertex void expandGlyphs(uint index [[vertex_id]],
+                         constant ExpandUniforms &uniforms [[buffer(0)]],
+                         const device GlyphRecord *records [[buffer(1)]],
+                         constant RunBuffers &runs [[buffer(2)]],
+                         const device GlyphPlace *places [[buffer(3)]],
+                         device PagedGlyph *out [[buffer(4)]]) {
+    if (index >= uniforms.quadCount) {
+        return;
+    }
+    // The last record whose prefix is at or below the index.
+    uint low = 0;
+    uint high = uniforms.recordCount;
+    while (high - low > 1) {
+        uint middle = (low + high) / 2;
+        if (records[middle].prefix <= index) {
+            low = middle;
+        } else {
+            high = middle;
+        }
+    }
+    GlyphRecord record = records[low];
+    uint slot = record.runStart + (index - record.prefix);
+    StoredGlyph glyph = runs.buffers[record.buffer][slot];
+    GlyphPlace place = places[glyph.place];
+    float2 position = float2(glyph.x, float(glyph.line) * uniforms.lineHeight + uniforms.ascent);
+    float2 corner = record.base + position * uniforms.scale + place.bearing * uniforms.ratio;
+    PagedGlyph result;
+    result.position = packed_float2(rint(corner));
+    result.atlasOrigin = place.atlasOrigin;
+    result.atlasSize = place.atlasSize;
+    result.page = place.page;
+    out[index] = result;
+}
+
+struct PagedGlyphVertexOut {
+    float4 position [[position]];
+    float2 atlasPoint;    // atlas pixels
+    uint page [[flat]];
+};
+
+// One expanded glyph: a quad that shows its bitmap from its page.
+vertex PagedGlyphVertexOut pagedGlyphVertex(uint vertexID [[vertex_id]],
+                                            uint instanceID [[instance_id]],
+                                            const device PagedGlyph *glyphs [[buffer(0)]],
+                                            constant PagedGlyphUniforms &uniforms [[buffer(1)]]) {
+    PagedGlyph glyph = glyphs[instanceID];
+    float2 corner = float2((vertexID & 1) ? 1.0 : 0.0, (vertexID & 2) ? 1.0 : 0.0);
+    float2 atlasSize = float2(glyph.atlasSize);
+    float2 pixel = float2(glyph.position) + corner * atlasSize * uniforms.ratio;
+    PagedGlyphVertexOut out;
+    out.position = float4(pixel.x / uniforms.targetSize.x * 2.0 - 1.0,
+                          1.0 - pixel.y / uniforms.targetSize.y * 2.0, 0.0, 1.0);
+    out.atlasPoint = float2(glyph.atlasOrigin) + corner * atlasSize;
+    out.page = glyph.page;
+    return out;
+}
+
+// The coverage of an expanded glyph from its page. All pages of a pass have the same side.
+fragment half4 pagedGlyphFragment(PagedGlyphVertexOut in [[stage_in]],
+                                  constant GlyphPages &atlas [[buffer(2)]],
+                                  constant PagedGlyphUniforms &uniforms [[buffer(1)]]) {
+    constexpr sampler linearSampler(address::clamp_to_zero, filter::linear);
+    texture2d<float> page = atlas.pages[in.page];
+    float coverage = page.sample(linearSampler, in.atlasPoint / uniforms.atlasSize).r;
+    return half4(coverage);
+}
+

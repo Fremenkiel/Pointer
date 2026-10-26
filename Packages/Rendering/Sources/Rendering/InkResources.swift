@@ -29,6 +29,11 @@ final class InkResources {
     let clearTextPipeline: any MTLRenderPipelineState
     /// Draws glyph quads from the atlas into the text channel with `max` blending (D-29, D-82).
     let glyphPipeline: any MTLRenderPipelineState
+    /// Draws the glyph quads of the stored runs from the atlas pages of the heap (D-189).
+    let pagedGlyphPipeline: any MTLRenderPipelineState
+    /// Turns the records of a text pass into glyph quads, in a vertex pass without
+    /// rasterization (D-190).
+    let expandGlyphsPipeline: any MTLRenderPipelineState
     /// Draws the rounded border of a card into the text channel with `max` blending (D-96).
     let cardBorderPipeline: any MTLRenderPipelineState
     /// Writes the larger coverage of the two channels into one channel, for a preview (D-97).
@@ -62,6 +67,8 @@ final class InkResources {
         clearPipeline = other.clearPipeline
         clearTextPipeline = other.clearTextPipeline
         glyphPipeline = other.glyphPipeline
+        pagedGlyphPipeline = other.pagedGlyphPipeline
+        expandGlyphsPipeline = other.expandGlyphsPipeline
         cardBorderPipeline = other.cardBorderPipeline
         previewResolvePipeline = other.previewResolvePipeline
         freezePipeline = other.freezePipeline
@@ -96,6 +103,8 @@ final class InkResources {
             mask: .green
         )
         glyphPipeline = try Self.makeGreenPipeline(device, library, "glyph")
+        pagedGlyphPipeline = try Self.makeGreenPipeline(device, library, "pagedGlyph")
+        expandGlyphsPipeline = try Self.makeVertexPassPipeline(device, library, "expandGlyphs")
         cardBorderPipeline = try Self.makeGreenPipeline(device, library, "cardBorder")
         cardPreviewPipeline = try Self.makeGreenPipeline(device, library, "cardPreview")
         previewResolvePipeline = try Self.makeResolvePipeline(device, library, "previewResolve")

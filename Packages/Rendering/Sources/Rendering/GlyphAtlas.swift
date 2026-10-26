@@ -20,6 +20,8 @@ final class GlyphAtlas {
         let size: SIMD2<Float>
         /// The top-left corner of the bitmap from the baseline point of the glyph, in pixels.
         let bearing: SIMD2<Float>
+        /// The index of the placement in the table of the stored runs, or -1 (D-189).
+        var id: Int32 = -1
     }
 
     /// The key of a glyph bitmap. The font is a number of `fontID(of:)`, because a string key
@@ -52,7 +54,7 @@ final class GlyphAtlas {
     /// The rows of the largest glyph that a page holds at least.
     static let rowsPerPage = 12
 
-    private let device: any MTLDevice
+    let device: any MTLDevice
     /// The byte budget of all pages.
     let byteBudget: Int
     private(set) var pages: [Page?] = []
@@ -66,15 +68,27 @@ final class GlyphAtlas {
     static let tableGlyphs = 4_096
     /// The bytes of all pages.
     private(set) var byteCount = 0
+    /// The heap and the handles of the pages for the stored runs, or `nil` for the CPU path only
+    /// (D-189).
+    private(set) var pageTable: GlyphPageTable?
+    /// The generation of each page index. A drop raises it, so that a stored run of a dropped
+    /// page builds again (architecture.md 5.4.1).
+    private(set) var generations: [UInt32] = []
+    /// The frames after its last use for which a page stays. The stored runs read the pages
+    /// through the table, so a page of a frame in flight must not go (D-189).
+    private(set) var dropMargin: UInt64
     private static let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
 
-    /// Makes an empty atlas.
+    /// Makes an empty atlas. With `isBindless`, the pages live in the heap of a page table, for
+    /// the stored runs (D-189).
     ///
     /// - Precondition: `byteBudget` is positive.
-    init(device: any MTLDevice, byteBudget: Int) {
+    init(device: any MTLDevice, byteBudget: Int, isBindless: Bool = false) {
         precondition(byteBudget > 0, "The atlas budget is positive, got \(byteBudget)")
         self.device = device
         self.byteBudget = byteBudget
+        pageTable = isBindless ? GlyphPageTable(device: device, byteBudget: byteBudget) : nil
+        dropMargin = pageTable == nil ? 0 : UInt64(DrawListRing.bufferCount)
         table = Array(repeating: nil, count: Self.exponentRange.count * Self.tableGlyphs)
         fontIDs[TextLayout.baseFont.fontName] = 0
     }
@@ -89,6 +103,13 @@ final class GlyphAtlas {
         let next = Int32(fontIDs.count)
         fontIDs[font.fontName] = next
         return next
+    }
+
+    /// Uses `table` for the pages from now on, with the drop margin of the frames in flight.
+    func setPageTable(_ table: GlyphPageTable) {
+        precondition(pageTable == nil && byteCount == 0, "The atlas holds no page of the device")
+        pageTable = table
+        dropMargin = UInt64(DrawListRing.bufferCount)
     }
 
     /// Marks a page as used by a frame, so that a new glyph of that frame does not drop it.
@@ -200,6 +221,30 @@ final class GlyphAtlas {
         guard width <= side, height <= side else { return nil }
         let bytes = side * side
         guard makeRoom(for: bytes, frame: frame) else { return nil }
+        guard let texture = makeTexture(Self.pageDescriptor(side: side), frame: frame) else {
+            return nil
+        }
+        texture.label = "Glyph atlas"
+        let page = Page(texture: texture, exponent: exponent, lastFrame: frame)
+        byteCount += bytes
+        let index: Int
+        if let free = pages.firstIndex(where: { $0 == nil }) {
+            pages[free] = page
+            index = free
+        } else {
+            pages.append(page)
+            generations.append(0)
+            index = pages.count - 1
+        }
+        pageTable?.set(index, texture)
+        assert(byteCount <= byteBudget, "The atlas passed its budget")
+        assert(generations.count == pages.count, "Each page index has a generation")
+        return index
+    }
+
+    /// The texture of a page of `side` pixels: one channel, shared with the CPU.
+    static func pageDescriptor(side: Int) -> MTLTextureDescriptor {
+        precondition(pageSides.contains(side), "A page has a side of \(pageSides), got \(side)")
         let descriptor = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: .r8Unorm,
             width: side,
@@ -208,17 +253,7 @@ final class GlyphAtlas {
         )
         descriptor.usage = .shaderRead
         descriptor.storageMode = .shared
-        guard let texture = device.makeTexture(descriptor: descriptor) else { return nil }
-        texture.label = "Glyph atlas"
-        let page = Page(texture: texture, exponent: exponent, lastFrame: frame)
-        byteCount += bytes
-        if let free = pages.firstIndex(where: { $0 == nil }) {
-            pages[free] = page
-            return free
-        }
-        pages.append(page)
-        assert(byteCount <= byteBudget, "The atlas passed its budget")
-        return pages.count - 1
+        return descriptor
     }
 
     /// The side of a page: room for `rowsPerPage` rows of a line of text at the scale.
@@ -241,29 +276,23 @@ final class GlyphAtlas {
     }
 
     /// Drops the pages that frames used least recently until `bytes` more fit the budget. A page
-    /// of the current frame stays.
+    /// of the current frame stays, and with a page table also a page of a frame in flight.
     private func makeRoom(for bytes: Int, frame: UInt64) -> Bool {
         precondition(bytes > 0, "A page takes bytes, got \(bytes)")
         for _ in 0..<pages.count where byteCount + bytes > byteBudget {
-            let candidates = pages.indices.filter { index in
-                guard let page = pages[index] else { return false }
-                return page.lastFrame < frame
-            }
-            guard
-                let oldest = candidates.min(by: { lhs, rhs in
-                    (pages[lhs]?.lastFrame ?? 0) < (pages[rhs]?.lastFrame ?? 0)
-                })
-            else { return false }
+            guard let oldest = oldestDroppable(before: frame) else { return false }
             drop(oldest)
         }
         return byteCount + bytes <= byteBudget
     }
 
-    private func drop(_ index: Int) {
+    func drop(_ index: Int) {
         precondition(pages.indices.contains(index), "Page \(index) is outside the list")
         guard let page = pages[index] else { return }
         for key in page.keys {
-            placements.removeValue(forKey: key)
+            if let placement = placements.removeValue(forKey: key), placement.id >= 0 {
+                pageTable?.releasePlacement(placement.id)
+            }
             let row = Int(key.exponent) - Self.exponentRange.lowerBound
             if key.font == 0, Int(key.glyph) < Self.tableGlyphs {
                 table[row * Self.tableGlyphs + Int(key.glyph)] = nil
@@ -271,6 +300,8 @@ final class GlyphAtlas {
         }
         byteCount -= page.texture.width * page.texture.height
         pages[index] = nil
+        generations[index] &+= 1
+        pageTable?.releaseEmptyHeaps()
         assert(byteCount >= 0, "The atlas counts no negative bytes")
     }
 
@@ -296,12 +327,13 @@ final class GlyphAtlas {
         page.keys.append(key)
         assert(page.shelfY + page.shelfHeight <= page.texture.height, "The shelf fits the page")
         pages[index] = page
-        let placement = Placement(
+        var placement = Placement(
             page: index,
             origin: SIMD2(Float(x), Float(y)),
             size: SIMD2(Float(raster.width), Float(raster.height)),
             bearing: raster.bearing
         )
+        placement.id = pageTable?.register(placement) ?? -1
         placements[key] = placement
         return placement
     }

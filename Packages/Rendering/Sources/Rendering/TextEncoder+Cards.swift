@@ -5,15 +5,28 @@ import Model
 /// The cards of a text pass: a border quad and the title glyphs of each card (architecture.md
 /// 5.5, D-96).
 extension TextEncoder {
-    /// Writes the border quad of a card into the border list of the pass and the glyph quads of
-    /// its title into the buffer of the frame.
+    /// Writes the glyphs of the title of a card, its preview quad, and its border quad. The
+    /// title goes first, because only it can fail to fit.
+    ///
+    /// - Returns: `false` if the title fits neither path. The card then stays for the next pass.
     func appendCard(
         _ id: CardID,
         entry: CardStore.Entry,
-        target: InkTarget,
-        exponent: Int,
-        frame: UInt64
-    ) {
+        _ place: Place,
+        allowsCPU: Bool
+    ) -> Bool {
+        if let layout = entry.layout, let origin = entry.titleOrigin {
+            let isAdded = appendText(
+                layout,
+                of: (.card(id), entry.version),
+                at: origin,
+                place,
+                allowsCPU: allowsCPU
+            )
+            guard isAdded else { return false }
+        }
+        let target = place.target
+        let frame = place.frame
         let pixels = target.pixelsPerCanvasPoint
         precondition(pixels > 0, "A target has pixels per canvas point, got \(pixels)")
         // The subtraction runs in Double before the conversion to Float (architecture.md 5.3).
@@ -40,10 +53,8 @@ extension TextEncoder {
                 atlasSize: SIMD2(borderCoverage, fillCoverage)
             )
         )
-        if let layout = entry.layout, let origin = entry.titleOrigin {
-            append(layout, at: origin, target: target, exponent: exponent, frame: frame)
-        }
         assert(corner.x.isFinite && corner.y.isFinite, "A card maps to finite pixels")
+        return true
     }
 
     /// Writes the preview quad of a card that has its preview in the atlas, and asks for the
