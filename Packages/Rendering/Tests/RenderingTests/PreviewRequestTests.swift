@@ -77,6 +77,33 @@ struct PreviewRequestTests {
         #expect(stored == count)
     }
 
+    @Test("A screen of more previews than slots loads each preview once and rests")
+    func moreCardsThanSlots() async throws {
+        // 1 MB holds 4 previews of 512 pixels. 9 cards of 600 pixels on the screen want that
+        // step. The old code evicted a shown preview for each new one, and the redraw of the
+        // evicted card asked for it again, so the screen never rested (D-193).
+        var configuration = RendererConfiguration()
+        configuration.previewAtlasByteBudget = 1 << 20
+        let source = FakePreviews(data: try FakePreviews.png(width: 512, height: 340))
+        let renderer = try CanvasRenderer(configuration: configuration, previews: source)
+        let layer = CAMetalLayer()
+        renderer.configure(layer)
+        layer.drawableSize = CGSize(width: 2_000, height: 1_400)
+        renderer.setViewport(viewSize: Size(width: 1_000, height: 700), displayScale: 2)
+        renderer.camera = Camera(center: .zero, zoom: Limits.standardZoom)
+        let cards = try (0..<9).map { index in
+            let origin = Point(x: -480 + Double(index % 3) * 320, y: -330 + Double(index / 3) * 220)
+            let frame = Rect(origin: origin, size: Size(width: 300, height: 200))
+            return try CardStoreTests.card(UInt8(index + 1), frame: frame, title: nil)
+        }
+        renderer.load(cards)
+        try await Self.settle(renderer, layer: layer)
+        #expect(!renderer.isLoading, "The screen rests")
+        #expect(source.readCount == cards.count, "Each preview loads once")
+        let stored = renderer.engine.withRenderer { $0.previews?.entries.count ?? 0 }
+        #expect(stored == 4, "The atlas holds its 4 slots")
+    }
+
     @Test("A card asks again for its preview after a source without data")
     func againAfterNoData() async throws {
         let source = FlakyPreviews(data: try FakePreviews.png(width: 128, height: 96), failures: 1)

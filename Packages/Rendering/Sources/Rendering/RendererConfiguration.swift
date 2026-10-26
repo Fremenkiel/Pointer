@@ -68,7 +68,7 @@ public struct RendererConfiguration: Sendable {
     /// half its shorter side.
     static let cardCornerRadius = 12.0
     /// The byte budget of the preview atlas: one `.r8Unorm` texture, 2,048 pixels wide (D-97).
-    /// 8 MB hold 32 previews of 512, 128 of 256, or 512 of 128 pixels.
+    /// 8 MB hold 32 previews of 512, 128 of 256, 512 of 128, or 2,048 of 64 pixels.
     ///
     /// - Precondition: A multiple of 1 MB, so that the blocks of 512 pixels fill whole rows.
     public var previewAtlasByteBudget = 8 << 20

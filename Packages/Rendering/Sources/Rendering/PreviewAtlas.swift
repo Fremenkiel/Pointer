@@ -8,8 +8,8 @@ import Model
 /// The render thread owns it. It also keeps the requests of the previews that are missing or
 /// too small, at most `requestLimit` at a time.
 final class PreviewAtlas {
-    /// The size steps of a preview, in pixels (D-97).
-    static let steps = [128, 256, 512]
+    /// The size steps of a preview, in pixels (D-97, D-193).
+    static let steps = [64, 128, 256, 512]
     /// The width of the atlas: 4 blocks of 512 pixels.
     static let width = 2_048
 
@@ -35,6 +35,10 @@ final class PreviewAtlas {
     private(set) var requested: Set<CardID> = []
     /// The cards without a valid preview file. They ask again only after a change.
     private(set) var unavailable: Set<CardID> = []
+    /// The cards whose preview went for another one, or found no slot because each slot holds
+    /// the preview of a card on the screen. They show an empty frame and ask again after the
+    /// next build, so an eviction never makes a card ask again at once (D-193).
+    private(set) var noRoom: Set<CardID> = []
     /// The new requests of the current frame. Reused (PERF-01).
     var wanted: [PreviewRequest] = []
     /// The requests past `requestLimit`, oldest first, from `deferredHead` on. A result moves
@@ -81,6 +85,7 @@ final class PreviewAtlas {
         wanted.reserveCapacity(requestLimit)
         deferred.reserveCapacity(Self.deferredLimit)
         deferredCards.reserveCapacity(Self.deferredLimit)
+        noRoom.reserveCapacity(Self.deferredLimit)
         pending.reserveCapacity(requestLimit)
         evicted.reserveCapacity(slots.slotCount)
     }
@@ -100,7 +105,9 @@ final class PreviewAtlas {
     /// `deferred` for a result.
     func want(_ card: CardID, bounds: Rect, step: Int, cardAspect: Double) {
         precondition(Self.steps.contains(step), "Step \(step) is not a preview size")
-        guard !requested.contains(card), !unavailable.contains(card) else { return }
+        guard !requested.contains(card), !unavailable.contains(card), !noRoom.contains(card) else {
+            return
+        }
         let request = PreviewRequest(card: card, bounds: bounds, step: step, cardAspect: cardAspect)
         guard requested.count < requestLimit else {
             let hasRoom = deferred.count - deferredHead < Self.deferredLimit
@@ -124,7 +131,7 @@ final class PreviewAtlas {
             deferredCards.remove(request.card)
             let hasStep = (entries[request.card]?.step ?? 0) >= request.step
             guard !requested.contains(request.card), !unavailable.contains(request.card),
-                !hasStep
+                !noRoom.contains(request.card), !hasStep
             else { continue }
             requested.insert(request.card)
             wanted.append(request)
@@ -142,10 +149,16 @@ final class PreviewAtlas {
     }
 
     /// Takes the result of a request. Pixels get a slot of the size of their step, and the slot
-    /// of an earlier preview of the card goes.
+    /// of an earlier preview of the card goes. The slot of a card for which `isShown` is `true`
+    /// never goes for another card (D-193).
     ///
-    /// - Returns: The entry to fill with the pixels, or `nil` if no slot is free in this frame.
-    func store(_ preview: DecodedPreview, frame: UInt64) -> Entry? {
+    /// - Returns: The entry to fill with the pixels, or `nil` if no slot can go. The card then
+    ///   waits for the next build.
+    func store(
+        _ preview: DecodedPreview,
+        frame: UInt64,
+        isShown: (CardID) -> Bool = { _ in false }
+    ) -> Entry? {
         precondition(Self.steps.contains(preview.step), "Step \(preview.step) is no preview size")
         requested.remove(preview.card)
         if !deferred.isEmpty { moveDeferred() }
@@ -157,8 +170,15 @@ final class PreviewAtlas {
             return nil
         case .pixels(let pixels):
             precondition(pixels.count == preview.width * preview.height, "Pixels of the size")
-            return place(preview, frame: frame)
+            return place(preview, frame: frame, isShown: isShown)
         }
+    }
+
+    /// Notes that a build of the committed layer starts: the camera moved, so the cards without
+    /// room ask again (D-193).
+    func buildStarted() {
+        noRoom.removeAll(keepingCapacity: true)
+        assert(noRoom.isEmpty, "Each card may ask again")
     }
 
     /// Notes that a frame drew the preview of `card`.
@@ -170,6 +190,7 @@ final class PreviewAtlas {
     func forget(_ card: CardID) {
         assert(!requested.contains(card) || entries[card] == nil, "A requested card has no entry")
         unavailable.remove(card)
+        noRoom.remove(card)
         if deferredCards.remove(card) != nil {
             compactDeferred()
             deferred.removeAll { $0.card == card }
@@ -178,7 +199,11 @@ final class PreviewAtlas {
         slots.free(entry.slot)
     }
 
-    private func place(_ preview: DecodedPreview, frame: UInt64) -> Entry? {
+    private func place(
+        _ preview: DecodedPreview,
+        frame: UInt64,
+        isShown: (CardID) -> Bool
+    ) -> Entry? {
         precondition(preview.width <= preview.step && preview.height <= preview.step, "Size")
         if let earlier = entries.removeValue(forKey: preview.card) {
             slots.free(earlier.slot)
@@ -187,11 +212,21 @@ final class PreviewAtlas {
             preconditionFailure("Step \(preview.step) is not a slot side")
         }
         evicted.removeAll(keepingCapacity: true)
-        let slot = slots.allocate(level: level, for: preview.card, frame: frame, evicted: &evicted)
+        let slot = slots.allocate(
+            level: level,
+            for: preview.card,
+            frame: frame,
+            keeping: isShown,
+            evicted: &evicted
+        )
         for card in evicted {
             entries.removeValue(forKey: card)
+            noRoom.insert(card)
         }
-        guard let slot else { return nil }
+        guard let slot else {
+            noRoom.insert(preview.card)
+            return nil
+        }
         let origin = slots.origin(of: slot)
         let entry = Entry(
             slot: slot,

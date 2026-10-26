@@ -303,13 +303,14 @@ final class FrameRenderer {
         let drawn = layer.addStrokes(pendingSlots, encoder: encoder, context: context)
         pendingSlots.removeFirst(drawn)
         encodeTextChange(layer: layer, context: context)
-        _ = layer.startBuildIfNeeded(
+        let started = layer.startBuildIfNeeded(
             camera: camera,
             displayScale: displayScale,
             store: store,
             texts: texts,
             cards: cards
         )
+        if started { previews?.buildStarted() }
         layer.continueBuild(
             encoder: encoder,
             context: context,

@@ -2105,6 +2105,14 @@ Status values: Open, Decided, Replaced.
 - Options: (a) `make test` runs `PointerUITests` in an `xcodebuild` call of their own before `PointerDeviceTests`, and the product owner enters the passcode once per run. (b) keep the order, and the product owner enters the passcode about 7 minutes into the device run. (c) remove the passcode of the test iPad, which Apple names as the workaround and which lowers the security of the iPad.
 - Decision: (a). `make test` prints a line before the UI tests.
 
+### D-193 A screen with more card previews than the preview atlas holds
+
+- Raised by the close of [m10-plan.md](m10-plan.md) on 2026-10-26, task 8.2. Decided by the product owner on the same day: the recommendation.
+- Facts: D-97 gives the atlas 8 MB "as a start value" and the steps 128, 256, and 512 pixels. It does not set the content of a screen whose previews do not fit. At zoom 0.25, a screen of the D-56 cards shows about 1,480 cards of 50 by 35 pixels. 8 MB hold 512 previews of 128 pixels. Since `a754c20`, each new preview evicted a shown one, and the redraw of the evicted card asked for it again. With a still camera, the renderer read about 1,570 previews per second and never rested (`PreviewArrivalPerformanceTests`, 2,000 frames). The code of `4456612` dropped the requests past its limit and rested after 2.64 s, with most cards without a preview. The redraws of the loop also made the card pan at zoom 0.25 slower. Its GPU p50 rose by 10.7 % against the baseline (10 pairs, p 1.1e-05).
+- Research: if its working set is larger than the cache, a cache thrashes. Each new item then pushes out an item that is still in use. Source: Denning, "The working set model for program behavior", CACM 11(5), 1968 (<https://dl.acm.org/doi/10.1145/363095.363141>).
+- Options: (a) a step of 64 pixels for cards below 64 pixels on the screen, with a guard. A preview of 64 pixels takes 4 KB, so 1,480 previews take about 6 MB. The guard: a preview of a card on the screen never goes for another card. Until the camera moves, a card without room shows an empty frame. (b) the guard only, so about 970 of the 1,480 cards show no preview. (c) a budget of 24 MB and the guard.
+- Decision: (a). The steps are 64, 128, 256, and 512 pixels, and a slot of 128 splits into four slots of 64. An eviction never takes the slot of a card on the screen, nor a slot that the current frame draws. An evicted card and a card without room wait in `noRoom`. A new build of the committed layer clears `noRoom`, because only a camera move starts one. A guard on the slots of the newest build, the first form, kept the cards of the build margin too. At zoom 1 it then left cards on the screen without a preview.
+
 ## Points in the request that conflict or are not complete
 
 1. "Only three tools" and "drawing data structures": cards need a way in (D-08), and diagrams need a way to move things (D-10).

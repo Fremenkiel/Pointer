@@ -131,6 +131,56 @@ struct PreviewTests {
         #expect(evicted.isEmpty)
     }
 
+    @Test("A slot of 128 splits into four slots of 64 (D-193)")
+    func splitToSixtyFour() throws {
+        var slots = PreviewSlots(blockCount: 1, columns: 1)
+        var evicted: [CardID] = []
+        var origins: [Int] = []
+        for index in 0..<5 {
+            let slot = try #require(
+                slots.allocate(level: 3, for: Self.card(index), frame: 1, evicted: &evicted)
+            )
+            #expect(slot.level == 3)
+            let origin = slots.origin(of: slot)
+            origins.append(origin.x * 10_000 + origin.y)
+        }
+        #expect(origins == [0, 64 * 10_000, 64, 64 * 10_000 + 64, 128 * 10_000])
+        #expect(evicted.isEmpty)
+    }
+
+    @Test("The slot of a card on the screen never goes for another card (D-193)")
+    func keepsTheSlotsOnTheScreen() throws {
+        var slots = PreviewSlots(blockCount: 1, columns: 1)
+        var evicted: [CardID] = []
+        for index in 0..<4 {
+            _ = try #require(
+                slots.allocate(level: 1, for: Self.card(index), frame: 1, evicted: &evicted)
+            )
+        }
+        // Cards 0 and 1 are on the screen: card 2 goes, the oldest card off the screen.
+        let shown: Set<CardID> = [Self.card(0), Self.card(1)]
+        let taken = slots.allocate(
+            level: 1,
+            for: Self.card(4),
+            frame: 2,
+            keeping: { shown.contains($0) },
+            evicted: &evicted
+        )
+        #expect(taken != nil)
+        #expect(evicted == [Self.card(2)])
+        evicted.removeAll()
+        // With each card on the screen, no slot goes.
+        let refused = slots.allocate(
+            level: 1,
+            for: Self.card(5),
+            frame: 3,
+            keeping: { _ in true },
+            evicted: &evicted
+        )
+        #expect(refused == nil)
+        #expect(evicted.isEmpty)
+    }
+
     @Test("Four free children join, so a block of 512 is free again")
     func join() throws {
         var slots = PreviewSlots(blockCount: 1, columns: 1)

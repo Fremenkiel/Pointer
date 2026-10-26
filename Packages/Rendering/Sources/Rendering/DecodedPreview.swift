@@ -14,7 +14,7 @@ struct DecodedPreview: Sendable {
 
     /// The card of the preview.
     let card: CardID
-    /// The size step of the request: 128, 256, or 512 pixels.
+    /// The size step of the request: 64, 128, 256, or 512 pixels.
     let step: Int
     /// The width in pixels, at most `step`.
     let width: Int
