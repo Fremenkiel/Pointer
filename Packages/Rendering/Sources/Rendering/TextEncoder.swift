@@ -110,9 +110,9 @@ final class TextEncoder {
     }
 
     /// Starts a frame. Call it after `InkEncoder.beginFrame`, which waits for a free buffer.
-    func beginFrame() {
+    func beginFrame(buildBudget: Double = StoredText.buildBudget) {
         ring.beginFrame()
-        stored?.beginFrame(now: CACurrentMediaTime())
+        stored?.beginFrame(now: CACurrentMediaTime(), budget: buildBudget)
     }
 
     /// Encodes the text boxes and the cards of `ids` from `cursor` on until the glyph buffer of

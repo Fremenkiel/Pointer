@@ -208,19 +208,26 @@ final class RenderEngine: Sendable {
         apply(input, to: renderer)
         let isFlying = stepFlight(renderer, at: time.deadline ?? time.start)
         let isSame =
-            input.changesOnlyTheView && renderer.camera == shown.camera
+            input.changesOnlyTheViewOrPreviewRender && renderer.camera == shown.camera
             && renderer.transition?.parentWeight == shown.weight
-        guard (input.hasChange && !isSame) || isFlying || renderer.needsMoreFrames else {
+        let hasScreenWork = (input.hasChange && !isSame) || isFlying || renderer.needsScreenFrame
+        guard hasScreenWork || renderer.hasPreviewChunk else {
             var result = FrameResult(didDraw: false, needsMore: false, count: renderer.store.count)
             result.previewUploadsWaiting = renderer.previews?.pending.count ?? 0
             result.hasPreviewsToRequest = renderer.hasPreviewsToRequest
             return result
         }
-        let needsMore = renderer.renderFrame(
-            drawableSize: drawableSize,
-            deadline: time.deadline,
-            drawable: drawable
-        )
+        // A frame whose only work is a chunk of the preview render presents nothing: the shown
+        // frame stays as it is, and a present after an idle of the display made a late interval
+        // (m10-plan.md section 6.44).
+        let needsMore =
+            hasScreenWork
+            ? renderer.renderFrame(
+                drawableSize: drawableSize,
+                deadline: time.deadline,
+                drawable: drawable
+            )
+            : renderer.renderPreviewChunk()
         assert(renderer.store.count <= Limits.maxStrokesAfterErase, "The renderer passed its bound")
         return FrameResult(
             didDraw: true,

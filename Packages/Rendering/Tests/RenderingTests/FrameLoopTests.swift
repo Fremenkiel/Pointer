@@ -115,9 +115,19 @@ final class FrameLoopTests: XCTestCase {
         XCTContext.runActivity(named: line) { _ in }
         var samples = report.samples
         samples["preview.ms"] = (end - begin) * 1000
+        // The frames of the preview render present no drawable, so the probe measures no GPU
+        // time for them. `preview.ms` holds the GPU work of the render.
+        samples["gpu.p50.ms"] = nil
+        samples["gpu.p99.ms"] = nil
         PerformanceRecord.attach(samples)
         XCTAssertGreaterThan(end, begin, "The preview arrived in the measured time")
         XCTAssertEqual(report.lateIntervals, 0, line)
+        // The preview render draws off the screen, so a still canvas presents no frame for it.
+        // The present of an unchanged frame after an idle of the display showed late or never
+        // (m10-plan.md section 6.44).
+        XCTAssertGreaterThan(report.frames, 0, "The preview render ran in frames")
+        XCTAssertEqual(report.presentedTimes.count, 0, "A still canvas presents no frame")
+        XCTAssertEqual(report.droppedFrames, 0, "No frame of the preview render was dropped")
     }
 
     private func run(

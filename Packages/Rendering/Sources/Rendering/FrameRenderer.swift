@@ -114,6 +114,7 @@ final class FrameRenderer {
         precondition(configuration.instanceBudgetPerFrame > 0, "The frame budget must be positive")
         precondition(configuration.drawListCapacity > 0, "The draw list must hold entries")
         precondition(configuration.buildTimeBudget > 0, "The build time budget must be positive")
+        precondition(configuration.previewChunkTimeBudget > 0, "The chunk budget must be positive")
         guard let device = MTLCreateSystemDefaultDevice() else { throw .noDevice }
         resources = try InkResources.shared(device: device)
         self.configuration = configuration
@@ -141,7 +142,11 @@ final class FrameRenderer {
     /// The flight and the inbox wake the frames of the camera and the weight. Without this
     /// rule, the frozen parent drew a frame at each update of the display link until the swap
     /// (review after M9).
-    var needsMoreFrames: Bool {
+    var needsMoreFrames: Bool { needsScreenFrame || hasPreviewChunk }
+
+    /// `true` if the renderer has work that changes the screen. The preview render is not such
+    /// work: it draws off the screen (section 6.44).
+    var needsScreenFrame: Bool {
         if let transition, transition.freezes {
             return !transition.isFrozen || !(previews?.pending.isEmpty ?? true)
         }
@@ -150,8 +155,11 @@ final class FrameRenderer {
             || waitingHandoff > 0 || dirtyArea != nil || eraserMask.hasNewSamples
             || layer.isRedrawingText || dirtyTextArea != nil || !(previews?.pending.isEmpty ?? true)
             || previews?.dirtyArea != nil
-            || previewRenderer?.job != nil
     }
+
+    /// `true` if a preview render waits for its next chunk. A frozen frame draws no chunk
+    /// (`renderFrame`), so a freeze does not count.
+    var hasPreviewChunk: Bool { previewRenderer?.job != nil && transition?.freezes != true }
 
     /// Sets the size of the view and the display scale. A change rebuilds the committed layer.
     ///
@@ -318,7 +326,7 @@ final class FrameRenderer {
             deadline: CACurrentMediaTime() + configuration.buildTimeBudget,
             text: textEncoder
         )
-        continuePreviewRender(context)
+        continuePreviewRender(context, budget: configuration.buildTimeBudget)
         assert(layer.front != nil || layer.isBuilding, "The layer has a front texture or a build")
     }
 

@@ -29,16 +29,36 @@ extension FrameRenderer {
         assert(renderer.slots.count <= store.count, "The job lists each stroke once")
     }
 
+    /// Draws the next chunk of the preview on a frame that changes nothing on the screen. The
+    /// frame takes no drawable: the shown frame stays, and the present of an unchanged frame
+    /// after an idle of the display made a late interval (m10-plan.md section 6.44). The chunk
+    /// gets the budget of such a frame, `previewChunkTimeBudget`.
+    ///
+    /// - Precondition: A preview render is in progress.
+    /// - Returns: `true` if the renderer needs another frame.
+    func renderPreviewChunk() -> Bool {
+        precondition(hasPreviewChunk, "A preview chunk needs a preview render in progress")
+        guard let commandBuffer = resources.queue.makeCommandBuffer() else { return false }
+        frame += 1
+        let context = FrameContext(commandBuffer: commandBuffer, frame: frame)
+        encoder.beginFrame(context)
+        textEncoder.beginFrame(buildBudget: configuration.previewChunkTimeBudget)
+        continuePreviewRender(context, budget: configuration.previewChunkTimeBudget)
+        commandBuffer.commit()
+        return needsMoreFrames
+    }
+
     /// Draws the next chunk of the preview in progress, on a frame without a running build: the
-    /// ink inside the instance budget, then the cards and the text, then the resolve.
-    func continuePreviewRender(_ context: FrameContext) {
+    /// ink inside the instance budget, then the cards and the text, then the resolve. The chunk
+    /// ends at `budget` seconds of render-thread time.
+    func continuePreviewRender(_ context: FrameContext, budget: Double) {
         guard let renderer = previewRenderer, var job = renderer.job, layer?.build == nil else {
             return
         }
         assert(job.greenCursor <= renderer.greens.count, "A preview job is past its text and cards")
         RenderSignpost.begin("PreviewRender")
         defer { RenderSignpost.end("PreviewRender") }
-        let deadline = CACurrentMediaTime() + configuration.buildTimeBudget
+        let deadline = CACurrentMediaTime() + budget
         if !job.hasCleared || job.inkCursor < renderer.slots.count {
             let options = InkPassOptions(
                 clear: !job.hasCleared,

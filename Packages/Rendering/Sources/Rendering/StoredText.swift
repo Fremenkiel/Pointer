@@ -103,9 +103,10 @@ final class StoredText {
         recordsUsed + records.count < Self.recordCapacity
     }
 
-    /// Starts a frame with the next record buffer and the build time of the frame.
-    func beginFrame(now: TimeInterval) {
-        frameBuildDeadline = now + Self.buildBudget
+    /// Starts a frame with the next record buffer and the build time of the frame, `budget`
+    /// seconds from `now`.
+    func beginFrame(now: TimeInterval, budget: Double = StoredText.buildBudget) {
+        frameBuildDeadline = now + budget
         recordIndex = (recordIndex + 1) % recordBuffers.count
         used = 0
         recordsUsed = 0

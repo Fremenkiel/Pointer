@@ -70,15 +70,17 @@ struct RenderInput: Sendable {
             || eraserReady != nil
     }
 
-    /// `true` if the only changes are the camera, the parent weight, or the end of a flight.
-    /// Such a frame shows nothing new when the camera and the weight stay as they are: the
-    /// main thread sends the last camera of a flight again at its end (m10-plan.md task 5.1).
-    var changesOnlyTheView: Bool {
-        let viewChange = camera != nil || transitionWeight != nil || endsFlight
+    /// `true` if the only changes are the camera, the parent weight, the end of a flight, or a
+    /// preview render. Such a frame shows nothing new when the camera and the weight stay as
+    /// they are: the main thread sends the last camera of a flight again at its end
+    /// (m10-plan.md task 5.1), and a preview render draws off the screen (section 6.44).
+    var changesOnlyTheViewOrPreviewRender: Bool {
+        let viewChange =
+            camera != nil || transitionWeight != nil || endsFlight || previewRender != nil
         let other =
             viewport != nil || !loaded.isEmpty || !edits.isEmpty || !laidOutText.isEmpty
             || !textEdits.isEmpty || !laidOutCards.isEmpty || !cardEdits.isEmpty
-            || !decodedPreviews.isEmpty || previewRender != nil || transitionStart != nil
+            || !decodedPreviews.isEmpty || transitionStart != nil
             || endsTransition || pinchExit != nil || endsPinchExit || flight != nil
             || eraserStart != nil || !eraserSamples.isEmpty || endsEraser || eraserReady != nil
         return viewChange && !other

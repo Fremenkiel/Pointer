@@ -16,6 +16,11 @@ public struct RendererConfiguration: Sendable {
     /// The render-thread time in seconds that one frame can spend on a build. The device test of
     /// 2026-10-17 showed late frames at 120 Hz without this limit.
     public var buildTimeBudget: Double
+    /// The render-thread time in seconds that a frame without screen work can spend on a chunk
+    /// of the preview render. Such a frame draws and presents nothing, so the chunk can take the
+    /// time of the draw too. The thread runs at a lower clock when a frame presents nothing: with
+    /// `buildTimeBudget` the chunks took one frame more than before (m10-plan.md section 6.44).
+    public var previewChunkTimeBudget: Double
     /// The byte budget of the glyph atlas: a start value (task 2.2 of docs/m5-plan.md). Tune it
     /// on a device.
     public var glyphAtlasByteBudget: Int
@@ -103,6 +108,7 @@ public struct RendererConfiguration: Sendable {
         instanceBudgetPerFrame: Int = 125_000,
         drawListCapacity: Int = 32_768,
         buildTimeBudget: Double = 0.002,
+        previewChunkTimeBudget: Double = 0.004,
         glyphAtlasByteBudget: Int = 16 << 20,
         glyphCapacity: Int = 65_536
     ) {
@@ -111,6 +117,7 @@ public struct RendererConfiguration: Sendable {
         self.instanceBudgetPerFrame = instanceBudgetPerFrame
         self.drawListCapacity = drawListCapacity
         self.buildTimeBudget = buildTimeBudget
+        self.previewChunkTimeBudget = previewChunkTimeBudget
         self.glyphAtlasByteBudget = glyphAtlasByteBudget
         self.glyphCapacity = glyphCapacity
     }
