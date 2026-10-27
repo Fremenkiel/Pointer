@@ -188,7 +188,7 @@ Review after M9, 2026-10-24: [review-2026-10-24-m9.md](review-2026-10-24-m9.md).
 
 ## M10: Hardening
 
-The tasks are in [m10-plan.md](m10-plan.md). The product owner decided D-175 to D-187 on 2026-10-25.
+The tasks are in [m10-plan.md](m10-plan.md). The product owner decided D-175 to D-191 on 2026-10-25, and D-192 and D-193 on 2026-10-26.
 
 - Limits: each limit in [architecture.md](architecture.md) section 10 has a test at the limit and at the limit plus one.
 - UI tests for the main flows.
@@ -220,3 +220,5 @@ Acceptance:
 
 1. All performance tests pass against their baselines on the device.
 2. Coverage meets TEST-02.
+
+Status on 2026-10-27: done on branch `m10`, except one run of `make check`. That run needs the product owner at the iPad for the passcode of the UI tests (D-192). Acceptance 1 passes: `make perf-compare` against the baseline of f8e4c0b passes 136 samples with 0 failures. The product owner approves the baseline file before its commit (D-177 point 6). Acceptance 2 passes: `make coverage` gives 88.8 % to 94.1 % of the lines of the six packages. `make validation` passed, five full runs of `PointerDeviceTests` passed in a row, and the Mac parts of `make check` pass. The product owner decides on task 4.3 with the numbers of section 6.44. Section 6.44 also lists the 7 manual tests with the pencil for the product owner. Section 6 of [m10-plan.md](m10-plan.md) holds the results. One crash of the test process in QuartzCore, in 1 of 10 full runs, stays a finding of section 6.44.
