@@ -1,5 +1,7 @@
 # Pointer
 
+> AI disclaimer: AI coding agents wrote parts of the code and the documents in this repository. The content can contain errors.
+
 Pointer is an iPad app for software developers. You use it to draw data structures and to write technical notes with Apple Pencil.
 
 The app has one dark gray canvas per workspace. The canvas has no edges. You can put cards on a canvas. Each card is a canvas of its own, so the workspaces form a tree of canvases.
