@@ -86,22 +86,11 @@ public struct CanvasContent: Sendable {
     /// - Precondition: The canvas holds the stroke as a live stroke.
     /// - Returns: The new or changed erase record.
     public mutating func remove(_ id: StrokeID, at time: HybridTimestamp) -> EraseRecord {
-        // One lookup per dictionary: a lookup costs about 1 µs on the iPad at 20,000 strokes, and
-        // an erase of 1,000 strokes makes 3,000 of these calls (M4 task 3.8).
-        let removed = strokes.removeValue(forKey: id)
-        precondition(removed != nil, "Canvas holds no live stroke \(id)")
-        let record = EraseRecord(strokeID: id, erased: time, modified: time, isDeleted: false)
-        guard let earlier = erased.updateValue(record, forKey: id) else { return record }
-        assert(earlier.isDeleted, "Stroke \(id) was live and had a live erase record")
-        // A stroke that the session erased before keeps the time of its first erase.
-        let kept = EraseRecord(
-            strokeID: id,
-            erased: earlier.erased,
-            modified: time,
-            isDeleted: false
-        )
-        erased[id] = kept
-        return kept
+        var earlier: EraseRecord?
+        guard let record = erase(id, at: time, earlier: &earlier) else {
+            preconditionFailure("Canvas holds no live stroke \(id)")
+        }
+        return record
     }
 
     /// Puts a stroke back into the live strokes, or adds a new one, and turns its erase record of
@@ -118,19 +107,90 @@ public struct CanvasContent: Sendable {
         _ stroke: Stroke,
         at time: HybridTimestamp
     ) throws(ModelError) -> EraseRecord? {
-        precondition(stroke.canvasID == canvasID, "Stroke \(stroke.id) belongs to another canvas")
         guard strokes.count < Limits.maxStrokesPerCanvas else { throw .strokeLimitReached }
-        let replaced = strokes.updateValue(stroke, forKey: stroke.id)
-        precondition(replaced == nil, "Canvas already held stroke \(stroke.id)")
-        guard let index = erased.index(forKey: stroke.id) else { return nil }
-        let tombstone = EraseRecord(
+        var earlier: EraseRecord?
+        guard revive(stroke, at: time, earlier: &earlier) else {
+            preconditionFailure("Canvas already held stroke \(stroke.id)")
+        }
+        return earlier.map { tombstone($0, at: time) }
+    }
+
+    /// The one transition of a stroke to erased (D-195): the stroke leaves the live strokes and
+    /// gets a live erase record of the session. A stroke that the session erased before keeps
+    /// the time of its first erase, because the stored row keeps it too (storage.md 3.3), and
+    /// its tombstone changes in place. `earlier` takes the record that the session held before,
+    /// or `nil`. The results go through the return value and `earlier`, so that no wide optional
+    /// crosses the call: a struct of both cost 10 % of an erase step.
+    ///
+    /// - Returns: The live erase record, or `nil` if the stroke is not live. The content then
+    ///   stays as it was.
+    @inline(__always)
+    private mutating func erase(
+        _ id: StrokeID,
+        at time: HybridTimestamp,
+        earlier: inout EraseRecord?
+    ) -> EraseRecord? {
+        // One lookup per dictionary: a lookup costs about 1 µs on the iPad at 20,000 strokes, and
+        // an erase of 1,000 strokes makes 3,000 of these calls (M4 task 3.8).
+        guard strokes.removeValue(forKey: id) != nil else { return nil }
+        let index = erased.index(forKey: id)
+        earlier = index.map { erased.values[$0] }
+        assert(earlier?.isDeleted ?? true, "Stroke \(id) was live with a live record")
+        let record = EraseRecord(
+            strokeID: id,
+            erased: earlier?.erased ?? time,
+            modified: time,
+            isDeleted: false
+        )
+        if let index {
+            erased.values[index] = record
+        } else {
+            erased[id] = record
+        }
+        return record
+    }
+
+    /// The one transition of a stroke to live (D-195): the stroke joins the live strokes, and
+    /// its erase record of the session, if the session holds one, becomes a tombstone. `earlier`
+    /// takes the record that the session held before, or `nil`, as in `erase(_:at:earlier:)`.
+    ///
+    /// - Precondition: The stroke belongs to this canvas.
+    /// - Returns: `false` if the stroke is live already. The content then stays as it was. The
+    ///   tombstone is `earlier` with `isDeleted` and the time, or there is none.
+    @inline(__always)
+    private mutating func revive(
+        _ stroke: Stroke,
+        at time: HybridTimestamp,
+        earlier: inout EraseRecord?
+    ) -> Bool {
+        precondition(stroke.canvasID == canvasID, "Stroke \(stroke.id) belongs to another canvas")
+        if let live = strokes.updateValue(stroke, forKey: stroke.id) {
+            strokes[stroke.id] = live
+            return false
+        }
+        guard let index = erased.index(forKey: stroke.id) else {
+            earlier = nil
+            return true
+        }
+        let before = erased.values[index]
+        erased.values[index] = EraseRecord(
             strokeID: stroke.id,
-            erased: erased.values[index].erased,
+            erased: before.erased,
             modified: time,
             isDeleted: true
         )
-        erased.values[index] = tombstone
-        return tombstone
+        earlier = before
+        return true
+    }
+
+    /// Returns the tombstone that `revive(_:at:earlier:)` wrote for the record `earlier`.
+    private func tombstone(_ earlier: EraseRecord, at time: HybridTimestamp) -> EraseRecord {
+        EraseRecord(
+            strokeID: earlier.strokeID,
+            erased: earlier.erased,
+            modified: time,
+            isDeleted: true
+        )
     }
 
     /// Removes the erase records of the session of strokes that no step of the history holds
@@ -196,24 +256,9 @@ extension CanvasContent {
         changes: inout [LibraryChange]
     ) throws(CommandError) {
         for stroke in list {
-            guard strokes.removeValue(forKey: stroke.id) != nil else {
+            var earlier: EraseRecord?
+            guard let record = erase(stroke.id, at: time, earlier: &earlier) else {
                 throw .strokeNotLive(stroke.id)
-            }
-            // A stroke that the session erased before has a tombstone, which changes in place.
-            // It keeps the time of its first erase, as `remove(_:at:)` does.
-            let index = erased.index(forKey: stroke.id)
-            let earlier = index.map { erased.values[$0] }
-            assert(earlier?.isDeleted ?? true, "Stroke \(stroke.id) was live with a live record")
-            let record = EraseRecord(
-                strokeID: stroke.id,
-                erased: earlier?.erased ?? time,
-                modified: time,
-                isDeleted: false
-            )
-            if let index {
-                erased.values[index] = record
-            } else {
-                erased[stroke.id] = record
             }
             log.removed.append((stroke, earlier))
             changes.append(.erase(record))
@@ -234,12 +279,11 @@ extension CanvasContent {
         changes: inout [LibraryChange]
     ) throws(CommandError) {
         for stroke in list {
-            precondition(stroke.canvasID == canvasID, "Stroke \(stroke.id) is of another canvas")
-            if let live = strokes.updateValue(stroke, forKey: stroke.id) {
-                strokes[stroke.id] = live
+            var earlier: EraseRecord?
+            guard revive(stroke, at: time, earlier: &earlier) else {
                 throw .strokeAlreadyLive(stroke.id)
             }
-            guard let index = erased.index(forKey: stroke.id) else {
+            guard let earlier else {
                 guard !needsRecords else {
                     strokes.removeValue(forKey: stroke.id)
                     throw .eraseRecordMissing(stroke.id)
@@ -248,16 +292,8 @@ extension CanvasContent {
                 changes.append(.stroke(stroke))
                 continue
             }
-            let earlier = erased.values[index]
-            let tombstone = EraseRecord(
-                strokeID: stroke.id,
-                erased: earlier.erased,
-                modified: time,
-                isDeleted: true
-            )
-            erased.values[index] = tombstone
             log.restored.append((stroke.id, earlier))
-            changes.append(.erase(tombstone))
+            changes.append(.erase(tombstone(earlier, at: time)))
         }
     }
 
