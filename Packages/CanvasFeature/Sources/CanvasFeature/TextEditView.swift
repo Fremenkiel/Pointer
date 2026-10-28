@@ -1,3 +1,4 @@
+import DesignSystem
 import Geometry
 import Model
 import Rendering
@@ -23,8 +24,8 @@ final class TextEditView: UITextView {
     init() {
         super.init(frame: .zero, textContainer: nil)
         backgroundColor = .clear
-        textColor = .white
-        tintColor = .white
+        textColor = DesignSystem.Color.ink
+        tintColor = DesignSystem.Color.ink
         overrideUserInterfaceStyle = .dark
         keyboardAppearance = .dark
         textContainerInset = .zero
@@ -58,7 +59,7 @@ final class TextEditView: UITextView {
         style.lineBreakMode = .byWordWrapping
         return [
             .font: TextLayout.font(size: TextStyle.fontSize * zoom),
-            .foregroundColor: UIColor.white,
+            .foregroundColor: DesignSystem.Color.ink,
             .paragraphStyle: style,
         ]
     }

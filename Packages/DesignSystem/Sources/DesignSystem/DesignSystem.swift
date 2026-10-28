@@ -22,6 +22,9 @@ public enum DesignSystem {
         /// The coverage of the body of a card: a light gray on the canvas color, about RGB(39,
         /// 39, 39), the step of the card body over the canvas in Allume (RGB 35 on RGB 20, D-116).
         public static let cardFill: Float = 0.065
+        /// The ink of the pen and the text on the canvas: white, with no conversion in the live
+        /// stroke of PencilKit (TOOL-02, D-15, D-38).
+        public static let ink = UIColor.white
         /// The text and the icons of the controls on top of the canvas.
         public static let chromeForeground = SwiftUI.Color.white
         /// The background of the controls on top of the canvas: a dark gray, a little brighter than

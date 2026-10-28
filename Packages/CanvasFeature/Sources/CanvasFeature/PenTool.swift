@@ -1,3 +1,4 @@
+import DesignSystem
 import PencilKit
 import UIKit
 
@@ -9,12 +10,12 @@ enum PenTool {
     /// Returns the live tool for a camera zoom. The live `PKCanvasView` draws at zoom 1 in view
     /// space, so the tool width is the pen width times the zoom (architecture.md 4.2).
     ///
-    /// The color is `UIColor.white` and the canvas view uses the light interface style, so
-    /// PencilKit does not convert the color (D-38).
+    /// The color is the ink token, white, and the canvas view uses the light interface style,
+    /// so PencilKit does not convert the color (D-38).
     ///
     /// - Precondition: `zoom` is positive.
     static func inkingTool(zoom: Double) -> PKInkingTool {
         precondition(zoom > 0 && zoom.isFinite, "Zoom must be positive, got \(zoom)")
-        return PKInkingTool(.monoline, color: .white, width: width * zoom)
+        return PKInkingTool(.monoline, color: DesignSystem.Color.ink, width: width * zoom)
     }
 }

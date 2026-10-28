@@ -23,6 +23,7 @@
 		B0000000000000000000B014 /* Geometry in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D014 /* Geometry */; };
 		B0000000000000000000B015 /* Export in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D015 /* Export */; };
 		B0000000000000000000B016 /* BackupFeature in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D016 /* BackupFeature */; };
+		B0000000000000000000B017 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = B0000000000000000000D017 /* DesignSystem */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -159,6 +160,7 @@
 				B0000000000000000000B012 /* WorkspaceFeature in Frameworks */,
 				B0000000000000000000B015 /* Export in Frameworks */,
 				B0000000000000000000B016 /* BackupFeature in Frameworks */,
+				B0000000000000000000B017 /* DesignSystem in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,6 +263,7 @@
 				B0000000000000000000D011 /* Persistence */,
 				B0000000000000000000D012 /* WorkspaceFeature */,
 				B0000000000000000000D015 /* Export */,
+				B0000000000000000000D017 /* DesignSystem */,
 				B0000000000000000000D016 /* BackupFeature */,
 			);
 			productName = PointerDeviceTests;
@@ -723,6 +726,10 @@
 		B0000000000000000000D015 /* Export */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Export;
+		};
+		B0000000000000000000D017 /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DesignSystem;
 		};
 		B0000000000000000000D016 /* BackupFeature */ = {
 			isa = XCSwiftPackageProductDependency;
