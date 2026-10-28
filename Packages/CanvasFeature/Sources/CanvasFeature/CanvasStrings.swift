@@ -1,4 +1,5 @@
 import Foundation
+import Model
 
 /// The user-facing text of the canvas, from the String Catalog of the package (STYLE-05).
 enum CanvasStrings {
@@ -28,7 +29,10 @@ enum CanvasStrings {
     static var delete: String { String(localized: "Delete", bundle: .module) }
     /// The message when a text box reaches its character limit.
     static var textLimit: String {
-        String(localized: "A text box holds at most 10,000 characters.", bundle: .module)
+        String(
+            localized: "A text box holds at most \(Limits.maxTextLength.formatted()) characters.",
+            bundle: .module
+        )
     }
     /// The message when the pen meets the stroke limit of the canvas (D-181).
     static var strokeLimit: String {
@@ -53,7 +57,10 @@ enum CanvasStrings {
     static var titlePlaceholder: String { String(localized: "Title", bundle: .module) }
     /// The message when a card title reaches its character limit.
     static var titleLimit: String {
-        String(localized: "A title holds at most 120 characters.", bundle: .module)
+        String(
+            localized: "A title holds at most \(Limits.maxTitleLength.formatted()) characters.",
+            bundle: .module
+        )
     }
     /// The message when a new card would go below the deepest level.
     static var depthLimit: String {

@@ -1,22 +1,22 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "A text box holds at most 10,000 characters.": {
+    "A text box holds at most %@ characters.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A text box holds at most 10,000 characters."
+            "value": "A text box holds at most %@ characters."
           }
         }
       }
     },
-    "A title holds at most 120 characters.": {
+    "A title holds at most %@ characters.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A title holds at most 120 characters."
+            "value": "A title holds at most %@ characters."
           }
         }
       }
