@@ -20,7 +20,7 @@ enum StrokeHitTest {
     ///
     /// - Returns: An empty list if the path misses the stroke. `0...maxParameter` if it covers the
     ///   whole stroke.
-    public static func coveredRanges(
+    static func coveredRanges(
         of stroke: Stroke,
         by path: EraserPath
     ) -> [ClosedRange<Double>] {

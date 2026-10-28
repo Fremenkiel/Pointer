@@ -95,8 +95,11 @@ public struct Stroke: Identifiable, Sendable {
         return Point(x: origin.x + Double(point.x), y: origin.y + Double(point.y))
     }
 
-    /// The curve of the stroke in canvas space.
+    // Only the tests read it, also the tests of other packages (SCOPE-01, review 3.3.12).
+    // swiftlint:disable unused_declaration
+    /// The curve of the stroke in canvas space. It allocates a list of the points.
     public var curve: StrokeCurve {
+        // swiftlint:enable unused_declaration
         StrokeCurve(controlPoints: points.values.indices.map(canvasPoint(at:)))
     }
 }

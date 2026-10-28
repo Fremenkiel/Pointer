@@ -21,7 +21,7 @@ enum StrokeSplitter {
     ///   overlap.
     /// - Returns: The parts in curve order. Empty if the ranges cover the whole stroke or leave
     ///   only parts shorter than the width.
-    public static func parts(
+    static func parts(
         of stroke: Stroke,
         outside covered: [ClosedRange<Double>],
         factory: inout StrokeFactory
