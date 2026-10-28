@@ -232,7 +232,7 @@ custom_rules:
 
   test_04_hooks_in_tests:
     name: "TEST-04"
-    regex: '\b(afterTake|afterCameraLock|beforeCommit|beforeCheckpoint|beforeRename)\s*:\s*(?:\{|(?!nil\b|\1\b)[a-z_]\w*\s*[,)])'
+    regex: '\b(afterTake|afterCameraLock|beforeCommit|beforeCheckpoint|beforeRename|makePlaces)\s*:\s*(?:\{|(?!nil\b|\1\b)[a-z_]\w*\s*[,)])'
     included: ['Packages/[^/]+/Sources/', 'PointerApp/']
     message: "Only the tests set a test hook (D-184). Pass nil, or forward the parameter of the same name."
     severity: error
