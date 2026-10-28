@@ -25,6 +25,8 @@ public final class CanvasViewController: UIViewController {
     var history = History()
     /// The histories of the app, or `nil` for a canvas whose history ends with it.
     let sessions: CanvasSessions?
+    /// The workspace of the canvas, or `nil` for a canvas without a workspace (D-196).
+    public let workspace: WorkspaceID?
     /// The state of the undo and redo buttons.
     let historyControls = HistoryControls()
     /// The state of the current-tool button and the palette.
@@ -113,6 +115,7 @@ public final class CanvasViewController: UIViewController {
         clock = dependencies.clock
         rowChannel = dependencies.repository.map { RowChannel(repository: $0) }
         sessions = dependencies.sessions
+        workspace = dependencies.workspace
         onCameraRest = dependencies.onCameraRest
         onMessage = dependencies.onMessage
         level = dependencies.level
@@ -127,11 +130,8 @@ public final class CanvasViewController: UIViewController {
         // The fill content stays in memory and is never saved (D-55).
         add(dependencies.transientStrokes)
         loadRenderer()
-        assert(
-            content.strokes.count
-                == dependencies.content.strokes.count + dependencies.transientStrokes.count,
-            "Each loaded and each transient stroke is in the content"
-        )
+        let loaded = dependencies.content.strokes.count + dependencies.transientStrokes.count
+        assert(content.strokes.count == loaded, "Loaded and transient strokes are in the content")
     }
 
     /// Makes the handoff of the live strokes of `canvasView` to `renderer`.

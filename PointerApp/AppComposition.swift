@@ -246,12 +246,11 @@ final class AppComposition {
         await model.start(lastWorkspace: lastWorkspace)
     }
 
-    /// Drops the undo history of a deleted workspace. The canvas on the screen keeps none when
-    /// it leaves (M-03).
+    /// Drops the undo histories of a deleted workspace: its root canvas and its card canvases
+    /// (M-03, D-196). The canvas on the screen keeps none when it leaves.
     func forgetSession(of workspace: WorkspaceID) {
-        let canvasID = CanvasID(workspace)
-        if container.canvas?.canvasID == canvasID { container.canvas?.discardSession() }
-        sessions.remove(for: canvasID)
+        if container.canvas?.workspace == workspace { container.canvas?.discardSession() }
+        sessions.remove(workspace: workspace)
     }
 
     /// Opens the canvas of a workspace and notes it as the last workspace (D-53).

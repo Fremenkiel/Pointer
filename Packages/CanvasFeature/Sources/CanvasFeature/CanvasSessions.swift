@@ -26,6 +26,9 @@ public final class CanvasSessions {
     private var sessions: [CanvasID: CanvasSession] = [:]
     /// The canvases by last use, the most recent last.
     private var order: [CanvasID] = []
+    /// The workspace of each stored session, so that a delete of a workspace removes the
+    /// sessions of its card canvases too (D-196).
+    private var workspaces: [CanvasID: WorkspaceID] = [:]
 
     /// The most bytes that the histories of all canvases hold, the shown one included (D-76,
     /// D-183).
@@ -86,14 +89,22 @@ public final class CanvasSessions {
         // The taken history still counts, now as the history of the shown canvas (D-183).
         shownByteCount = session.history.byteCount
         order.removeAll { $0 == canvasID }
+        workspaces.removeValue(forKey: canvasID)
         assert(order.count == sessions.count, "Each session has one place in the order")
         return session
     }
 
-    /// Removes the session of a canvas whose workspace is deleted (M-03).
-    public func remove(for canvasID: CanvasID) {
-        sessions.removeValue(forKey: canvasID)
-        order.removeAll { $0 == canvasID }
+    /// Removes the sessions of the canvases of a deleted workspace: its root canvas and its
+    /// card canvases (M-03, D-196). The canvas on the screen keeps its session outside the
+    /// store, so the app drops that one through the canvas.
+    public func remove(workspace: WorkspaceID) {
+        let root = CanvasID(workspace)
+        // The order bounds the loop, and a session is in the order once (FLOW-03).
+        for canvasID in order where canvasID == root || workspaces[canvasID] == workspace {
+            sessions.removeValue(forKey: canvasID)
+            workspaces.removeValue(forKey: canvasID)
+        }
+        order.removeAll { sessions[$0] == nil }
         assert(order.count == sessions.count, "Each session has one place in the order")
     }
 
@@ -102,17 +113,22 @@ public final class CanvasSessions {
     public func removeAll() {
         sessions.removeAll()
         order.removeAll()
+        workspaces.removeAll()
         shownByteCount = 0
     }
 
-    /// Keeps the session of a canvas and marks the canvas as the most recent one.
-    func save(_ session: CanvasSession, for canvasID: CanvasID) {
+    /// Keeps the session of a canvas and marks the canvas as the most recent one. `workspace`
+    /// is the workspace of the canvas, so that a delete of the workspace removes the session
+    /// (D-196), or `nil` for a canvas without a workspace.
+    func save(_ session: CanvasSession, for canvasID: CanvasID, workspace: WorkspaceID? = nil) {
         if sessions[canvasID] == nil, sessions.count == Self.capacity, let oldest = order.first {
             sessions[oldest] = nil
+            workspaces[oldest] = nil
             order.removeFirst()
             logger.notice("The undo history of the least recently used canvas is dropped.")
         }
         sessions[canvasID] = session
+        workspaces[canvasID] = workspace
         order.removeAll { $0 == canvasID }
         order.append(canvasID)
         // The canvas that leaves was the shown one, so its bytes are in the store now.

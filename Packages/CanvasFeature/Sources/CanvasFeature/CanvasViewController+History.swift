@@ -240,7 +240,8 @@ extension CanvasViewController {
     func saveSession() {
         sessions?.save(
             CanvasSession(history: history, erased: content.erased),
-            for: content.canvasID
+            for: content.canvasID,
+            workspace: workspace
         )
     }
 

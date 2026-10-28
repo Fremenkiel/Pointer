@@ -28,6 +28,26 @@ struct CanvasSessionsTests {
         #expect(sessions.session(for: ids[2]).history.undoSteps.count == 2)
     }
 
+    @Test("A deleted workspace with two card canvases leaves no session (D-196)")
+    func deletedWorkspaceRemovesCardSessions() throws {
+        let sessions = CanvasSessions()
+        let workspace = WorkspaceID(rawValue: UUID())
+        let other = WorkspaceID(rawValue: UUID())
+        let root = CanvasID(workspace)
+        let cards = (0..<2).map { _ in CanvasID(rawValue: UUID()) }
+        let kept = CanvasID(rawValue: UUID())
+        for canvas in [root] + cards {
+            let session = try Self.session(canvas: canvas, stepPoints: [3])
+            sessions.save(session, for: canvas, workspace: workspace)
+        }
+        sessions.save(try Self.session(canvas: kept, stepPoints: [3]), for: kept, workspace: other)
+        sessions.remove(workspace: workspace)
+        #expect(sessions.count == 1)
+        #expect(sessions.hasSession(for: kept))
+        #expect(!sessions.hasSession(for: root))
+        #expect(cards.allSatisfy { !sessions.hasSession(for: $0) })
+    }
+
     @Test("Sessions of 5 full canvases keep at most the byte budget (M-01, D-183)")
     func sessionsOfFullCanvases() throws {
         let sessions = CanvasSessions()
@@ -92,7 +112,8 @@ struct CanvasSessionsTests {
     @Test("A reopened canvas owns its session, and a removed session is gone (M-03)")
     func reopenAndRemove() throws {
         let sessions = CanvasSessions()
-        let canvas = CanvasID(rawValue: UUID())
+        let workspace = WorkspaceID(rawValue: UUID())
+        let canvas = CanvasID(workspace)
         sessions.save(try Self.session(canvas: canvas, stepPoints: [3]), for: canvas)
         let taken = sessions.take(for: canvas)
         #expect(taken.history.undoSteps.count == 1)
@@ -100,7 +121,7 @@ struct CanvasSessionsTests {
         #expect(!sessions.hasSession(for: canvas))
         sessions.save(taken, for: canvas)
         #expect(sessions.hasSession(for: canvas))
-        sessions.remove(for: canvas)
+        sessions.remove(workspace: workspace)
         #expect(!sessions.hasSession(for: canvas))
         #expect(sessions.count == 0)
     }

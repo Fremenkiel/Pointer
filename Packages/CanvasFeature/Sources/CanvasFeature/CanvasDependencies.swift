@@ -19,6 +19,9 @@ public struct CanvasDependencies {
     public var repository: (any LibraryRepository)?
     /// The undo histories of the app, or `nil` for a canvas whose history ends with it (D-12).
     public var sessions: CanvasSessions?
+    /// The workspace of the canvas, so that a delete of the workspace removes the session of the
+    /// canvas (D-196), or `nil` for a canvas without a workspace.
+    public var workspace: WorkspaceID?
     /// Receives the camera when it comes to rest, for the device state (D-53).
     public var onCameraRest: @MainActor (Camera) -> Void = { _ in }
     /// Shows a short message, for example at a limit (architecture.md section 10).

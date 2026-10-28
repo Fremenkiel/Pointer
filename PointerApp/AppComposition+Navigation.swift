@@ -269,6 +269,7 @@ extension AppComposition {
         dependencies.camera = camera
         dependencies.repository = repository
         dependencies.sessions = sessions
+        dependencies.workspace = target.workspace
         dependencies.transientStrokes = fillStrokes(
             canvasID: canvasID,
             saved: content.strokes.count
