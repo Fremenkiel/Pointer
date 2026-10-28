@@ -34,6 +34,8 @@ final class PreviewLoader: Sendable {
     private let signal: AsyncStream<Void>.Continuation
     private let task: Task<Void, Never>
     private let limit: Int
+    /// Takes each result, also a dropped request.
+    private let deliver: @Sendable (DecodedPreview) -> Void
 
     /// Makes the loader and starts its task.
     ///
@@ -49,6 +51,7 @@ final class PreviewLoader: Sendable {
         self.shared = shared
         self.signal = signal
         self.limit = limit
+        self.deliver = deliver
         task = Task.detached(priority: .userInitiated) {
             await Self.run(stream, shared: shared, source: source, limit: limit, deliver: deliver)
         }
@@ -67,13 +70,12 @@ final class PreviewLoader: Sendable {
     var isLoading: Bool { shared.state.withLock { !$0.queue.isEmpty || $0.inFlight > 0 } }
     // swiftlint:enable unused_declaration
 
-    /// Adds the requests of a frame. A request beyond `limit` waiting requests is dropped, and
-    /// the atlas asks for it again in a later frame.
-    ///
-    /// - Returns: The number of requests that the loader took. It delivers each of them once.
-    func request(_ requests: [PreviewRequest], area: Rect) -> Int {
+    /// Adds the requests of a frame. The loader delivers each request once: a request past
+    /// `limit` waiting requests comes back at once as `.dropped`, so the atlas asks for it
+    /// again in a later frame (review of 2026-10-28, 3.2.10).
+    func request(_ requests: [PreviewRequest], area: Rect) {
         precondition(requests.count <= Limits.maxNodesPerCanvas, "Too many preview requests")
-        guard !requests.isEmpty else { return 0 }
+        guard !requests.isEmpty else { return }
         let taken = shared.state.withLock { current -> Int in
             current.area = area
             var taken = 0
@@ -85,7 +87,17 @@ final class PreviewLoader: Sendable {
             return taken
         }
         signal.yield()
-        return taken
+        for request in requests.dropFirst(taken) {
+            deliver(
+                DecodedPreview(
+                    card: request.card,
+                    step: request.step,
+                    width: 0,
+                    height: 0,
+                    outcome: .dropped
+                )
+            )
+        }
     }
 
     /// Serves the requests until the loader goes.

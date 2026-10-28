@@ -278,7 +278,7 @@ struct PreviewTests {
             step: 128,
             cardAspect: 4.0 / 3.0
         )
-        _ = loader.request([outside, inside], area: area)
+        loader.request([outside, inside], area: area)
         for _ in 0..<2_000 where loader.isLoading || results.withLock({ $0.count }) < 2 {
             try await Task.sleep(for: .milliseconds(1))
         }

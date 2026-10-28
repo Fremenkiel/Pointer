@@ -20,16 +20,14 @@ extension RenderEngine {
     }
 
     /// Counts the requests as out and gives them to the loader. The count goes up before the
-    /// loader gets the requests, so the loading state has no gap. The loader drops the requests
-    /// past its limit, and they no longer count.
+    /// loader gets the requests, so the loading state has no gap. The loader delivers each
+    /// request once, a request past its limit as dropped (3.2.10).
     private func send(_ requests: [PreviewRequest], area: Rect, to source: any PreviewSource) {
         inbox.withLock { box in
             box.previewRequestsOut += requests.count
             box.hasPreviewsToRequest = false
         }
-        let dropped = requests.count - loader(for: source).request(requests, area: area)
-        assert(dropped >= 0, "The loader takes at most the requests that it gets")
-        if dropped > 0 { inbox.withLock { $0.previewRequestsOut -= dropped } }
+        loader(for: source).request(requests, area: area)
     }
 
     /// Ends the preview render that waits or runs with `nil`, because the render thread stops
