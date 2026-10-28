@@ -56,7 +56,7 @@ final class CompositionCloseTests: XCTestCase {
         try await NavigationTests.waitForCanvas(tree.workspace.canvasID, in: composition)
         let parent = try XCTUnwrap(composition.container.canvas)
         parent.showPendingCard()
-        XCTAssertNotNil(parent.textEditing.pendingCard)
+        XCTAssertNotNil(parent.cardInteraction.pendingCard)
         let watched = Watched(
             composition: composition,
             canvas: parent,

@@ -60,10 +60,7 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
     /// Moves the box with the finger. The renderer shows it at the new place.
     func continueTextMove(to point: Point) {
         guard var move = textEditing.move else { return }
-        let target = Point(
-            x: move.box.origin.x + point.x - move.start.x,
-            y: move.box.origin.y + point.y - move.start.y
-        )
+        let target = move.box.origin + (point - move.start)
         guard let moved = try? move.box.moving(to: target, at: move.box.meta.modified) else {
             logger.error("A moved text box has an origin that is not finite")
             return
@@ -101,7 +98,7 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
 
     private func showTextMenu(for box: TextBox, at location: CGPoint) {
         textEditing.menuBox = box
-        textEditing.menuCard = nil
+        cardInteraction.menuCard = nil
         textEditing.menu?.presentEditMenu(
             with: UIEditMenuConfiguration(identifier: nil, sourcePoint: location)
         )
@@ -127,7 +124,7 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
         menuFor configuration: UIEditMenuConfiguration,
         suggestedActions: [UIMenuElement]
     ) -> UIMenu? {
-        if let card = textEditing.menuCard { return cardMenu(for: card) }
+        if let card = cardInteraction.menuCard { return cardMenu(for: card) }
         guard let box = textEditing.menuBox else { return nil }
         let handler: UIActionHandler = { [weak self] _ in self?.deleteTextBox(box.id) }
         let delete = UIAction(

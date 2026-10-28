@@ -17,34 +17,31 @@ extension CanvasViewController {
     func beginCardPress(at point: Point) {
         endTextEdit()
         textEditing.menuBox = nil
-        textEditing.menuCard = nil
+        cardInteraction.menuCard = nil
         guard let card = card(at: point) else { return }
-        textEditing.cardMove = TextEditing.CardMove(card: card, start: point, current: card)
+        cardInteraction.move = CardInteraction.Move(card: card, start: point, current: card)
     }
 
     /// Moves the card with the finger. The renderer shows it at the new place.
     func continueCardMove(to point: Point) {
-        guard var move = textEditing.cardMove else { return }
-        let target = Point(
-            x: move.card.frame.minX + point.x - move.start.x,
-            y: move.card.frame.minY + point.y - move.start.y
-        )
+        guard var move = cardInteraction.move else { return }
+        let target = move.card.frame.origin + (point - move.start)
         guard let moved = try? move.card.moving(to: target, at: move.card.meta.modified) else {
             logger.error("A moved card has a frame that is not finite")
             return
         }
         move.current = moved
-        textEditing.cardMove = move
+        cardInteraction.move = move
         renderer.placeCard(moved)
     }
 
     /// Ends a long press beside the text boxes: a move of a card records one step, and a card
     /// that did not move opens its menu.
     func endCardPress(at location: CGPoint) {
-        guard let move = textEditing.cardMove else { return }
-        textEditing.cardMove = nil
+        guard let move = cardInteraction.move else { return }
+        cardInteraction.move = nil
         guard move.current.frame.origin != move.card.frame.origin else {
-            textEditing.menuCard = move.card
+            cardInteraction.menuCard = move.card
             presentMenu(at: location)
             return
         }
@@ -53,8 +50,8 @@ extension CanvasViewController {
 
     /// Puts a moved card back at its place before the move.
     func cancelCardMove() {
-        guard let move = textEditing.cardMove else { return }
-        textEditing.cardMove = nil
+        guard let move = cardInteraction.move else { return }
+        cardInteraction.move = nil
         renderer.placeCard(move.card)
     }
 
@@ -102,7 +99,7 @@ extension CanvasViewController {
     }
 
     private func showRenameAlert(for id: CardID) {
-        textEditing.menuCard = nil
+        cardInteraction.menuCard = nil
         present(renameAlert(for: id), animated: true)
     }
 
@@ -124,7 +121,7 @@ extension CanvasViewController {
 
     /// Deletes a card with one step. Its child content stays (D-18).
     func deleteCard(_ id: CardID) {
-        textEditing.menuCard = nil
+        cardInteraction.menuCard = nil
         guard let card = content.cards[id] else { return }
         applyCardStep(DeleteNode(card: card), shows: id)
     }
@@ -148,17 +145,10 @@ extension CanvasViewController {
         precondition(point.isFinite, "A hit test needs a finite point")
         var best: Card?
         for card in content.cards.values where card.frame.contains(point) {
-            if best.map({ Self.isAbove($0, card) }) ?? false { continue }
+            if best.map({ NodeOrder.isAbove($0, card) }) ?? false { continue }
             best = card
         }
         return best
-    }
-
-    /// `true` if `first` lies above `second`: a larger sort key, and the ID breaks a tie
-    /// (data-model.md section 6).
-    private static func isAbove(_ first: Card, _ second: Card) -> Bool {
-        guard first.sortKey == second.sortKey else { return second.sortKey < first.sortKey }
-        return second.id < first.id
     }
 
     /// Returns the card that a tap at a canvas point opens: a card that no text box covers

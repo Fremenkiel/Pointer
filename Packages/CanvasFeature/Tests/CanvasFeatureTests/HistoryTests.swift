@@ -92,7 +92,7 @@ struct CanvasHistoryTests {
         controller.undo()
         #expect(Set(controller.content.strokes.keys) == [line.id])
         controller.showPendingCard()
-        #expect(controller.textEditing.pendingCard == nil)
+        #expect(controller.cardInteraction.pendingCard == nil)
         controller.isEditingEnabled = true
         controller.undo()
         #expect(controller.content.strokes.isEmpty)

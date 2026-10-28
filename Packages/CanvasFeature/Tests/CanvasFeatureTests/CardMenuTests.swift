@@ -50,7 +50,7 @@ struct CardMenuTests {
         let controller = try makeController(card: card)
         controller.beginLongPress(at: .zero)
         controller.endCardPress(at: .zero)
-        #expect(controller.textEditing.menuCard?.id == card.id)
+        #expect(controller.cardInteraction.menuCard?.id == card.id)
         let menu = controller.cardMenu(for: card)
         #expect(menu.children.map(\.title) == [CanvasStrings.rename, CanvasStrings.delete])
         let delete = try #require(menu.children.last as? UIAction)
@@ -124,7 +124,7 @@ struct CardMenuTests {
         #expect(controller.content.cards[card.id]?.frame.origin == Point(x: 10, y: -20))
         #expect(controller.history.undoSteps.count == 1)
         #expect(controller.history.undoSteps.last is MoveNode)
-        #expect(controller.textEditing.menuCard == nil)
+        #expect(controller.cardInteraction.menuCard == nil)
         controller.undo()
         #expect(controller.content.cards[card.id]?.frame == Self.frame)
         controller.redo()
@@ -138,6 +138,6 @@ struct CardMenuTests {
         let controller = try makeController(card: card, boxes: [box])
         controller.beginLongPress(at: Point(x: -10, y: -5))
         #expect(controller.textEditing.move?.box.id == box.id)
-        #expect(controller.textEditing.cardMove == nil)
+        #expect(controller.cardInteraction.move == nil)
     }
 }

@@ -22,7 +22,7 @@ extension CanvasViewController {
         let card: Card
         do {
             card = try Card(
-                id: textEditing.pendingCard?.id ?? clock.makeIdentifier(CardID.self),
+                id: cardInteraction.pendingCard?.id ?? clock.makeIdentifier(CardID.self),
                 meta: RecordMeta(created: clock.now()),
                 canvasID: content.canvasID,
                 frame: Card.defaultFrame(at: edge),
@@ -33,8 +33,8 @@ extension CanvasViewController {
             logger.error("A pending card is not valid: \(String(describing: error))")
             return
         }
-        textEditing.pendingDrag = nil
-        textEditing.pendingCard = card
+        cardInteraction.pendingDrag = nil
+        cardInteraction.pendingCard = card
         renderer.placeCard(card)
         assert(content.cards[card.id] == nil, "The pending card is not content yet")
     }
@@ -42,26 +42,23 @@ extension CanvasViewController {
     /// Starts the drag of the pending card if the finger lies on it. Returns `false` beside it,
     /// so the finger pans the canvas.
     func beginPendingDrag(at point: Point) -> Bool {
-        guard point.isFinite, let card = textEditing.pendingCard else { return false }
+        guard point.isFinite, let card = cardInteraction.pendingCard else { return false }
         guard card.frame.contains(point) else { return false }
-        textEditing.pendingDrag = TextEditing.CardMove(card: card, start: point, current: card)
+        cardInteraction.pendingDrag = CardInteraction.Move(card: card, start: point, current: card)
         return true
     }
 
     /// Moves the pending card with the finger. The renderer shows it at the new place.
     func continuePendingDrag(to point: Point) {
-        guard var drag = textEditing.pendingDrag, point.isFinite else { return }
-        let target = Point(
-            x: drag.card.frame.minX + point.x - drag.start.x,
-            y: drag.card.frame.minY + point.y - drag.start.y
-        )
+        guard var drag = cardInteraction.pendingDrag, point.isFinite else { return }
+        let target = drag.card.frame.origin + (point - drag.start)
         guard let moved = try? drag.card.moving(to: target, at: drag.card.meta.modified) else {
             logger.error("A dragged card has a frame that is not finite")
             return
         }
         drag.current = moved
-        textEditing.pendingDrag = drag
-        textEditing.pendingCard = moved
+        cardInteraction.pendingDrag = drag
+        cardInteraction.pendingCard = moved
         renderer.placeCard(moved)
     }
 
@@ -69,15 +66,15 @@ extension CanvasViewController {
     /// a drag without a move, or a lift without editing puts it back at its place before the
     /// drag.
     func endPendingDrag(isPlaced: Bool) {
-        guard let drag = textEditing.pendingDrag else { return }
-        textEditing.pendingDrag = nil
+        guard let drag = cardInteraction.pendingDrag else { return }
+        cardInteraction.pendingDrag = nil
         let hasMoved = drag.current.frame.origin != drag.card.frame.origin
         guard isPlaced, hasMoved, isEditingEnabled else {
-            textEditing.pendingCard = drag.card
+            cardInteraction.pendingCard = drag.card
             renderer.placeCard(drag.card)
             return
         }
-        textEditing.pendingCard = nil
+        cardInteraction.pendingCard = nil
         addCard(id: drag.card.id, frame: drag.current.frame)
         if content.cards[drag.card.id] == nil {
             renderer.changeCards(removing: [drag.card.id], adding: [])
@@ -88,14 +85,14 @@ extension CanvasViewController {
     /// screen or the app moves to the background, so nothing that the screen shows is lost
     /// (D-123). A running drag ends at the place of the finger.
     public func placePendingCard() {
-        guard let card = textEditing.pendingCard else { return }
-        textEditing.pendingDrag = nil
-        textEditing.pendingCard = nil
+        guard let card = cardInteraction.pendingCard else { return }
+        cardInteraction.pendingDrag = nil
+        cardInteraction.pendingCard = nil
         addCard(id: card.id, frame: card.frame)
         if content.cards[card.id] == nil {
             renderer.changeCards(removing: [card.id], adding: [])
         }
-        assert(textEditing.pendingCard == nil, "No card stays pending")
+        assert(cardInteraction.pendingCard == nil, "No card stays pending")
     }
 
     /// Takes a one-finger pan that starts on the pending card. Returns `true` while the pan
@@ -119,11 +116,11 @@ extension CanvasViewController {
             continuePendingDrag(to: point)
             return true
         case .changed:
-            guard textEditing.pendingDrag != nil else { return false }
+            guard cardInteraction.pendingDrag != nil else { return false }
             continuePendingDrag(to: point)
             return true
         default:
-            guard textEditing.pendingDrag != nil else { return false }
+            guard cardInteraction.pendingDrag != nil else { return false }
             endPendingDrag(isPlaced: recognizer.state == .ended)
             return true
         }
@@ -168,23 +165,6 @@ extension CanvasViewController {
 
     /// The sort key after the last card: a new card lies above the others.
     private func nextCardSortKey() -> FractionalIndex {
-        // The largest key without a list of all keys (PERF-01, the M10 plan task 3.6).
-        let last = content.cards.values.max { $0.sortKey < $1.sortKey }?.sortKey
-        do {
-            return try FractionalIndex.between(last, nil)
-        } catch {
-            // The ID breaks the tie of two equal keys (data-model.md section 6).
-            logger.error("No sort key after the last card: \(String(describing: error))")
-            return last ?? Self.firstCardSortKey
-        }
-    }
-
-    /// The key of the first card of a canvas: the midpoint of the empty list.
-    private static var firstCardSortKey: FractionalIndex {
-        do {
-            return try FractionalIndex.between(nil, nil)
-        } catch {
-            preconditionFailure("The empty list has a midpoint: \(error)")
-        }
+        NodeOrder.nextSortKey(above: content.cards.values, logger: logger)
     }
 }

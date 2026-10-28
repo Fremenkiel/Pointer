@@ -4,7 +4,8 @@ import Rendering
 import UIKit
 
 /// The state of the text tools of one canvas: the edit view, the running edit, the move of a box,
-/// and the sizes of the boxes for the hit test (architecture.md section 7).
+/// the long-press menu, and the sizes of the boxes for the hit test (architecture.md section 7).
+/// The state of the cards is in `CardInteraction`.
 @MainActor
 final class TextEditing {
     /// One running edit.
@@ -29,16 +30,6 @@ final class TextEditing {
         var current: TextBox
     }
 
-    /// The move of a card with a finger (CARD-07, D-10).
-    struct CardMove {
-        /// The card before the move.
-        let card: Card
-        /// The finger point at the start, in canvas space.
-        let start: Point
-        /// The card at the last finger point.
-        var current: Card
-    }
-
     /// The edit view. It joins the canvas view at the first edit.
     let view = TextEditView()
     /// The running edit, or `nil`.
@@ -47,15 +38,6 @@ final class TextEditing {
     var move: Move?
     /// The box of the open long-press menu, or `nil`.
     var menuBox: TextBox?
-    /// The running move of a card, or `nil`.
-    var cardMove: CardMove?
-    /// The card of the open long-press menu, or `nil` (CARD-08).
-    var menuCard: Card?
-    /// The card of the card button that waits for a drag onto the canvas, or `nil`. It is not
-    /// part of the content until the drag ends (CARD-01, D-117).
-    var pendingCard: Card?
-    /// The running drag of the pending card, or `nil`.
-    var pendingDrag: CardMove?
     /// The menu of a long press without a drag (TOOL-08).
     var menu: UIEditMenuInteraction?
     /// The sizes of the boxes in canvas points, laid out at their first hit test.
@@ -117,14 +99,8 @@ final class TextEditing {
             guard area.contains(point) else { continue }
             // The ID breaks a tie of equal keys, as for the cards (data-model.md section 6). The
             // order of the dictionary changes with each launch.
-            if best.map({ Self.isAbove(box, $0) }) ?? true { best = box }
+            if best.map({ NodeOrder.isAbove(box, $0) }) ?? true { best = box }
         }
         return best
-    }
-
-    /// `true` if `first` lies above `second`: a larger sort key, and the ID breaks a tie.
-    private static func isAbove(_ first: TextBox, _ second: TextBox) -> Bool {
-        guard first.sortKey == second.sortKey else { return second.sortKey < first.sortKey }
-        return second.id < first.id
     }
 }

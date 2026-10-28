@@ -17,7 +17,7 @@ struct BusyRestoreTests {
         defer { await harness.remove() }
         let root = try #require(harness.composition.container.canvas)
         root.showPendingCard()
-        let card = try #require(root.textEditing.pendingCard)
+        let card = try #require(root.cardInteraction.pendingCard)
         root.placePendingCard()
         harness.composition.openChild(try #require(root.content.cards[card.id]))
         try await NavigationTests.waitForCanvas(CanvasID(card.id), in: harness.composition)
@@ -26,7 +26,7 @@ struct BusyRestoreTests {
         child.textEditing.view.text = "in the middle of an edit"
         // A second card in the child, and its open starts the flight that the restore meets.
         child.showPendingCard()
-        let inner = try #require(child.textEditing.pendingCard)
+        let inner = try #require(child.cardInteraction.pendingCard)
         child.placePendingCard()
         harness.composition.openChild(try #require(child.content.cards[inner.id]))
         let snapshot = try await harness.otherSnapshot(wallMillis: SystemWallClock().nowMillis())

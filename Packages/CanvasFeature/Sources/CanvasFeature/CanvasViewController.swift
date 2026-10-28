@@ -80,6 +80,8 @@ public final class CanvasViewController: UIViewController {
     lazy var historyKeyCommands = makeHistoryKeyCommands()
     /// The edit view, the running edit, and the move of the text boxes.
     let textEditing = TextEditing()
+    /// The state of the card gestures: a move, the menu card, and the pending card.
+    let cardInteraction = CardInteraction()
     /// Shows a short message, for example at a limit.
     let onMessage: @MainActor (String) -> Void
     /// The level of the canvas in the card tree. A new card is refused at `Limits.maxDepth`.

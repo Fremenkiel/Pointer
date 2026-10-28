@@ -128,7 +128,7 @@ final class CardMenuSnapshotTests: XCTestCase {
         root.view.addSubview(anchor)
         let interaction = UIEditMenuInteraction(delegate: controller)
         anchor.addInteraction(interaction)
-        controller.textEditing.menuCard = card
+        controller.cardInteraction.menuCard = card
         UIView.setAnimationsEnabled(false)
         defer { UIView.setAnimationsEnabled(true) }
         let region = CGRect(x: 100, y: 100, width: 400, height: 200)

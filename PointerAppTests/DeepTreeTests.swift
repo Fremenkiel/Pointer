@@ -56,7 +56,7 @@ struct DeepTreeTests {
         #expect(composition.path?.level == Limits.maxDepth)
         deepest.addPenStrokes([Self.stroke(on: deepest.canvasID, clock: tree.clock)])
         deepest.showPendingCard()
-        #expect(deepest.textEditing.pendingCard == nil, "No card at level 32 (D-95)")
+        #expect(deepest.cardInteraction.pendingCard == nil, "No card at level 32 (D-95)")
         let alert = composition.container.presentedViewController as? UIAlertController
         #expect(alert?.message == CanvasStrings.depthLimit)
         alert?.dismiss(animated: false)

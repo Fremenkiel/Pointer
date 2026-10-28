@@ -54,7 +54,7 @@ struct NewCardTests {
     func pendingCard() throws {
         let controller = try makeController()
         controller.showPendingCard()
-        let card = try #require(controller.textEditing.pendingCard)
+        let card = try #require(controller.cardInteraction.pendingCard)
         let frame = Card.defaultFrame(at: Self.leftEdge)
         #expect(card.frame == frame)
         #expect(card.frame.center == Self.leftEdge)
@@ -67,7 +67,7 @@ struct NewCardTests {
     func dragPlaces() throws {
         let controller = try makeController()
         controller.showPendingCard()
-        let pending = try #require(controller.textEditing.pendingCard)
+        let pending = try #require(controller.cardInteraction.pendingCard)
         let start = Point(x: -190, y: 0)
         #expect(controller.beginPendingDrag(at: start))
         controller.continuePendingDrag(to: Point(x: start.x + 120, y: start.y + 20))
@@ -79,7 +79,7 @@ struct NewCardTests {
         #expect(card.title == nil)
         #expect(controller.history.undoSteps.count == 1)
         #expect(controller.history.undoSteps.last is AddCard)
-        #expect(controller.textEditing.pendingCard == nil)
+        #expect(controller.cardInteraction.pendingCard == nil)
         controller.undo()
         #expect(controller.content.cards.isEmpty)
         controller.redo()
@@ -91,12 +91,12 @@ struct NewCardTests {
         let controller = try makeController()
         #expect(!controller.beginPendingDrag(at: Self.leftEdge), "No pending card, no drag")
         controller.showPendingCard()
-        let pending = try #require(controller.textEditing.pendingCard)
+        let pending = try #require(controller.cardInteraction.pendingCard)
         #expect(!controller.beginPendingDrag(at: Point(x: 150, y: 0)))
         #expect(controller.beginPendingDrag(at: Self.leftEdge))
         controller.continuePendingDrag(to: Point(x: 0, y: 0))
         controller.endPendingDrag(isPlaced: false)
-        #expect(controller.textEditing.pendingCard?.frame == pending.frame)
+        #expect(controller.cardInteraction.pendingCard?.frame == pending.frame)
         #expect(controller.content.cards.isEmpty)
         #expect(controller.history.undoSteps.isEmpty)
     }
@@ -106,7 +106,7 @@ struct NewCardTests {
         let controller = try makeController()
         controller.showPendingCard()
         controller.showPendingCard()
-        let card = try #require(controller.textEditing.pendingCard)
+        let card = try #require(controller.cardInteraction.pendingCard)
         #expect(card.frame.center == Self.leftEdge)
         #expect(controller.content.cards.isEmpty)
         #expect(controller.history.undoSteps.isEmpty)
@@ -119,10 +119,10 @@ struct NewCardTests {
         try content.add(Self.card(1, frame: frame))
         let controller = try makeController(content: content)
         controller.beginCardPress(at: Point(x: 120, y: 0))
-        #expect(controller.textEditing.cardMove == nil)
-        #expect(controller.textEditing.menuCard == nil)
+        #expect(controller.cardInteraction.move == nil)
+        #expect(controller.cardInteraction.menuCard == nil)
         controller.beginCardPress(at: Point(x: 0, y: 0))
-        #expect(controller.textEditing.cardMove?.card.frame == frame)
+        #expect(controller.cardInteraction.move?.card.frame == frame)
     }
 
     @Test(
@@ -134,10 +134,10 @@ struct NewCardTests {
         let controller = try makeController(level: level, messages: messages)
         controller.showPendingCard()
         if level < Limits.maxDepth {
-            #expect(controller.textEditing.pendingCard != nil)
+            #expect(controller.cardInteraction.pendingCard != nil)
             #expect(messages.shown.isEmpty)
         } else {
-            #expect(controller.textEditing.pendingCard == nil)
+            #expect(controller.cardInteraction.pendingCard == nil)
             #expect(messages.shown == [CanvasStrings.depthLimit])
             #expect(controller.history.undoSteps.isEmpty)
         }
@@ -172,7 +172,7 @@ struct NewCardTests {
         let messages = TextEditTests.Messages()
         let controller = try makeController(content: content, messages: messages)
         controller.showPendingCard()
-        #expect(controller.textEditing.pendingCard == nil)
+        #expect(controller.cardInteraction.pendingCard == nil)
         #expect(messages.shown == [CanvasStrings.nodeLimit])
     }
 

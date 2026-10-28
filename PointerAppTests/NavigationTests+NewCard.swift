@@ -42,7 +42,7 @@ extension NavigationTests {
         try await Self.waitForCanvas(tree.workspace.canvasID, in: composition)
         let child = try await Self.openChild(of: tree, in: composition)
         child.showPendingCard()
-        let pending = try #require(child.textEditing.pendingCard)
+        let pending = try #require(child.cardInteraction.pendingCard)
         let start = pending.frame.center
         #expect(child.beginPendingDrag(at: start))
         child.continuePendingDrag(to: Point(x: start.x + 200, y: start.y))
@@ -63,7 +63,7 @@ extension NavigationTests {
         try await Self.waitForCanvas(tree.workspace.canvasID, in: composition)
         let child = try await Self.openChild(of: tree, in: composition)
         child.showPendingCard()
-        let pending = try #require(child.textEditing.pendingCard)
+        let pending = try #require(child.cardInteraction.pendingCard)
         try await Self.leave(tree, in: composition)
         let again = try await Self.openChild(of: tree, in: composition)
         let card = try #require(again.content.cards[pending.id])

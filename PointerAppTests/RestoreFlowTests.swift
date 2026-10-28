@@ -103,7 +103,7 @@ struct RestoreFlowTests {
         defer { await harness.remove() }
         let canvas = try #require(harness.composition.container.canvas)
         canvas.showPendingCard()
-        let pending = try #require(canvas.textEditing.pendingCard)
+        let pending = try #require(canvas.cardInteraction.pendingCard)
         canvas.startNewTextBox(at: Point(x: 400, y: 300))
         canvas.textEditing.view.text = "saved before the restore"
         let snapshot = try await harness.otherSnapshot(wallMillis: Self.now())
