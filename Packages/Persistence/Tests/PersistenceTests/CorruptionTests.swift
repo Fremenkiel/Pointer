@@ -57,7 +57,7 @@ struct CorruptionTests {
     )
     func workspace(damage: Damage) throws {
         let library = try TestLibrary()
-        try library.write(try Values.workspace(), WorkspaceRow.upsert, WorkspaceRow.bind)
+        try library.write(try Values.workspace(), WorkspaceRow.insert, WorkspaceRow.bind)
         try damage.apply(to: library)
         let error = Self.error { _ = try library.rows(WorkspaceRow.selectLive, WorkspaceRow.read) }
         #expect(

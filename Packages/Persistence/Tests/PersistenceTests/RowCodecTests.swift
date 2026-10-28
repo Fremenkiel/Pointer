@@ -7,17 +7,17 @@ import Testing
 
 @Suite("Row codecs")
 struct RowCodecTests {
-    @Test(
-        "A workspace goes into its row and back unchanged, and a write with the same ID updates it"
-    )
+    @Test("A workspace goes into its row and back unchanged, and a second write of its ID fails")
     func workspace() throws {
         let library = try TestLibrary()
         let workspace = try Values.workspace()
-        try library.write(workspace, WorkspaceRow.upsert, WorkspaceRow.bind)
+        try library.write(workspace, WorkspaceRow.insert, WorkspaceRow.bind)
         #expect(try library.rows(WorkspaceRow.selectLive, WorkspaceRow.read) == [workspace])
         let renamed = try Values.workspace(title: "Renamed")
-        try library.write(renamed, WorkspaceRow.upsert, WorkspaceRow.bind)
-        #expect(try library.rows(WorkspaceRow.selectLive, WorkspaceRow.read) == [renamed])
+        #expect(throws: PersistenceError.self) {
+            try library.write(renamed, WorkspaceRow.insert, WorkspaceRow.bind)
+        }
+        #expect(try library.rows(WorkspaceRow.selectLive, WorkspaceRow.read) == [workspace])
     }
 
     @Test("A card goes into its row and back unchanged, with and without a title")

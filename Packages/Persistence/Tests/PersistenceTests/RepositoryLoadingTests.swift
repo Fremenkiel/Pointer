@@ -98,6 +98,17 @@ struct RepositoryLoadingTests {
         }
     }
 
+    @Test("A second create of the same workspace ID throws, and the first row stays (3.2.4)")
+    func createTwice() async throws {
+        let harness = try RepositoryHarness()
+        let repository = try await harness.open()
+        try await repository.create(try Values.workspace(1, title: "First"))
+        await #expect(throws: ModelError.self) {
+            try await repository.create(try Values.workspace(1, title: "Second"))
+        }
+        #expect(try await repository.workspaces().map(\.title) == ["First"])
+    }
+
     @Test("The library takes workspaces up to the limit and refuses one more")
     func workspaceLimit() async throws {
         let harness = try RepositoryHarness()

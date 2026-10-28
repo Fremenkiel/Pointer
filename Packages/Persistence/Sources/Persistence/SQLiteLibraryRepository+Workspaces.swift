@@ -5,7 +5,8 @@ extension SQLiteLibraryRepository {
     ///
     /// - Precondition: `workspace` is not a tombstone.
     /// - Throws: `ModelError.workspaceLimitReached` at `Limits.maxWorkspaces` live workspaces,
-    ///   `ModelError.libraryIsReadOnly`, or `ModelError.storageFailed`.
+    ///   `ModelError.libraryIsReadOnly`, or `ModelError.storageFailed`, also if the library
+    ///   holds a workspace with the same ID. That row stays as it is.
     public func create(_ workspace: Workspace) throws(ModelError) {
         precondition(!workspace.meta.isDeleted, "A new workspace cannot be a tombstone")
         let statements = try writableStatements()
@@ -19,8 +20,8 @@ extension SQLiteLibraryRepository {
         guard count < Limits.maxWorkspaces else { throw .workspaceLimitReached }
         try storage { () throws(PersistenceError) in
             try transaction(latest: workspace.meta.modified) { () throws(PersistenceError) in
-                try WorkspaceRow.bind(workspace, to: statements.upsertWorkspace)
-                try LibraryStatements.run(statements.upsertWorkspace)
+                try WorkspaceRow.bind(workspace, to: statements.insertWorkspace)
+                try LibraryStatements.run(statements.insertWorkspace)
             }
         }
     }

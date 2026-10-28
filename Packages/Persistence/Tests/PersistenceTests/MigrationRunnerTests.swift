@@ -83,7 +83,7 @@ struct MigrationRunnerTests {
     @Test("A failed step rolls back, so the old schema and its rows stay")
     func failedStep() throws {
         let library = try TestLibrary()
-        try library.write(try Values.workspace(), WorkspaceRow.upsert, WorkspaceRow.bind)
+        try library.write(try Values.workspace(), WorkspaceRow.insert, WorkspaceRow.bind)
         let runner = MigrationRunner(migrations: Migration.library + [Self.failingStep])
         #expect(
             throws: PersistenceError.sqlite(code: SQLITE_ERROR, message: "no such table: missing")

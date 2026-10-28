@@ -176,7 +176,7 @@ A stroke of 300 points takes 4.8 KB. The layout matches `InkPoint` in memory. Th
 1. A command changes `CanvasContent` on the main actor.
 2. The canvas controller sends a value copy of the changed rows to the repository.
 3. The repository adds the rows to its pending set.
-4. The repository throttles the writes (D-27). If the pending set is not empty and the last write is older than 1 second, it writes all pending rows in one transaction (`BEGIN IMMEDIATE` ... `COMMIT`). It uses prepared statements and `INSERT ... ON CONFLICT (id) DO UPDATE`. A stroke never changes, so its insert uses `ON CONFLICT (id) DO NOTHING`, and an erase record uses `ON CONFLICT (stroke_id)`.
+4. The repository throttles the writes (D-27). If the pending set is not empty and the last write is older than 1 second, it writes all pending rows in one transaction (`BEGIN IMMEDIATE` ... `COMMIT`). It uses prepared statements and `INSERT ... ON CONFLICT (id) DO UPDATE`. A stroke never changes, so its insert uses `ON CONFLICT (id) DO NOTHING`, and an erase record uses `ON CONFLICT (stroke_id)`. A new workspace uses a plain `INSERT`, so a second create of the same ID fails and the first row stays. A rename and a delete of a workspace update one row each.
 5. At pencil lift, the canvas sends the rows of the stroke, and the send starts the save. If the last write is older than 1 second, the repository writes at once. Otherwise, the throttle of step 4 writes at the end of the second.
 6. When the scene goes to the background, the repository writes all pending rows at once. It asks for extra time with `UIApplication.beginBackgroundTask` for this step.
 

@@ -8,12 +8,12 @@ enum WorkspaceRow {
     /// The number of columns of the read statement.
     static let columnCount: Int32 = 6
 
-    /// Writes a workspace. A row with the same ID takes the new values.
-    static let upsert: StaticString = """
+    /// Writes a new workspace. A row with the same ID makes the insert fail, because a create
+    /// never replaces a workspace (review of 2026-10-28, 3.2.4). A rename and a delete change
+    /// one column each with statements of their own.
+    static let insert: StaticString = """
         INSERT INTO workspace (id, title, sort_key, created, modified, is_deleted)
         VALUES (?, ?, ?, ?, ?, ?)
-        ON CONFLICT (id) DO UPDATE SET title = excluded.title, sort_key = excluded.sort_key,
-            modified = excluded.modified, is_deleted = excluded.is_deleted
         """
 
     /// Reads the live workspaces in the order of the selector.
@@ -22,7 +22,7 @@ enum WorkspaceRow {
         WHERE is_deleted = 0 ORDER BY sort_key, id
         """
 
-    /// Binds `workspace` to the parameters of `upsert`.
+    /// Binds `workspace` to the parameters of `insert`.
     ///
     /// - Throws: `PersistenceError.sqlite` if a bind fails.
     static func bind(

@@ -16,8 +16,8 @@ final class LibraryStatements {
     let upsertCard: SQLiteStatement
     /// Holds `TextBoxRow.upsert`, which writes a text box.
     let upsertTextBox: SQLiteStatement
-    /// Holds `WorkspaceRow.upsert`, which writes a workspace.
-    let upsertWorkspace: SQLiteStatement
+    /// Holds `WorkspaceRow.insert`, which writes a new workspace.
+    let insertWorkspace: SQLiteStatement
     /// Sets the title of a live workspace.
     let renameWorkspace: SQLiteStatement
     /// Marks a live workspace as deleted.
@@ -56,7 +56,7 @@ final class LibraryStatements {
         upsertErase = try connection.prepare(EraseRow.upsert)
         upsertCard = try connection.prepare(CardRow.upsert)
         upsertTextBox = try connection.prepare(TextBoxRow.upsert)
-        upsertWorkspace = try connection.prepare(WorkspaceRow.upsert)
+        insertWorkspace = try connection.prepare(WorkspaceRow.insert)
         renameWorkspace = try connection.prepare(
             "UPDATE workspace SET title = ?, modified = ? WHERE id = ? AND is_deleted = 0"
         )
@@ -99,7 +99,7 @@ final class LibraryStatements {
         assert(selectTextBoxes.columnCount == TextBoxRow.columnCount, "Text box read shape")
         assert(countCanvasRows.parameterCount == 1, "Row count shape")
         assert(
-            upsertWorkspace.parameterCount == WorkspaceRow.parameterCount,
+            insertWorkspace.parameterCount == WorkspaceRow.parameterCount,
             "Workspace write shape"
         )
         assert(selectWorkspaces.columnCount == WorkspaceRow.columnCount, "Workspace read shape")
