@@ -120,6 +120,37 @@ struct RepositoryLaunchTests {
         #expect(files.contains("keep.sqlite"))
     }
 
+    @Test("A stroke erased again after an undo stays 30 days from the second erase (3.2.1)")
+    func reErasedStroke() async throws {
+        let harness = try RepositoryHarness()
+        _ = try await harness.open()
+        let writer = try SQLiteConnection(path: harness.path, mode: .readWrite)
+        try writer.execute(
+            """
+            INSERT INTO workspace VALUES (X'02', 'live', 'W', zeroblob(28), zeroblob(28), 0);
+            INSERT INTO stroke VALUES (X'0305', X'02', zeroblob(28), 0, 0, 2, 0, 0, 1, 1, 2,
+                zeroblob(32));
+            """
+        )
+        // Erased on day 0, brought back, and erased again on day 35. The row keeps the first
+        // `erased` and takes the new `modified` (`EraseRow.upsert`).
+        let secondErase = HybridTimestamp(
+            wallMillis: RepositoryHarness.now + 35 * Self.day,
+            counter: 0,
+            device: Values.device
+        )
+        let insert = try writer.prepare(
+            "INSERT INTO stroke_erase VALUES (X'0305', zeroblob(28), ?1, 0)"
+        )
+        try insert.bind(timestamp: secondErase, at: 1)
+        try LibraryStatements.run(insert)
+
+        _ = try await harness.open(wallMillis: RepositoryHarness.now + 35 * Self.day)
+        #expect(try harness.reader().integer("SELECT count(*) FROM stroke") == 1)
+        _ = try await harness.open(wallMillis: RepositoryHarness.now + 65 * Self.day + 1)
+        #expect(try harness.reader().integer("SELECT count(*) FROM stroke") == 0)
+    }
+
     @Test("A cleanup that fails does not stop the open, and the live rows stay readable")
     func failedCleanup() async throws {
         let harness = try RepositoryHarness()

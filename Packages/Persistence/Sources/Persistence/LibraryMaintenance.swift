@@ -152,7 +152,7 @@ enum LibraryMaintenance {
         """,
         """
         INSERT OR IGNORE INTO doomed_stroke
-        SELECT stroke_id FROM stroke_erase WHERE is_deleted = 0 AND erased < ?1
+        SELECT stroke_id FROM stroke_erase WHERE is_deleted = 0 AND modified < ?1
         """,
         "DELETE FROM text_box WHERE is_deleted = 1 AND modified < ?1",
     ]
