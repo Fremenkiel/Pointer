@@ -29,13 +29,7 @@ extension TextEncoder {
         let frame = place.frame
         let pixels = target.pixelsPerCanvasPoint
         precondition(pixels > 0, "A target has pixels per canvas point, got \(pixels)")
-        // The subtraction runs in Double before the conversion to Float (architecture.md 5.3).
-        let delta = entry.frame.origin - target.camera.center
-        let size = target.pixelSize
-        let corner = SIMD2(
-            Float(size.width / 2 + delta.dx * pixels),
-            Float(size.height / 2 + delta.dy * pixels)
-        )
+        let corner = target.pixelCorner(of: entry.frame.origin)
         let lineWidth = RendererConfiguration.cardBorderWidth * target.displayScale
         let quadSize = SIMD2(
             Float(entry.frame.size.width * pixels),

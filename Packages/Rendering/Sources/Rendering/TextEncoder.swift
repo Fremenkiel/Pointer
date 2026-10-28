@@ -195,16 +195,8 @@ final class TextEncoder {
     ) -> Mapping {
         let pixels = target.pixelsPerCanvasPoint
         precondition(pixels > 0, "A target has pixels per canvas point, got \(pixels)")
-        // The subtraction runs in Double before the conversion to Float (architecture.md 5.3).
-        let delta = origin - target.camera.center
-        let size = target.pixelSize
-        let base = SIMD2(
-            Float(size.width / 2 + delta.dx * pixels),
-            Float(size.height / 2 + delta.dy * pixels)
-        )
-        assert(base.x.isFinite && base.y.isFinite, "A box maps to finite pixels")
         return Mapping(
-            base: base,
+            base: target.pixelCorner(of: origin),
             scale: Float(pixels),
             ratio: Float(pixels / GlyphAtlas.scale(of: exponent))
         )
@@ -252,27 +244,13 @@ final class TextEncoder {
         exponent: Int,
         frame: UInt64
     ) -> Run? {
-        let fonts = layout.fonts
-        let indices = layout.fontIndices
-        // The font of a glyph changes rarely, so its number is looked up once per change.
-        var fontIndex = UInt8(0)
-        var fontID = atlas.fontID(of: fonts[0])
         var run = runs.last
         let first = ring.used
-        for (index, glyph) in layout.glyphs.enumerated() {
-            if indices[index] != fontIndex {
-                fontIndex = indices[index]
-                fontID = atlas.fontID(of: fonts[Int(fontIndex)])
-            }
-            guard
-                let place = atlas.placement(
-                    of: glyph.glyph,
-                    font: fonts[Int(fontIndex)],
-                    fontID: fontID,
-                    exponent: exponent,
-                    frame: frame
-                ), place.page >= 0
-            else { continue }
+        var placed = PlacedGlyphs(of: layout, in: atlas, exponent: exponent, frame: frame)
+        // The glyph count bounds the loop (FLOW-03).
+        while let item = placed.next() {
+            guard let place = item.place, place.page >= 0 else { continue }
+            let glyph = item.glyph
             if run?.page == place.page {
                 run?.count += 1
             } else {
