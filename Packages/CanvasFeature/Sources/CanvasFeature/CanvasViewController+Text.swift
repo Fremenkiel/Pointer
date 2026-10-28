@@ -137,24 +137,7 @@ extension CanvasViewController: UITextViewDelegate {
 
     /// Returns a sort key after the keys of all boxes, so that a new box is on top.
     private func nextTextSortKey() -> FractionalIndex {
-        // The largest key without a list of all keys (PERF-01, the M10 plan task 3.6).
-        let last = content.textBoxes.values.max { $0.sortKey < $1.sortKey }?.sortKey
-        do {
-            return try FractionalIndex.between(last, nil)
-        } catch {
-            // The ID breaks the tie of two equal keys (data-model.md section 6).
-            logger.error("No sort key after the last text box: \(String(describing: error))")
-            return last ?? Self.firstSortKey
-        }
-    }
-
-    /// The key of the first text box of a canvas: the midpoint of the empty list.
-    private static var firstSortKey: FractionalIndex {
-        do {
-            return try FractionalIndex.between(nil, nil)
-        } catch {
-            preconditionFailure("The empty list has a midpoint key")
-        }
+        NodeOrder.nextSortKey(above: content.textBoxes.values, logger: logger)
     }
 
     /// Ends the running edit, records its step, and shows the box again (D-86).
