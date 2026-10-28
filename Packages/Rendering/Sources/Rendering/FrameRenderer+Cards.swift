@@ -10,7 +10,7 @@ extension FrameRenderer {
         for item in loaded where !cards.editedDuringLoad.contains(item.card.id) {
             cards.insert(item.card, layout: item.layout)
             guard let bounds = cards.entries[item.card.id]?.bounds else { continue }
-            dirtyTextArea = dirtyTextArea.map { Self.union($0, bounds) } ?? bounds
+            dirtyTextArea = dirtyTextArea?.union(bounds) ?? bounds
         }
         assert(cards.count <= Limits.maxNodesPerCanvas, "The store holds at most the node limit")
     }
@@ -28,7 +28,7 @@ extension FrameRenderer {
                 if cards.loadsInFlight > 0 { cards.editedDuringLoad.insert(id) }
                 previews?.forget(id)
                 guard let bounds = cards.remove(id) else { continue }
-                dirtyTextArea = dirtyTextArea.map { Self.union($0, bounds) } ?? bounds
+                dirtyTextArea = dirtyTextArea?.union(bounds) ?? bounds
             }
             for card in added { place(card) }
         case .place(let card):
@@ -42,7 +42,7 @@ extension FrameRenderer {
         let earlier = cards.add(card)
         assert(cards.entries[card.id] != nil, "The placed card \(card.id) is held")
         guard let bounds = cards.entries[card.id]?.bounds else { return }
-        let area = earlier.map { Self.union($0, bounds) } ?? bounds
-        dirtyTextArea = dirtyTextArea.map { Self.union($0, area) } ?? area
+        let area = earlier?.union(bounds) ?? bounds
+        dirtyTextArea = dirtyTextArea?.union(area) ?? area
     }
 }

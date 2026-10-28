@@ -70,7 +70,7 @@ extension FrameRenderer {
                 destinationLevel: 0,
                 destinationOrigin: MTLOrigin(x: entry.x, y: entry.y, z: 0)
             )
-            previews.dirtyArea = previews.dirtyArea.map { Self.union($0, bounds) } ?? bounds
+            previews.dirtyArea = previews.dirtyArea?.union(bounds) ?? bounds
         }
         blit?.endEncoding()
         previews.pending.removeFirst(taken)

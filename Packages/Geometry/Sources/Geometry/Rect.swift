@@ -48,6 +48,25 @@ public struct Rect: Hashable, Codable, Sendable {
         point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY
     }
 
+    /// Returns the smallest rectangle that holds both rectangles.
+    public func union(_ other: Rect) -> Rect {
+        Rect(
+            minX: min(minX, other.minX),
+            minY: min(minY, other.minY),
+            maxX: max(maxX, other.maxX),
+            maxY: max(maxY, other.maxY)
+        )
+    }
+
+    /// Returns the common part of the two rectangles, or `nil` if they share no point. Two
+    /// rectangles that touch share an edge, so their common part has no area.
+    public func intersection(_ other: Rect) -> Rect? {
+        let low = Point(x: max(minX, other.minX), y: max(minY, other.minY))
+        let high = Point(x: min(maxX, other.maxX), y: min(maxY, other.maxY))
+        guard low.x <= high.x, low.y <= high.y else { return nil }
+        return Rect(minX: low.x, minY: low.y, maxX: high.x, maxY: high.y)
+    }
+
     /// Returns the rectangle grown by `amount` on each side.
     ///
     /// - Precondition: `amount` is zero or positive.

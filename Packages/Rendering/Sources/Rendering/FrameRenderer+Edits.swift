@@ -17,11 +17,11 @@ extension FrameRenderer {
             // The next frame is the first one that can no longer read the stroke.
             store.remove(id, frame: frame + 1)
             if edit.area == nil {
-                dirtyArea = dirtyArea.map { Self.union($0, bounds) } ?? bounds
+                dirtyArea = dirtyArea?.union(bounds) ?? bounds
             }
         }
         if let area = edit.area {
-            dirtyArea = dirtyArea.map { Self.union($0, area) } ?? area
+            dirtyArea = dirtyArea?.union(area) ?? area
         }
         for stroke in edit.added {
             let slot = store.add(stroke)
@@ -40,7 +40,7 @@ extension FrameRenderer {
         for item in loaded where !textEditedDuringLoad.contains(item.box.id) {
             texts.insert(item.box, layout: item.layout)
             guard let bounds = texts.entries[item.box.id]?.bounds else { continue }
-            dirtyTextArea = dirtyTextArea.map { Self.union($0, bounds) } ?? bounds
+            dirtyTextArea = dirtyTextArea?.union(bounds) ?? bounds
         }
         assert(texts.count <= Limits.maxNodesPerCanvas, "The store holds at most the node limit")
     }
@@ -57,7 +57,7 @@ extension FrameRenderer {
             for id in removed {
                 if textLoadsInFlight > 0 { textEditedDuringLoad.insert(id) }
                 guard let bounds = texts.remove(id) else { continue }
-                dirtyTextArea = dirtyTextArea.map { Self.union($0, bounds) } ?? bounds
+                dirtyTextArea = dirtyTextArea?.union(bounds) ?? bounds
             }
             for box in added { place(box) }
         case .place(let box):
@@ -71,8 +71,8 @@ extension FrameRenderer {
         let earlier = texts.add(box)
         assert(texts.entries[box.id] != nil, "The placed box \(box.id) is held")
         guard let bounds = texts.entries[box.id]?.bounds else { return }
-        let area = earlier.map { Self.union($0, bounds) } ?? bounds
-        dirtyTextArea = dirtyTextArea.map { Self.union($0, area) } ?? area
+        let area = earlier?.union(bounds) ?? bounds
+        dirtyTextArea = dirtyTextArea?.union(area) ?? area
     }
 
     /// Starts the redraw of the text that changed since the last frame, and goes on with a
@@ -82,7 +82,7 @@ extension FrameRenderer {
         // New previews redraw the front texture between builds. A build draws each card with
         // the preview that the atlas holds at that moment.
         if layer.build == nil, let previews, let area = previews.dirtyArea {
-            dirtyTextArea = dirtyTextArea.map { Self.union($0, area) } ?? area
+            dirtyTextArea = dirtyTextArea?.union(area) ?? area
             previews.dirtyArea = nil
         }
         if let area = dirtyTextArea {
@@ -116,15 +116,5 @@ extension FrameRenderer {
         precondition(handoff > 0, "Handoff numbers start at 1")
         waitingHandoff = max(waitingHandoff, handoff)
         waitingCompletion = waitingCompletion || wantsCompletion
-    }
-
-    /// Returns the smallest rectangle that holds both rectangles.
-    static func union(_ first: Rect, _ second: Rect) -> Rect {
-        Rect(
-            minX: min(first.minX, second.minX),
-            minY: min(first.minY, second.minY),
-            maxX: max(first.maxX, second.maxX),
-            maxY: max(first.maxY, second.maxY)
-        )
     }
 }
