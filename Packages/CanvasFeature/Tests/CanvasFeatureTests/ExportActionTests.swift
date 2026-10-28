@@ -100,6 +100,28 @@ struct ExportActionTests {
         #expect(record.providers.isEmpty)
     }
 
+    @Test("An export that ends after its canvas left the screen presents nothing (3.2.16)")
+    func cancelAfterTheExport() async throws {
+        let record = Record()
+        let setup = Setup(strokes: [CanvasHistoryTests.line()])
+        let controller = try Self.makeController(setup, record: record)
+        controller.exportCanvas()
+        // The task of the export starts and waits for the PDF.
+        await Task.yield()
+        // The PDF of one stroke is done long before the main thread runs again, so its result
+        // waits for the main actor when the canvas leaves the screen.
+        Self.holdMainThread(seconds: 0.2)
+        controller.willMove(toParent: nil)
+        await controller.canvasExport.task?.value
+        #expect(record.providers.isEmpty)
+        #expect(record.messages.isEmpty)
+    }
+
+    /// Blocks the main thread, so that no continuation runs on the main actor meanwhile.
+    private static func holdMainThread(seconds: TimeInterval) {
+        Thread.sleep(forTimeInterval: seconds)
+    }
+
     @Test("A running text edit ends, and its text is in the PDF")
     func runningEditEnds() async throws {
         let record = Record()

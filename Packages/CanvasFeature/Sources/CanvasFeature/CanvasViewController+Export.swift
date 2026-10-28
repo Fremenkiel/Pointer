@@ -33,7 +33,10 @@ extension CanvasViewController {
             } onCancel: {
                 export.cancel()
             }
-            self?.finishExport(result, name: name)
+            // A canvas that left the screen cancels the task, also after the PDF is done. The
+            // sheet of a controller off the screen shows nothing (review of 2026-10-28,
+            // 3.2.16).
+            self?.finishExport(Task.isCancelled ? .failure(.cancelled) : result, name: name)
         }
     }
 
