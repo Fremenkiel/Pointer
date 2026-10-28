@@ -171,7 +171,7 @@ ALLOCATION_SUITES := EditAllocationTests EraserSampleAllocationTests FrameAlloca
 	GridAllocationTests HoverSampleAllocationTests PreviewAllocationTests \
 	TextEditFrameAllocationTests TextMoveAllocationTests TextPassAllocationTests \
 	TransitionAllocationTests ZoomFrameAllocationTests FrameKindAllocationTests \
-	DragPostAllocationTests GestureAllocationTests
+	DragPostAllocationTests GestureAllocationTests StoredBuildAllocationTests
 validation:
 	TEST_RUNNER_MTL_DEBUG_LAYER=1 TEST_RUNNER_MTL_SHADER_VALIDATION=1 $(DEVICE_TEST) -quiet \
 		-only-testing:PointerDeviceTests \

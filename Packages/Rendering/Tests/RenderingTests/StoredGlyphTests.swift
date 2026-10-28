@@ -49,7 +49,7 @@ struct StoredGlyphTests {
         )
     }
 
-    private static func rig(
+    static func rig(
         isStored: Bool,
         zoom: Double = 1,
         atlasBudget: Int = 16 << 20
