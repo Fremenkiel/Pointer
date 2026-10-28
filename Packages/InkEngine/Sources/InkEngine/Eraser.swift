@@ -71,7 +71,7 @@ public enum Eraser {
     /// without a part changes whole (D-71).
     ///
     /// - Precondition: `covered` is not empty.
-    private static func changedArea(
+    static func changedArea(
         of stroke: Stroke,
         covered: [ClosedRange<Double>],
         shapes: [Stroke]
@@ -83,8 +83,12 @@ public enum Eraser {
         let last = stroke.points.count - 1
         var area: Rect?
         for range in covered {
-            let low = max(Int(range.lowerBound.rounded(.down)) - side + 1, 0)
-            let high = min(Int(range.upperBound.rounded(.up)) + side - 1, last)
+            // The part before the cut keeps the control points up to the one before the cut
+            // parameter rounded up, and the part after keeps them from the one after the cut
+            // parameter rounded down, as `StrokeSplitter.partPoints` does. The `side` old
+            // segments next to each kept end change (review of 2026-10-28, 3.2.7).
+            let low = max(Int(range.lowerBound.rounded(.up)) - side, 0)
+            let high = min(Int(range.upperBound.rounded(.down)) + side, last)
             for index in low...high { area = union(area, stroke.canvasPoint(at: index)) }
         }
         // Only an end at a cut changes. An end of the old stroke keeps its point, so it is no cut.

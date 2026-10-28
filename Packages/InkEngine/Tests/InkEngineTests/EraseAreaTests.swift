@@ -114,3 +114,31 @@ struct EraseAreaTests {
         return InkFixtures.samples(of: curve, count: curve.segmentCount * samplesPerSegment)
     }
 }
+
+/// The rounding of the changed area at a cut on an exact integer parameter (review of
+/// 2026-10-28, 3.2.7). The bisection of the hit test places a cut within 1/16,384 of a segment,
+/// so it reaches an integer only by chance, and the test gives the range itself.
+@Suite("The area at an integer cut")
+struct IntegerCutAreaTests {
+    @Test("A cut on an exact integer parameter gives an area with 3 old control points per side")
+    func integerCut() throws {
+        var factory = InkFixtures.factory()
+        let stroke = InkFixtures.line(from: 0, to: 200, spacing: 10, factory: &factory)
+        let covered = [9.0...12.0]
+        let shapes = StrokeSplitter.shapes(of: stroke, outside: covered)
+        #expect(shapes.count == 2)
+        let area = Eraser.changedArea(of: stroke, covered: covered, shapes: shapes)
+        let half = Double(stroke.width) / 2
+        // The part before the cut keeps the control points up to 8, so the old segments down to
+        // the one of the points 6 to 9 change. The part after keeps the points from 13 on.
+        let lowPoint = stroke.canvasPoint(at: 9 - Eraser.changedPointsPerSide)
+        let highPoint = stroke.canvasPoint(at: 12 + Eraser.changedPointsPerSide)
+        #expect(area.minX <= lowPoint.x - half, "area \(area) misses point 6")
+        #expect(area.maxX >= highPoint.x + half, "area \(area) misses point 15")
+        let shifted = [9.5...11.5]
+        let shiftedShapes = StrokeSplitter.shapes(of: stroke, outside: shifted)
+        let shiftedArea = Eraser.changedArea(of: stroke, covered: shifted, shapes: shiftedShapes)
+        #expect(shiftedArea.minX == stroke.canvasPoint(at: 7).x - half, "area \(shiftedArea)")
+        #expect(shiftedArea.maxX == stroke.canvasPoint(at: 14).x + half, "area \(shiftedArea)")
+    }
+}
