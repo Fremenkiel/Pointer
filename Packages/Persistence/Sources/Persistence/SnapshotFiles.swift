@@ -175,11 +175,17 @@ struct SnapshotFiles {
         return target
     }
 
-    /// Deletes the daily snapshots after the newest `keptCount`.
+    /// Deletes the daily snapshots after the newest `keptCount`. The new snapshot `kept` always
+    /// stays, also if the clock went back and its date is the oldest (review of 2026-10-28,
+    /// 3.2.2).
     ///
+    /// - Precondition: `kept` is the name of a daily snapshot in `Backups/`.
     /// - Throws: `PersistenceError.fileFailed` if a delete fails.
-    func removeOldSnapshots() throws(PersistenceError) {
-        let old = try dailySnapshots().dropFirst(Self.keptCount)
+    func removeOldSnapshots(except kept: String) throws(PersistenceError) {
+        precondition(Self.isDaily(kept), "\(kept) is not a daily name")
+        precondition(exists(kept), "The new snapshot exists before the old ones go")
+        let others = try dailySnapshots().filter { $0.url.lastPathComponent != kept }
+        let old = others.dropFirst(Self.keptCount - 1)
         for snapshot in old {
             do {
                 try files.removeItem(at: snapshot.url)

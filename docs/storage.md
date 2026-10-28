@@ -237,7 +237,7 @@ The snapshot before a restore has its own name, `Pointer-pre-restore-<yyyy-MM-dd
 
 ### 7.2 Automatic snapshots (STO-02)
 
-If the newest snapshot is older than 24 hours, the app makes a snapshot at the first idle moment while it is active (D-32). An idle moment is 5 seconds without input and with an empty pending set. The 5 seconds are a start value. Tune them on a device in M3. The app does not start a snapshot at the move to the background. The app keeps the newest 7 daily snapshots and deletes older ones. The pre-migration snapshots do not count, and the app never deletes them. These values come from decision D-21.
+If the newest snapshot is older than 24 hours, the app makes a snapshot at the first idle moment while it is active (D-32). An idle moment is 5 seconds without input and with an empty pending set. The 5 seconds are a start value. Tune them on a device in M3. The app does not start a snapshot at the move to the background. The app keeps the newest 7 daily snapshots and deletes older ones. The pre-migration snapshots do not count, and the app never deletes them. These values come from decision D-21. The age of a snapshot is its change date. If the clock of the iPad went back, the snapshots dated after now do not count for the 24 hours, and the rotation always keeps the snapshot that it just wrote.
 
 The `Info.plist` sets `UIFileSharingEnabled = YES` and `LSSupportsOpeningDocumentsInPlace = YES`. Thus the Files app shows `Documents/Backups/` under "On My iPad > Pointer". The Files app shows the "Pointer" folder only after `Documents/` holds a file. An empty `Documents/` gives no folder. The product owner saw this on the iPad Pro 11-inch (M4) on 2026-10-18. Thus the folder shows after the first snapshot.
 

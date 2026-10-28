@@ -95,6 +95,37 @@ struct SnapshotWriterTests {
         )
     }
 
+    @Test("A clock that went back past 7 daily snapshots keeps the new snapshot (3.2.2)")
+    func clockWentBack() async throws {
+        let harness = try RepositoryHarness()
+        _ = try await harness.open()
+        let clock = MovableWallClock(RepositoryHarness.now)
+        let writer = SnapshotWriter(configuration: Self.configuration(harness, clock: clock))
+        for _ in 0..<SnapshotFiles.keptCount {
+            _ = try await writer.writeSnapshotNow()
+            clock.advance(byHours: 24)
+        }
+        clock.goBack(byHours: 24 * 10)
+        let url = try await writer.writeSnapshotNow()
+        let names = try FileManager().contentsOfDirectory(atPath: Self.backups(harness).path)
+        #expect(names.contains(url.lastPathComponent))
+        #expect(names.count == SnapshotFiles.keptCount)
+        #expect(try await writer.isDailySnapshotDue() == false)
+    }
+
+    @Test("A newest snapshot dated after now does not stop the daily snapshot (3.2.2)")
+    func futureSnapshot() async throws {
+        let harness = try RepositoryHarness()
+        _ = try await harness.open()
+        let clock = MovableWallClock(RepositoryHarness.now)
+        let writer = SnapshotWriter(configuration: Self.configuration(harness, clock: clock))
+        #expect(try await writer.appIsIdle() != nil)
+        clock.goBack(byHours: 1)
+        #expect(try await writer.isDailySnapshotDue())
+        #expect(try await writer.appIsIdle() != nil)
+        #expect(try await writer.appIsIdle() == nil)
+    }
+
     @Test("A second pre-migration snapshot of the same version keeps the first one")
     func preMigrationKept() async throws {
         let harness = try RepositoryHarness()

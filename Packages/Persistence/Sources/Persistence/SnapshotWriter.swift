@@ -88,12 +88,16 @@ public actor SnapshotWriter {
         return try writeSnapshotNow()
     }
 
-    /// Returns true if no daily snapshot exists or the newest one is older than 24 hours.
+    /// Returns true if no daily snapshot is dated in the last 24 hours. A snapshot dated after
+    /// now does not count, so a clock that went back does not stop the daily snapshots
+    /// (review of 2026-10-28, 3.2.2).
     ///
     /// - Throws: `PersistenceError.fileFailed` if `Backups/` does not list.
     public func isDailySnapshotDue() throws(PersistenceError) -> Bool {
-        guard let newest = try files.dailySnapshots().first else { return true }
-        return now().timeIntervalSince(newest.date) >= SnapshotFiles.interval
+        let now = now()
+        let newest = try files.dailySnapshots().first { $0.date <= now }
+        guard let newest else { return true }
+        return now.timeIntervalSince(newest.date) >= SnapshotFiles.interval
     }
 
     /// Writes a daily snapshot now and keeps the newest 7 (D-21), for the idle signal and for
@@ -109,7 +113,7 @@ public actor SnapshotWriter {
         let date = now()
         let url = try write(as: files.freeDailyName(at: date), at: date)
         do {
-            try files.removeOldSnapshots()
+            try files.removeOldSnapshots(except: url.lastPathComponent)
         } catch {
             logger.error("An old snapshot stays: \(error)")
         }

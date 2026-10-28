@@ -75,4 +75,6 @@ final class MovableWallClock: WallClock {
     func nowMillis() -> UInt64 { millis.withLock { $0 } }
 
     func advance(byHours hours: UInt64) { millis.withLock { $0 += hours * 3_600_000 } }
+
+    func goBack(byHours hours: UInt64) { millis.withLock { $0 -= hours * 3_600_000 } }
 }
