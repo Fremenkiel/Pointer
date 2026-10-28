@@ -46,12 +46,7 @@ public enum Eraser {
             "A candidate stroke appears twice"
         )
         let pathBounds = path.bounds
-        // A serial filter of the bounds first: a miss costs about 0.4 µs on the threads of the
-        // split and much less here (review M9 section 3.3, item 8, the M10 plan task 3.2).
-        let near = candidates.filter {
-            $0.bounds.expanded(by: path.radius).intersects(pathBounds)
-        }
-        let cuts = split(near, along: path)
+        let cuts = split(nearCandidates(candidates, along: path), along: path)
         guard !cuts.isEmpty else { return nil }
         var parts: [Stroke] = []
         for cut in cuts {
@@ -64,6 +59,17 @@ public enum Eraser {
         let width = cuts.map { Double($0.stroke.width) }.max() ?? 0
         let area = cuts.reduce(pathBounds.expanded(by: width)) { union($0, $1.changed) }
         return EraseStrokes(removed: cuts.map(\.stroke), parts: parts, area: area)
+    }
+
+    /// Returns the candidates whose bounds touch the bounds of the path, in their order.
+    ///
+    /// A serial filter of the bounds first: a miss costs about 0.4 µs on the threads of the
+    /// split and much less here (review M9 section 3.3, item 8, the M10 plan task 3.2).
+    static func nearCandidates(_ candidates: [Stroke], along path: EraserPath) -> [Stroke] {
+        // The bounds of a stroke hold half its width, and the bounds of the path hold the
+        // radius, so the two touch exactly where the ink can meet the eraser (3.2.8).
+        let pathBounds = path.bounds
+        return candidates.filter { $0.bounds.intersects(pathBounds) }
     }
 
     /// Returns the area where the ink of a cut stroke changes: the old control points next to

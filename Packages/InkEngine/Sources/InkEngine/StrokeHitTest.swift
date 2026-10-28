@@ -65,8 +65,10 @@ private struct Probe {
 
     /// Makes the probe, or returns `nil` if no band of the path comes near the stroke.
     init?(stroke: Stroke, path: EraserPath) {
+        // The bounds of the stroke hold half its width, and the bounds of the path hold the
+        // radius, so they touch exactly where the ink can meet the eraser (3.2.8).
         let pathBounds = path.bounds
-        let strokeBounds = stroke.bounds.expanded(by: path.radius)
+        let strokeBounds = stroke.bounds
         guard strokeBounds.intersects(pathBounds) else { return nil }
         // The query covers only the overlap, so a long stroke reads few cells of the grid.
         let bands = path.bands(
