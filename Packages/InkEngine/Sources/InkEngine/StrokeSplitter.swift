@@ -12,6 +12,8 @@ enum StrokeSplitter {
     /// short part, so a few samples are enough.
     static let lengthSamplesPerSegment = 4
 
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
     /// Returns the parts of a stroke outside the covered ranges.
     ///
     /// Each part gets a new ID and a new creation time from `factory`, and the width and the
@@ -26,6 +28,7 @@ enum StrokeSplitter {
         outside covered: [ClosedRange<Double>],
         factory: inout StrokeFactory
     ) -> [Stroke] {
+        // swiftlint:enable unused_declaration
         let shapes = shapes(of: stroke, outside: covered)
         let parts = shapes.map { finish($0, factory: &factory) }
         return parts
