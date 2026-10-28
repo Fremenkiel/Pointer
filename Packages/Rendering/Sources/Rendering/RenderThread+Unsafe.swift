@@ -82,11 +82,13 @@ final class RenderThread: NSObject, CAMetalDisplayLinkDelegate, @unchecked Senda
         perform { [weak self] in self?.link?.isPaused = false }
     }
 
-    /// Sets the drawable size on the render thread, so it never changes during a frame.
+    /// Sets the drawable size on the render thread, so it never changes during a frame. The
+    /// block captures the thread weakly, as `wake()` does (D-194).
     func setDrawableSize(_ size: CGSize) {
         precondition(size.width.isFinite && size.height.isFinite, "Drawable size is not finite")
         precondition(size.width >= 0 && size.height >= 0, "Drawable size \(size) is negative")
-        perform { [self] in
+        perform { [weak self] in
+            guard let self else { return }
             layer.drawableSize = size
             link?.isPaused = false
         }
