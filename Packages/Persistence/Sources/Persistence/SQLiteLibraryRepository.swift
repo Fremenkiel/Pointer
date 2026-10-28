@@ -65,6 +65,9 @@ public actor SQLiteLibraryRepository: LibraryRepository {
 
     /// The open connection, or `nil` before the open and after the close.
     var connection: SQLiteConnection?
+    /// `true` from the start of `open(snapshot:)` to its end, also while the open waits for
+    /// the pre-migration snapshot without a connection (review of 2026-10-28, 3.2.6).
+    var isOpening = false
     /// The prepared statements of the open connection, or `nil`.
     var statements: LibraryStatements?
     /// `true` if the library comes from a newer schema and opens read-only.
@@ -140,10 +143,13 @@ public actor SQLiteLibraryRepository: LibraryRepository {
     /// the tombstones older than 30 days (D-18), and gives free pages back. The partial snapshot
     /// files of a stopped snapshot are deleted first.
     ///
-    /// - Precondition: The repository is not open: new, closed, or after a failed open.
+    /// - Precondition: The repository is not open and not opening: new, closed, or after a
+    ///   failed open.
     /// - Throws: `ModelError.storageFailed` if the file does not open or migrate.
     public func open(snapshot: PreMigrationSnapshot) async throws(ModelError) -> LibraryLaunch {
-        precondition(connection == nil, "The library is open already")
+        precondition(connection == nil && !isOpening, "The library is open or opening already")
+        isOpening = true
+        defer { isOpening = false }
         var removedCanvases: [CanvasID] = []
         // A partial file of a stopped launch makes `VACUUM INTO` fail before the migration (F-08).
         LibraryMaintenance.removePartialSnapshots(in: configuration.temporaryFolder)

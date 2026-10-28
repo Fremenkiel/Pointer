@@ -24,6 +24,23 @@ struct RepositoryCloseTests {
         await repository.close()
     }
 
+    @Test("The library is opening while the open waits for the pre-migration snapshot (3.2.6)")
+    func openingFlag() async throws {
+        let harness = try RepositoryHarness()
+        _ = try await harness.open()
+        let repository = harness.make(
+            migrations: Migration.library + [MigrationRunnerTests.addTable]
+        )
+        #expect(await repository.isOpening == false)
+        let seen = VersionList()
+        _ = try await repository.open { _ in
+            seen.add(1, seen: await repository.isOpening ? 1 : 0)
+        }
+        #expect(seen.values == [1, 1])
+        #expect(await repository.isOpening == false)
+        await repository.close()
+    }
+
     @Test("A failed open drops its connection, so no write reaches the file")
     func failedOpenWritesNothing() async throws {
         let harness = try RepositoryHarness()

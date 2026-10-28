@@ -5,9 +5,11 @@ extension SQLiteLibraryRepository {
     /// statements, the checkpointer, and the connection. A send or a save after the close fails
     /// with `ModelError.storageFailed`, also one that comes during the wait.
     ///
-    /// - Precondition: No row waits for a save. The caller saves first.
+    /// - Precondition: No row waits for a save. The caller saves first. The library is not in
+    ///   the middle of an open.
     public func close() async {
         precondition(pending.isEmpty, "The close drops \(pending.count) pending rows")
+        precondition(!isOpening, "The close came during the open")
         scheduledSave?.cancel()
         scheduledSave = nil
         // Without statements, a send during the wait fails, so no row comes in.
