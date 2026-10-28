@@ -18,6 +18,9 @@ public final class InkView: UIView {
     private var isFrameRequested = false
     /// The steps in a row without an animation.
     private var idleSteps = 0
+    /// The view size and the display scale of the last layout, so that a layout with the same
+    /// size posts no viewport and draws no frame (review 3.3.6).
+    private var lastLayout: (viewSize: Size, scale: CGFloat)?
     /// The link keeps its continuous updates for this many steps without an animation, about
     /// 0.1 s at 120 Hz, so that a new animation starts on the next display frame.
     static let idleStepsBeforeSleep = 12
@@ -94,6 +97,8 @@ public final class InkView: UIView {
         let viewSize = Size(width: bounds.width, height: bounds.height)
         assert(viewSize.width.isFinite && viewSize.height.isFinite, "View bounds are not finite")
         assert(scale.isFinite, "Display scale is not finite")
+        if let lastLayout, lastLayout.viewSize == viewSize, lastLayout.scale == scale { return }
+        lastLayout = (viewSize, scale)
         metalLayer.contentsScale = scale
         let drawableSize = CGSize(width: viewSize.width * scale, height: viewSize.height * scale)
         if let renderThread {
