@@ -206,9 +206,6 @@ final class PreviewAtlas {
         isShown: (CardID) -> Bool
     ) -> Entry? {
         precondition(preview.width <= preview.step && preview.height <= preview.step, "Size")
-        if let earlier = entries.removeValue(forKey: preview.card) {
-            slots.free(earlier.slot)
-        }
         guard let level = PreviewSlots.sides.firstIndex(of: preview.step) else {
             preconditionFailure("Step \(preview.step) is not a slot side")
         }
@@ -220,14 +217,19 @@ final class PreviewAtlas {
             keeping: isShown,
             evicted: &evicted
         )
-        for card in evicted {
+        for card in evicted where card != preview.card {
             entries.removeValue(forKey: card)
             noRoom.insert(card)
         }
+        // The new slot comes first, so a card whose larger preview finds no room keeps its
+        // smaller one (review of 2026-10-28, 3.2.9). The earlier slot goes after, unless the
+        // eviction took it already.
         guard let slot else {
             noRoom.insert(preview.card)
             return nil
         }
+        let earlier = entries.removeValue(forKey: preview.card)
+        if let earlier, slots.owner(of: earlier.slot) == preview.card { slots.free(earlier.slot) }
         let origin = slots.origin(of: slot)
         let entry = Entry(
             slot: slot,
