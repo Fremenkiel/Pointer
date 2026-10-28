@@ -140,7 +140,7 @@ struct Card: Identifiable, Hashable, Sendable {
     let meta: RecordMeta
     let canvasID: CanvasID     // the parent canvas
     let frame: Rect            // in parent canvas space, Double
-    let title: String?         // 0...120 code points
+    let title: String?         // 1...120 code points, or nil for no title
     let sortKey: FractionalIndex
 }
 ```
@@ -148,6 +148,7 @@ struct Card: Identifiable, Hashable, Sendable {
 Rules:
 
 - `frame.size` is at least 64 by 48 canvas points.
+- An empty title is no title. The initializer and a rename map it to `nil`, so the database holds one form of "no title".
 - `canvasID` never equals `id`. Version 1 moves a card only inside its canvas (CARD-07, `MoveNode`), so no move makes a cycle. A later move to a different parent must walk the parent chain with a depth limit of `Limits.maxDepth` and refuse a cycle.
 - A delete of a card marks only the card. The child content stays on disk for 30 days and comes back with an undo (decision D-18). After 30 days, the repository removes the card and its subtree at launch.
 

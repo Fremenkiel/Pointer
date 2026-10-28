@@ -15,7 +15,8 @@ public struct Card: Identifiable, Hashable, Sendable {
     /// The drawing order within the card layer.
     public let sortKey: FractionalIndex
 
-    /// Makes a card.
+    /// Makes a card. An empty title is no title, as `retitling(_:at:)` gives, so the database
+    /// holds one form of "no title" (review of 2026-10-28, 3.2.18).
     ///
     /// - Throws: `ModelError.cardIsOwnCanvas` if `canvasID` is the child canvas of the card,
     ///   `ModelError.invalidGeometry` for a frame that is not finite or is smaller than
@@ -41,7 +42,7 @@ public struct Card: Identifiable, Hashable, Sendable {
         self.meta = meta
         self.canvasID = canvasID
         self.frame = frame
-        self.title = title
+        self.title = titleLength == 0 ? nil : title
         self.sortKey = sortKey
     }
 

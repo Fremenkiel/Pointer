@@ -61,7 +61,7 @@ struct RecordTests {
     }
 
     @Test(
-        "A card title has 0 to 120 code points or none",
+        "A card title has 1 to 120 code points or none, and an empty title is none",
         arguments: [(nil, true), (0, true), (1, true), (Limits.maxTitleLength, true), (121, false)]
     )
     func cardTitle(length: Int?, isValid: Bool) throws {
@@ -70,7 +70,7 @@ struct RecordTests {
             try Self.card(title: title)
         }
         if isValid {
-            #expect(try make().title == title)
+            #expect(try make().title == (length == 0 ? nil : title))
         } else {
             #expect(throws: ModelError.invalidTitle(length: 121)) { try make() }
         }
@@ -93,6 +93,13 @@ struct RecordTests {
         } else {
             #expect(throws: ModelError.self) { try Self.card(frame: frame) }
         }
+    }
+
+    @Test("A card made with an empty title has no title, as a retitle to empty gives (3.2.18)")
+    func cardEmptyTitle() throws {
+        #expect(try Self.card(title: "").title == nil)
+        #expect(try Self.card(title: nil).title == nil)
+        #expect(try Self.card(title: "a").title == "a")
     }
 
     @Test("A card with an origin that is not finite is refused")

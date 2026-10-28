@@ -29,13 +29,18 @@ struct RowCodecTests {
             meta: Values.meta,
             canvasID: Values.canvas,
             frame: card.frame,
-            title: nil,
+            title: "",
             sortKey: card.sortKey
         )
         try library.write(card, CardRow.upsert, CardRow.bind)
         try library.write(untitled, CardRow.upsert, CardRow.bind)
         let rows = try library.rows(CardRow.selectLive, canvas: Values.canvas, CardRow.read)
         #expect(Set(rows) == [card, untitled])
+        // An empty title is no title, so the row holds NULL (3.2.18).
+        let untitledRows = try library.connection.integer(
+            "SELECT count(*) FROM card WHERE title IS NULL"
+        )
+        #expect(untitledRows == 1)
     }
 
     @Test("A text box goes into its row and back unchanged")
