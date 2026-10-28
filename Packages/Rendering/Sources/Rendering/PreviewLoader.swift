@@ -4,7 +4,7 @@ import Synchronization
 import os
 
 /// Reads and decodes the card previews off the main actor and off the render thread (D-97,
-/// m6-plan.md section 4, rule 5).
+/// the M6 plan section 4, rule 5).
 ///
 /// One long-lived task serves all requests of a renderer, one at a time, so the decode runs on
 /// one serial path and makes no task per frame. A request whose card left the texture area is

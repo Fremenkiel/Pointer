@@ -9,7 +9,7 @@ import WorkspaceFeature
 import os
 
 /// Opens the library, the device state, and the snapshot writer at launch, and connects them
-/// with the canvas and the workspace selector (task 3.9 of docs/m3-plan.md, ARCH-01).
+/// with the canvas and the workspace selector (task 3.9 of the M3 plan, ARCH-01).
 @MainActor
 final class AppComposition {
     /// The root view controller that holds the screens.

@@ -171,7 +171,7 @@ extension SQLiteLibraryRepository {
     }
 
     /// Reserves room in `content` for the rows of the canvas. The count costs 0.24 ms and saves
-    /// about 1 ms of table growth for 20,000 strokes on the Mac (m10-plan.md task 3.6).
+    /// about 1 ms of table growth for 20,000 strokes on the Mac (the M10 plan task 3.6).
     ///
     /// - Throws: `PersistenceError` if the bind or the step fails.
     private func reserveRows(

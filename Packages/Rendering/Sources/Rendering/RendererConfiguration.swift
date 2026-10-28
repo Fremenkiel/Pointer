@@ -19,9 +19,9 @@ public struct RendererConfiguration: Sendable {
     /// The render-thread time in seconds that a frame without screen work can spend on a chunk
     /// of the preview render. Such a frame draws and presents nothing, so the chunk can take the
     /// time of the draw too. The thread runs at a lower clock when a frame presents nothing: with
-    /// `buildTimeBudget` the chunks took one frame more than before (m10-plan.md section 6.44).
+    /// `buildTimeBudget` the chunks took one frame more than before (the M10 plan section 6.44).
     public var previewChunkTimeBudget: Double
-    /// The byte budget of the glyph atlas: a start value (task 2.2 of docs/m5-plan.md). Tune it
+    /// The byte budget of the glyph atlas: a start value (task 2.2 of the M5 plan). Tune it
     /// on a device.
     public var glyphAtlasByteBudget: Int
     /// The canvas color in sRGB, each channel from 0 to 1. The composite mixes it with white by
@@ -84,7 +84,7 @@ public struct RendererConfiguration: Sendable {
     ///
     /// - Precondition: At least `PreviewPasses.minimumByteBudget`, so that each stroke fits.
     public var previewArenaByteBudget = 32 << 20
-    /// The preview requests that wait for the loader at most (m6-plan.md section 4, rule 5).
+    /// The preview requests that wait for the loader at most (the M6 plan section 4, rule 5).
     public var previewRequestLimit = 16
     /// The glyph quads per frame. A text box holds at most `Limits.maxTextLength` glyphs, so a
     /// frame holds several boxes.
@@ -98,7 +98,7 @@ public struct RendererConfiguration: Sendable {
     /// The stored glyph quads that the passes of one frame draw at most (architecture.md
     /// 5.4.1): the quads of `glyphCapacity`. 262,144 quads built the D-56 text in fewer frames,
     /// but the GPU p99 of a text pan rose by 46 %. 32,768 and 16,384 raised the GPU p50 of a
-    /// text pan and its uncovered frames (m10-plan.md section 6.44).
+    /// text pan and its uncovered frames (the M10 plan section 6.44).
     public var storedGlyphCapacity = 65_536
 
     /// Makes a configuration.

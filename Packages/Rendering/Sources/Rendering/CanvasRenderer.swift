@@ -121,11 +121,11 @@ public final class CanvasRenderer {
         metalLayer.colorspace = CGColorSpace(name: CGColorSpace.sRGB)
         metalLayer.framebufferOnly = true
         // Three drawables (D-41): with two, `nextDrawable()` blocked the main thread for 16.3 ms
-        // in each frame, and a pan ran at 60 Hz (docs/m2-fix-plan.md section 2).
+        // in each frame, and a pan ran at 60 Hz (the M2 fix plan section 2).
         metalLayer.maximumDrawableCount = Self.drawableCount
         // `false`: the frame presents through the command buffer, so no thread waits for the
         // GPU. With `true`, `waitUntilScheduled` blocked the main thread during a camera glide,
-        // and touches arrived late (device trace of 2026-10-17, docs/m2-plan.md).
+        // and touches arrived late (device trace of 2026-10-17, the M2 plan).
         metalLayer.presentsWithTransaction = false
         metalLayer.isOpaque = true
         assert(metalLayer.maximumDrawableCount == Self.drawableCount, "The layer keeps 3 drawables")
@@ -327,7 +327,7 @@ public final class CanvasRenderer {
         precondition(handoff <= lastHandoff, "Handoff \(handoff) was never sent")
         let count = completions.prefix { $0.handoff <= handoff }.count
         // A loop by index holds no slice of the list, so the removal copies nothing (PERF-01,
-        // m10-plan.md task 3.1). A callback can add a handoff, which goes to the end.
+        // the M10 plan task 3.1). A callback can add a handoff, which goes to the end.
         for index in 0..<count { completions[index].callback(time) }
         completions.removeFirst(count)
         assert(completions.allSatisfy { $0.handoff > handoff }, "A due completion still waits")

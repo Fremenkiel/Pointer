@@ -48,7 +48,7 @@ final class InkResources {
     let placeholder: any MTLTexture
 
     /// Makes resources with the pipelines of `other` and a command queue of their own, so
-    /// that each renderer keeps its own GPU order (m10-plan.md task 3.3).
+    /// that each renderer keeps its own GPU order (the M10 plan task 3.3).
     ///
     /// - Throws: `RenderingError.resourceUnavailable` if the device makes no queue.
     init(sharingPipelinesOf other: InkResources) throws(RenderingError) {

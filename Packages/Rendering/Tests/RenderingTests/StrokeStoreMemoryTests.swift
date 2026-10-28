@@ -5,7 +5,7 @@ import XCTest
 
 @testable import Rendering
 
-/// The memory of the stroke store of a full canvas (docs/m2-fix-plan.md, phase 4, task 5).
+/// The memory of the stroke store of a full canvas (the M2 fix plan, phase 4, task 5).
 @MainActor
 final class StrokeStoreMemoryTests: XCTestCase {
     /// The bytes of the collections of the store of 200,000 handwriting strokes at most. The

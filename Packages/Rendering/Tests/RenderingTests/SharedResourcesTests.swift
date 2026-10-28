@@ -3,7 +3,7 @@ import Testing
 
 @testable import Rendering
 
-/// The pipelines that all renderers share (m10-plan.md task 3.3).
+/// The pipelines that all renderers share (the M10 plan task 3.3).
 @Suite("Shared ink resources")
 struct SharedResourcesTests {
     @Test("Two sets share their pipelines and keep a command queue each")

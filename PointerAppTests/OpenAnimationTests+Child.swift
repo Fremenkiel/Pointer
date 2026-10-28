@@ -8,7 +8,7 @@ import XCTest
 @testable import Rendering
 
 /// The child canvas of an open, which loads and draws its first frames during the flight of the
-/// parent (m10-plan.md task 5.1).
+/// parent (the M10 plan task 5.1).
 extension OpenAnimationTests {
     /// Runs the open of `card` and returns its report line, its late frames, and the child.
     static func measureOpen(
@@ -23,7 +23,7 @@ extension OpenAnimationTests {
         let start = CACurrentMediaTime()
         collector.measure(from: start, to: start + 5)
         parent.renderer.engine.post { $0.observer = cameras }
-        // The child canvas and its first frames run during the flight (m10-plan.md task 5.1).
+        // The child canvas and its first frames run during the flight (the M10 plan task 5.1).
         let childCollector = FrameLoopCollector(viewSize: viewSize)
         childCollector.measure(from: start, to: start + 5)
         let watch = Task { @MainActor in

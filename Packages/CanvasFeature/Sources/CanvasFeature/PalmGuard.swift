@@ -9,7 +9,7 @@ struct PalmGuard {
     /// Tune it on a device.
     static let pencilCooldown: TimeInterval = 0.150
     /// A touch with a larger `majorRadius`, in points, is a palm. A start value: a fingertip
-    /// gives about 10 points. Tune it on a device in M2.
+    /// gives about 10 points. Tune it on a device.
     static let palmRadius = 30.0
     /// The palm radius of a UI test. XCTest gives each synthesized finger touch a `majorRadius`
     /// of 32.67 points, so the UI tests need a larger radius to pan and drag (D-191).

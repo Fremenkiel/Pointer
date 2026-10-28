@@ -3,7 +3,7 @@ import Testing
 @testable import Geometry
 
 /// The cell count of an item and the bound of the cells per item (task 1.5 of
-/// docs/m9-plan.md, D-158).
+/// the M9 plan, D-158).
 @Suite("Grid cells per item")
 struct GridBoundTests {
     /// The cell size of the grids of the app, `Limits.gridCellSize` of Model, which Geometry

@@ -82,7 +82,7 @@ public struct Card: Identifiable, Hashable, Sendable {
     }
 
     /// Returns a copy with a new title and the change time `time`. A title of 0 code points
-    /// becomes `nil`, so `RenameCard` stores no empty title (m6-plan.md task 1.2).
+    /// becomes `nil`, so `RenameCard` stores no empty title (the M6 plan task 1.2).
     ///
     /// - Throws: `ModelError.invalidTitle` for a title above `Limits.maxTitleLength` code points,
     ///   and `ModelError.nullCharacter` for a title with U+0000.

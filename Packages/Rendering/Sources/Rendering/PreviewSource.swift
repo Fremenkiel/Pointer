@@ -7,6 +7,6 @@ import Model
 public protocol PreviewSource: Sendable {
     /// Returns the PNG bytes of the preview of `canvas`. If no valid file exists, the source can
     /// render the preview of the canvas for a card of `cardAspect`, write it, and return it
-    /// (m6-plan.md task 3.3, item 6). It returns `nil` if it has no preview.
+    /// (the M6 plan task 3.3, item 6). It returns `nil` if it has no preview.
     func preview(of canvas: CanvasID, cardAspect: Double) async -> Data?
 }

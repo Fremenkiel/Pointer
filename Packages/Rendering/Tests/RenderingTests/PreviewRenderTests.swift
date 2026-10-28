@@ -7,7 +7,7 @@ import Testing
 
 @testable import Rendering
 
-/// The preview render of a canvas at a leave (m6-plan.md task 3.4, D-97, D-98).
+/// The preview render of a canvas at a leave (the M6 plan task 3.4, D-97, D-98).
 @MainActor
 @Suite("Preview render")
 struct PreviewRenderTests {

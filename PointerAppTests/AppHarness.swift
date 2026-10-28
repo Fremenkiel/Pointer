@@ -9,7 +9,7 @@ import UIKit
 @testable import Pointer
 
 /// A composition that starts as at launch on the files of a temporary folder, and the new
-/// composition after each restore (tasks 2.1 to 2.4 of docs/m9-plan.md). The files of the test
+/// composition after each restore (tasks 2.1 to 2.4 of the M9 plan). The files of the test
 /// host stay as they are.
 @MainActor
 final class AppHarness {

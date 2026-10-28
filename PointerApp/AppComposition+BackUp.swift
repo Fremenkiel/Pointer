@@ -3,7 +3,7 @@ import Foundation
 import Persistence
 import UIKit
 
-/// "Back up now" (task 2.4 of docs/m9-plan.md, STO-04, D-155, D-160).
+/// "Back up now" (task 2.4 of the M9 plan, STO-04, D-155, D-160).
 extension AppComposition {
     /// Saves the work on the screen and writes a daily snapshot for the share sheet (D-149,
     /// D-155). The screen takes no input until the end (D-169).

@@ -70,7 +70,7 @@ final class FakePreviews: PreviewSource {
     }
 }
 
-/// The slots, the decode, and the loader of the card previews (D-97, m6-plan.md section 4).
+/// The slots, the decode, and the loader of the card previews (D-97, the M6 plan section 4).
 @Suite("Card previews")
 struct PreviewTests {
     private static func card(_ index: Int) -> CardID {

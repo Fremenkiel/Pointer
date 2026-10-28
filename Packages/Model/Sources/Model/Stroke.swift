@@ -42,7 +42,7 @@ public struct Stroke: Identifiable, Sendable {
         self.origin = origin
         self.width = width
         self.points = points
-        // One loop over the offsets, without a temporary array of points (docs/m2-fix-plan.md,
+        // One loop over the offsets, without a temporary array of points (the M2 fix plan,
         // phase 5). The conversion to Double is exact and the addition keeps the order, so the
         // bounds equal the bounds of the canvas points. Scalar `min` and `max` vectorize, and
         // `pointwiseMin` on `SIMD2<Float>` did not (P-04).

@@ -26,7 +26,7 @@ final class PreviewMakerPerformanceTests: XCTestCase {
         let maker = PreviewMaker()
         try await measure(content, name: "D-56, first of a maker", maker: maker)
         try await measure(content, name: "D-56, second of the maker", maker: maker)
-        // The Metal memory that the maker keeps between previews (m10-plan.md task 3.4).
+        // The Metal memory that the maker keeps between previews (the M10 plan task 3.4).
         let kept = Double(device.currentAllocatedSize - min(before, device.currentAllocatedSize))
         let megabytes = kept / 1_048_576
         let line = String(format: "Metal memory that the maker keeps: %.1f MB", megabytes)

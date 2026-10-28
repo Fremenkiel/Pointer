@@ -2,7 +2,7 @@ import BackupFeature
 import Foundation
 import WorkspaceFeature
 
-/// The commands of the library in the list of the selector (task 3.1 of docs/m9-plan.md,
+/// The commands of the library in the list of the selector (task 3.1 of the M9 plan,
 /// D-160). The handlers stay thin: the flows behind them have their own tests.
 extension AppComposition {
     /// Returns "Back up now" and "Restore from a snapshot".

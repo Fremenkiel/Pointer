@@ -3,7 +3,7 @@ import Foundation
 import Rendering
 import UIKit
 
-/// Renders the first page of a PDF into an image (TEST-07, docs/m8-plan.md section 1.2).
+/// Renders the first page of a PDF into an image (TEST-07, the M8 plan section 1.2).
 enum PDFRender {
     /// Returns the first page of the PDF data.
     static func firstPage(of data: Data) -> CGPDFPage? {

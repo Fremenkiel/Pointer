@@ -52,7 +52,7 @@ struct D56Library {
 
     /// Saves the rows that wait, closes the repository, and removes the folder of the library,
     /// about 95 MB (D-60). SQLite must not hold the files at the delete, or a late checkpoint
-    /// runs into the next test (task 1.1 of docs/m9-plan.md).
+    /// runs into the next test (task 1.1 of the M9 plan).
     func remove() async {
         do {
             try await repository.saveNow()

@@ -141,9 +141,11 @@ public struct History: Sendable {
         for step in redoSteps where !unheld.isEmpty {
             step.forEachHeldStroke { unheld.remove($0) }
         }
+        // Each ID once, also when two dropped steps hold the same stroke, for example an add
+        // and its erase (review of 2026-10-28).
         var result: [StrokeID] = []
         for step in dropped {
-            step.forEachHeldStroke { if unheld.contains($0) { result.append($0) } }
+            step.forEachHeldStroke { if unheld.remove($0) != nil { result.append($0) } }
         }
         return result
     }

@@ -6,7 +6,7 @@ import Testing
 @testable import Rendering
 
 /// The split of the strokes of an offscreen preview into passes under the arena budget (task
-/// 1.6 of docs/m9-plan.md, D-157).
+/// 1.6 of the M9 plan, D-157).
 @Suite("Passes of an offscreen preview")
 struct PreviewPassesTests {
     @Test("No stroke gives one empty pass, which clears the target")

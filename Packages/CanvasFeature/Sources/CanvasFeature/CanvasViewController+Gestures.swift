@@ -63,7 +63,7 @@ extension CanvasViewController: UIGestureRecognizerDelegate {
     /// A recognizer of PencilKit that takes finger touches waits for the finger tap and the long
     /// press of the canvas to fail. The selection of PencilKit, which Pointer does not use (D-10),
     /// took a finger tap on a box and ended the focus of the edit view 0.35 s later (manual test
-    /// 4 of docs/m5-plan.md section 5.6). The drawing of the pencil waits for nothing.
+    /// 4 of the M5 plan section 5.6). The drawing of the pencil waits for nothing.
     public func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
         shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer

@@ -7,7 +7,7 @@ import Testing
 @testable import Rendering
 
 /// The redraw of an area lists only the strokes that touch the texture (P-01 of
-/// docs/m4-fix-plan.md, phase 3, task 1).
+/// the M4 fix plan, phase 3, task 1).
 @MainActor
 @Suite("The redraw area")
 struct RedrawAreaTests {

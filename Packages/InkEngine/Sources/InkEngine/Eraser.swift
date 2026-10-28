@@ -39,7 +39,7 @@ public enum Eraser {
         factory: inout StrokeFactory
     ) -> EraseStrokes? {
         // The set costs about 2 % of an erase of 1,000 strokes in a release build, so the check
-        // runs in debug builds only (m10-plan.md task 3.2). A stroke twice in release fails the
+        // runs in debug builds only (the M10 plan task 3.2). A stroke twice in release fails the
         // apply with `strokeNotLive`, which rolls the content back.
         assert(
             Set(candidates.map(\.id)).count == candidates.count,
@@ -47,7 +47,7 @@ public enum Eraser {
         )
         let pathBounds = path.bounds
         // A serial filter of the bounds first: a miss costs about 0.4 µs on the threads of the
-        // split and much less here (review M9 section 3.3, item 8, m10-plan.md task 3.2).
+        // split and much less here (review M9 section 3.3, item 8, the M10 plan task 3.2).
         let near = candidates.filter {
             $0.bounds.expanded(by: path.radius).intersects(pathBounds)
         }

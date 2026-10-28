@@ -42,6 +42,9 @@ final class DrawListRing {
         let signposter = OSSignposter(subsystem: "dk.saarikivi.pointer", category: "Rendering")
         release = { buffer in
             available.signal()
+            // The message with its argument is built only while a tool records (PERF-01,
+            // review of 2026-10-28).
+            guard signposter.isEnabled else { return }
             let milliseconds = (buffer.gpuEndTime - buffer.gpuStartTime) * 1000
             signposter.emitEvent("GPUFrame", "\(milliseconds, format: .fixed(precision: 2)) ms")
         }

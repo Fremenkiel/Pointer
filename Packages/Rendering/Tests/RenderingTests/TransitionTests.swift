@@ -7,7 +7,7 @@ import Testing
 
 @testable import Rendering
 
-/// The frames of an open and a leave on the renderer of the parent (m6-plan.md task 3.5, D-98,
+/// The frames of an open and a leave on the renderer of the parent (the M6 plan task 3.5, D-98,
 /// D-108, D-109, D-110). The drawable has 400 x 240 pixels at scale 2, so the view shows 200 x
 /// 120 view points. The card of the tests covers the screen at zoom 2, centered on (0, 5).
 @MainActor

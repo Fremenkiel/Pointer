@@ -3,7 +3,7 @@ import XCTest
 
 @testable import Rendering
 
-/// The measures of the frames of a flight (m6-fix-plan.md task 2.1).
+/// The measures of the frames of a flight (the M6 fix plan task 2.1).
 extension OpenAnimationTests {
     /// The report line of a leave, its late frames, and the held frames of the parent.
     struct LeaveMeasure {
@@ -47,7 +47,7 @@ extension OpenAnimationTests {
             + ", GPU " + gpu.joined(separator: " ") + ", dropped \(report.droppedFrames)"
     }
 
-    /// The frames around each late interval (m10-plan.md task 5.1): for frames two before to two
+    /// The frames around each late interval (the M10 plan task 5.1): for frames two before to two
     /// after, the target and the presented time in milliseconds after the first target, the
     /// render-thread time, and the GPU spans that start near the target.
     static func lateNeighborhood(_ report: FrameLoopReport) -> String {

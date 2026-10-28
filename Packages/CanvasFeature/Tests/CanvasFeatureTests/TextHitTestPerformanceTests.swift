@@ -12,7 +12,7 @@ import XCTest
 ///
 /// Each tap goes to a new `TextEditing`, so each is a first tap without known sizes. The test
 /// before this one can leave the CPU in a slower state: after `TextBuildPerformanceTests`, one
-/// tap took 0.25 to 0.29 ms instead of 0.18 ms, and about 50 taps brought it back (m10-plan.md
+/// tap took 0.25 to 0.29 ms instead of 0.18 ms, and about 50 taps brought it back (the M10 plan
 /// section 6.44). Thus warm-up taps run first, and the sample is the median of the measured taps
 /// (D-177).
 @MainActor

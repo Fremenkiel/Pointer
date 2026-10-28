@@ -168,7 +168,7 @@ extension CanvasViewController {
 
     /// The sort key after the last card: a new card lies above the others.
     private func nextCardSortKey() -> FractionalIndex {
-        // The largest key without a list of all keys (PERF-01, m10-plan.md task 3.6).
+        // The largest key without a list of all keys (PERF-01, the M10 plan task 3.6).
         let last = content.cards.values.max { $0.sortKey < $1.sortKey }?.sortKey
         do {
             return try FractionalIndex.between(last, nil)

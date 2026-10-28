@@ -2,7 +2,7 @@ import Metal
 import Synchronization
 
 /// The one set of pipelines per GPU, which all renderers share (review M9 section 3.3, item 3,
-/// m10-plan.md task 3.3). Each renderer keeps a command queue of its own.
+/// the M10 plan task 3.3). Each renderer keeps a command queue of its own.
 extension InkResources {
     /// Carries the shared resources out of the lock of the cache.
     ///

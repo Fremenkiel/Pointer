@@ -11,13 +11,13 @@ import os
 /// memory with the CPU.
 final class PointArena {
     /// The bytes of one point slot: `x` and `y` of `InkPoint` as a `float2`. The shader reads
-    /// only these, and they halve the arena against the full point (docs/m2-fix-plan.md,
+    /// only these, and they halve the arena against the full point (the M2 fix plan,
     /// phase 4, task 1).
     static let bytesPerPoint = MemoryLayout<SIMD2<Float>>.stride
     /// The bytes of one slab.
     static let bytesPerSlab = SlabAllocator.slabPoints * bytesPerPoint
     /// The bytes of one buffer: 16 MB. A doubling buffer of 192 MB copied its points for 7.4 ms
-    /// and held the old and the new buffer at once (docs/m2-fix-plan.md, phase 4, task 3).
+    /// and held the old and the new buffer at once (the M2 fix plan, phase 4, task 3).
     static let bytesPerBuffer = 16 << 20
     /// The slabs of one full buffer.
     static let maxSlabsPerBuffer = bytesPerBuffer / bytesPerSlab
@@ -92,7 +92,7 @@ final class PointArena {
             return block
         }
         // A static name only: an interval with a message built a string at each growth
-        // (m10-plan.md task 3.6).
+        // (the M10 plan task 3.6).
         let state = signposter.beginInterval("ArenaGrow")
         defer { signposter.endInterval("ArenaGrow", state) }
         guard addBuffer() else { return nil }

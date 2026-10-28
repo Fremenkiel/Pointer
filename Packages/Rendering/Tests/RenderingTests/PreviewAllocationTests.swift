@@ -6,7 +6,7 @@ import XCTest
 @testable import Rendering
 
 /// The heap allocations of a green pass with 10 cards whose previews are in the atlas, against a
-/// bare render pass with the same draws (PERF-01, D-43, m6-plan.md task 3.3).
+/// bare render pass with the same draws (PERF-01, D-43, the M6 plan task 3.3).
 @MainActor
 final class PreviewAllocationTests: XCTestCase {
     /// The bytes of the zero buffer of the bare pass, more than one quad and its uniforms.

@@ -17,7 +17,7 @@ Read these documents before you write code:
    - [docs/data-model.md](docs/data-model.md) for types, IDs, clocks, and commands.
    - [docs/storage.md](docs/storage.md) for the SQLite schema, saving, and backup.
 4. [docs/decisions.md](docs/decisions.md): open questions. Do not decide an open question yourself.
-5. [docs/plan.md](docs/plan.md): the current milestone and its acceptance criteria.
+5. [docs/plan.md](docs/plan.md): the state of each milestone and the open work. The newest review in `docs/` lists the candidates for the next milestone.
 
 ## Context map
 

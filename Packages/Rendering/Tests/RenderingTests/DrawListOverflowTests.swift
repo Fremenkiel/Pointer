@@ -7,7 +7,7 @@ import Testing
 @testable import Rendering
 
 /// The frames with a draw list of 4 entries: more strokes than one frame holds go on in the next
-/// frames, and nothing traps (F-04, F-05 of docs/m4-fix-plan.md). The drawable has 400 x 240
+/// frames, and nothing traps (F-04, F-05 of the M4 fix plan). The drawable has 400 x 240
 /// pixels at scale 2, so the texture shows 400 x 240 canvas points at zoom 1.
 @MainActor
 @Suite("A full draw list")

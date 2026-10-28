@@ -10,7 +10,7 @@ import WorkspaceFeature
 @testable import Pointer
 
 /// The navigation in the card tree: the open of a card, the leave, the launch into a stored
-/// path, and the history of a child (m6-plan.md task 4.4, CARD-03, CARD-04, WS-04, D-99, D-112).
+/// path, and the history of a child (the M6 plan task 4.4, CARD-03, CARD-04, WS-04, D-99, D-112).
 @MainActor
 @Suite("Card navigation")
 struct NavigationTests {
@@ -31,7 +31,7 @@ struct NavigationTests {
         let chain: [CardID]
 
         /// Saves the rows that wait, closes the repository, and removes the folder. SQLite must
-        /// not hold the files at the delete (task 1.1 of docs/m9-plan.md).
+        /// not hold the files at the delete (task 1.1 of the M9 plan).
         func remove() async {
             do {
                 try await repository.saveNow()

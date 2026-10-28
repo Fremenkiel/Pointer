@@ -1,6 +1,6 @@
 import Model
 
-/// The slots of the preview atlas: a tree of square slots in four sizes (m6-plan.md section 4,
+/// The slots of the preview atlas: a tree of square slots in four sizes (the M6 plan section 4,
 /// rule 2, D-193). A block of 512 pixels holds one preview, or splits into four slots of 256, a
 /// slot of 256 splits into four slots of 128, and a slot of 128 into four slots of 64. When no
 /// slot fits, the slot that was used least recently goes, and four free siblings join again.

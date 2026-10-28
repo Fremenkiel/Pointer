@@ -193,7 +193,7 @@ final class SQLiteStatement {
 }
 
 /// IDs and clock values read and bound in place, without a `Data` and an `Array` per value
-/// (P-11 of docs/m4-fix-plan.md). The forms are those of `ValueCodec` (storage.md section 3.2).
+/// (P-11 of the M4 fix plan). The forms are those of `ValueCodec` (storage.md section 3.2).
 extension SQLiteStatement {
     /// Returns the UUID of a 16-byte ID column, or `nil` for NULL.
     ///

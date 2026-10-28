@@ -5,7 +5,7 @@ import Testing
 @Suite("Stroke curve")
 struct StrokeCurveTests {
     /// The control points and the `PKStrokePath.interpolatedLocation(at:)` values that the
-    /// PencilKit probe of docs/m2-plan.md section 1 printed.
+    /// PencilKit probe of the M2 plan section 1 printed.
     private let controlPoints = [
         Point(x: 0, y: 0), Point(x: 10, y: 30), Point(x: 40, y: 35),
         Point(x: 60, y: 0), Point(x: 90, y: 10), Point(x: 100, y: 50),

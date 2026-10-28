@@ -100,14 +100,19 @@ enum StrokeSplitter {
         var result: [InkPoint] = []
         result.reserveCapacity(interior.count + 2)
         result.append(InkPoint(x: 0, y: 0, force: first.force, time: 0))
+        // The time of a cut is a blend of the four stored times around it. After a pause of the
+        // pencil, the blend can pass the next stored time, so each time is at least the time
+        // before it (review of 2026-10-28). The times then stay seconds since the first point.
+        var time: Float = 0
         for index in interior {
             let value = spline.values[index]
+            time = max(time, value.time - first.time)
             result.append(
                 InkPoint(
                     x: Float(Double(value.x) + shift.x),
                     y: Float(Double(value.y) + shift.y),
                     force: value.force,
-                    time: value.time - first.time
+                    time: time
                 )
             )
         }
@@ -117,7 +122,7 @@ enum StrokeSplitter {
                 x: Float(last.position.x - first.position.x),
                 y: Float(last.position.y - first.position.y),
                 force: last.force,
-                time: last.time - first.time
+                time: max(time, last.time - first.time)
             )
         )
         return (first.position, result)

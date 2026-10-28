@@ -23,7 +23,7 @@ final class RenderingPerformanceTests: XCTestCase {
     }
 
     /// A content pass of 200,000 handwriting strokes of 60 points at zoom 0.25. The dense content
-    /// alone hides the costs of real input (docs/m2-fix-plan.md, phase 0).
+    /// alone hides the costs of real input (the M2 fix plan, phase 0).
     func testContentPassTwoHundredThousandHandwritingStrokes() throws {
         let content = PerformanceContent.handwriting(count: 200_000)
         try measurePasses(of: content, count: 1, name: "handwriting 200k")

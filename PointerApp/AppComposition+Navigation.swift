@@ -80,6 +80,9 @@ extension AppComposition {
     private func finishOpen() {
         guard let opening, opening.isFlightDone, let canvas = opening.canvas else { return }
         self.opening = nil
+        // A save failure or a restore during the flight changed the edit state of the app, and
+        // the child was made before it (review of 2026-10-28).
+        canvas.isEditingEnabled = canEdit
         // The child keeps the frozen copy of the parent for its pinch-out exit (D-109).
         container.canvas?.giveParentImage(to: canvas)
         container.completeSwap(to: canvas, duration: CanvasRenderer.crossfadeDuration) {}
@@ -189,6 +192,7 @@ extension AppComposition {
             let parent = leaving.canvas, let parentCard = leaving.card, parentCard.id == card
         else { return }
         opening = nil
+        parent.isEditingEnabled = canEdit
         if let preview = leaving.preview { parent.showPreview(preview, of: card) }
         let level = leaving.target.level
         let isPinch = leaving.isPinch

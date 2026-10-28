@@ -7,7 +7,7 @@ import Testing
 @testable import Pointer
 
 /// A restore while a child canvas is open, a card flies, and a text edit runs (task 4.2 of
-/// docs/m9-plan.md, D-148, D-150).
+/// the M9 plan, D-148, D-150).
 @MainActor
 @Suite("Restore with a busy screen", .serialized)
 struct BusyRestoreTests {

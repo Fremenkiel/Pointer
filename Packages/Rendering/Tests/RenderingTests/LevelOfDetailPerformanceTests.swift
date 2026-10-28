@@ -5,7 +5,7 @@ import XCTest
 @testable import Rendering
 
 /// The GPU time of one full content pass for each level-of-detail spacing, with an image
-/// comparison against the M2 spacing (docs/m2-fix-plan.md, phase 0, task 6). The GPU times are
+/// comparison against the M2 spacing (the M2 fix plan, phase 0, task 6). The GPU times are
 /// valid on a device only, so they run on the iPad only (D-77).
 @MainActor
 final class LevelOfDetailPerformanceTests: XCTestCase {

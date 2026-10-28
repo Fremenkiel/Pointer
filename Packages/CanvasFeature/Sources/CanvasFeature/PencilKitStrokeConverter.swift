@@ -8,7 +8,7 @@ import PencilKit
 /// `Geometry` and `Model`: `StrokeFactory` applies the transforms and splits a long path.
 struct PencilKitStrokeConverter {
     /// The smallest point size that PencilKit draws. A monoline point of size `s` draws a line
-    /// `2 * (s - 2)` points wide (docs/m2-plan.md section 1, fact 2).
+    /// `2 * (s - 2)` points wide (the M2 plan section 1, fact 2).
     static let monolineSizeOffset = 2.0
 
     /// The clock of the app, which makes the IDs and the clock values.

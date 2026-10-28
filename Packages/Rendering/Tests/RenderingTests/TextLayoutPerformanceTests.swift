@@ -4,7 +4,7 @@ import XCTest
 @testable import Rendering
 
 /// The time of the layout of the text boxes of D-56: 5,000 boxes of 200 characters (task 2.1 of
-/// docs/m5-plan.md). The test records the time and sets no budget.
+/// the M5 plan). The test records the time and sets no budget.
 @MainActor
 final class TextLayoutPerformanceTests: XCTestCase {
     func testLayoutOfFiveThousandTextBoxes() {

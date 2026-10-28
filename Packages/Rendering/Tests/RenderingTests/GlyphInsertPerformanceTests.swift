@@ -5,7 +5,7 @@ import XCTest
 @testable import Rendering
 
 /// The time of 4,000 new glyphs in the atlas, with their rasters and uploads (review M9 section
-/// 3.3, item 6, m10-plan.md task 3.5). Before the fix, each insert copied the key list of its
+/// 3.3, item 6, the M10 plan task 3.5). Before the fix, each insert copied the key list of its
 /// page, which cost 807 µs of the 4,000 inserts on the Mac.
 @MainActor
 final class GlyphInsertPerformanceTests: XCTestCase {

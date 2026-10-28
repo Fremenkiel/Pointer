@@ -7,7 +7,7 @@ import XCTest
 @testable import Rendering
 
 /// The CPU time and the frame count of a whole build of the D-56 text at zoom 0.25 and 1 (D-94,
-/// D-105, m10-plan.md task 4.1). The build of the text at zoom 0.25 took 9.3 to 10.2 ms of CPU
+/// D-105, the M10 plan task 4.1). The build of the text at zoom 0.25 took 9.3 to 10.2 ms of CPU
 /// against a budget of 2 ms per frame after the review of M5. The test records the measures and
 /// does not fail on them: the design of task 4.1 sets the target.
 @MainActor

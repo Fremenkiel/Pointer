@@ -7,7 +7,7 @@ import XCTest
 @testable import CanvasFeature
 @testable import Rendering
 
-/// The cost of the frame callback of the canvas screen during a zoom (m7-plan.md task 3.1,
+/// The cost of the frame callback of the canvas screen during a zoom (the M7 plan task 3.1,
 /// D-131). A spring after a pinch past the minimum zoom changes the zoom at each frame. A glide
 /// after a pan runs the same callback at one zoom. Before D-131, the pen tool of the live canvas
 /// made 139 allocations in each zoom frame.

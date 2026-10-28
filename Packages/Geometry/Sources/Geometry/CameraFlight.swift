@@ -9,6 +9,11 @@ public struct CameraFlight: Hashable, Sendable {
     /// The stiffness of the flight, times its duration: a critically damped spring that reaches
     /// 99.9 % of its way at the end, as (1 + 9.23) e^-9.23 = 0.001.
     static let stiffness = 9.23
+    /// Two zooms within this ratio count as one zoom. The share of the pan below divides two
+    /// differences of reciprocals. For zooms a few ULPs apart, both are rounding noise, and the
+    /// share jumps between 0, 0.5, and 1 (review of 2026-10-28). At this ratio, the pan of
+    /// `progress` differs from the exact curve by less than one part in a billion.
+    static let zoomTolerance = 1e-9
 
     /// The camera at the start.
     public let from: Camera
@@ -55,7 +60,7 @@ public struct CameraFlight: Hashable, Sendable {
         let zoom = from.zoom * pow(to.zoom / from.zoom, progress)
         assert(zoom > 0 && zoom.isFinite, "The zoom \(zoom) of a flight is positive")
         let share =
-            from.zoom == to.zoom
+            abs(to.zoom - from.zoom) <= Self.zoomTolerance * from.zoom
             ? progress : (1 / from.zoom - 1 / zoom) / (1 / from.zoom - 1 / to.zoom)
         return Camera(center: from.center + (to.center - from.center) * share, zoom: zoom)
     }

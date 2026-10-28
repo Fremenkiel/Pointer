@@ -7,7 +7,7 @@ import XCTest
 @testable import Pointer
 @testable import Rendering
 
-/// The close of a composition before a restore (task 2.1 of docs/m9-plan.md, D-150, D-157).
+/// The close of a composition before a restore (task 2.1 of the M9 plan, D-150, D-157).
 @MainActor
 final class CompositionCloseTests: XCTestCase {
     /// The longest wait for the screens to go away after the close.

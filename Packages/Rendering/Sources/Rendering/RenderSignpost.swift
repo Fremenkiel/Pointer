@@ -4,7 +4,7 @@ import os
 ///
 /// `OSSignposter.beginInterval` makes an `OSSignpostIntervalState` object for each interval,
 /// also when nothing records: 3 heap allocations per interval on the device. `os_signpost`
-/// with an `OSLog` makes none (PERF-01, docs/m2-fix-plan.md, phase 5, task 7). The intervals
+/// with an `OSLog` makes none (PERF-01, the M2 fix plan, phase 5, task 7). The intervals
 /// keep their names, so Instruments shows them as before.
 enum RenderSignpost {
     /// The log of the intervals: the subsystem and the category of the renderer.

@@ -20,7 +20,7 @@ struct CommandLimitTests {
         _ = try rig.apply(full)
         _ = try rig.apply(AddStroke(strokes: [rig.stroke(), rig.stroke()]))
         #expect(throws: ModelError.strokeLimitReached) {
-            try rig.content.restore(loaded[1], at: rig.factory.clock.now(), ignoringLimit: false)
+            try rig.content.restore(loaded[1], at: rig.factory.clock.now())
         }
         // An undo takes the canvas up to the bound after an erase (D-159).
         _ = try rig.revert(full)

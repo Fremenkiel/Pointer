@@ -5,7 +5,7 @@ import UIKit
 @testable import BackupFeature
 
 /// The commands, the messages, the alert, and the picker of the backup (tasks 3.1 and 3.2 of
-/// docs/m9-plan.md). They run in PointerDeviceTests on the iPad (D-77).
+/// the M9 plan). They run in PointerDeviceTests on the iPad (D-77).
 @MainActor
 @Suite("Backup feature")
 struct BackupFeatureTests {

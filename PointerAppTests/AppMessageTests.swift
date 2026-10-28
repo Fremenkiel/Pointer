@@ -4,7 +4,7 @@ import UIKit
 @testable import Pointer
 
 /// The messages of the app reach the user also while a popover shows (F-12 of
-/// docs/m4-fix-plan.md, storage.md section 9).
+/// the M4 fix plan, storage.md section 9).
 @MainActor
 @Suite("App messages")
 struct AppMessageTests {

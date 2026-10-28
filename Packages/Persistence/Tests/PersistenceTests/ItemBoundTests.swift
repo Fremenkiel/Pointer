@@ -6,7 +6,7 @@ import Testing
 @testable import Persistence
 
 /// A load refuses an item past the bound of grid cells as a damaged row (task 1.5 of
-/// docs/m9-plan.md, D-158).
+/// the M9 plan, D-158).
 @Suite("Bounds of the items of a load")
 struct ItemBoundTests {
     /// The offset of the last point of a stroke at (10, 10) with a width of 2 whose bounds touch

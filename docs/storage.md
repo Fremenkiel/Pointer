@@ -177,7 +177,7 @@ A stroke of 300 points takes 4.8 KB. The layout matches `InkPoint` in memory. Th
 2. The canvas controller sends a value copy of the changed rows to the repository.
 3. The repository adds the rows to its pending set.
 4. The repository throttles the writes (D-27). If the pending set is not empty and the last write is older than 1 second, it writes all pending rows in one transaction (`BEGIN IMMEDIATE` ... `COMMIT`). It uses prepared statements and `INSERT ... ON CONFLICT (id) DO UPDATE`. A stroke never changes, so its insert uses `ON CONFLICT (id) DO NOTHING`, and an erase record uses `ON CONFLICT (stroke_id)`.
-5. At pencil lift, the canvas asks the repository to save. If the last write is older than 1 second, the repository writes at once. Otherwise, the throttle of step 4 writes at the end of the second.
+5. At pencil lift, the canvas sends the rows of the stroke, and the send starts the save. If the last write is older than 1 second, the repository writes at once. Otherwise, the throttle of step 4 writes at the end of the second.
 6. When the scene goes to the background, the repository writes all pending rows at once. It asks for extra time with `UIApplication.beginBackgroundTask` for this step.
 
 A write never waits for a pause in the input. Thus the data loss after a crash is at most 1 second plus the time of one write, also while you draw without a pause (STO-06, review A-02).
@@ -188,7 +188,7 @@ The write connection runs no automatic checkpoint, because the commit that passe
 - The checkpointer falls behind if the WAL grows by 1,000 pages or more while one of its checkpoints runs. Then, at 8,000 pages or more, the write connection waits for the checkpointer and runs a passive checkpoint itself, for at most 2 s. This bounds the WAL, for example when saves come back to back under a heavy disk load. That save waits for the sync (D-147).
 - The next commit after a checkpoint that copied all pages starts the WAL again from the beginning.
 
-If a transaction fails, the repository rolls it back and keeps the rows in the pending set. It logs the error and tries again at the end of the throttle interval of 1 second. This holds also for the write at the move to the background (F-09 of [m4-fix-plan.md](m4-fix-plan.md)). After three failures in a row, the app shows a message and stops new edits until the next save works. It never drops changes in silence.
+If a transaction fails, the repository rolls it back and keeps the rows in the pending set. It logs the error and tries again at the end of the throttle interval of 1 second. This holds also for the write at the move to the background (F-09 of the M4 fix plan). After three failures in a row, the app shows a message and stops new edits until the next save works. It never drops changes in silence.
 
 ## 5. Read path
 
@@ -196,12 +196,12 @@ If a transaction fails, the repository rolls it back and keeps the rows in the p
 2. Read `PRAGMA user_version`. If it is newer than the app knows, open the library read-only and show a message.
 3. If it is older, run the migrations (section 6).
 4. Read all workspaces for the selector.
-5. To open a canvas, first write the pending rows, so that the load holds them. If that write fails, the open fails with `storageFailed` and loads nothing (F-01 of [m4-fix-plan.md](m4-fix-plan.md)). Then read the live rows with its `canvas_id`: cards and text boxes with `is_deleted = 0`, and strokes without a live erase record (`LEFT JOIN stroke_erase ... ON ... AND stroke_erase.is_deleted = 0 WHERE stroke_erase.stroke_id IS NULL`). Do not load erase records or erased strokes (review A-07). The renderer builds the `SpatialGrid` of the strokes in memory.
+5. To open a canvas, first write the pending rows, so that the load holds them. If that write fails, the open fails with `storageFailed` and loads nothing (F-01 of the M4 fix plan). Then read the live rows with its `canvas_id`: cards and text boxes with `is_deleted = 0`, and strokes without a live erase record (`LEFT JOIN stroke_erase ... ON ... AND stroke_erase.is_deleted = 0 WHERE stroke_erase.stroke_id IS NULL`). Do not load erase records or erased strokes (review A-07). The renderer builds the `SpatialGrid` of the strokes in memory.
 6. For the previews of visible cards, `PreviewStore` reads the files in `Caches/Pointer/previews/` off the main actor (D-97, D-107). Read a child canvas only if its file is missing. Reading all children at each open cost about 72 MB for 300 typical children on the iPad.
 
 The repository loads one canvas at a time. It never loads the whole library into memory.
 
-At launch, the repository removes the tombstones that are older than 30 days (D-18). This covers deleted cards with their subtrees and erased strokes with their erase records (review A-07). Then it runs `PRAGMA incremental_vacuum`, which gives the free pages back to the file system (review A-21, item 6). The repository returns the IDs of the removed canvases in `LibraryLaunch.removedCanvases`, and the app removes their preview files (m10-plan.md task 2.9).
+At launch, the repository removes the tombstones that are older than 30 days (D-18). This covers deleted cards with their subtrees and erased strokes with their erase records (review A-07). Then it runs `PRAGMA incremental_vacuum`, which gives the free pages back to the file system (review A-21, item 6). The repository returns the IDs of the removed canvases in `LibraryLaunch.removedCanvases`, and the app removes their preview files (the M10 plan task 2.9).
 
 The load reads at most `Limits.maxStrokesAfterErase` (210,000) strokes, because an erase can pass the stroke limit (D-73). A canvas at the stroke limit (200,000 strokes of 300 points) holds about 1 GB of points. That is too much for one load. If tests on the device show a slow open for large canvases, the next step is a load by viewport: an R-tree index on the stroke bounds, and a query for the strokes near the camera only. Version 1 loads the whole canvas (decision D-24).
 
@@ -227,7 +227,7 @@ A snapshot is a complete, consistent copy of the library in one file. `SnapshotW
 
 2. If the command succeeds, rename the file into `Documents/Backups/Pointer-<yyyy-MM-dd-HHmmss>.sqlite`. A rename in one volume is atomic, so `Backups/` never holds a partial file.
 3. If the command or the rename fails, the writer deletes the partial file at once (D-155). On a full disk, `VACUUM INTO` leaves a file of 0 bytes, and a second run with that name fails with "output file already exists".
-4. If the app stops during a snapshot, the partial file stays in `tmp/`. At launch, before it opens the database and before the pre-migration snapshot, the repository deletes each `*.sqlite.partial` file in `tmp/` (F-08 of [m4-fix-plan.md](m4-fix-plan.md)).
+4. If the app stops during a snapshot, the partial file stays in `tmp/`. At launch, before it opens the database and before the pre-migration snapshot, the repository deletes each `*.sqlite.partial` file in `tmp/` (F-08 of the M4 fix plan).
 
 The name uses the local time of the iPad, because the user reads it in the Files app. If `Backups/` holds a snapshot of the same kind with the same second, a counter joins the name: `Pointer-<yyyy-MM-dd-HHmmss>-2.sqlite`, then `-3`, up to `-99` (D-155). The new name takes the counter after the highest one of that second, so it is always the newest. The change date of the file is the time of the snapshot. The writer uses it for the age and the order of the snapshots, and the counter orders the snapshots of one second. A pre-migration snapshot of a version that exists already stays as it is, because it holds the state before the first try of the migration.
 
@@ -293,7 +293,7 @@ This version contains no integration. The design keeps these paths open:
 - Migration tests with one fixture database per schema version.
 - Constraint tests: each `CHECK` refuses a value one past its limit.
 - Corruption tests: a point BLOB with a wrong length, a damaged database file. The repository must report the fault, keep the rest of the library readable, and never overwrite the file.
-- Message test: a fault message shows also while a popover, for example the palette, is open (F-12 of [m4-fix-plan.md](m4-fix-plan.md)).
+- Message test: a fault message shows also while a popover, for example the palette, is open (F-12 of the M4 fix plan).
 - Crash tests: stop the process between `BEGIN` and `COMMIT` with an injected failure. Then open the database, and make sure that it holds the state before the transaction.
 - Throttle test (M3 acceptance 1): add strokes without a pause for 10 seconds, stop the process, open the database again, and make sure that at most 2 seconds of strokes are missing (review A-02).
 - Partial snapshot test: stop a snapshot before the rename. Make sure that `Backups/` holds no new file and that the next launch deletes the partial file.

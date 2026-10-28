@@ -195,7 +195,7 @@ Measured cost (2026-10-17, Mac with Apple silicon, APFS, Swift `-O`, best of 5 r
 | Write one 1 MB ink chunk | 0.30 ms | 0.90 ms |
 | Read one 1 MB ink chunk | 0.04 ms | 0.05 ms |
 
-Measured cost on the iPad (2026-10-18, iPad Pro 11-inch (M4), iPadOS 26, SQLite 3.51.0, Release, best of 5 runs, warm cache, task 3.10 of [m3-plan.md](m3-plan.md)). The test writes through `SQLiteLibraryRepository`, so each time includes the codecs and the actor hop. The records are text boxes of about 400 bytes.
+Measured cost on the iPad (2026-10-18, iPad Pro 11-inch (M4), iPadOS 26, SQLite 3.51.0, Release, best of 5 runs, warm cache, task 3.10 of the M3 plan). The test writes through `SQLiteLibraryRepository`, so each time includes the codecs and the actor hop. The records are text boxes of about 400 bytes.
 
 | Task | SQLite on the iPad |
 |---|---|

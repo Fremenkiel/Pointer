@@ -13,7 +13,7 @@ struct SlabAllocator {
     /// The number of size classes.
     static let classCount = 32
     /// The growth from one size class to the next. With powers of two, a stroke of 300 points
-    /// took a block of 512 (docs/m2-fix-plan.md, phase 4, task 2).
+    /// took a block of 512 (the M2 fix plan, phase 4, task 2).
     static let classGrowth = 1.25
     /// The points of each size class: `smallestClassPoints` times `classGrowth` per class,
     /// rounded up to a multiple of 16, and `slabPoints` for the last class.
@@ -62,7 +62,7 @@ struct SlabAllocator {
 
     /// Returns the slabs that blocks for strokes of `pointCounts` points fill, with one partial
     /// slab per size class at most. The worst case of all classes took 5.9 MB for 2,000 strokes
-    /// of 60 points that need 1.0 MB (review M9 section 3.3, item 4, m10-plan.md task 3.4).
+    /// of 60 points that need 1.0 MB (review M9 section 3.3, item 4, the M10 plan task 3.4).
     static func slabsNeeded<Counts: Sequence<Int>>(pointCounts: Counts) -> Int {
         var blocks = [Int](repeating: 0, count: classCount)
         for points in pointCounts {
@@ -130,6 +130,8 @@ struct SlabAllocator {
         else {
             preconditionFailure("Block \(block) does not match the class of slab \(slabIndex)")
         }
+        // A second free of a block would hand its range to two strokes (review of 2026-10-28).
+        precondition(slabs[slabIndex].usedCount > 0, "Block \(block) is not in use")
         let wasFull = slabs[slabIndex].freeBlocks.isEmpty
         slabs[slabIndex].freeBlocks.append((block.start % Self.slabPoints) / block.capacity)
         slabs[slabIndex].usedCount -= 1

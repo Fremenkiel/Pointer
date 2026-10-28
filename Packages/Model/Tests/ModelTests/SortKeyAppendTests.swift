@@ -2,7 +2,7 @@ import Testing
 
 @testable import Model
 
-/// The keys of long appends and prepends (D-182, m10-plan.md task 6.3). Before D-182, the keys of
+/// The keys of long appends and prepends (D-182, the M10 plan task 6.3). Before D-182, the keys of
 /// appends at one end reached `Limits.maxSortKeyLength` after 3,874 keys.
 @Suite("Sort key appends")
 struct SortKeyAppendTests {

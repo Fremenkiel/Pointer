@@ -143,7 +143,7 @@ struct CommandTests {
         var rig = CommandRig()
         let stroke = try rig.load(1)[0]
         let first = rig.content.remove(stroke.id, at: rig.factory.clock.now())
-        _ = try rig.content.restore(stroke, at: rig.factory.clock.now(), ignoringLimit: false)
+        _ = try rig.content.restore(stroke, at: rig.factory.clock.now())
         let second = rig.content.remove(stroke.id, at: rig.factory.clock.now())
         #expect(second.erased == first.erased)
         #expect(second.modified > first.modified)

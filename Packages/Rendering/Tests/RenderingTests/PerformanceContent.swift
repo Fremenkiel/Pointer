@@ -2,7 +2,7 @@ import Foundation
 import Geometry
 import Model
 
-/// The content of the performance tests (docs/m2-fix-plan.md section 1).
+/// The content of the performance tests (the M2 fix plan section 1).
 enum PerformanceContent {
     /// The columns of the stroke grid of the dense content.
     private static let denseColumns = 200
@@ -29,7 +29,7 @@ enum PerformanceContent {
         }
     }
 
-    /// Dense strokes of the benchmark of docs/m2-fix-plan.md section 1: `points` control points
+    /// Dense strokes of the benchmark of the M2 fix plan section 1: `points` control points
     /// on a smooth curve 24 canvas points long, in the grid of the M2 content.
     ///
     /// - Precondition: `points >= 2`.

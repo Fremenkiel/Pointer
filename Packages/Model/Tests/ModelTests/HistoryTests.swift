@@ -208,6 +208,26 @@ struct HistoryTests {
         #expect(rig.content.erased[first.id] != nil)
     }
 
+    @Test("A stroke that two dropped steps hold is reported once")
+    func unheldStrokeOnce() throws {
+        var rig = CommandRig()
+        var history = History()
+        let stroke = Self.stroke(&rig, points: Self.points(2))
+        _ = try history.perform(
+            AddStroke(strokes: [stroke]),
+            on: &rig.content,
+            clock: &rig.factory.clock
+        )
+        _ = try history.perform(
+            EraseStrokes(removed: [stroke], parts: []),
+            on: &rig.content,
+            clock: &rig.factory.clock
+        )
+        let dropped = history.dropOldest(toFit: 0)
+        #expect(dropped.count == 2)
+        #expect(history.unheldStrokeIDs(of: dropped) == [stroke.id])
+    }
+
     @Test("A dropped step frees no stroke that a step of the redo list still holds (D-76)")
     func redoStepHoldsStroke() throws {
         var rig = CommandRig()

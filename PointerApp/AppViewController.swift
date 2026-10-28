@@ -101,7 +101,7 @@ final class AppViewController: UIViewController {
     }
 
     /// Removes the shown canvas and its buttons, for the close of the composition before a
-    /// restore (task 2.1 of docs/m9-plan.md).
+    /// restore (task 2.1 of the M9 plan).
     func removeCanvas() {
         guard let old = canvas else { return }
         canvas = nil

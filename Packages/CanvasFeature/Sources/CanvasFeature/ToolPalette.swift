@@ -1,7 +1,7 @@
 import DesignSystem
 import SwiftUI
 
-/// The tool palette: pen, eraser, undo, and redo (PEN-03, D-63). The text tool joins it in M5.
+/// The tool palette: pen, eraser, text, undo, and redo (PEN-03, D-63, D-87).
 /// A tap on a tool picks it and closes the palette. Undo and redo keep it open.
 struct ToolPalette: View {
     /// The state of the tools.

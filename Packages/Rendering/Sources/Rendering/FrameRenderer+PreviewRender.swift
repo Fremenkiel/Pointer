@@ -3,7 +3,7 @@ import Geometry
 import Metal
 import QuartzCore
 
-/// The render of the preview of the shown canvas at a leave (m6-plan.md task 3.4, D-97).
+/// The render of the preview of the shown canvas at a leave (the M6 plan task 3.4, D-97).
 extension FrameRenderer {
     /// Starts the render of a preview. The targets come at the first request. A failure ends the
     /// request with `nil` and a log entry.
@@ -31,7 +31,7 @@ extension FrameRenderer {
 
     /// Draws the next chunk of the preview on a frame that changes nothing on the screen. The
     /// frame takes no drawable: the shown frame stays, and the present of an unchanged frame
-    /// after an idle of the display made a late interval (m10-plan.md section 6.44). The chunk
+    /// after an idle of the display made a late interval (the M10 plan section 6.44). The chunk
     /// gets the budget of such a frame, `previewChunkTimeBudget`.
     ///
     /// - Precondition: A preview render is in progress.

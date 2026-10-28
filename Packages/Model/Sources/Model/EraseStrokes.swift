@@ -3,9 +3,10 @@ import Geometry
 /// One eraser gesture: the strokes that it removed and the parts that it left (D-06, D-30).
 ///
 /// The parts can take the canvas past `Limits.maxStrokesPerCanvas`, because an erase never
-/// fails (D-71). They never take it past `Limits.maxStrokesAfterErase`: the eraser then makes
-/// a command without parts (D-73). The undo removes the parts with erase records and turns the
-/// erase records of the removed strokes into tombstones (data-model.md 7.5).
+/// fails (D-71). They never take it past `Limits.maxStrokesAfterErase`: the eraser tool of the
+/// canvas then makes a command without parts (D-73). The undo removes the parts with erase
+/// records and turns the erase records of the removed strokes into tombstones (data-model.md
+/// 7.5).
 public struct EraseStrokes: CanvasCommand {
     /// The strokes that the gesture cut or removed whole.
     public let removed: [Stroke]
@@ -24,8 +25,10 @@ public struct EraseStrokes: CanvasCommand {
     public init(removed: [Stroke], parts: [Stroke], area: Rect? = nil) {
         precondition(!removed.isEmpty, "EraseStrokes needs a removed stroke")
         // The set costs about 8 % of an erase of 1,000 strokes in a release build, so the check
-        // runs in debug builds only (m10-plan.md task 3.2). A stroke twice in release fails the
-        // apply with `strokeNotLive` or `strokeAlreadyLive`, which rolls the content back.
+        // runs in debug builds only (the M10 plan task 3.2). In release, a stroke twice among the
+        // removed strokes or twice among the parts fails the apply with `strokeNotLive` or
+        // `strokeAlreadyLive`, which rolls the content back. A stroke that is removed and a
+        // part at once applies as a no-op; `Eraser` gives each part a new ID.
         assert(
             Set(removed.map(\.id) + parts.map(\.id)).count == removed.count + parts.count,
             "EraseStrokes holds a stroke twice"

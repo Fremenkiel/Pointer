@@ -63,8 +63,6 @@ public final class CanvasViewController: UIViewController {
     let pinchRecognizer = UIPinchGestureRecognizer()
     /// Watches the pencil touches for the palm guard.
     let pencilObserver = PencilTouchObserver()
-    /// The library that saves the canvas, or `nil` without a library.
-    let repository: (any LibraryRepository)?
     /// Sends the rows of the steps in order, or `nil` without a library (F-11).
     private let rowChannel: RowChannel?
     private let onCameraRest: @MainActor (Camera) -> Void
@@ -113,7 +111,6 @@ public final class CanvasViewController: UIViewController {
         canvasView = CanvasView(renderer: renderer)
         content = dependencies.content
         clock = dependencies.clock
-        repository = dependencies.repository
         rowChannel = dependencies.repository.map { RowChannel(repository: $0) }
         sessions = dependencies.sessions
         onCameraRest = dependencies.onCameraRest
@@ -245,7 +242,7 @@ public final class CanvasViewController: UIViewController {
         Size(width: canvasView.bounds.width, height: canvasView.bounds.height)
     }
 
-    /// Adds the strokes of one pen path as one undo step (task 3.6 of docs/m4-plan.md). The
+    /// Adds the strokes of one pen path as one undo step (task 3.6 of the M4 plan). The
     /// handoff gave them to the renderer already.
     func addPenStrokes(_ strokes: [Stroke]) {
         guard !strokes.isEmpty else { return }
@@ -253,6 +250,9 @@ public final class CanvasViewController: UIViewController {
             send(try perform(AddStroke(strokes: strokes)))
         } catch {
             logger.error("The canvas did not take a pen stroke: \(String(describing: error))")
+            // The renderer gets the refused strokes back, as after a failed erase step (D-122,
+            // review of 2026-10-28). Otherwise ink that no content holds stays on the screen.
+            restoreRenderer(after: ([], strokes))
         }
     }
 
@@ -287,7 +287,7 @@ public final class CanvasViewController: UIViewController {
     /// gesture handler passes its recognizer, which counts as one of the canvas.
     func cameraMayRest(after gesture: UIGestureRecognizer? = nil) {
         // Checks one by one, not a list of the recognizers: the list cost an allocation at each
-        // step of a pan or a pinch (m10-plan.md task 3.7).
+        // step of a pan or a pinch (the M10 plan task 3.7).
         let isGestureActive =
             Self.isActive(panRecognizer) || Self.isActive(pinchRecognizer)
             || gesture.map(Self.isActive) == true
@@ -382,11 +382,10 @@ extension CanvasViewController: PKCanvasViewDelegate {
         handoff.isToolInUse = true
     }
 
-    /// The pencil lifted. Handed-off strokes can leave the drawing.
+    /// The pencil lifted. Handed-off strokes can leave the drawing. The rows of the stroke start
+    /// the save when the canvas sends them, so the lift asks for none (review of 2026-10-28).
     public func canvasViewDidEndUsingTool(_ canvasView: PKCanvasView) {
         handoff.isToolInUse = false
-        guard let repository else { return }
-        Task { await repository.requestSave() }
     }
 }
 

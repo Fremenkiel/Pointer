@@ -4,7 +4,7 @@ import Testing
 
 @testable import Rendering
 
-/// The rebuild policy of docs/m2-fix-plan.md, phase 2. The drawable has 400 x 240 pixels at
+/// The rebuild policy of the M2 fix plan, phase 2. The drawable has 400 x 240 pixels at
 /// scale 2, so the texture has a margin of 100 canvas points on the left and the right at zoom 1.
 @MainActor
 @Suite("Committed layer rebuild policy")

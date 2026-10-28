@@ -6,7 +6,7 @@ import XCTest
 
 /// Pixel snapshots of the alert before a restore and of each message, presented in a window of
 /// the test host without animations, as `CardMenuSnapshotTests` does (task 3.3 of
-/// docs/m9-plan.md, TEST-07, D-114). The references can change with an iPadOS release.
+/// the M9 plan, TEST-07, D-114). The references can change with an iPadOS release.
 ///
 /// It is an XCTest class, because the XCTest classes of a run run alone, before the Swift
 /// Testing suites. A suite beside a presentation made the system skip it (D-114).

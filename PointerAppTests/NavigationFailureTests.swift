@@ -8,7 +8,7 @@ import UIKit
 @testable import Pointer
 
 /// An open or a leave that fails ends with the shown screen in a good state: it keeps its undo
-/// history, a message shows, and the next open runs (m7-plan.md tasks 0.2 and 0.3, D-131,
+/// history, a message shows, and the next open runs (the M7 plan tasks 0.2 and 0.3, D-131,
 /// UNDO-01, F-02, WS-02, CARD-04).
 @MainActor
 @Suite("Failed card opens", .serialized)

@@ -44,7 +44,7 @@ final class TextStore {
     }
 
     /// Lays out the text boxes of a load in chunks on several threads, because the 5,000 boxes of
-    /// D-56 took 62 ms on one thread (task 2.3 of docs/m5-plan.md). It runs off the render
+    /// D-56 took 62 ms on one thread (task 2.3 of the M5 plan). It runs off the render
     /// thread, so the first frame does not wait for it (D-92).
     ///
     /// - Precondition: The boxes are at most `Limits.maxNodesPerCanvas`.
@@ -123,7 +123,7 @@ final class TextStore {
         return earlier
     }
 
-    /// Removes all boxes, for the next offscreen preview (m10-plan.md task 3.4).
+    /// Removes all boxes, for the next offscreen preview (the M10 plan task 3.4).
     func removeAll() {
         entries.removeAll(keepingCapacity: true)
         grid = SpatialGrid(cellSize: grid.cellSize, maxCellsPerItem: grid.maxCellsPerItem)

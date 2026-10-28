@@ -6,7 +6,7 @@ import Testing
 @testable import Rendering
 
 /// The text filter of the offscreen preview keeps each box whose layout touches the region
-/// (m10-plan.md task 3.4).
+/// (the M10 plan task 3.4).
 @Suite("Preview text filter")
 @MainActor
 struct PreviewTextFilterTests {

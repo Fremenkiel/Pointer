@@ -7,7 +7,7 @@ import XCTest
 
 @testable import Rendering
 
-/// Pan and zoom on the screen for 4 seconds with the renderer of the app (docs/m2-fix-plan.md,
+/// Pan and zoom on the screen for 4 seconds with the renderer of the app (the M2 fix plan,
 /// phase 0, task 3). The tests need the display of a device, so they run on the iPad only (D-77).
 @MainActor
 final class FrameLoopTests: XCTestCase {
@@ -66,7 +66,7 @@ final class FrameLoopTests: XCTestCase {
     }
 
     /// The strokes and the 5,000 cards of D-56 with previews from a source, as the app has them
-    /// (m6-plan.md task 3.6). The previews load during the warm-up and the measure.
+    /// (the M6 plan task 3.6). The previews load during the warm-up and the measure.
     private func runCards(_ motion: FrameLoopMotion, zoom: Double, name: String) throws {
         let previews = FakePreviews(data: try FakePreviews.png(width: 300, height: 210))
         let report = try run(
@@ -82,7 +82,7 @@ final class FrameLoopTests: XCTestCase {
     }
 
     /// The preview render of the D-56 content at a leave: the time from the request to the
-    /// image, and the frames of the canvas during it (m6-plan.md task 3.4).
+    /// image, and the frames of the canvas during it (the M6 plan task 3.4).
     func testPreviewRenderOfD56() throws {
         let window = try hostWindow()
         let view = FrameLoopView(frame: window.bounds)
@@ -124,7 +124,7 @@ final class FrameLoopTests: XCTestCase {
         XCTAssertEqual(report.lateIntervals, 0, line)
         // The preview render draws off the screen, so a still canvas presents no frame for it.
         // The present of an unchanged frame after an idle of the display showed late or never
-        // (m10-plan.md section 6.44).
+        // (the M10 plan section 6.44).
         XCTAssertGreaterThan(report.frames, 0, "The preview render ran in frames")
         XCTAssertEqual(report.presentedTimes.count, 0, "A still canvas presents no frame")
         XCTAssertEqual(report.droppedFrames, 0, "No frame of the preview render was dropped")

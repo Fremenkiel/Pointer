@@ -7,7 +7,7 @@ import XCTest
 @testable import Rendering
 
 /// The heap allocations of a frame against a bare Metal frame with the same passes (PERF-01,
-/// D-43, docs/m2-fix-plan.md, phase 5, task 7). Only a device gives drawables at the frame rate,
+/// D-43, the M2 fix plan, phase 5, task 7). Only a device gives drawables at the frame rate,
 /// so it runs on the iPad only (D-77).
 @MainActor
 final class FrameAllocationTests: XCTestCase {

@@ -6,7 +6,7 @@ import XCTest
 @testable import Rendering
 
 /// The heap allocations on the main thread of one drag step of a text box and of a card: the
-/// post of the moved item to the inbox (review M9 section 3.3, item 1, m10-plan.md task 3.1). A
+/// post of the moved item to the inbox (review M9 section 3.3, item 1, the M10 plan task 3.1). A
 /// frame takes the inbox after each step, as the display link does in the app.
 @MainActor
 final class DragPostAllocationTests: XCTestCase {

@@ -2,8 +2,9 @@ import Geometry
 import Metal
 import Model
 
-/// The decoded card previews on the GPU: one `.r8Unorm` texture with slots of 512, 256, and 128
-/// pixels (m6-plan.md section 4, rule 2, D-97). No preview makes a texture of its own.
+/// The decoded card previews on the GPU: one `.r8Unorm` texture with slots of 512, 256,
+/// 128, and 64 pixels (the M6 plan section 4, rule 2, D-97, D-193). No preview makes a texture
+/// of its own.
 ///
 /// The render thread owns it. It also keeps the requests of the previews that are missing or
 /// too small, at most `requestLimit` at a time.
@@ -46,7 +47,7 @@ final class PreviewAtlas {
     /// M8, section 3.2, item 5).
     private(set) var deferred: [PreviewRequest] = []
     /// The first request of `deferred` that waits. The ones before it are taken. A head index
-    /// takes a request without a shift of the list (m10-plan.md section 6.30).
+    /// takes a request without a shift of the list (the M10 plan section 6.30).
     private var deferredHead = 0
     /// The cards of `deferred`.
     private var deferredCards: Set<CardID> = []
@@ -54,7 +55,7 @@ final class PreviewAtlas {
     var pending: [DecodedPreview] = []
     /// The canvas area of the cards whose new previews wait for a green redraw. It waits while a
     /// build runs: a green change restarts the green part of a build, and previews arrive for
-    /// seconds at zoom 0.25, so no build would complete (m6-plan.md task 3.6).
+    /// seconds at zoom 0.25, so no build would complete (the M6 plan task 3.6).
     var dirtyArea: Rect?
     /// The staging buffers of the uploads.
     let uploads: PreviewUploads
@@ -123,7 +124,7 @@ final class PreviewAtlas {
 
     /// Moves deferred requests to `wanted` while the limit has room. The loop stops at the
     /// limit: a `for` loop with a `where` clause walked the whole list at each result, and
-    /// the shift of `removeFirst` moved the rest (m10-plan.md section 6.30).
+    /// the shift of `removeFirst` moved the rest (the M10 plan section 6.30).
     private func moveDeferred() {
         while deferredHead < deferred.count, requested.count < requestLimit {
             let request = deferred[deferredHead]

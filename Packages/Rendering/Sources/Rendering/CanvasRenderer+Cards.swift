@@ -11,7 +11,7 @@ extension CanvasRenderer {
     /// `true` while a card preview waits, decodes, or waits for its upload (D-97).
     public var isLoadingPreviews: Bool { engine.isLoadingPreviews }
 
-    /// Renders the preview of this canvas for the card of the canvas in its parent (m6-plan.md
+    /// Renders the preview of this canvas for the card of the canvas in its parent (the M6 plan
     /// task 3.4, D-97, D-98): the child region of the open camera `camera`, cut to the aspect of
     /// the card. The longer side has `size` pixels. The render runs in chunks inside the
     /// instance budget, so no frame drops. A newer request ends a waiting one with `nil`.
@@ -40,7 +40,7 @@ extension CanvasRenderer {
     }
 
     /// Shows a new preview of the child canvas of `card` without a read of its file, for the
-    /// parent after a leave (m6-plan.md task 3.4).
+    /// parent after a leave (the M6 plan task 3.4).
     ///
     /// - Precondition: The longer side of `image` is at most 512 pixels.
     public func showPreview(_ image: PreviewImage, of card: CardID) {

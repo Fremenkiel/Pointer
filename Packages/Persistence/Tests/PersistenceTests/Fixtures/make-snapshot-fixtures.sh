@@ -1,6 +1,6 @@
 #!/bin/sh
 # Makes the snapshot fixtures of the import checks from library-v1.sql (task 1.3 of
-# docs/m9-plan.md, D-162). Run it in this folder: sh make-snapshot-fixtures.sh
+# the M9 plan, D-162). Run it in this folder: sh make-snapshot-fixtures.sh
 set -e
 rm -f snapshot-*.sqlite
 sqlite3 snapshot-source.sqlite < library-v1.sql

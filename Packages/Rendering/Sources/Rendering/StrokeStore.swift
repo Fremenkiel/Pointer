@@ -60,7 +60,7 @@ final class StrokeStore {
     /// Makes an empty store.
     init(arena: PointArena) {
         // The arrays grow with the canvas. A reserve for the stroke limit took about 40 MB for
-        // every canvas (docs/m2-fix-plan.md, phase 4, task 5).
+        // every canvas (the M2 fix plan, phase 4, task 5).
         self.arena = arena
     }
 
@@ -232,7 +232,7 @@ final class StrokeStore {
 
     /// Frees blocks with a clock sweep until the arena is below its eviction target, then
     /// allocates. A sort of all strokes by their last frame took 4.2 ms with 200,000 strokes
-    /// (docs/m2-fix-plan.md, phase 4, task 4).
+    /// (the M2 fix plan, phase 4, task 4).
     ///
     /// The hand walks the resident strokes. It skips a stroke that a frame in flight can still
     /// read, gives a stroke drawn since the last visit a second chance, and frees the others.
@@ -323,7 +323,7 @@ extension StrokeStore {
     /// Adds the strokes of a load. Each list grows once to its size first. Without it, each list
     /// doubles, and its size after the last doubling depends on the blocks that libmalloc gives
     /// back: the store of 200,000 strokes took 63.1 to 84.3 MB in full runs, and its list of draw
-    /// data held 263,850 to 655,700 slots (docs/m9-plan.md section 6.6, D-167).
+    /// data held 263,850 to 655,700 slots (the M9 plan section 6.6, D-167).
     ///
     /// - Precondition: The store keeps the stroke bound with `strokes`.
     func add(contentsOf strokes: [Stroke]) {

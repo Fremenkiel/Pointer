@@ -6,7 +6,7 @@ import XCTest
 
 @testable import Rendering
 
-/// The end of a flight of the render thread draws no extra frame (m10-plan.md task 5.1). The
+/// The end of a flight of the render thread draws no extra frame (the M10 plan task 5.1). The
 /// main thread sends the last camera of a flight again at its end. A frame for it showed nothing
 /// new, and after an idle refresh its present counted as the late frame at the end of an open:
 /// 4 to 6 in 30 opens before the fix, 0 after.

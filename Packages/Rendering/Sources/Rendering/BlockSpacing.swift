@@ -29,7 +29,7 @@ struct BlockSpacing: Equatable {
 
     /// Returns the largest bend of a segment of one block: its length times its turn, in canvas
     /// points times radians. The turn of a segment is the larger angle of the control polygon
-    /// at its two ends. The bend can lower the pieces (`LevelOfDetail`, docs/m2-fix-plan.md,
+    /// at its two ends. The bend can lower the pieces (`LevelOfDetail`, the M2 fix plan,
     /// phase 3, task 3).
     ///
     /// - Precondition: `block` is a block of the stroke.

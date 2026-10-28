@@ -8,7 +8,7 @@ import XCTest
 @testable import Rendering
 
 /// The heap allocations on the main thread of the gesture handlers of the canvas, through the
-/// objects of UIKit (review M9 section 3.4, item 9, m10-plan.md task 3.7). iOS has no public way
+/// objects of UIKit (review M9 section 3.4, item 9, the M10 plan task 3.7). iOS has no public way
 /// to make a touch at a place, so the recognizers are test subclasses that report their state,
 /// touches, and place, and the pencil observer gets touches and events of UIKit. A frame takes
 /// the inbox after each step, as the display link does in the app. The work of UIKit does not

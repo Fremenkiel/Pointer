@@ -5,7 +5,7 @@ import XCTest
 
 /// The model step of the D-69 erase: one `EraseStrokes` on a content of 20,000 strokes removes
 /// 1,000 strokes and adds 2,000 parts, as `EraseUndoPerformanceTests` does on the device
-/// (m6-fix-plan.md task 3.1, m4-plan.md section 4.6). Run it in Release:
+/// (the M6 fix plan task 3.1, the M4 plan section 4.6). Run it in Release:
 /// `swift test -c release --filter EraseStepPerformanceTests`.
 final class EraseStepPerformanceTests: XCTestCase {
     private static let loaded = 20_000

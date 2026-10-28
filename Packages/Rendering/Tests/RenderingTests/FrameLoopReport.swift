@@ -1,6 +1,6 @@
 import Foundation
 
-/// The measurements of one frame-loop run (docs/m2-fix-plan.md, phase 0, task 3).
+/// The measurements of one frame-loop run (the M2 fix plan, phase 0, task 3).
 struct FrameLoopReport: CustomStringConvertible {
     /// A frame interval above this many milliseconds is late at 120 Hz.
     static let lateIntervalMilliseconds = 12.5

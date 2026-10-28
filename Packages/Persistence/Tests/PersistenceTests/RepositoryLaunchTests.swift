@@ -120,6 +120,31 @@ struct RepositoryLaunchTests {
         #expect(files.contains("keep.sqlite"))
     }
 
+    @Test("A cleanup that fails does not stop the open, and the live rows stay readable")
+    func failedCleanup() async throws {
+        let harness = try RepositoryHarness()
+        _ = try await harness.open()
+        let writer = try SQLiteConnection(path: harness.path, mode: .readWrite)
+        try writer.execute(Self.tombstoneRows)
+        // A trigger stands in for a full disk or a damaged page: the first delete of the
+        // cleanup fails (review of 2026-10-28).
+        try writer.execute(
+            """
+            CREATE TRIGGER no_cleanup BEFORE DELETE ON text_box
+            BEGIN SELECT RAISE(ABORT, 'no room'); END
+            """
+        )
+
+        let repository = harness.make(wallMillis: RepositoryHarness.now + 31 * Self.day)
+        let launch = try await repository.open { _ in }
+        #expect(launch.removedCanvases.isEmpty)
+        #expect(!launch.isReadOnly)
+        let reader = try harness.reader()
+        #expect(try reader.integer("SELECT count(*) FROM workspace") == 2)
+        #expect(try reader.integer("SELECT count(*) FROM text_box") == 3)
+        await repository.close()
+    }
+
     @Test("A launch that removes many tombstones starts a checkpoint (review after M8, 3.2.8)")
     func checkpointAfterCleanup() async throws {
         let harness = try RepositoryHarness()

@@ -8,7 +8,7 @@ import XCTest
 
 /// The heap allocations of the frames that do more than a pan: a frame that shows a handoff, a
 /// frame of an eraser gesture, and a frame that redraws an area after an erase (review M9
-/// section 3.4, item 9, m10-plan.md task 3.7). The changes go to the inbox before each count, so
+/// section 3.4, item 9, the M10 plan task 3.7). The changes go to the inbox before each count, so
 /// the count holds the frame only. The Metal work does not count (D-43), so `AllocationTracer`
 /// counts each allocation by its caller. A frame of each kind makes no more Pointer allocations
 /// than a pan frame, except two in a handoff frame: the block of the presented handler, and one

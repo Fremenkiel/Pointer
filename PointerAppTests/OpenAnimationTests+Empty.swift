@@ -5,7 +5,7 @@ import XCTest
 @testable import Pointer
 
 /// The frame captures of an open and a leave of a card on an empty canvas, whose child is empty
-/// too (m6-plan.md task 5.1, acceptance 1, D-98).
+/// too (the M6 plan task 5.1, acceptance 1, D-98).
 extension OpenAnimationTests {
     func testOpenAndLeaveOfEmptyCardHaveNoLateFrame() async throws {
         let tree = try await NavigationTests.makeTree(depth: 1)

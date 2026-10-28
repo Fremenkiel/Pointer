@@ -150,7 +150,7 @@ final class SnapshotPerformanceTests: XCTestCase {
     }
 
     /// Runs `body` on a new filled library in `folder`, and closes the repository, which waits
-    /// for its last checkpoint (task 1.1 of docs/m9-plan.md).
+    /// for its last checkpoint (task 1.1 of the M9 plan).
     private static func run<Result>(
         _ body: (SQLiteLibraryRepository, String, URL) async throws -> Result,
         in folder: URL

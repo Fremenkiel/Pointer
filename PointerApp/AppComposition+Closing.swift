@@ -2,7 +2,7 @@ import CanvasFeature
 import Model
 import Persistence
 
-/// The close of the composition before a restore (task 2.1 of docs/m9-plan.md, D-148, D-150,
+/// The close of the composition before a restore (task 2.1 of the M9 plan, D-148, D-150,
 /// D-157). A new composition then opens the files again, as at launch.
 extension AppComposition {
     /// Saves the work on the screen before a restore or "Back up now" (D-149): the text edit

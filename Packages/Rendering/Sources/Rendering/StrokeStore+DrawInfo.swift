@@ -6,7 +6,7 @@ extension StrokeStore {
     /// references and does no reference counting (PERF-01).
     ///
     /// The stored fields take 48 bytes per stroke: 32-bit indices and the size class of the
-    /// block instead of its capacity. The M2 layout took 80 bytes (docs/m2-fix-plan.md, phase
+    /// block instead of its capacity. The M2 layout took 80 bytes (the M2 fix plan, phase
     /// 4, task 5).
     struct DrawInfo {
         let origin: Point

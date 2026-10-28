@@ -13,7 +13,7 @@ final class GlyphRing {
     private(set) var used = 0
 
     /// Makes the ring. An offscreen render waits for the GPU after each pass, so it needs one
-    /// buffer, not the three of the screen (m10-plan.md task 3.4).
+    /// buffer, not the three of the screen (the M10 plan task 3.4).
     ///
     /// - Precondition: `capacity` and `bufferCount` are positive.
     /// - Throws: `RenderingError.resourceUnavailable` if Metal cannot make a buffer.

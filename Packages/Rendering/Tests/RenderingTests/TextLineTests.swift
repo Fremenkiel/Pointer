@@ -7,7 +7,7 @@ import UIKit
 
 @Suite("Lines of a text layout")
 struct TextLineTests {
-    /// The texts of task 1.2 of docs/m8-plan.md, with a name for the test report.
+    /// The texts of task 1.2 of the M8 plan, with a name for the test report.
     static let texts: [(String, String)] = [
         ("empty", ""),
         ("one line", "let x = 1"),

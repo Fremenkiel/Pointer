@@ -3,7 +3,7 @@ import Model
 import SQLite3
 
 extension SQLiteLibraryRepository {
-    /// The pages of one step of the backup: 4 MB (task 1.4 of docs/m9-plan.md). The stop flag
+    /// The pages of one step of the backup: 4 MB (task 1.4 of the M9 plan). The stop flag
     /// is read between two steps.
     static let restorePagesPerStep: Int32 = 1_024
     /// The tries of a step while another connection holds a lock, and the wait between two

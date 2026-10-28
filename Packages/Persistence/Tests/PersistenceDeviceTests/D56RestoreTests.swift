@@ -6,7 +6,7 @@ import XCTest
 @testable import Persistence
 
 /// The restore of the D-56 library on the device: a snapshot, a change, and a restore that
-/// gives all rows of the snapshot again (task 4.1 of docs/m9-plan.md, M9 acceptance 2).
+/// gives all rows of the snapshot again (task 4.1 of the M9 plan, M9 acceptance 2).
 @MainActor
 final class D56RestoreTests: XCTestCase {
     /// The strokes that the change adds after the snapshot.

@@ -2,12 +2,12 @@ import Geometry
 import Metal
 import Model
 
-/// Renders the preview of the shown canvas in chunks, so that no frame drops (m6-plan.md
+/// Renders the preview of the shown canvas in chunks, so that no frame drops (the M6 plan
 /// section 4, rule 6, D-97, D-98).
 ///
 /// One `.rg8Unorm` target of 512 by 512 pixels and one `.r8Unorm` resolve target of the same
 /// size, made at the first leave. Each preview reads its image back through a buffer of its own
-/// (m7-plan.md section 6.7). The preview shows
+/// (the M7 plan section 6.7). The preview shows
 /// the child region of the open camera, cut to the aspect of the card. Cards of the canvas show
 /// their frames and titles without previews (architecture.md 5.5).
 final class PreviewRenderer {

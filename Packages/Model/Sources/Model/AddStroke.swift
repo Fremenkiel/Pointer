@@ -50,7 +50,7 @@ public struct AddStroke: CanvasCommand {
         for stroke in strokes {
             let tombstone: EraseRecord?
             do {
-                tombstone = try content.restore(stroke, at: time, ignoringLimit: false)
+                tombstone = try content.restore(stroke, at: time)
             } catch {
                 preconditionFailure("The limit check above failed for stroke \(stroke.id)")
             }

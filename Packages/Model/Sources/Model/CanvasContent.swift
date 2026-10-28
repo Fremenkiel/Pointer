@@ -24,7 +24,7 @@ public struct CanvasContent: Sendable {
     public var nodeCount: Int { cards.count + textBoxes.count }
 
     /// Reserves room for the rows of a load, so that each table grows once (PERF-01,
-    /// m10-plan.md task 3.6). A count past a limit of the canvas reserves the limit.
+    /// the M10 plan task 3.6). A count past a limit of the canvas reserves the limit.
     ///
     /// - Precondition: The counts are not negative.
     public mutating func reserveCapacity(strokes: Int, cards: Int, textBoxes: Int) {
@@ -108,20 +108,18 @@ public struct CanvasContent: Sendable {
     /// the session into a tombstone (data-model.md 7.5).
     ///
     /// Only the parts of an erase can go past `Limits.maxStrokesPerCanvas`, because an erase never
-    /// fails (D-71). Their callers pass `ignoringLimit`.
+    /// fails (D-71). They go through `restore(_:at:needsRecords:log:changes:)`, which has no
+    /// limit.
     ///
     /// - Precondition: The stroke belongs to this canvas and is not live.
-    /// - Throws: `ModelError.strokeLimitReached` at the limit, unless `ignoringLimit` is true.
+    /// - Throws: `ModelError.strokeLimitReached` at the limit.
     /// - Returns: The tombstone, or `nil` if the session holds no erase record of the stroke.
     public mutating func restore(
         _ stroke: Stroke,
-        at time: HybridTimestamp,
-        ignoringLimit: Bool
+        at time: HybridTimestamp
     ) throws(ModelError) -> EraseRecord? {
         precondition(stroke.canvasID == canvasID, "Stroke \(stroke.id) belongs to another canvas")
-        guard ignoringLimit || strokes.count < Limits.maxStrokesPerCanvas else {
-            throw .strokeLimitReached
-        }
+        guard strokes.count < Limits.maxStrokesPerCanvas else { throw .strokeLimitReached }
         let replaced = strokes.updateValue(stroke, forKey: stroke.id)
         precondition(replaced == nil, "Canvas already held stroke \(stroke.id)")
         guard let index = erased.index(forKey: stroke.id) else { return nil }
@@ -170,7 +168,7 @@ public struct CanvasContent: Sendable {
 }
 
 /// The changes of a command in batches: each stroke is checked and changed with one lookup, and
-/// a failed check takes the changes of the step back (P-07 of docs/m4-fix-plan.md).
+/// a failed check takes the changes of the step back (P-07 of the M4 fix plan).
 extension CanvasContent {
     /// The strokes that a step changed, so that a failed step can take them back.
     struct ChangeLog {
@@ -222,7 +220,7 @@ extension CanvasContent {
         }
     }
 
-    /// Puts strokes back or adds them as `restore(_:at:ignoringLimit:)` does, without a limit
+    /// Puts strokes back or adds them as `restore(_:at:)` does, without a limit
     /// check, and adds their rows to `changes`: a tombstone, or the stroke without a record.
     ///
     /// - Throws: `CommandError.strokeAlreadyLive` if a stroke is live, or

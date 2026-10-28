@@ -9,7 +9,7 @@ import UIKit
 @testable import CanvasFeature
 
 /// The pen width of the live canvas follows the zoom at a pencil down and at rest, not at each
-/// frame of a zoom (m7-plan.md task 3.1, FEEL-03, D-37, D-131).
+/// frame of a zoom (the M7 plan task 3.1, FEEL-03, D-37, D-131).
 @MainActor
 @Suite("Pen tool at a zoom")
 struct PenToolZoomTests {

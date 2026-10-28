@@ -19,7 +19,7 @@ extension FrameRenderer {
     /// to the right of its origin, at most `TextStyle.maxWidth` wide, so a box that starts
     /// below the region or far to one side stays out. A line holds one UTF-16 unit at least, so
     /// a box has at most one line more than its units, each `TextLayout.lineHeight` high, and a
-    /// box that ends above the region stays out too (m10-plan.md task 3.4). The glyphs can
+    /// box that ends above the region stays out too (the M10 plan task 3.4). The glyphs can
     /// reach `TextStore.boundsMargin` lines past the line box on each side, as the bounds of the
     /// store do. The text store then checks the bounds.
     static func mayTouch(_ box: TextBox, _ region: Rect) -> Bool {

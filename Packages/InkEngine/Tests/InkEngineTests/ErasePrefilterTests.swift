@@ -4,7 +4,7 @@ import Testing
 
 @testable import InkEngine
 
-/// The serial filter of the bounds before the split (m10-plan.md task 3.2, review M9 section
+/// The serial filter of the bounds before the split (the M10 plan task 3.2, review M9 section
 /// 3.3, item 8).
 @Suite("Erase prefilter")
 struct ErasePrefilterTests {

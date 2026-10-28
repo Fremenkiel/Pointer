@@ -127,6 +127,38 @@ struct StrokeSplitterTests {
         #expect(dot.bounds == Rect(minX: -1, minY: -1, maxX: 3, maxY: 3))
     }
 
+    @Test("The times of a part never go back, also after a pause of the pencil before the cut")
+    func timesAfterPause() throws {
+        var factory = InkFixtures.factory()
+        // 60 points at 240 Hz, with a pause of 2 s after point 20. The blended time of a cut
+        // near point 21 passes the stored time of point 21 (review of 2026-10-28).
+        let values = (0..<60).map { index in
+            InkPoint(
+                x: Float(index * 2),
+                y: 0,
+                force: 0.5,
+                time: Float(index) / 240 + (index > 20 ? 2 : 0)
+            )
+        }
+        let stroke = Stroke(
+            id: factory.identifiers.make(StrokeID.self),
+            canvasID: InkFixtures.canvas,
+            created: factory.clock.now(),
+            origin: .zero,
+            width: 2,
+            points: InkPoints(values)
+        )
+        let parts = try #require(
+            erase(stroke, at: [Point(x: 34, y: 0)], radius: 4, factory: &factory)
+        )
+        #expect(parts.count == 2)
+        for part in parts {
+            let times = part.points.values.map(\.time)
+            #expect(times.first == 0)
+            #expect(zip(times, times.dropFirst()).allSatisfy { $0 <= $1 }, "\(times)")
+        }
+    }
+
     @Test("A part shorter than the pen width is dropped (D-71)")
     func shortPart() throws {
         var factory = InkFixtures.factory()

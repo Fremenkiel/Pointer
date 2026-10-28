@@ -174,7 +174,7 @@ final class RenderEngine: Sendable {
 
     /// Applies the input and draws a frame if the input or the renderer has work. With an
     /// observer, one measure covers the apply and the frame, so that its count holds both
-    /// (m10-plan.md task 3.7).
+    /// (the M10 plan task 3.7).
     private static func draw(
         _ input: RenderInput,
         with renderer: FrameRenderer,
@@ -219,7 +219,7 @@ final class RenderEngine: Sendable {
         }
         // A frame whose only work is a chunk of the preview render presents nothing: the shown
         // frame stays as it is, and a present after an idle of the display made a late interval
-        // (m10-plan.md section 6.44).
+        // (the M10 plan section 6.44).
         let needsMore =
             hasScreenWork
             ? renderer.renderFrame(

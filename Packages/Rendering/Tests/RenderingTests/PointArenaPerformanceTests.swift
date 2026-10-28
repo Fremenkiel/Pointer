@@ -5,12 +5,12 @@ import XCTest
 
 @testable import Rendering
 
-/// The upload of a full canvas into the point arena (docs/m2-fix-plan.md, phase 4, task 3). The
+/// The upload of a full canvas into the point arena (the M2 fix plan, phase 4, task 3). The
 /// times are valid on a device only, so they run on the iPad only (D-77).
 ///
 /// Each test runs its loop in 3 rounds, each with a new arena, and reports the median of the
 /// slowest call of a round (D-177 point 1). A stall of the thread from outside the code, 1.4 ms
-/// once in 96 runs, then changes one round only (m10-plan.md section 6.44).
+/// once in 96 runs, then changes one round only (the M10 plan section 6.44).
 @MainActor
 final class PointArenaPerformanceTests: XCTestCase {
     /// The longest time of one upload, with a growth of the arena, in milliseconds.

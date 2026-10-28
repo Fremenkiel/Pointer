@@ -159,10 +159,7 @@ public actor SQLiteLibraryRepository: LibraryRepository {
                     )
                 }
                 try writeCreationRows(on: connection)
-                removedCanvases = try LibraryMaintenance.removeTombstones(
-                    on: connection,
-                    now: configuration.wallClock
-                )
+                removedCanvases = removeTombstones(on: connection)
                 // A large cleanup leaves a large WAL, so the launch asks for a checkpoint as a
                 // save does (review after M8, section 3.2, item 8).
                 checkpointIfNeeded()
@@ -177,6 +174,22 @@ public actor SQLiteLibraryRepository: LibraryRepository {
             lastTimestamp: lastTimestamp,
             removedCanvases: removedCanvases
         )
+    }
+
+    /// Removes the tombstones older than 30 days (D-18). The cleanup is housekeeping, and the
+    /// next launch runs it again, so a failed cleanup does not stop the open: the live rows
+    /// stay readable on a full disk or next to one damaged page (storage.md section 9, review of
+    /// 2026-10-28). The error goes to the log.
+    private func removeTombstones(on connection: SQLiteConnection) -> [CanvasID] {
+        do {
+            return try LibraryMaintenance.removeTombstones(
+                on: connection,
+                now: configuration.wallClock
+            )
+        } catch {
+            logger.error("The cleanup of old tombstones failed: \(error)")
+            return []
+        }
     }
 
     private func openConnection(snapshot: PreMigrationSnapshot) async throws(PersistenceError) {

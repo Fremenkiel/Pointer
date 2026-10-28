@@ -7,7 +7,7 @@ import os
 @testable import Persistence
 
 /// The time and the peak memory growth of "Back up now" and of a restore of the D-56 library,
-/// against the budgets of D-165 (task 4.3 of docs/m9-plan.md, architecture.md section 12).
+/// against the budgets of D-165 (task 4.3 of the M9 plan, architecture.md section 12).
 @MainActor
 final class BackupBudgetTests: XCTestCase {
     /// "Back up now" of the D-56 library: the save and the snapshot (D-165).
@@ -17,7 +17,7 @@ final class BackupBudgetTests: XCTestCase {
     private static let restoreBudgetSeconds = 1.5
     /// The peak memory growth of each of the two (D-165).
     private static let memoryBudgetMegabytes = 50.0
-    /// The time between two reads of the available memory (section 1.1 of docs/m9-plan.md).
+    /// The time between two reads of the available memory (section 1.1 of the M9 plan).
     private static let pollInterval = Duration.microseconds(250)
 
     func testBackUpNowAndRestoreOfD56Library() async throws {

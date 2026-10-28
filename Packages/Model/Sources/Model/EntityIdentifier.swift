@@ -10,7 +10,7 @@ public protocol EntityIdentifier: Hashable, Comparable, Codable, Sendable, Custo
 }
 
 extension EntityIdentifier {
-    /// The lowercase string form of the UUID, for file names and log entries.
+    /// The lowercase string form of the UUID, for log entries. File names use `uuidString`.
     public var description: String { rawValue.uuidString.lowercased() }
 
     /// Orders IDs by their UUID bytes. Version 7 UUIDs then sort by creation time.

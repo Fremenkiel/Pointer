@@ -5,7 +5,7 @@ import os
 
 @testable import Persistence
 
-/// The close of the repository and a second open (task 1.1 of docs/m9-plan.md, D-148).
+/// The close of the repository and a second open (task 1.1 of the M9 plan, D-148).
 @Suite("Close of the repository")
 struct RepositoryCloseTests {
     @Test("A closed library refuses a send and opens again with its rows")

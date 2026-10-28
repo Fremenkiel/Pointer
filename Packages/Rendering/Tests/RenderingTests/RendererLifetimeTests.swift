@@ -6,7 +6,7 @@ import Testing
 @testable import Rendering
 
 /// A canvas renderer and its frame work go away when the canvas lets them go, after frames with
-/// a handoff, text, cards, and previews (review M9 section 3.4, item 9, m10-plan.md task 3.7).
+/// a handoff, text, cards, and previews (review M9 section 3.4, item 9, the M10 plan task 3.7).
 /// A closure of a Metal handler or of the loader that kept one would keep its textures.
 @MainActor
 @Suite("Renderer lifetime")

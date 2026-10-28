@@ -1,6 +1,6 @@
 import Model
 
-/// Splits strokes into level-of-detail runs (docs/m2-fix-plan.md, phase 3, task 2).
+/// Splits strokes into level-of-detail runs (the M2 fix plan, phase 3, task 2).
 ///
 /// A stroke is cut into blocks of `segmentsPerBlock` segments. Neighbor blocks with the same
 /// pieces per segment merge into one run, and each run gets its stride and pieces from its own
@@ -72,7 +72,9 @@ private struct RunLinker {
     /// The points of the stroke.
     let pointCount: Int
     private var held: DetailRun?
-    private var previousStride = 0
+    /// The step from the used point before the end of the held run to its end: its stride, or
+    /// less when the stride does not divide its length.
+    private var previousBack = 0
 
     /// Makes a linker for a stroke of `pointCount` points.
     init(pointCount: Int) {
@@ -96,10 +98,14 @@ private struct RunLinker {
 
     private mutating func emit(_ run: DetailRun, nextStride: Int, _ body: (DetailRun) -> Void) {
         var linked = run
-        linked.previousOffset = min(previousStride, run.start)
+        linked.previousOffset = min(previousBack, run.start)
         linked.nextOffset = min(nextStride, pointCount - 1 - run.end)
         assert(run.start == 0 || linked.previousOffset > 0, "An inner run has a neighbor before")
-        previousStride = run.stride
+        // The last used point of a run is its end, so the step before it is shorter than the
+        // stride when the stride does not divide the length. The next run reads that used point,
+        // not the point one stride back, so the two curves meet (review of 2026-10-28).
+        previousBack = run.end - (run.start + (run.usedPointCount - 2) * run.stride)
+        assert(previousBack > 0 && previousBack <= run.stride, "A back step within the stride")
         body(linked)
     }
 }

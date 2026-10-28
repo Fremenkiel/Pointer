@@ -113,7 +113,13 @@ final class RenderThread: NSObject, CAMetalDisplayLinkDelegate, @unchecked Senda
         }
         idleFrames += 1
         assert(idleFrames <= Self.idleFramesBeforeSleep + 1, "The link missed its sleep")
-        guard idleFrames > Self.idleFramesBeforeSleep, engine.sleepIfIdle() else { return }
+        guard idleFrames > Self.idleFramesBeforeSleep else { return }
+        guard engine.sleepIfIdle() else {
+            // A change arrived. If its frame draws nothing, the link tries again after it
+            // (review of 2026-10-28).
+            idleFrames = Self.idleFramesBeforeSleep
+            return
+        }
         idleFrames = 0
         link.isPaused = true
     }

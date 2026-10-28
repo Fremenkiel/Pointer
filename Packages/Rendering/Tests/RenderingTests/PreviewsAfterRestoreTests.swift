@@ -7,7 +7,7 @@ import os
 @testable import Rendering
 
 /// The previews of a screen full of cards right after a restore, which cleared the preview
-/// cache, so that each visible card renders offscreen (task 4.3 of docs/m9-plan.md, D-157). The
+/// cache, so that each visible card renders offscreen (task 4.3 of the M9 plan, D-157). The
 /// test records the measures and has no budget.
 @MainActor
 final class PreviewsAfterRestoreTests: XCTestCase {

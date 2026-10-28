@@ -4,7 +4,7 @@ import Model
 import Persistence
 import UIKit
 
-/// The restore from a picked snapshot (task 2.3 of docs/m9-plan.md, storage.md section 7.5,
+/// The restore from a picked snapshot (task 2.3 of the M9 plan, storage.md section 7.5,
 /// D-148, D-149, D-154, D-164).
 extension AppComposition {
     /// The outcome of a restore, for the message and for the tests.

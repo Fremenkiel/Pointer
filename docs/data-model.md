@@ -255,7 +255,7 @@ protocol CanvasCommand: Sendable {
 Rules:
 
 - Each command makes the smallest change that does the job.
-- `revert` after `apply` gives back live content that is equal to the live content before `apply`, except for `modified` clock values. The live content is the strokes, cards, and text boxes that are not erased or deleted. The erase records stay as tombstones and are not part of the comparison (D-67). A unit test for each command makes sure that this rule holds. A second test makes sure that each erase record after a revert is a tombstone.
+- `revert` after `apply` gives back live content that is equal to the live content before `apply`, except for `modified` clock values. The live content is the strokes, cards, and text boxes that are not erased or deleted. The erase records stay as tombstones and are not part of the comparison (D-67). A unit test for each command makes sure that this rule holds. A second test makes sure that after each step an erase record is a tombstone exactly when its stroke is live.
 - Commands never touch disk. The repository saves the changed records after the command (see [storage.md](storage.md)).
 
 ## 10. Device state

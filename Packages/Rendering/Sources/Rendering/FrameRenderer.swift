@@ -55,7 +55,7 @@ final class FrameRenderer {
     let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
     /// The committed layer, or `nil` before the first frame with a drawable size.
     private(set) var layer: CommittedLayer?
-    /// The lists of the layer that a leave released, for the next layer (m10-plan.md task 3.3).
+    /// The lists of the layer that a leave released, for the next layer (the M10 plan task 3.3).
     var spareLayerLists = LayerLists()
     /// The new strokes that the next frame draws into the front texture.
     var pendingSlots: [Int] = []
@@ -87,10 +87,10 @@ final class FrameRenderer {
     var camera = Camera(center: .zero, zoom: Limits.standardZoom)
     /// Gets the command buffer and the drawable of each frame before the commit. Only the tests
     /// set it. A reference, not a closure, so that a frame with an observer makes no closure
-    /// (m10-plan.md task 3.7).
+    /// (the M10 plan task 3.7).
     var commitObserver: (any FrameObserving)?
 
-    /// The composite pass of each frame, made once (PERF-01, docs/m2-fix-plan.md, phase 5).
+    /// The composite pass of each frame, made once (PERF-01, the M2 fix plan, phase 5).
     let compositePass: MTLRenderPassDescriptor = {
         let pass = MTLRenderPassDescriptor()
         pass.colorAttachments[0].loadAction = .clear
@@ -282,7 +282,7 @@ final class FrameRenderer {
                 fallback: layer?.shown
             )
             // The lists move only after the new layer exists, so a failure keeps the old one
-            // whole (m10-plan.md task 3.3).
+            // whole (the M10 plan task 3.3).
             made.adopt(layer?.takeLists() ?? spareLayerLists)
             spareLayerLists = LayerLists()
             layer = made

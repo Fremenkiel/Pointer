@@ -8,7 +8,7 @@ import XCTest
 @testable import Rendering
 
 /// A gesture of `EraserPath.maxSamples` samples allocates nothing in Pointer code after its first
-/// sample (PERF-01, M-07 of docs/m4-fix-plan.md). Both paths run on the main thread here, so the
+/// sample (PERF-01, M-07 of the M4 fix plan). Both paths run on the main thread here, so the
 /// counts take the main thread only: in a full run, other tests run on other threads at the same
 /// time.
 @MainActor

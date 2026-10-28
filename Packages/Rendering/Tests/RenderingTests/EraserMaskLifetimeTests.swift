@@ -6,7 +6,7 @@ import Testing
 @testable import Rendering
 
 /// The eraser mask texture exists only while the eraser is the tool (D-78, M-06 of
-/// docs/m4-fix-plan.md).
+/// the M4 fix plan).
 @MainActor
 @Suite("Eraser mask lifetime")
 struct EraserMaskLifetimeTests {

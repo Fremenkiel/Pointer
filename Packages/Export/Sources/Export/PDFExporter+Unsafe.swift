@@ -4,7 +4,7 @@ extension PDFExporter {
     /// Returns the bytes of a finished PDF buffer as `Data`, without a copy (D-144).
     ///
     /// The bridge `buffer as Data` copies the whole PDF, up to 226 MB for 200,000 strokes
-    /// (m8-plan.md section 6.4).
+    /// (the M8 plan section 6.4).
     ///
     /// - Precondition: `buffer` is not empty, and nothing changes it after the call.
     /// - Returns: Data that shares the bytes of `buffer` and keeps it alive.

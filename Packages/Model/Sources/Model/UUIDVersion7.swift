@@ -18,7 +18,7 @@ public enum UUIDVersion7 {
     ) -> UUID {
         precondition(millis <= maxMillis, "UUID time \(millis) does not fit into 48 bits")
         // Two 64-bit halves instead of an array of 16 bytes, so an ID allocates nothing
-        // (docs/m2-fix-plan.md, phase 5). The high half holds the time, the version 7, and 12
+        // (the M2 fix plan, phase 5). The high half holds the time, the version 7, and 12
         // random bits. The low half holds the variant 0b10 and 62 random bits.
         let high = millis << 16 | 0x7000 | (random.next() & 0x0FFF)
         let low = 0x8000_0000_0000_0000 | (random.next() & 0x3FFF_FFFF_FFFF_FFFF)

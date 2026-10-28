@@ -22,7 +22,7 @@ nonisolated(unsafe) private let traceDepths = UnsafeMutablePointer<Int32>.alloca
 )
 
 /// Counts the heap allocations of the main thread by the code that asks for them (PERF-01,
-/// D-43, m8-fix-plan.md section 3).
+/// D-43, the M8 fix plan section 3).
 ///
 /// The hook records the call stack of each allocation with `backtrace`, into buffers made before
 /// the trace. After the run, the first caller above malloc and the runtime libraries decides: an

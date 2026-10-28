@@ -7,7 +7,7 @@ import XCTest
 @testable import Rendering
 
 /// The heap allocations of a frame of an open, against a bare Metal frame (PERF-01, D-43,
-/// m6-plan.md task 3.5).
+/// the M6 plan task 3.5).
 @MainActor
 final class TransitionAllocationTests: XCTestCase {
     private static let frames = 60

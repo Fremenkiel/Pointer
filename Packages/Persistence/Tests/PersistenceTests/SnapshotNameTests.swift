@@ -6,7 +6,7 @@ import os
 @testable import Persistence
 
 /// The names of "Back up now" and of the pre-restore snapshot, and the delete of the partial
-/// file of a failed snapshot (task 1.2 of docs/m9-plan.md, D-154, D-155).
+/// file of a failed snapshot (task 1.2 of the M9 plan, D-154, D-155).
 @Suite("Snapshot names")
 struct SnapshotNameTests {
     @Test("Two snapshots in the same second get a counter")

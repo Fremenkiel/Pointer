@@ -7,7 +7,7 @@ import WorkspaceFeature
 @testable import CanvasFeature
 @testable import Pointer
 
-/// Quick workspace switches load only the last canvas (F-13 of docs/m4-fix-plan.md, WS-02).
+/// Quick workspace switches load only the last canvas (F-13 of the M4 fix plan, WS-02).
 @MainActor
 @Suite("Canvas switches")
 struct CanvasSwitchTests {

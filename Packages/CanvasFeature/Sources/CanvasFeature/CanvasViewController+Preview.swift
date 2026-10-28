@@ -2,7 +2,7 @@ import Geometry
 import Model
 import Rendering
 
-/// The preview of this canvas for its card in the parent, at a leave event (m6-plan.md task 4.8,
+/// The preview of this canvas for its card in the parent, at a leave event (the M6 plan task 4.8,
 /// D-97, D-111).
 extension CanvasViewController {
     /// The card of this canvas in its parent, or `nil` if the app does not know it, for example

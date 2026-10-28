@@ -17,7 +17,7 @@ public struct SpatialGrid<ID: Hashable & Sendable>: Sendable {
     }
 
     /// The entries of one cell. A cell of more than `indexedCellCount` entries also keeps the
-    /// position of each entry, so that a removal finds it without a scan (m10-plan.md task 3.2).
+    /// position of each entry, so that a removal finds it without a scan (the M10 plan task 3.2).
     @usableFromInline
     struct Cell: Sendable {
         @usableFromInline var entries: [Entry]

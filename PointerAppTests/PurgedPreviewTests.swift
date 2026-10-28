@@ -6,7 +6,7 @@ import Testing
 @testable import Pointer
 
 /// The launch removes the preview files of the canvases that the 30-day purge removes (D-18,
-/// m10-plan.md task 2.9). Before the fix, the files stayed on the disk without an owner.
+/// the M10 plan task 2.9). Before the fix, the files stayed on the disk without an owner.
 @MainActor
 @Suite("Previews of purged canvases")
 struct PurgedPreviewTests {

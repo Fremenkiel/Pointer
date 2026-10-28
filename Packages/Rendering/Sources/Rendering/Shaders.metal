@@ -158,8 +158,8 @@ static uint findEntry(constant StrokeDrawEntry *entries, uint count, uint instan
 
 // Used control point j of a run. Before the first point and after the last point of the
 // stroke, it is the mirrored phantom point (D-26). At a boundary between two runs, it is the
-// real neighbor point of the stroke at the stride of the neighbor run, so that the curves of
-// the two runs meet exactly (docs/m2-fix-plan.md, phase 3, task 2).
+// used neighbor point of the neighbor run, so that the curves of the two runs meet exactly
+// (the M2 fix plan, phase 3, task 2; review of 2026-10-28).
 static float2 controlPoint(const device float2 *points, StrokeDrawEntry entry, RunDetail run,
                            int j) {
     int last = int(entry.pointCount) - 1;
@@ -232,7 +232,7 @@ vertex InkVertexOut inkVertex(uint vertexID [[vertex_id]],
     return out;
 }
 
-// Coverage with the smooth edge of the PencilKit monoline (docs/m2-plan.md section 1, fact 3).
+// Coverage with the smooth edge of the PencilKit monoline (the M2 plan section 1, fact 3).
 fragment half4 inkFragment(InkVertexOut in [[stage_in]], constant InkUniforms &uniforms [[buffer(2)]]) {
     float2 pa = in.position.xy - in.start;
     float2 ba = in.end - in.start;

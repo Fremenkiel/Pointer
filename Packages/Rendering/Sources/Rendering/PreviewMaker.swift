@@ -4,11 +4,11 @@ import Metal
 import Model
 
 /// Renders the preview of a canvas that is not on the screen, for a card whose preview file is
-/// missing (m6-plan.md task 3.3, item 6, D-97, D-157).
+/// missing (the M6 plan task 3.3, item 6, D-97, D-157).
 ///
 /// The app makes one maker and keeps it, so all previews share one `OffscreenPreview`: a command
 /// queue, the shared pipelines, the preview targets, and one glyph atlas, ring, and text encoder
-/// (m10-plan.md task 3.4). The render blocks until the GPU completes, so the actor runs on its
+/// (the M10 plan task 3.4). The render blocks until the GPU completes, so the actor runs on its
 /// own serial queue, off the main actor, the render thread, and the shared pool, one preview at
 /// a time.
 public actor PreviewMaker {

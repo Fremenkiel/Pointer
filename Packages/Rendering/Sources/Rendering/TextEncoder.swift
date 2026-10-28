@@ -14,7 +14,7 @@ final class TextEncoder {
         /// `true` sets the text coverage of `scissor` to zero before the draw.
         var clearsScissor = false
         /// The pass stops after this `CACurrentMediaTime()` value, after its first box, as the
-        /// ink of a build does (task 2.4 of docs/m5-plan.md).
+        /// ink of a build does (task 2.4 of the M5 plan).
         var deadline: TimeInterval = .infinity
         /// `false` draws cards without their previews and asks for none, for the render of a
         /// preview (architecture.md 5.5).

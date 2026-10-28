@@ -156,7 +156,7 @@ final class CardMenuSnapshotTests: XCTestCase {
     }
 
     /// The message at the stroke limit shows as the app shows each message: the text and an OK
-    /// button (D-181, m10-plan.md task 6.2).
+    /// button (D-181, the M10 plan task 6.2).
     func testStrokeLimitMessage() async throws {
         let previous = Self.keyWindow()
         let window = try Self.makeWindow()

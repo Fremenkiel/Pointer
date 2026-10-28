@@ -50,4 +50,22 @@ struct CameraFlightTests {
         #expect(camera.zoom == 0.5)
         #expect(abs(camera.center.x - (-100 + 200 * progress)) < 1e-9)
     }
+
+    @Test(
+        "A flight between zooms a few ULPs apart moves the center by the progress",
+        arguments: [1, 2, 16, 1_000]
+    )
+    func nearlyEqualZooms(ulps: Int) {
+        var zoom = 1.0
+        for _ in 0..<ulps { zoom = zoom.nextUp }
+        let to = Camera(center: Point(x: 100, y: 40), zoom: zoom)
+        let from = Camera(center: Self.start.center, zoom: 1)
+        let flight = CameraFlight(from: from, to: to, duration: 1, start: 0)
+        for frame in 1..<120 {
+            let time = Double(frame) / 120
+            let progress = flight.progress(at: time)
+            let camera = flight.camera(at: time)
+            #expect(abs(camera.center.x - (-100 + 200 * progress)) < 1e-6)
+        }
+    }
 }

@@ -2,7 +2,7 @@ import Model
 import os
 
 /// Sends the changed rows of one canvas to the library in the order of the steps (F-11 of
-/// docs/m4-fix-plan.md, storage.md section 4).
+/// the M4 fix plan, storage.md section 4).
 ///
 /// One task per step gave no order: the actor of the library runs waiting jobs by priority. Here
 /// one consumer task sends each list of rows and waits for it before it takes the next.

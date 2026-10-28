@@ -10,7 +10,7 @@ import UIKit
 @testable import Pointer
 
 /// The write of the preview of a child canvas at each leave event of D-111: the up button, the
-/// pinch-out exit, the workspace switch, and the move to the background (m6-plan.md task 4.8).
+/// pinch-out exit, the workspace switch, and the move to the background (the M6 plan task 4.8).
 @MainActor
 @Suite("Preview write")
 struct PreviewWriteTests {

@@ -1,7 +1,7 @@
 import Geometry
 import XCTest
 
-/// The removal from the spatial grid allocates nothing (P-02 of docs/m4-fix-plan.md, phase 3,
+/// The removal from the spatial grid allocates nothing (P-02 of the M4 fix plan, phase 3,
 /// task 2). The grid is a Tier A type, but the allocation counter needs the `malloc_logger` hook
 /// of `AllocationCounter+Unsafe.swift`, so the test runs here (D-80). The removals run on the
 /// main thread, so the count takes the main thread only: other tests run at the same time.

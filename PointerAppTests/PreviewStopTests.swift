@@ -7,7 +7,7 @@ import UIKit
 @testable import Pointer
 
 /// The preview render of a leave ends also when the render thread of the child stops before the
-/// render ends, so that the leave does not wait for ever (m7-plan.md task 0.4, D-111, D-131).
+/// render ends, so that the leave does not wait for ever (the M7 plan task 0.4, D-111, D-131).
 @MainActor
 @Suite("Preview render on a stopped thread")
 struct PreviewStopTests {

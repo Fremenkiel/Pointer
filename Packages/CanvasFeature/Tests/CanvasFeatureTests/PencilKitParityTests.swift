@@ -105,7 +105,7 @@ struct PencilKitParityTests {
     }
 
     /// Dense points with one long jump: the renderer draws this stroke as three level-of-detail
-    /// runs (docs/m2-fix-plan.md, phase 3, task 2).
+    /// runs (the M2 fix plan, phase 3, task 2).
     private static func jumpPath() -> [CGPoint] {
         (0..<200).map { index in
             let x = index <= 130 ? 20 + Double(index) * 0.1 : 150 + Double(index - 131) * 0.1

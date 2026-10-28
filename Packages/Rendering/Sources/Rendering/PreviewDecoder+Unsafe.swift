@@ -3,7 +3,7 @@ import Foundation
 import ImageIO
 
 /// Decodes a gray PNG preview with ImageIO into one reused buffer of 512 by 512 bytes (D-107,
-/// m6-plan.md section 4, rule 5). One loader owns one decoder, so one thread uses it at a time.
+/// the M6 plan section 4, rule 5). One loader owns one decoder, so one thread uses it at a time.
 struct PreviewDecoder {
     /// A decoded preview: its size and its gray pixels, row by row.
     struct Image {

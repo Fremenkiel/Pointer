@@ -123,7 +123,7 @@ extension CanvasViewController {
         of command: (any CanvasCommand)?,
         isUndo: Bool
     ) -> (removed: [StrokeID], added: [Stroke])? {
-        // Only the delta of the step is built (PERF-01, m10-plan.md task 3.6).
+        // Only the delta of the step is built (PERF-01, the M10 plan task 3.6).
         if let erase = command as? EraseStrokes {
             guard isUndo else { return (erase.removed.map(\.id), erase.parts) }
             return (erase.parts.map(\.id), erase.removed)

@@ -6,7 +6,7 @@ import Testing
 @testable import Rendering
 
 /// The block lists and the points of the stroke store stay bounded while a canvas erases, undoes,
-/// and draws (M-04, M-05 of docs/m4-fix-plan.md).
+/// and draws (M-04, M-05 of the M4 fix plan).
 @Suite("Stroke store blocks")
 struct StrokeStoreBlockTests {
     /// The rounds of erase, undo, and new strokes.

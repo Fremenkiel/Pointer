@@ -9,7 +9,7 @@ import os
 /// The card previews for the renderer: the files of `PreviewStore` (D-97, D-107).
 ///
 /// A missing or damaged file starts one load of that child canvas alone. The source renders its
-/// preview offscreen, writes the file, and frees the content (m6-plan.md task 3.3, item 6). The
+/// preview offscreen, writes the file, and frees the content (the M6 plan task 3.3, item 6). The
 /// loader of the renderer asks for one preview at a time, so one such load runs at a time.
 struct PreviewFiles: PreviewSource {
     /// The store of the preview files.

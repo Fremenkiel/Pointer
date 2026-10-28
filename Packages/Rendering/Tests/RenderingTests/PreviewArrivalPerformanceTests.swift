@@ -7,7 +7,7 @@ import XCTest
 
 /// The time until the previews of a screen of D-56 cards show at zoom 0.25, with a still camera
 /// (D-97). An upload frame takes only previews that lie close together, so that the redraw of
-/// their cards stays small (m10-plan.md section 6.44). The test records the cost of that limit:
+/// their cards stays small (the M10 plan section 6.44). The test records the cost of that limit:
 /// the frames and the time until no preview loads.
 @MainActor
 final class PreviewArrivalPerformanceTests: XCTestCase {

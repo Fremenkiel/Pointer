@@ -73,7 +73,7 @@ struct RenderInput: Sendable {
     /// `true` if the only changes are the camera, the parent weight, the end of a flight, or a
     /// preview render. Such a frame shows nothing new when the camera and the weight stay as
     /// they are: the main thread sends the last camera of a flight again at its end
-    /// (m10-plan.md task 5.1), and a preview render draws off the screen (section 6.44).
+    /// (the M10 plan task 5.1), and a preview render draws off the screen (section 6.44).
     var changesOnlyTheViewOrPreviewRender: Bool {
         let viewChange =
             camera != nil || transitionWeight != nil || endsFlight || previewRender != nil
@@ -96,7 +96,7 @@ struct SpareLists {
 
 extension RenderInput {
     /// Moves the lists out of the input and empties them with their capacity. The edit lists go
-    /// back too, so a drag step allocates no list (m10-plan.md task 3.1).
+    /// back too, so a drag step allocates no list (the M10 plan task 3.1).
     mutating func emptyLists() -> SpareLists {
         var spares = SpareLists()
         swap(&spares.eraserSamples, &eraserSamples)

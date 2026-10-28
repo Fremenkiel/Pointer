@@ -1,4 +1,4 @@
-/// The draw entries of one ink pass, one list per arena buffer (docs/m2-fix-plan.md, phase 4,
+/// The draw entries of one ink pass, one list per arena buffer (the M2 fix plan, phase 4,
 /// task 3).
 ///
 /// A pass works on a local copy, because the per-entry access to a class property costs a

@@ -7,7 +7,7 @@ import XCTest
 @testable import Rendering
 
 /// The flight of an open and of a leave keeps its frames while the main thread is blocked
-/// (m6-fix-plan.md task 2.1, D-121, CAN-05): no late frame, and no frame that holds the camera
+/// (the M6 fix plan task 2.1, D-121, CAN-05): no late frame, and no frame that holds the camera
 /// of the frame before. Each test blocks the main thread once, early in a flight. Only these
 /// tests block it, because a blocked main actor broke other tests before.
 @MainActor

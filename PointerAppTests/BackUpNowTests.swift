@@ -5,7 +5,7 @@ import UIKit
 @testable import Persistence
 @testable import Pointer
 
-/// "Back up now" (task 2.4 of docs/m9-plan.md, STO-04, D-155, D-160).
+/// "Back up now" (task 2.4 of the M9 plan, STO-04, D-155, D-160).
 @MainActor
 @Suite("Back up now", .serialized)
 struct BackUpNowTests {

@@ -21,7 +21,7 @@ final class ExportPerformanceTests: XCTestCase {
 
     /// The time between two reads of the available memory during an export.
     /// A copy of a PDF of 80 MB takes a few milliseconds, so a longer interval misses its peak
-    /// (m8-plan.md section 6.4).
+    /// (the M8 plan section 6.4).
     private static let pollInterval = Duration.microseconds(250)
 
     /// The content of D-56: 20,000 strokes of 300 points, 5,000 cards, and 5,000 text boxes of

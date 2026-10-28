@@ -3,7 +3,7 @@
 /// The curve has one segment between each pair of neighbor control points. The parameter runs from
 /// 0 at the first control point to `count - 1` at the last. The curve passes through both end
 /// points, because each end uses a phantom point that mirrors the second point through the end
-/// point. A test in the iPad simulator compared this rule with `PKStrokePath` (docs/m2-plan.md
+/// point. A test in the iPad simulator compared this rule with `PKStrokePath` (the M2 plan
 /// section 1).
 public struct StrokeCurve: Sendable {
     /// The control points.

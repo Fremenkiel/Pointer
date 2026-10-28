@@ -70,7 +70,7 @@ final class EraseUndoPerformanceTests: XCTestCase {
         XCTContext.runActivity(named: "calls: " + calls.joined(separator: " ")) { _ in }
         _ = report(times["empty change"] ?? [], name: "empty change")
         let steps = ["erase", "undo", "redo"].map { report(times[$0] ?? [], name: $0) }
-        // A failure names all three steps, so one run gives the whole result (m4-fix-plan.md 0.1).
+        // A failure names all three steps, so one run gives the whole result (the M4 fix plan 0.1).
         let summary = steps.map(\.line).joined(separator: "; ")
         var samples: [String: Double] = [:]
         for name in ["empty change", "erase", "undo", "redo"] {

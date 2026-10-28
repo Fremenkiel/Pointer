@@ -87,15 +87,17 @@ struct DetailRunsTests {
         }
     }
 
-    @Test("Neighbor offsets use the strides of the neighbor runs, and 0 at the stroke ends")
+    @Test("Neighbor offsets reach the used neighbor points, and 0 at the stroke ends")
     func neighborOffsets() {
         let stroke = points(count: 1_000, spacing: 0.001, jump: 100, jumpIndex: 500)
         let result = runs(of: stroke, pixelsPerCanvasPoint: 16, usesSmoothPieces: false)
         #expect(result.first?.previousOffset == 0)
         #expect(result.last?.nextOffset == 0)
+        #expect(result.contains { ($0.end - $0.start) % $0.stride != 0 }, "A run with a short step")
         for (previous, next) in zip(result, result.dropFirst()) {
             #expect(previous.nextOffset == min(next.stride, 999 - previous.end))
-            #expect(next.previousOffset == min(previous.stride, next.start))
+            let usedBeforeEnd = previous.start + (previous.usedPointCount - 2) * previous.stride
+            #expect(next.previousOffset == min(previous.end - usedBeforeEnd, next.start))
         }
     }
 

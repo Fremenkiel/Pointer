@@ -7,7 +7,7 @@ import UIKit
 @testable import Pointer
 
 /// A double tap and a squeeze do nothing during a card flight, on both screens, and act on the
-/// shown screen after it (m7-plan.md task 1.3, architecture.md 4.5, CARD-03, D-63, D-130).
+/// shown screen after it (the M7 plan task 1.3, architecture.md 4.5, CARD-03, D-63, D-130).
 @MainActor
 @Suite("Pencil actions during a card flight", .serialized)
 struct PencilFlightTests {

@@ -8,7 +8,7 @@ import UIKit
 @testable import CanvasFeature
 @testable import Pointer
 
-/// Acceptance 2 of M6: a tree of 32 levels (m6-plan.md task 5.2, CARD-09, D-95).
+/// Acceptance 2 of M6: a tree of 32 levels (the M6 plan task 5.2, CARD-09, D-95).
 @MainActor
 @Suite("Tree of 32 levels")
 struct DeepTreeTests {

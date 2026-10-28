@@ -1,6 +1,6 @@
 /// The state of a canvas that the UI tests read through accessibility values (D-178).
 public struct CanvasProbe: Equatable, Sendable {
-    /// True while the renderer loads text, cards, or previews (task 2.1 of docs/m10-plan.md).
+    /// True while the renderer loads text, cards, or previews (task 2.1 of the M10 plan).
     public let isLoading: Bool
     /// The strokes of the canvas, without the live stroke.
     public let strokeCount: Int

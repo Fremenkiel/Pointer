@@ -110,6 +110,33 @@ struct LibraryBusyTests {
         #expect(Set(harness.background.endedTasks).count == 2, "No task ends twice")
     }
 
+    @Test("The final save waits for the rows that the canvas sent just before it (D-149)")
+    func finalSaveHoldsSentRows() async throws {
+        let harness = try await AppHarness.start()
+        defer { await harness.remove() }
+        let canvas = try #require(harness.composition.container.canvas)
+        let stroke = Stroke(
+            id: StrokeID(rawValue: UUID()),
+            canvasID: canvas.canvasID,
+            created: canvas.clock.factory.clock.now(),
+            origin: .zero,
+            width: 2,
+            points: InkPoints([
+                InkPoint(x: 0, y: 0, force: 1, time: 0), InkPoint(x: 8, y: 0, force: 1, time: 0.1),
+            ])
+        )
+        canvas.addPenStrokes([stroke])
+        harness.composition.enterBackground()
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: AppHarness.timeout)
+        while harness.background.ended < 1, clock.now < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(harness.background.ended == 1)
+        let reader = try SQLiteConnection(path: harness.files.library, mode: .readOnly)
+        #expect(try reader.integer("SELECT count(*) FROM stroke") == 1)
+    }
+
     @Test("The end of the extra time ends the grant inside its handler (review after M9)")
     func expiryEndsTheGrant() {
         let time = FakeBackgroundTime()

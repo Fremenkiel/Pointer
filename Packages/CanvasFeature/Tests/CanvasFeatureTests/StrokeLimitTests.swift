@@ -8,7 +8,7 @@ import UIKit
 
 @testable import CanvasFeature
 
-/// The canvas at its stroke limits (D-181, m10-plan.md task 6.2). Before M10, the pen at the
+/// The canvas at its stroke limits (D-181, the M10 plan task 6.2). Before M10, the pen at the
 /// limit dropped the stroke with a log line only.
 @MainActor
 @Suite("Stroke limit")
@@ -82,6 +82,29 @@ struct StrokeLimitTests {
         Self.draw(controller)
         #expect(shown.messages == [CanvasStrings.strokeLimit, CanvasStrings.strokeLimit])
         #expect(controller.content.strokes.count == Limits.maxStrokesPerCanvas)
+    }
+
+    @Test("A pen stroke that the content refuses after the handoff leaves the renderer (D-122)")
+    func refusedStrokeLeavesRenderer() throws {
+        let controller = try Self.controller(
+            content: try Self.content(count: Limits.maxStrokesPerCanvas),
+            shown: Shown()
+        )
+        let stroke = Stroke(
+            id: StrokeID(rawValue: UUID()),
+            canvasID: Fixtures.canvas,
+            created: Fixtures.clock().now(),
+            origin: .zero,
+            width: 2,
+            points: InkPoints([
+                InkPoint(x: 0, y: 0, force: 1, time: 0), InkPoint(x: 8, y: 0, force: 1, time: 0.1),
+            ])
+        )
+        // The handoff gives the stroke to the renderer before the model step (D-122).
+        controller.renderer.add([stroke], onPresented: {})
+        controller.addPenStrokes([stroke])
+        #expect(controller.content.strokes[stroke.id] == nil)
+        #expect(!CanvasHistoryTests.rendered(controller.renderer).contains(stroke.id))
     }
 
     @Test("An erase past the bound after an erase removes the strokes whole, with no message")

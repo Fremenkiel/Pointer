@@ -140,7 +140,7 @@ final class CardStore {
         return earlier
     }
 
-    /// Removes all cards, for the next offscreen preview (m10-plan.md task 3.4).
+    /// Removes all cards, for the next offscreen preview (the M10 plan task 3.4).
     func removeAll() {
         entries.removeAll(keepingCapacity: true)
         grid = SpatialGrid(cellSize: grid.cellSize, maxCellsPerItem: grid.maxCellsPerItem)

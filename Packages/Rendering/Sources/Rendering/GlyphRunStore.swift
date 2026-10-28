@@ -33,7 +33,7 @@ final class GlyphRunStore {
 
     /// The bytes of one stored quad.
     static let bytesPerQuad = MemoryLayout<StoredGlyph>.stride
-    /// The bytes of one buffer: 2 slabs, so that the first run of a canvas takes 1 MB.
+    /// The bytes of one buffer: 5 slabs, so that the first run of a canvas takes 1 MB.
     static let bytesPerBuffer = 1 << 20
     /// The most buffers: `RunBuffers` in Shaders.metal has this many addresses.
     static let maxBuffers = 32
@@ -59,6 +59,9 @@ final class GlyphRunStore {
     /// The frame in which an eviction found no run to free. The rest of that frame stores no
     /// new run, so that a full store costs one scan per frame.
     private var exhaustedFrame: UInt64 = 0
+    /// The keys of the stale runs of one eviction. The list stays, so that an eviction on the
+    /// render thread allocates nothing (PERF-01, review of 2026-10-28).
+    private var staleKeys: [Key] = []
 
     /// Makes an empty store. It makes its first buffer at the first run.
     ///
@@ -194,15 +197,20 @@ final class GlyphRunStore {
     /// - Returns: `false` if no run can go.
     private func evict(atLeast quads: Int, exponent: Int8, frame: UInt64) -> Bool {
         precondition(quads > 0, "An eviction frees room for a run")
-        let before = runs.count
-        runs = runs.filter { key, run in
+        // `Dictionary.filter` makes a new dictionary of all kept runs, up to 9,000 for the D-56
+        // text, so the scan collects the stale keys and removes them in place.
+        staleKeys.removeAll(keepingCapacity: true)
+        for (key, run) in runs {
             let age = key.exponent == exponent ? Self.sameExponentAge : Self.framesInFlight
-            guard run.lastFrame + age < frame else { return true }
-            allocator.free(run.block)
-            return false
+            if run.lastFrame + age < frame { staleKeys.append(key) }
         }
-        assert(runs.count <= before, "An eviction adds no run")
-        return runs.count < before
+        for key in staleKeys {
+            guard let run = runs.removeValue(forKey: key) else {
+                preconditionFailure("A stale run left the store during its eviction")
+            }
+            allocator.free(run.block)
+        }
+        return !staleKeys.isEmpty
     }
 
     /// Adds one buffer within the budget.

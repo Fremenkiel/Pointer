@@ -35,7 +35,7 @@ private final class ScriptedPinch: UIPinchGestureRecognizer {
     }
 }
 
-/// Acceptance 3 of M6: a lift above the threshold cancels the pinch-out exit (m6-plan.md task
+/// Acceptance 3 of M6: a lift above the threshold cancels the pinch-out exit (the M6 plan task
 /// 5.3, CARD-05, D-104).
 @MainActor
 @Suite("Pinch-out cancel")

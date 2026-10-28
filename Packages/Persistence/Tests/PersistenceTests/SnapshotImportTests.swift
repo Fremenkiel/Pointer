@@ -3,7 +3,7 @@ import Testing
 
 @testable import Persistence
 
-/// The copy and the checks of a picked snapshot (task 1.3 of docs/m9-plan.md, D-153, D-156,
+/// The copy and the checks of a picked snapshot (task 1.3 of the M9 plan, D-153, D-156,
 /// D-162, D-163). `Fixtures/make-snapshot-fixtures.sh` makes the fixtures.
 @Suite("Snapshot import")
 struct SnapshotImportTests {

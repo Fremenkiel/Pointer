@@ -8,7 +8,7 @@ extension FrameRenderer {
     /// front texture.
     var previewArea: Rect? { (layer?.build?.target ?? layer?.front)?.canvasRect }
 
-    /// Makes the preview atlas at the first card, once per renderer (m6-plan.md section 4,
+    /// Makes the preview atlas at the first card, once per renderer (the M6 plan section 4,
     /// rule 2). A failure leaves the cards without previews and logs it.
     func makePreviewAtlasIfNeeded() {
         guard previews == nil, cards.count > 0 else { return }

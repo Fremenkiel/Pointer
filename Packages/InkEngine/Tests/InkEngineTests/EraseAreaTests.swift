@@ -5,7 +5,7 @@ import Testing
 
 @testable import InkEngine
 
-/// The area of an erase covers each change of the ink (F-07 of docs/m4-fix-plan.md, D-65,
+/// The area of an erase covers each change of the ink (F-07 of the M4 fix plan, D-65,
 /// D-72): outside it, the parts show the same curve as the old stroke.
 @Suite("The area of an erase")
 struct EraseAreaTests {

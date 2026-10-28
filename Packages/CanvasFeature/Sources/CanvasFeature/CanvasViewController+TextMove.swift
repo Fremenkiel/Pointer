@@ -42,8 +42,8 @@ extension CanvasViewController: @MainActor UIEditMenuInteractionDelegate {
         }
     }
 
-    /// `true` if a long press can start: on a box for a move or its menu, and on empty canvas
-    /// for "New card" (CARD-01, D-08). The pan wins a finger that moves before the press.
+    /// `true` if a long press can start: on a box or a card for a move or its menu. A long press
+    /// on empty canvas does nothing (D-117). The pan wins a finger that moves before the press.
     func longPressCanBegin(_ recognizer: UIGestureRecognizer) -> Bool {
         isEditingEnabled
     }

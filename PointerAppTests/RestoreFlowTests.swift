@@ -9,7 +9,7 @@ import UIKit
 @testable import Persistence
 @testable import Pointer
 
-/// The restore flow and the new composition after it (tasks 2.2 and 2.3 of docs/m9-plan.md,
+/// The restore flow and the new composition after it (tasks 2.2 and 2.3 of the M9 plan,
 /// D-20, D-112, D-149, D-151, D-152, D-164).
 @MainActor
 @Suite("Restore flow", .serialized)

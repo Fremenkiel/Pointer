@@ -68,7 +68,7 @@ final class ScribbleConditionTests: XCTestCase {
 
     /// A finger tap on a box with the pen tool lands on the live canvas of PencilKit. The live
     /// canvas must not take the first responder from the edit view, or the keyboard closes
-    /// (manual test 4 of docs/m5-plan.md section 5.6).
+    /// (manual test 4 of the M5 plan section 5.6).
     func testLiveCanvasLeavesTheEditViewFirstResponder() throws {
         let host = try OnScreenCanvas.host()
         let box = try TextEditTests.box("node", at: Point(x: 0, y: 0))
@@ -90,7 +90,7 @@ final class ScribbleConditionTests: XCTestCase {
     }
 
     /// The selection of PencilKit takes finger taps on the live canvas and ends the focus of the
-    /// edit view after the wait for a second tap (manual test 4 of docs/m5-plan.md section 5.6).
+    /// edit view after the wait for a second tap (manual test 4 of the M5 plan section 5.6).
     /// Each recognizer in the live canvas that takes finger touches waits for the finger tap and
     /// the long press of the canvas to fail. The drawing recognizer of the pencil does not.
     func testLiveCanvasFingerRecognizersWaitForTheCanvas() throws {

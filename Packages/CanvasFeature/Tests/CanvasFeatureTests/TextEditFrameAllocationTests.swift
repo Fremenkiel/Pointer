@@ -12,7 +12,7 @@ import XCTest
 /// each allocation by its caller with `AllocationTracer`. Before the fix, a frame laid out the
 /// text again and set the frame of the edit view: 73 allocations with 5 characters and 218 with
 /// 984. An earlier form compared the largest count with a bare move of a text view, and failed
-/// when UIKit made one extra allocation (m8-fix-plan.md section 3).
+/// when UIKit made one extra allocation (the M8 fix plan section 3).
 @MainActor
 final class TextEditFrameAllocationTests: XCTestCase {
     /// The frame time of the display at 120 Hz.

@@ -92,7 +92,8 @@ final class SQLiteConnection {
     }
 
     /// The pages of the WAL file after the last commit of this connection. It is 0 before
-    /// `trackWALPages()` and after a commit that restarted the WAL.
+    /// `trackWALPages()`. After a commit that restarted the WAL, it holds the pages of that
+    /// commit.
     var walPages: Int { walCounter.pages }
 
     /// True between a `BEGIN` and its `COMMIT` or `ROLLBACK`

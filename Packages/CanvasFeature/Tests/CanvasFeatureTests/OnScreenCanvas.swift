@@ -127,7 +127,7 @@ enum OnScreenCanvas {
         let end = clock.now
         let held = os_proc_available_memory()
         // The layouts of the text and the card titles run after the first frame (D-92). They end
-        // before the close, so that no work of this open runs into the next (m6-plan.md 3.7).
+        // before the close, so that no work of this open runs into the next (the M6 plan 3.7).
         while renderer.isLoadingText || renderer.isLoadingCards {
             guard clock.now < deadline else { throw OpenTimedOut() }
             try await Task.sleep(for: pollInterval)
@@ -143,7 +143,7 @@ enum OnScreenCanvas {
     }
 
     /// The memory of an open from the D-56 canvas into a D-56 child and of the leave back, from
-    /// steady memory before the parent opens (m6-plan.md task 3.6, D-110). The child loads the
+    /// steady memory before the parent opens (the M6 plan task 3.6, D-110). The child loads the
     /// same canvas a second time: a second content and a second renderer, as a real child has.
     ///
     /// - Throws: An error of the load or the renderer, or `OpenTimedOut`.

@@ -7,7 +7,7 @@ import QuartzCore
 /// (D-28).
 final class InkEncoder {
     /// Half the width of the anti-aliased edge, in pixels. It matches the edge of the PencilKit
-    /// monoline (docs/m2-plan.md section 1, fact 3).
+    /// monoline (the M2 plan section 1, fact 3).
     static let edgeHalfWidthPixels: Float = 1.06
     /// The pass reads the clock once per this number of strokes.
     static let deadlineCheckInterval = 32
@@ -19,7 +19,7 @@ final class InkEncoder {
     var minimumPixelSpacing = LevelOfDetail.minimumPixelSpacing
     /// `false` uses the pieces of before phase 3, task 3. Tests change it to compare images.
     var usesSmoothPieces = true
-    /// The ink pass, made once (PERF-01, docs/m2-fix-plan.md, phase 5).
+    /// The ink pass, made once (PERF-01, the M2 fix plan, phase 5).
     private let inkPass: MTLRenderPassDescriptor = {
         let pass = MTLRenderPassDescriptor()
         pass.colorAttachments[0].storeAction = .store

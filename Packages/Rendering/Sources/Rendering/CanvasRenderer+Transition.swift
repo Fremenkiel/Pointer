@@ -30,7 +30,7 @@ extension CanvasRenderer {
     }
 
     /// Sets the weight of the parent image of the running transition: 1 shows the parent in
-    /// full, 0 shows the card alone. The camera animation sets it each frame (m6-plan.md
+    /// full, 0 shows the card alone. The camera animation sets it each frame (the M6 plan
     /// section 4, rule 7).
     ///
     /// - Precondition: `weight` is from 0 to 1.

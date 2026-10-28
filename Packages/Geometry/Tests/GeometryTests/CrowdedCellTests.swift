@@ -2,7 +2,7 @@ import Testing
 
 @testable import Geometry
 
-/// The position table of a crowded cell (m10-plan.md task 3.2, review M9 section 3.3, item 9).
+/// The position table of a crowded cell (the M10 plan task 3.2, review M9 section 3.3, item 9).
 @Suite("Crowded grid cell")
 struct CrowdedCellTests {
     /// A grid with `count` items in one cell, each of 4 by 4 points.

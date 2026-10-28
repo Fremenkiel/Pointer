@@ -2,7 +2,7 @@ import Metal
 import QuartzCore
 import Synchronization
 
-/// The presented handler of the handoff frames (m10-plan.md task 3.6). A closure that captured
+/// The presented handler of the handoff frames (the M10 plan task 3.6). A closure that captured
 /// the handoff number cost two allocations per handoff frame: its context, and the block that
 /// Swift made of it. The handler here captures nothing, so only the block is left. It finds the
 /// handoff of a drawable by the identity of the drawable in a table of the process, because the

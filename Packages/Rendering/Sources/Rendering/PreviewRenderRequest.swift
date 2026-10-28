@@ -2,7 +2,7 @@ import Dispatch
 import Geometry
 
 /// A request of the preview of the shown canvas, from the main actor to the render thread
-/// (m6-plan.md task 3.4).
+/// (the M6 plan task 3.4).
 struct PreviewRenderRequest: Sendable {
     /// The open camera of the canvas: the camera of CARD-03.
     let camera: Camera

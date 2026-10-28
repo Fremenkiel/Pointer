@@ -1,8 +1,10 @@
 # Open decisions
 
-This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-114 to D-119 on 2026-10-22. D-115 replaced D-09 and D-100, and D-117 replaced D-08. The M6 fix plan raised D-120 to D-122 on 2026-10-22, and the product owner decided them on the same day, then D-123 and D-124. The review before M7 raised D-125 to D-131 on 2026-10-22, and the product owner decided them on the same day. D-130 replaced the rule of D-07. The review after M7 raised D-138 to D-142 for M8 on 2026-10-23, and the product owner decided them with the recommendations on the same day. The M8 plan raised D-143 on the same day. Task 2.7 raised D-144 on the same day. The product owner decided D-143 and D-144 with the recommendations on the same day. The close of M8 raised D-145 on the same day, and the product owner decided it on 2026-10-24. The M8 fix plan raised D-146 on 2026-10-24, and the product owner decided it on the same day. The M8 fix plan raised D-147 on the same day, and the product owner decided it on the same day. The review after M8 raised D-148 to D-161 on 2026-10-24 ([review-2026-10-24.md](review-2026-10-24.md)), and the M9 research raised D-162 to D-165 on the same day. The product owner decided D-148 to D-165 on the same day, with the recommendations except D-161. Tasks 1.3 and 3 of the M9 plan raised D-166 and D-167 on the same day, and the product owner decided them with the recommendations. The review after M9 raised D-168 to D-171 on 2026-10-24 ([review-2026-10-24-m9.md](review-2026-10-24-m9.md)). The product owner decided them on the same day, with the recommendations except D-168. On 2026-10-25, research for the review raised D-172 to D-174, and the product owner decided them and D-132. D-173 changes the rule CONTRACT-02 and D-174 the enforcement of five rules of code-of-code.md. The M10 plan raised D-175 to D-187 on 2026-10-25 ([m10-plan.md](m10-plan.md) section 5), and the product owner decided them with the recommendations on the same day. Task 4.1 of the M10 plan raised D-188 to D-190 on the same day, with the design of architecture.md section 5.4.1, and the product owner approved the design and decided them with the recommendations. Task 7.1 of the M10 plan raised D-191 on the same day, and the product owner decided it with the recommendation. The close of M10 raised D-192 on 2026-10-26, and the product owner decided it with the recommendation.
+This document lists each design point where the right choice was not certain. Each entry gives the options, the recommendation, the reason, and the decision of the product owner. The product owner decided D-01 to D-25 and D-33 on 2026-10-17, and decided D-02 again after M1 on the same day. The product owner decided D-26, D-28, D-31, and D-34 to D-38 on 2026-10-17. After the M2 code review on the same day, D-41 replaced D-39, and the product owner decided D-41 to D-43. On 2026-10-18, before M3, the product owner decided D-27, D-29, D-30, D-32, D-50, and D-51. The product owner decided D-52 to D-60 on the same day. The product owner decided D-61 to D-72 on 2026-10-19, and D-73 to D-80 on 2026-10-20. The M5 plan raised D-81 to D-91 on 2026-10-20, and the product owner decided them on the same day. Task 2.3 raised D-92 on the same day, and the product owner decided it on 2026-10-21. Task 2.3 raised D-93 on 2026-10-21, and the product owner decided it on the same day. The close of M5 raised D-94 on 2026-10-21, and the product owner decided it on the same day. The review of M5 raised D-95 to D-105 for M6 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-106 on the same day. The M6 plan raised D-107 to D-113 on 2026-10-21, and the product owner decided them with the recommendations on the same day. The product owner decided D-114 to D-119 on 2026-10-22. D-115 replaced D-09 and D-100, and D-117 replaced D-08. The M6 fix plan raised D-120 to D-122 on 2026-10-22, and the product owner decided them on the same day, then D-123 and D-124. The review before M7 raised D-125 to D-131 on 2026-10-22, and the product owner decided them on the same day. D-130 replaced the rule of D-07. The review after M7 raised D-138 to D-142 for M8 on 2026-10-23, and the product owner decided them with the recommendations on the same day. The M8 plan raised D-143 on the same day. Task 2.7 raised D-144 on the same day. The product owner decided D-143 and D-144 with the recommendations on the same day. The close of M8 raised D-145 on the same day, and the product owner decided it on 2026-10-24. The M8 fix plan raised D-146 on 2026-10-24, and the product owner decided it on the same day. The M8 fix plan raised D-147 on the same day, and the product owner decided it on the same day. The review after M8 raised D-148 to D-161 on 2026-10-24 ([review-2026-10-24.md](review-2026-10-24.md)), and the M9 research raised D-162 to D-165 on the same day. The product owner decided D-148 to D-165 on the same day, with the recommendations except D-161. Tasks 1.3 and 3 of the M9 plan raised D-166 and D-167 on the same day, and the product owner decided them with the recommendations. The review after M9 raised D-168 to D-171 on 2026-10-24 ([review-2026-10-24-m9.md](review-2026-10-24-m9.md)). The product owner decided them on the same day, with the recommendations except D-168. On 2026-10-25, research for the review raised D-172 to D-174, and the product owner decided them and D-132. D-173 changes the rule CONTRACT-02 and D-174 the enforcement of five rules of code-of-code.md. The M10 plan raised D-175 to D-187 on 2026-10-25 (the M10 plan section 5), and the product owner decided them with the recommendations on the same day. Task 4.1 of the M10 plan raised D-188 to D-190 on the same day, with the design of architecture.md section 5.4.1, and the product owner approved the design and decided them with the recommendations. Task 7.1 of the M10 plan raised D-191 on the same day, and the product owner decided it with the recommendation. The close of M10 raised D-192 on 2026-10-26, and the product owner decided it with the recommendation.
 
 Status values: Open, Decided, Replaced.
+
+The milestone plans and fix plans of M2 to M10 (`m2-plan.md` to `m10-plan.md`) left `docs/` after the close of M10 on 2026-10-28. An entry that names a task or a section of a plan refers to the version in git history: `git show e5d3105:docs/m10-plan.md`.
 
 ## Summary
 
@@ -478,7 +480,7 @@ Status values: Open, Decided, Replaced.
 - Options: (a) three drawables, at the cost of up to one frame more display latency for the Metal ink. (b) less GPU work per draw instance: a cheaper shader and more level of detail. (c) keep the setup and accept 60 Hz while the camera moves. A budget of 80,000 instances was tried and rejected by the product owner after a look on the device.
 - Recommendation: (a) now and (b) later.
 - Effect: CAN-05 and M2 acceptance 2 and 10 ask for 120 Hz. With this decision, the M2 test checks for zero hitches at the rate that the system chooses. Option (b) stays open for a later milestone.
-- Replaced on 2026-10-17 by D-41. The benchmarks of [m2-fix-plan.md](m2-fix-plan.md) showed that the drawable count, not the GPU time, set the 60 Hz.
+- Replaced on 2026-10-17 by D-41. The benchmarks of the M2 fix plan showed that the drawable count, not the GPU time, set the 60 Hz.
 
 ### D-40 Measured pen latency against FEEL-01
 
@@ -490,7 +492,7 @@ Status values: Open, Decided, Replaced.
 ### D-41 Drawable count of the Metal layer
 
 - Decided by the product owner on 2026-10-17: three drawables. This replaces D-39.
-- Raised by the benchmarks of the M2 code review on an iPad Pro 11-inch (M4), section 2 of [m2-fix-plan.md](m2-fix-plan.md).
+- Raised by the benchmarks of the M2 code review on an iPad Pro 11-inch (M4), section 2 of the M2 fix plan.
 - With two drawables, a pan ran at exactly 60 Hz, also at 0.34 ms of GPU time per frame. `nextDrawable()` blocked the main thread for 16.3 ms in each frame.
 - With three drawables, a pan ran at 120 Hz with zero late frames. This was also true with a build in every frame and 5.5 ms of GPU time.
 - Cost: up to one frame more display latency for the Metal ink. The live pen stroke does not use this layer (D-02, D-33). The handoff must still pass FEEL-03.
@@ -512,14 +514,14 @@ Status values: Open, Decided, Replaced.
 ### D-44 Window access in the frame-loop test
 
 - Decided by the product owner on 2026-10-17: the frame-loop test reads the window of the host app through `UIApplication.shared`, with one `// swiftlint:disable:next arch_05_singletons` line and a comment that names this decision.
-- Raised by phase 0, task 3 of [m2-fix-plan.md](m2-fix-plan.md). The test must draw on the screen of the device. Only `UIApplication.shared` reaches the window of the test host, and lint rule ARCH-05 bans it outside `PointerApp/`.
+- Raised by phase 0, task 3 of the M2 fix plan. The test must draw on the screen of the device. Only `UIApplication.shared` reaches the window of the test host, and lint rule ARCH-05 bans it outside `PointerApp/`.
 - Options: (a) one inline exception in the test. (b) a path exclusion in `.swiftlint.yml`. (c) no window test, Instruments only.
 - Effect: the rule ARCH-05 and `.swiftlint.yml` stay as they are.
 
 ### D-45 Dense content of the performance tests
 
 - Decided by the product owner on 2026-10-17: the tests use two dense contents with different names.
-- Raised by phase 0, task 6. Section 1 of [m2-fix-plan.md](m2-fix-plan.md) called the benchmark content "the content of the M2 performance tests", but the two differ. The M2 content has a wave of 4 canvas points with a period of about 31 points, so its neighbor points are up to 0.8 canvas points apart. The benchmark content is a smooth curve, and its points are 0.08 canvas points apart. At zoom 0.25, the M2 content gives 3,000,000 draw instances, and the benchmark content gives 560,000.
+- Raised by phase 0, task 6. Section 1 of the M2 fix plan called the benchmark content "the content of the M2 performance tests", but the two differ. The M2 content has a wave of 4 canvas points with a period of about 31 points, so its neighbor points are up to 0.8 canvas points apart. The benchmark content is a smooth curve, and its points are 0.08 canvas points apart. At zoom 0.25, the M2 content gives 3,000,000 draw instances, and the benchmark content gives 560,000.
 - `PerformanceContent.m2Dense` keeps the content of the two M2 content-pass tests, so their baselines stay comparable with M2. `PerformanceContent.dense` is the benchmark content. The frame-loop and level-of-detail tests use it, so the targets of the fix plan stay comparable.
 
 ### D-46 Unit of the GPU-time target of phase 3, task 1
@@ -530,12 +532,12 @@ Status values: Open, Decided, Replaced.
 - Dense content at zoom 0.25 in the permanent test: 3.07 ms at 0.5 pixels and 1.80 ms at 1.0 pixel. The benchmark gave 4.68 ms and 2.62 ms. The target of phase 3, task 1 is "at or under 2.7 ms" in the unit of the benchmark.
 - Options: (a) state the target as a ratio: the GPU time at 1.0 pixel is at most 0.58 times the time at 0.5 pixels, the ratio of the benchmark. (b) state a new absolute target in the unit of the permanent test, for example 2.0 ms. (c) keep 2.7 ms in the new unit. This target is then much easier to meet than the benchmark target.
 - Recommendation: (a), because a ratio does not depend on the clock state of the GPU.
-- Effect: phase 3, task 1 of [m2-fix-plan.md](m2-fix-plan.md) uses the ratio as its target.
+- Effect: phase 3, task 1 of the M2 fix plan uses the ratio as its target.
 
 ### D-47 Texture margin of phase 2, task 4
 
 - Decided by the product owner on 2026-10-17: option (a), keep 2x.
-- Raised by phase 2, task 4 of [m2-fix-plan.md](m2-fix-plan.md) on 2026-10-17.
+- Raised by phase 2, task 4 of the M2 fix plan on 2026-10-17.
 - Task 4 says: if 1.5x gives no uncovered frames at pan speeds up to 2,000 view points per second, use 1.5x. Task 2 asks for at most 20 builds and a mean GPU time under 1 ms in a 4-second pan of 20,000 dense strokes. At 1.5x, task 4 passes and task 2 fails.
 - Measured on the iPad Pro 11-inch (M4), 4 seconds each, with the rebuild policy:
 
@@ -552,15 +554,15 @@ Status values: Open, Decided, Replaced.
 ### D-48 Zoom 1 target of phase 3, task 3
 
 - Decided by the product owner on 2026-10-18: option (a). Task 3 is done with the gain at zoom 8.
-- Raised by phase 3, task 3 of [m2-fix-plan.md](m2-fix-plan.md). The task asks for at least 30 % fewer instances of handwriting at zoom 1 and 8, with a largest pixel difference of at most 17.
-- A run has one piece count for all its segments. Zoom 8 met the target: 44 % fewer instances, difference 15. At zoom 1, 30 % fewer instances came only with a difference of 40, as in the benchmark. The table is in [m2-fix-plan.md](m2-fix-plan.md), phase 3.
+- Raised by phase 3, task 3 of the M2 fix plan. The task asks for at least 30 % fewer instances of handwriting at zoom 1 and 8, with a largest pixel difference of at most 17.
+- A run has one piece count for all its segments. Zoom 8 met the target: 44 % fewer instances, difference 15. At zoom 1, 30 % fewer instances came only with a difference of 40, as in the benchmark. The table is in the M2 fix plan, phase 3.
 - Options: (a) accept zoom 8 only. (b) accept a difference of 40 at zoom 1 and 58 at zoom 8. (c) give each segment its own piece count, with a per-segment instance table in the shader.
 - Effect: `LevelOfDetail.maxPieceError` stays 0.125 pixels. Handwriting at zoom 1 keeps its instances, about 1 ms of GPU time for a full pass.
 
 ### D-49 Memory target of phase 4, task 5
 
 - Decided by the product owner on 2026-10-18: option (a).
-- Raised by phase 4, task 5 of [m2-fix-plan.md](m2-fix-plan.md). The task asks for at most 30 MB of heap for the renderer store of 200,000 handwriting strokes. The benchmark gave 77 MB.
+- Raised by phase 4, task 5 of the M2 fix plan. The task asks for at most 30 MB of heap for the renderer store of 200,000 handwriting strokes. The benchmark gave 77 MB.
 - The three changes of the task took the store to 68.7 MB on the simulator: `DrawInfo` takes 48 bytes, the store keeps `InkPoints` references, and the arrays grow with the canvas. The rest is outside the task: the spatial grid takes 33 MB, and the map from stroke ID to slot takes 12 MB. Of the grid, the map from slot to bounds takes about 21 MB.
 - Options: (a) accept 68.7 MB. (b) drop the bounds map of `SpatialGrid`, a change of a Tier A public API, for about 47 MB. (c) a renderer grid of 32-bit slots with `Float` bounds and a smaller ID map, for about 30 MB.
 - Effect: `StrokeStoreMemoryTests` asserts at most 75 MB as a guard against a regression. The memory budget of 300 MB per canvas of architecture.md section 12 still holds.
@@ -581,7 +583,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-52 First launch, and a delete of the current workspace
 
-- Decided by the product owner on 2026-10-18: option (a) in both. Raised by the M3 plan on 2026-10-18 ([m3-plan.md](m3-plan.md), tasks 3.8 and 3.9).
+- Decided by the product owner on 2026-10-18: option (a) in both. Raised by the M3 plan on 2026-10-18 (the M3 plan, tasks 3.8 and 3.9).
 - WS-04 opens the last workspace at launch. At the first launch, no workspace exists. WS-03 allows a delete of the current workspace, but no document says what the app shows next.
 - Options for the first launch: (a) make a workspace named "Workspace". (b) show an empty selector that asks for a name.
 - Options after a delete of the current workspace: (a) open the first workspace of the list. If no workspace is left, make a new one named "Workspace". (b) open the workspace above the deleted one in the list.
@@ -621,7 +623,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-57 Unit of the title and text length limits
 
-- Decided by the product owner on 2026-10-18: option (a), Unicode code points. Raised by task 3.2 of [m3-plan.md](m3-plan.md).
+- Decided by the product owner on 2026-10-18: option (a), Unicode code points. Raised by task 3.2 of the M3 plan.
 - [data-model.md](data-model.md) section 7 gives the limits in characters: a workspace title has 1 to 120, a card title 0 to 120, and a text box 1 to `Limits.maxTextLength`. The `CHECK` constraints of [storage.md](storage.md) section 3.3 use the SQLite function `length()`. For a `TEXT` value, `length()` counts Unicode code points. Swift `String.count` counts the characters that the user sees (grapheme clusters). One emoji flag is one Swift character but two code points. A family emoji is one Swift character but up to seven code points.
 - Storage.md says that the Swift code checks first and that the database is the last line of defense. If Swift counts grapheme clusters, a title of 100 flags passes the Swift check, but the `CHECK` refuses it. Then each save fails, and after three failures the app stops edits.
 - Options: (a) Swift counts Unicode code points (`unicodeScalars.count`), the same unit as `length()`. The schema stays as it is. A title of emoji reaches the limit with fewer visible characters. (b) Swift counts grapheme clusters, and the `CHECK` constraints change to a larger code point limit, for example 8 times the limit. The schema changes before version 1 ships.
@@ -630,13 +632,13 @@ Status values: Open, Decided, Replaced.
 
 ### D-58 Stored form of the `library` rows
 
-- Decided by the product owner on 2026-10-18: the recommendation. Raised by task 3.5 of [m3-plan.md](m3-plan.md).
+- Decided by the product owner on 2026-10-18: the recommendation. Raised by task 3.5 of the M3 plan.
 - [storage.md](storage.md) section 3.3 names four rows of the `library` table, but it gives the stored form of `lastTimestamp` only.
 - Recommendation: `formatVersion` holds the schema version at creation as decimal text, for example "1". `created` holds the clock value of the creation in the 56-digit hex form of `lastTimestamp`. `createdBy` holds the device ID as a lowercase UUID string. The repository writes the four rows when it creates the library.
 
 ### D-59 Window access in the snapshot tests of SwiftUI views
 
-- Decided by the product owner on 2026-10-18: option (a). Raised by task 3.8 of [m3-plan.md](m3-plan.md).
+- Decided by the product owner on 2026-10-18: option (a). Raised by task 3.8 of the M3 plan.
 - TEST-07 asks for a snapshot test of each UI component, rendered with `UIGraphicsImageRenderer`. On iPadOS 26, a `UIHostingController` draws its SwiftUI content only inside a window. `UIWindow(frame:)` is deprecated, and warnings are errors (BUILD-02). `UIWindow(windowScene:)` needs the scene of the test host, and only `UIApplication.shared` reaches it. ARCH-05 bans `UIApplication.shared` outside `PointerApp/`.
 - Tried on the simulator: `drawHierarchy` and `layer.render(in:)` without a window give black images. SwiftUI `ImageRenderer` needs no window, but it draws no content inside a `ScrollView`, so the workspace list shows no rows.
 - Options: (a) extend D-44: the shared snapshot helper of a feature package reads the window scene through `UIApplication.shared`, with one `// swiftlint:disable:next arch_05_singletons` line that names D-59. (b) `ImageRenderer`, and the list leaves out its `ScrollView` in the test. The image then differs from the real view, and TEST-07 names another renderer. (c) Snapshot only the button, and leave the list without a snapshot.
@@ -644,14 +646,14 @@ Status values: Open, Decided, Replaced.
 
 ### D-60 File access in the open test of M3 acceptance 3
 
-- Decided by the product owner on 2026-10-18: option (a). Raised by task 3.10 of [m3-plan.md](m3-plan.md).
+- Decided by the product owner on 2026-10-18: option (a). Raised by task 3.10 of the M3 plan.
 - M3 acceptance 3 opens a canvas with the content of D-56 to the first frame. The test needs `Persistence` for the load and `Rendering` for the frame. ARCH-03 bans `Rendering` in the test folders of `Persistence`. So the test lives in the test folder of `CanvasFeature`, which `PointerDeviceTests` also compiles. There, the lint rule of ARCH-04 bans `FileManager`. The test must make a folder for a library of about 95 MB and delete it after the run.
 - Options: (a) one `// swiftlint:disable:next arch_04_file_system` line for the make and one for the delete, with a comment that names D-60, as D-44 does for `UIApplication.shared`. (b) a public function in `Persistence` that makes and removes a library folder, for this test now and the restore of M9 later. (c) two tests: the load in the device tests of `Persistence` and the frame in the M2 test of `Rendering`, with the sum of the two times as the result.
 - Recommendation: (a). It keeps the production code as it is and measures the open in one run. Option (b) adds API before M9 needs it. Option (c) does not measure one open.
 
 ### D-61 The end of a fast stroke that PencilKit drops at the pencil lift
 
-- Decided by the product owner on 2026-10-19: option (a). Pointer keeps the stroke that PencilKit gives, as Apple Notes does. FEEL-03 does not hold for the end of a fast stroke. Raised by the open bug of [m3-plan.md](m3-plan.md) section 4.10.
+- Decided by the product owner on 2026-10-19: option (a). Pointer keeps the stroke that PencilKit gives, as Apple Notes does. FEEL-03 does not hold for the end of a fast stroke. Raised by the open bug of the M3 plan section 4.10.
 - At the pencil lift, the final `PKStroke` of a fast stroke ends 18 to 60 points before the last pencil touch. The live PencilKit ink reaches the pencil, so its end vanishes at the lift. The product owner saw the end vanish while the overlay still showed the stroke. For a slow stroke, the gap is 2 to 11 points. Pointer stores and draws the final path exactly (D-26), so the renderer does not cause the loss.
 - Apple Notes also drops the end of a fast stroke (product owner, 2026-10-19). So the setup of Pointer does not cause it.
 - Options: (a) accept the end that PencilKit gives. FEEL-03 then fails for fast strokes, by the behavior of PencilKit. (b) add control points after the last control point from the pencil touches that the final path does not reach. The stored stroke then reaches the pencil, but the PencilKit overlay still drops the end at the lift for a moment. This changes D-26. (c) find a PencilKit setup that keeps the end, if the cause is in the setup of Pointer.
@@ -829,7 +831,7 @@ Status values: Open, Decided, Replaced.
 ### D-76 A memory bound for the undo history
 
 - Decided by the product owner on 2026-10-20: option (a), with the example values.
-- Raised by the M4 review on 2026-10-20 ([m4-fix-plan.md](m4-fix-plan.md) M-01 and M-02).
+- Raised by the M4 review on 2026-10-20 (the M4 fix plan M-01 and M-02).
 - `History` keeps at most 500 steps, but it has no memory bound. A step holds the `Stroke` values of the strokes it removes, and their points live only in the history. `CanvasSessions` keeps the history of up to 1,000 canvases.
 - Measured on a Mac: 500 steps, each an erase of 1,000 whole strokes of 300 points, take 2,519 MB. That is about 16.8 bytes per point. The session erase records take about 192 bytes each, and the records of dropped steps stay.
 - Options:
@@ -842,7 +844,7 @@ Status values: Open, Decided, Replaced.
 ### D-77 Snapshot tests while the simulator is banned
 
 - Decided by the product owner on 2026-10-20: option (b).
-- Raised by the M4 review on 2026-10-20 ([m4-fix-plan.md](m4-fix-plan.md) section 2.1).
+- Raised by the M4 review on 2026-10-20 (the M4 fix plan section 2.1).
 - Learned rule 1 of `AGENTS.md` bans the simulator. The Rendering snapshot tests run only as package tests on a simulator, and the SwiftUI snapshot tests skip on the device (D-59). None of them ran since 2026-10-19, and the redraw changed after the last reference images. TEST-07 needs them, and M5 acceptance 2 is a snapshot test.
 - Options:
   - (a) Allow the simulator for the snapshot tests only, as an exception of learned rule 1. `make snapshots` and the Rendering package tests use it.
@@ -854,7 +856,7 @@ Status values: Open, Decided, Replaced.
 ### D-78 When the eraser mask texture exists
 
 - Decided by the product owner on 2026-10-20: option (c).
-- Raised by the M4 review on 2026-10-20 ([m4-fix-plan.md](m4-fix-plan.md) M-06).
+- Raised by the M4 review on 2026-10-20 (the M4 fix plan M-06).
 - The mask texture of D-66 always exists, also when nobody erases. It takes 16.1 MB on the 11-inch iPad and 22.7 MB on the 13-inch iPad, computed from the size of the committed texture. architecture.md section 5.2 does not count it.
 - Options:
   - (a) Keep the texture always, and count it in architecture.md.
@@ -866,7 +868,7 @@ Status values: Open, Decided, Replaced.
 ### D-79 The pass rule of M4 acceptance 2 on the device
 
 - Decided by the product owner on 2026-10-20: option (a).
-- Raised by the M4 review on 2026-10-20 ([m4-fix-plan.md](m4-fix-plan.md) section 2.1).
+- Raised by the M4 review on 2026-10-20 (the M4 fix plan section 2.1).
 - Acceptance 2 failed in 2 of 4 runs on 2026-10-20, by 0.37 ms and 1.54 ms. One pass of the test does not show that the code meets the budget.
 - Options:
   - (a) The slowest step of each kind is under 33 ms in 5 full runs of `PointerDeviceTests` in a row.
@@ -878,7 +880,7 @@ Status values: Open, Decided, Replaced.
 ### D-80 Where the allocation test of the spatial grid runs
 
 - Decided by the product owner on 2026-10-20: option (a).
-- Raised by task 3.2 of [m4-fix-plan.md](m4-fix-plan.md) on 2026-10-20.
+- Raised by task 3.2 of the M4 fix plan on 2026-10-20.
 - The "Done when" target of task 3.2 asks for "1,000 removals make 0 allocations in a Tier A test". `SpatialGrid` is in `Geometry`, a Tier A package. An exact allocation count needs the `malloc_logger` hook of `AllocationCounter+Unsafe.swift`, which uses `UnsafeMutableRawPointer` and `dlsym`. SAFE-09 and the lint rule `safe_09_unsafe_types` allow unsafe pointers only in `*+Unsafe.swift` files of `Rendering` and `Export`, and in the SQLite wrapper of `Persistence`. The counters of `malloc_zone_statistics` need no unsafe type in the source, but they count the live blocks, not the allocations, so a removal that allocates and frees shows 0.
 - Options:
   - (a) Run the test of the grid in `RenderingTests`, where `AllocationCounter` lives. It runs on the iPad in `PointerDeviceTests`, with the `SpatialGrid<Int>` of the renderer. The Tier A tests keep the timing of the removal and the query.
@@ -889,13 +891,13 @@ Status values: Open, Decided, Replaced.
 
 ### D-81 Text renderer: "Core Text texture cache" or glyph atlas
 
-- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20 ([m5-plan.md](m5-plan.md) section 1, item 11).
+- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20 (the M5 plan section 1, item 11).
 - plan.md M5 lists a "Core Text texture cache", and architecture.md section 3 lists a "text texture cache" in `Rendering`. D-29 decided a glyph atlas on 2026-10-18, and architecture.md section 5.4 describes the atlas. The documents conflict.
 - Options:
   - (a) The glyph atlas of D-29. Core Text draws each glyph once into an atlas per scale. plan.md M5 and architecture.md section 3 change their words to "glyph atlas".
   - (b) A texture per text box, which Core Text draws. D-29 rejected it: a text box of 10,000 characters at zoom 8 passes the Metal texture limit of 16,384 pixels.
 - Recommendation: (a). It is the decided design, and only the words of two documents change.
-- Effect: tasks 0.1 and 2.2 of [m5-plan.md](m5-plan.md).
+- Effect: tasks 0.1 and 2.2 of the M5 plan.
 
 ### D-82 Text and the eraser mask
 
@@ -907,8 +909,8 @@ Status values: Open, Decided, Replaced.
   - (b) A separate pair of `.r8Unorm` text textures. It takes the same memory as (a), and it needs a second build state and a second redraw path.
   - (c) Text stays in the one channel. While an eraser gesture runs, a pass draws the text boxes that touch the eraser path on top of the masked composite. At the lift, the redraw of the area also draws the text in it. No memory cost, but each eraser frame draws text, and the eraser frame budget (3 ms CPU, 4 ms GPU) covers more work.
 - Recommendation: (a). It keeps one build and one redraw path, and it leaves the eraser frame as it is.
-- Doubt: the open of the D-56 canvas took 235 to 253 MB in [m4-fix-plan.md](m4-fix-plan.md) section 5.3, against a budget of 300 MB. With 32 MB more, the margin is about 15 MB at the top value. If the memory test fails, (c) is the fallback.
-- Effect: tasks 2.3 and 2.4 of [m5-plan.md](m5-plan.md), and architecture.md section 5.2.
+- Doubt: the open of the D-56 canvas took 235 to 253 MB in the M4 fix plan section 5.3, against a budget of 300 MB. With 32 MB more, the margin is about 15 MB at the top value. If the memory test fails, (c) is the fallback.
+- Effect: tasks 2.3 and 2.4 of the M5 plan, and architecture.md section 5.2.
 
 ### D-83 Size of a text box
 
@@ -920,7 +922,7 @@ Status values: Open, Decided, Replaced.
   - (c) The user sets the width with a handle. The `text_box` table gets a `width` column: schema version 2, a migration, and a fixture (GIT-04). `ResizeTextBox` and a handle come in M5.
 - Recommendation: (a). It needs no schema change, and a label stays as small as its text.
 - Doubt: a label that must wrap narrower than 640 points needs a manual line break.
-- Effect: tasks 1.1, 2.1, and 3.2 of [m5-plan.md](m5-plan.md).
+- Effect: tasks 1.1, 2.1, and 3.2 of the M5 plan.
 
 ### D-84 Who lays out the text, and characters that SF Mono lacks
 
@@ -933,7 +935,7 @@ Status values: Open, Decided, Replaced.
   - (c) As (b), and the text box refuses characters that SF Mono lacks, with a message. Scribble and paste then fail for these characters.
 - Recommendation: (a). It matches the edit view for every character, and Core Text is the layout engine under TextKit.
 - Doubt: Core Text layout of the 5,000 text boxes of D-56 at the open costs time against the budget of 300 ms. Task 2.1 measures it. If it is too slow, the layout runs only for the boxes near the camera.
-- Effect: tasks 1.1, 2.1, 2.2, and 4.2 of [m5-plan.md](m5-plan.md).
+- Effect: tasks 1.1, 2.1, 2.2, and 4.2 of the M5 plan.
 
 ### D-85 Scale of the edit view
 
@@ -945,7 +947,7 @@ Status values: Open, Decided, Replaced.
   - (c) A scale transform, with the `contentScaleFactor` of the text view and its subviews set to the display scale times the zoom. Apple does not document this for the text layers of TextKit 2.
 - Recommendation: (b). The text stays sharp at each zoom, and it uses only documented API.
 - Doubt: a pinch during an edit shows soft text until the pinch ends.
-- Effect: tasks 3.2 and 4.2 of [m5-plan.md](m5-plan.md), and architecture.md section 5.4.
+- Effect: tasks 3.2 and 4.2 of the M5 plan, and architecture.md section 5.4.
 
 ### D-86 Undo and redo during a text edit
 
@@ -957,7 +959,7 @@ Status values: Open, Decided, Replaced.
   - (b) One step per change. Each typed character or Scribble word is a step of `History`. The 500 steps of `Limits.maxHistoryDepth` fill fast, and each step sends a row.
   - (c) As (a), but during the edit, the buttons end the edit first and then act on the history of the canvas.
 - Recommendation: (a). It follows architecture.md sections 7 and 8, and one edit is one step that the user can undo.
-- Effect: tasks 1.2 and 3.3 of [m5-plan.md](m5-plan.md), and architecture.md sections 7 and 8.
+- Effect: tasks 1.2 and 3.3 of the M5 plan, and architecture.md sections 7 and 8.
 
 ### D-87 The text tool in the palette, and the tool change of D-70
 
@@ -969,7 +971,7 @@ Status values: Open, Decided, Replaced.
   3. After a pencil tap makes a box, the tool: (a) stays text, or (b) goes back to the pen. Recommendation: (a), so that the user can make several labels in a row.
   4. With the text tool, a pencil tap on an existing box: (a) starts its edit, or (b) makes a new box on top of it. Recommendation: (a).
   5. With the text tool, a pencil movement that is not a tap: (a) does nothing, or (b) makes a box where the user writes, through `UIIndirectScribbleInteraction`. Recommendation: (a). TOOL-05 lists a tap only, and (b) adds a feature (AGENT-02).
-- Effect: tasks 3.1 and 3.3 of [m5-plan.md](m5-plan.md), and architecture.md sections 4.5 and 7.
+- Effect: tasks 3.1 and 3.3 of the M5 plan, and architecture.md sections 4.5 and 7.
 
 ### D-88 Memory bound of text in the undo history
 
@@ -980,18 +982,18 @@ Status values: Open, Decided, Replaced.
   - (b) A separate budget for text, for example 10,000,000 code points for all sessions.
   - (c) No bound. Normal use stays small, but a worst case can make iPadOS stop the app.
 - Recommendation: (a). It needs no new limit, and one rule drops the oldest steps.
-- Effect: task 1.3 of [m5-plan.md](m5-plan.md), and architecture.md section 8.
+- Effect: task 1.3 of the M5 plan, and architecture.md section 8.
 
 ### D-89 Delete of a text box through a long-press menu
 
-- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20 ([m5-plan.md](m5-plan.md) section 1, item 11).
+- Decided by the product owner on 2026-10-20: the recommendation. Raised by the M5 plan on 2026-10-20 (the M5 plan section 1, item 11).
 - architecture.md section 4.7 gives a long press on a text box a context menu with "Delete". product-spec.md has no requirement for this menu: CARD-08 covers cards only, and UNDO-03 lists "delete card". In architecture.md section 7, an edit that leaves a text box empty deletes it. AGENT-02 bans features that the specification does not list.
 - Options:
   - (a) In M5, only an edit that leaves a text box empty deletes it. A long press without a drag does nothing on a text box. architecture.md section 4.7 drops "Delete" for text boxes.
   - (b) A long press without a drag opens a menu with "Delete", as architecture.md section 4.7 says. product-spec.md gets a requirement for it, and UNDO-03 gets "delete text box".
   - (c) As (b), but the menu comes in M6 with the menu of the cards.
 - Recommendation: (b). M5 already recognizes the long press for the move of CARD-07, and `DeleteNode` already exists for an empty edit. Without the menu, a user must select all text and delete it to remove a box.
-- Effect: task 3.4 of [m5-plan.md](m5-plan.md), and product-spec.md.
+- Effect: task 3.4 of the M5 plan, and product-spec.md.
 
 ### D-90 The test of M5 acceptance 1 (Scribble)
 
@@ -1001,7 +1003,7 @@ Status values: Open, Decided, Replaced.
   - (a) A device test in `PointerDeviceTests` of the conditions that Scribble needs. With the text tool, the edit view is an editable `UITextView` and the first responder. The drawing gesture of PencilKit is off. `PencilTouchObserver` refuses touches on the edit view. No delegate of the edit view refuses Scribble. The test then inserts text through `UITextInput`, the protocol that Scribble uses for its result. At the end of the edit, the text is in the content, the rows, and the canvas. The product owner writes with the pencil into a text box on the iPad, and this manual test is the pass.
   - (b) The manual test only.
 - Recommendation: (a). The device test catches a change that breaks Scribble, and the manual test shows the real handwriting.
-- Effect: task 4.1 of [m5-plan.md](m5-plan.md).
+- Effect: task 4.1 of the M5 plan.
 
 ### D-91 The pass rule of M5 acceptance 2
 
@@ -1013,11 +1015,11 @@ Status values: Open, Decided, Replaced.
   - (b) The center of each glyph differs by at most 1 pixel. The test must then find each glyph in the two images.
   - (c) A pixel comparison with the tolerance of TEST-07, 0.5 % of the pixels. It measures the edges, not the place, so it can fail for text at the same place.
 - Recommendation: (a). It measures the place of each line in both directions, and it does not depend on the edge shape.
-- Effect: task 4.2 of [m5-plan.md](m5-plan.md).
+- Effect: task 4.2 of the M5 plan.
 
 ### D-92 The open and the memory of the D-56 canvas with text
 
-- Decided by the product owner on 2026-10-21: options (b) and (d). Raised by task 2.3 of [m5-plan.md](m5-plan.md) on 2026-10-20.
+- Decided by the product owner on 2026-10-21: options (b) and (d). Raised by task 2.3 of the M5 plan on 2026-10-20.
 - The D-56 canvas holds 5,000 text boxes of 200 characters. Before M5, nothing drew them. With the text of M5, two tests on the iPad Pro 11-inch (M4) in Release fail their targets:
 
 | Measure | Target | Baseline (section 5.1 of the plan) | M5 now |
@@ -1039,7 +1041,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-93 The memory of the open with text after D-92
 
-- Decided by the product owner on 2026-10-21: option (b). Raised by task 2.3 of [m5-plan.md](m5-plan.md) on 2026-10-21.
+- Decided by the product owner on 2026-10-21: option (b). Raised by task 2.3 of the M5 plan on 2026-10-21.
 - D-92 decided: remove the extra peak of the open, and lay out the text after the first frame. If the cause of the peak cannot be found, fall back to option (a) of D-92, the single channel of D-82 option (c).
 - The layout after the first frame works. The open of the D-56 canvas takes 234.9 to 239.8 ms (median), against 238.9 ms in the baseline.
 - The cause of the extra peak is not found. A probe showed one committed layer per renderer, so a second layer is not the cause. The peak is not in every run. Four runs of the open on the iPad Pro 11-inch (M4), after D-92:
@@ -1075,7 +1077,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-94 Late frames of the zoom over the D-56 text in full device runs
 
-- Decided by the product owner on 2026-10-21: the recommendation, option (a) for M5 and option (b) for a later milestone. Raised by task 5 of [m5-plan.md](m5-plan.md) on 2026-10-21.
+- Decided by the product owner on 2026-10-21: the recommendation, option (a) for M5 and option (b) for a later milestone. Raised by task 5 of the M5 plan on 2026-10-21.
 - The target of task 2.4 is 120 fps and 0 late frames in the frame loop tests over the 5,000 text boxes of D-56.
 - The close ran 5 full runs of `PointerDeviceTests` in a row on the iPad Pro 11-inch (M4). The zoom over the text had 0, 1, 1, 2, and 2 late frames of 478 (119.5 to 120.0 fps). The pan over the text had 0 late frames in each run. The six frame loop tests of M2 had 0 late frames in each run.
 - Run alone, `FrameLoopTests` gave 0 late frames in the zoom over the text in 6 of 6 runs.
@@ -1139,7 +1141,7 @@ Status values: Open, Decided, Replaced.
   1. The aspect ratio of a card differs from the screen. If the card fits the screen, the parent canvas shows beside it, and the child replaces that part at the swap.
   2. The ink and the text of the parent lie on top of the card (D-16). At the swap, the parts of them inside the card vanish.
   3. A preview is a small image (D-97). Scaled to the full screen, it is soft, and the first frame of the child is sharp.
-- Measured: the open of the D-56 canvas takes 246 to 258 ms to the first frame (m5-plan.md section 5.3). The open animation takes 0.35 s.
+- Measured: the open of the D-56 canvas takes 246 to 258 ms to the first frame (the M5 plan section 5.3). The open animation takes 0.35 s.
 - Options:
   - (a) Fit the card into the screen, and swap at the end.
   - (b) Cover the screen with the card. The preview shows the region of the child that the open camera shows, cut to the card. During the animation, the ink and the text of the parent fade out. The child loads during the animation. When its first frame is ready, it replaces the preview with a crossfade of 0.1 s.
@@ -1227,7 +1229,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-107 PNG code and the owner of the preview files
 
-- Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the M6 plan on the same day.
 - D-97 stores a PNG. No source file imports ImageIO, and BUILD-03 needs a decision for a new Apple framework.
 - ARCH-04 lets only `Persistence` touch the file system. `Persistence` is Tier A and must not import CoreGraphics or ImageIO (ARCH-03).
 - Options:
@@ -1237,7 +1239,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-108 The fade of the parent during the open
 
-- Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the M6 plan on the same day.
 - D-98 fades the ink and the text of the parent and keeps the card. Text and cards share the green channel (D-96), so the composite cannot fade the text and keep the cards.
 - Options:
   - (a) At the start of the animation, the renderer of the parent fades its whole composite: ink, text, and the other cards. A card pass draws the opened card on top at full weight: its border and its preview. The other cards leave the screen as the card grows, so the result is almost the same.
@@ -1246,7 +1248,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-109 The image of the parent during a leave
 
-- Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the M6 plan on the same day.
 - While a child shows, the parent is not loaded. The pinch-out of CARD-05 shows "a faded image of the parent" at once. The open of the D-56 canvas takes about 250 ms.
 - After a launch into a child (WS-04) and after an up button, no image of the new parent exists.
 - Options:
@@ -1258,7 +1260,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-110 The memory peak of a transition
 
-- Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the M6 plan on the same day.
 - During an open, the parent and the child are both loaded: two contents, two point arenas, four committed textures, and two sets of three drawables (16.1 MB each, D-93). With the D-56 canvas as the parent and a D-56 child, the peak is about twice 350 MB.
 - Options:
   - (a) Accept the peak, and set a separate budget for a transition after a measure in task 3.6.
@@ -1267,21 +1269,21 @@ Status values: Open, Decided, Replaced.
 
 ### D-111 The events that write a preview
 
-- Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the M6 plan on the same day.
 - D-97 writes the preview "when you leave the child". A workspace switch from inside a child also leaves it. A force quit inside a child leaves an old preview until the next leave.
 - Options: (a) up button and pinch-out only. (b) Also the workspace switch and the move to the background.
 - Recommendation: (b). The move to the background already writes the pending rows (STO-06).
 
 ### D-112 A path that names a deleted card
 
-- Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the M6 plan on the same day.
 - At launch, the app opens the deepest canvas of the stored path (WS-04). A card of the path can be deleted (D-18), or the path can point to the wrong parent after a restore (M9). No document says what then happens.
 - Options: (a) Cut the path before the first card that is not live or whose `canvasID` is not the canvas above it. (b) Open the root canvas.
 - Recommendation: (a). It keeps the deepest canvas that is still valid.
 
 ### D-113 What "an empty part of the canvas" is
 
-- Decided by the product owner on 2026-10-21: the recommendation. Raised by [m6-plan.md](m6-plan.md) on the same day.
+- Decided by the product owner on 2026-10-21: the recommendation. Raised by the M6 plan on the same day.
 - CARD-01 makes a card with a long press "on an empty part of the canvas". Ink cannot be selected (CARD-07), and cards lie under the ink (D-16).
 - Replaced by D-117 on 2026-10-22: no long press makes a card, so the term has no use.
 - Options: (a) Empty means no card and no text box under the finger. Ink does not count. (b) Ink counts too, so a long press on ink does nothing.
@@ -1289,7 +1291,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-114 Snapshot tests of the card menu and the rename alert
 
-- Decided by the product owner on 2026-10-22: "Compare as well", so (a) and (b). The content tests stay, and pixel snapshots compare the menu and the alert too. Raised by task 4.2 of [m6-plan.md](m6-plan.md) on 2026-10-21.
+- Decided by the product owner on 2026-10-22: "Compare as well", so (a) and (b). The content tests stay, and pixel snapshots compare the menu and the alert too. Raised by task 4.2 of the M6 plan on 2026-10-21.
 - Design: `CardMenuSnapshotTests` presents the menu and the alert without animations in a key window of the test host and draws the windows of the scene. The alert field gives up the focus first, so no caret blinks. The system can skip a menu while the window becomes key, so the test presents it up to 3 times. Each test needs the key window. Since 2026-10-22, the tests are an XCTest class: the XCTest classes of a run run alone, before the Swift Testing suites, which run at the same time. In 5 full runs, a suite beside the menu test made the system skip the menu, and the test captured a black image. It passed alone and in `make snapshots`.
 - Task 4.2 says: "Snapshot tests cover the menu and the alert." The card menu is a `UIEditMenuInteraction` menu with "Rename" and "Delete", and the rename is an alert with a text field, as the workspace rename does (D-101).
 - Both are system UI. The snapshot helpers of the repository render our own views with `UIGraphicsImageRenderer` or Metal (TEST-07). A system menu or alert shows only in a window during its presentation, with animations and blur, so a pixel snapshot of it is not stable. The edit menu of a text box (M5) and the rename alert of a workspace (M3) have no snapshot.
@@ -1340,7 +1342,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-120 Where the coverage check of TEST-02 runs
 
-- Decided by the product owner on 2026-10-22: the recommendation, (a). Raised by task 1.1 of [m6-fix-plan.md](m6-fix-plan.md) on the same day.
+- Decided by the product owner on 2026-10-22: the recommendation, (a). Raised by task 1.1 of the M6 fix plan on the same day.
 - TEST-02 asks for 90 % line coverage in each Tier A package and 70 % in Rendering. The M6 close measured it by hand. The Tier A numbers come from `swift test --enable-code-coverage` on the Mac. The Rendering number needs one more full run of `PointerDeviceTests` on the iPad with the instrumented build of section 2.1 of the fix plan.
 - The instrumented code is slower, so the performance tests of a coverage run fail or do not count.
 - Options:
@@ -1351,7 +1353,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-121 The render thread computes the camera of a card flight
 
-- Decided by the product owner on 2026-10-22: the recommendation, (a). Raised by task 2.2 of [m6-fix-plan.md](m6-fix-plan.md) on the same day.
+- Decided by the product owner on 2026-10-22: the recommendation, (a). Raised by task 2.2 of the M6 fix plan on the same day.
 - The open of an empty card had 1 late frame in 2 of 5 close runs of D-79. The main thread steps the camera of the flight in `InkView.onFrame`. The render thread waits at most 3 ms for a new camera, and without one it presents no frame. The load of the child screen blocks the main thread for 4 to 14 ms, so the animation stops for one or two frames. The leave has the same gap at the start of the parent flight. Section 2.2 of the fix plan has the research.
 - Options:
   - (a) The render thread computes the camera and the parent weight of a flight from the closed form of the spring, at the target time of each frame. The main thread still steps its own camera for the logic: the end callbacks, the input lock, and `isInCardTransition`. Architecture.md section 6.2 changes: the main thread no longer drives the frames of a flight.
@@ -1361,7 +1363,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-122 The renderer gets the change of a step before the model step
 
-- Decided by the product owner on 2026-10-22: the recommendation, (a). Raised by task 3.2 of [m6-fix-plan.md](m6-fix-plan.md) on the same day.
+- Decided by the product owner on 2026-10-22: the recommendation, (a). Raised by task 3.2 of the M6 fix plan on the same day.
 - An undo, a redo, and an erase first run the model step on the main thread, 4 to 8 ms for the D-69 content, and only then give the change to the renderer. The change of `EraseStrokes` and `AddStroke` comes from the command alone (`renderDelta(of:isUndo:)`), so the renderer can start about 5 ms earlier.
 - Risk: if the model step then throws, the renderer already has the change. The code then gives the renderer the reverse change and logs the error. For one frame, the screen can show ink that the model does not hold.
 - Options:
@@ -1379,14 +1381,14 @@ Status values: Open, Decided, Replaced.
 
 ### D-124 The card menu snapshots as an XCTest class
 
-- Decided by the product owner on 2026-10-22: the exception is accepted. Raised by the fix of the card menu snapshot after the close of [m6-fix-plan.md](m6-fix-plan.md) (section 6.6).
+- Decided by the product owner on 2026-10-22: the exception is accepted. Raised by the fix of the card menu snapshot after the close of the M6 fix plan (section 6.6).
 - TEST-01 asks for Swift Testing in new unit tests and allows XCTest for UI tests and performance tests. The Swift Testing suites of a full run run at the same time, and a suite beside the menu snapshot made the system skip the menu. The XCTest classes run alone before them.
 - Decision: `CardMenuSnapshotTests` is an XCTest class. A test that needs the key window or a system presentation alone can be an XCTest class for the same reason.
 
 ### D-125 The accepted late frame of the empty card in `make check`
 
 - Decided by the product owner on 2026-10-22: (b) now, and (c) in M10. Raised by the review before M7.
-- Facts: `OpenAnimationTests.testOpenAndLeaveOfEmptyCardHaveNoLateFrame` had 1 late frame at place 0 of the flight in 2 of 3 full runs of `PointerDeviceTests` on 2026-10-22. It never failed alone. The product owner accepted this late frame in [m6-fix-plan.md](m6-fix-plan.md) section 6.6. With it, `make check` fails in full runs, so the checklist of AGENT-05 cannot pass, and a new failure can hide behind it.
+- Facts: `OpenAnimationTests.testOpenAndLeaveOfEmptyCardHaveNoLateFrame` had 1 late frame at place 0 of the flight in 2 of 3 full runs of `PointerDeviceTests` on 2026-10-22. It never failed alone. The product owner accepted this late frame in the M6 fix plan section 6.6. With it, `make check` fails in full runs, so the checklist of AGENT-05 cannot pass, and a new failure can hide behind it.
 - Options: (a) keep the failure. (b) Mark the check of the late frames of that open as an expected failure that is not strict (`XCTExpectFailure` with `isStrict = false`), with a comment that names this decision. (c) Find the cause with a trace of the render thread in Instruments.
 - Decision: (b). The check of the leave and of every other open stays strict. Task: a trace of the render thread during the open of an empty card in M10, then the removal of the expected failure.
 
@@ -1400,7 +1402,7 @@ Status values: Open, Decided, Replaced.
 
 - Decided by the product owner on 2026-10-22: the recommendation. Raised by the review before M7.
 - Facts: at WWDC24 (session 10214), Apple says that hovering with Apple Pencil Pro shows a shadow below the pencil for the PencilKit tools, and that a `PKCanvasView` gets it with the marker and the fountain pen. The live canvas of Pointer uses the monoline pen. No public API to turn the shadow off was found on 2026-10-22.
-- Decision: task 0.1 of [m7-plan.md](m7-plan.md) checks on the device whether a shadow shows with the monoline pen. If it shows, Pointer accepts it as behavior of the system, as D-23 does for haptics, and keeps its dot (PEN-04).
+- Decision: task 0.1 of the M7 plan checks on the device whether a shadow shows with the monoline pen. If it shows, Pointer accepts it as behavior of the system, as D-23 does for haptics, and keeps its dot (PEN-04).
 
 ### D-128 The shape of the hover dot and when it shows
 
@@ -1423,13 +1425,13 @@ Status values: Open, Decided, Replaced.
 ### D-131 The findings of the review before M7
 
 - Decided by the product owner on 2026-10-22: the recommendation. Raised by the review before M7.
-- Phase 0 of [m7-plan.md](m7-plan.md) fixes three faults in the navigation, each with a test that fails before the fix (TEST-03): a failed open loses the undo history of the parent, a leave whose parent card is missing refuses each later open and leave, and a preview render on a render thread that stops never calls its completion.
+- Phase 0 of the M7 plan fixes three faults in the navigation, each with a test that fails before the fix (TEST-03): a failed open loses the undo history of the parent, a leave whose parent card is missing refuses each later open and leave, and a preview render on a render thread that stops never calls its completion.
 - M7 sets the tool of the live canvas only when it is needed, not at each frame of a zoom (PERF-01), after a measure.
 - M10 takes the rest (plan.md section M10).
 
 ### D-132 Warnings that `-warnings-as-errors` does not stop
 
-- Raised on 2026-10-22 by the fix of the build warning after phase 0 of [m7-plan.md](m7-plan.md) (section 6.7).
+- Raised on 2026-10-22 by the fix of the build warning after phase 0 of the M7 plan (section 6.7).
 - Facts: `Rendering` built with `-warnings-as-errors` and `-swift-version 6`, but the capture of a non-Sendable value in the completion handler of a Metal command buffer stayed a warning, and the build passed. A probe on 2026-10-22 showed that the same capture in a Swift `@Sendable` closure is an error. The Metal header marks the handler type `NS_SWIFT_SENDABLE`, and Swift 6 reports a capture in such an imported handler only as a warning, which `-warnings-as-errors` does not raise. BUILD-02 therefore has a gap, and `make check` cannot see a new warning of this kind. An incremental build also prints no warning for a file that it does not compile again.
 - Options:
   - (a) `make build` builds from a clean state and fails if its output holds a line with `warning:`.
@@ -1443,14 +1445,14 @@ Status values: Open, Decided, Replaced.
 
 ### D-133 The eraser circle of the hover dot
 
-- Decided by the product owner on 2026-10-22: (a). Raised by task 2.1 of [m7-plan.md](m7-plan.md).
+- Decided by the product owner on 2026-10-22: (a). Raised by task 2.1 of the M7 plan.
 - Facts: D-128 and architecture.md section 4.6 say that the eraser shows a gray circle with the eraser radius of 8 view points. They do not say whether the circle is an outline or a filled disc. A filled disc of 16 points covers the ink that the user wants to erase.
 - Options: (a) an outline ring, with its line width as a `DesignSystem` token. (b) A filled disc, in the style of the dot of the pen.
 - Decision: (a). The start width is 1 view point. The product owner tunes it in task 2.5 with the other tokens of the dot.
 
 ### D-134 The measure of the frames in task 3.1 of M7
 
-- Decided by the product owner on 2026-10-23: (a), the recommendation. Raised on 2026-10-23 by task 3.1 of [m7-plan.md](m7-plan.md).
+- Decided by the product owner on 2026-10-23: (a), the recommendation. Raised on 2026-10-23 by task 3.1 of the M7 plan.
 - Facts: task 3.1 asks for the main-thread time of the `dense 20k zoom` frame loop, and it is done when the frame loops are not slower. `FrameLoopTests` is in `Rendering` and drives the renderer alone. It never runs `CanvasViewController.applyCamera()`, so it cannot show the cost of the pen tool, and its check cannot fail for this task. The new `ZoomFrameAllocationTests` steps the frame callback of a root canvas screen without ink. On the iPad on 2026-10-23, a frame of a spring zoom made 139 allocations at the median and took 26.6 to 31.8 µs on the main thread over 3 runs. A frame of a glide at one zoom made 0 and took 0.3 µs. The line `liveCanvas.tool = PenTool.inkingTool(zoom:)` alone made 139.
 - Options:
   - (a) Record the `dense 20k zoom` loop as the plan says, and use the frames of `ZoomFrameAllocationTests` for "Done when": 0 allocations in a zoom frame, and a main-thread time that is not slower.
@@ -1460,7 +1462,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-135 A pencil down during a pinch past a zoom limit
 
-- Decided by the product owner on 2026-10-23: (a), the recommendation. Raised on 2026-10-23 by the manual check of task 3.1 of [m7-plan.md](m7-plan.md).
+- Decided by the product owner on 2026-10-23: (a), the recommendation. Raised on 2026-10-23 by the manual check of task 3.1 of the M7 plan.
 - Facts: the product owner pinched out past the minimum zoom, kept both fingers on the screen, and drew. The stroke came out slimmer than a stroke after the lift, and the canvas sprang back while the line was drawn. The build before task 3.1 (commit 09044e4) does the same, so M7 did not cause it. `pencilBegan()` stops the camera and then ends the running pinch (D-36). The end of the pinch starts the spring back to the zoom limit (CARD-06), so the camera moves during the stroke. `PencilKitStrokeConverter` converts the stroke with the camera at the handoff, so the stroke loses width and can move. No document says what the camera does when a pencil touches during a pinch past a limit.
 - Options:
   - (a) The camera holds its zoom during the stroke, and the spring back starts after the lift, once the stroke is handed off.
@@ -1470,7 +1472,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-136 Late frames at the start of card flights in full runs
 
-- Decided by the product owner on 2026-10-23: (c). Raised on 2026-10-23 by phase 5 of [m7-plan.md](m7-plan.md).
+- Decided by the product owner on 2026-10-23: (c). Raised on 2026-10-23 by phase 5 of the M7 plan.
 - Facts: in 5 full runs of `PointerDeviceTests` with the code of commit 194959c, 4 runs failed a strict check of `OpenAnimationTests` with 1 late frame at place 0 or 1 of a flight: the leave of the empty card (2 runs), the open with a blocked main thread (2 runs), and the leave of the D-56 card (1 run). Alternating full runs gave the same failure for the code before phase 1 of M7 (commit 550aaef) in 1 of 2 runs, and for the new code in 1 of 2 runs. `OpenAnimationTests` alone, 5 iterations each, alternating: the old code had 1 late frame in 10 iterations, and the new code had 0 in 10. M7 therefore does not cause the late frame, but the samples are too small to show whether M7 changes how often it comes. D-125 accepts the same late frame for the open of the empty card only, and M10 traces it.
 - Options:
   - (a) Mark the late-frame checks of each flight in `OpenAnimationTests` as expected failures that are not strict, as D-125 does, and add them to the trace of M10.
@@ -1552,7 +1554,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-144 A budget for the time and the memory of an export
 
-- Decided by the product owner on 2026-10-23: the recommendation, (a). Raised on 2026-10-23 by task 2.7 of [m8-plan.md](m8-plan.md). Decided again on the same day after a fix, see the end of this entry. The budgets are in architecture.md section 12.
+- Decided by the product owner on 2026-10-23: the recommendation, (a). Raised on 2026-10-23 by task 2.7 of the M8 plan. Decided again on the same day after a fix, see the end of this entry. The budgets are in architecture.md section 12.
 - Facts: architecture.md section 12 has no budget for an export. `ExportPerformanceTests` measured on the iPad Pro 11-inch (M4) in Release, in two runs:
   1. D-56 (20,000 strokes of 300 points, 5,000 cards, 5,000 text boxes): 6.92 and 7.06 s, a peak memory growth of 101 MB, and a PDF of 79.6 MB.
   2. The strokes of D-56 and 10,000 text boxes: 7.43 and 7.52 s, 137 MB, and 79.8 MB.
@@ -1573,7 +1575,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-145 The memory measure of an export in a full run
 
-- Decided by the product owner on 2026-10-24: time budgets only, after a try of (a). Raised on 2026-10-23 by the close of M8 ([m8-plan.md](m8-plan.md) section 6.7).
+- Decided by the product owner on 2026-10-24: time budgets only, after a try of (a). Raised on 2026-10-23 by the close of M8 (the M8 plan section 6.7).
 - Facts: `ExportPerformanceTests` reads the peak growth of `os_proc_available_memory` after 1.5 s of steady memory. In 5 full runs of `PointerDeviceTests`, D-56 read 198, 150, 154, 210, and 145 MB against the budget of 180 MB of D-144, and failed twice. The export with 10,000 text boxes, which makes a PDF of 79.8 MB, read 0, 8, 1, 0, and 8 MB. In runs of the suite alone, the same export read 139 to 144 MB. The free memory of the process counts pages. A page that the allocator keeps after a free counts as used, so the next export can reuse it and show too little growth, and the work of other tests can show as growth of the export. The times are stable in all runs: 6.94 to 6.99 s for D-56 and 14.79 to 14.88 s for the handwriting.
 - Options:
   - (a) Count the bytes that malloc holds (`malloc_zone_statistics`, `size_in_use`), read every 0.25 ms during the export. Freed memory does not count, so reuse does not hide growth. Then measure again, and set the memory budgets from the new numbers.
@@ -1585,7 +1587,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-146 The checkpoint of the library database
 
-- Decided by the product owner on 2026-10-24: (c), with the hard limit at 8,000 pages. Raised on the same day by the M8 fix plan ([m8-fix-plan.md](m8-fix-plan.md) section 4). storage.md section 4 describes the checkpoints.
+- Decided by the product owner on 2026-10-24: (c), with the hard limit at 8,000 pages. Raised on the same day by the M8 fix plan (the M8 fix plan section 4). storage.md section 4 describes the checkpoints.
 - Facts: the library uses WAL mode with `synchronous = NORMAL` and the automatic checkpoint of SQLite at 1,000 pages. The save that passes 1,000 pages runs the checkpoint and its sync. In a full run, one save took 205 ms against the budget of 50 ms. A benchmark on the iPad measured 31 to 155 ms for the checkpoint saves under disk stress. The SQLite documentation advises to "disable automatic checkpointing and run the periodic checkpoints in a separate thread" (<https://sqlite.org/wal.html>).
 - Options:
   - (a) Keep the automatic checkpoint. A save can wait for a sync.
@@ -1596,7 +1598,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-147 The hard-limit checkpoint after a pinned WAL
 
-- Decided by the product owner on 2026-10-24: the recommendation, "hand off first". Raised on the same day by the M8 fix plan ([m8-fix-plan.md](m8-fix-plan.md) section 4.5). It changes the rule of D-146 at the hard limit.
+- Decided by the product owner on 2026-10-24: the recommendation, "hand off first". Raised on the same day by the M8 fix plan (the M8 fix plan section 4.5). It changes the rule of D-146 at the hard limit.
 - Facts: during a snapshot, `VACUUM INTO` pins the WAL, so no checkpoint can restart it. The back-to-back saves of `SnapshotPerformanceTests` grew the WAL to 18,000 to 26,000 pages. With D-146, the first commit after the snapshot ran the hard-limit checkpoint on the write connection, which copied the backlog of about 100 MB and synced it: 31 to 55 ms in that save, against the budget of 50 ms. The old automatic checkpoint did the same, at 30 to 42 ms. In the app, a snapshot starts only when the app is idle with no pending rows (section 7.2 of storage.md).
 - Options: (a) hand off first: an idle checkpointer gets the checkpoint also past the hard limit, and the write connection checkpoints itself only when the checkpointer falls behind. (b) Pace the saves of the test. (c) Raise the hard limit to 32,000 pages.
 - Decision: (a). A first form took "the checkpointer is busy" as falling behind. The checkpointer was then busy with the backlog that it had just started, and the save waited for it: 52 to 55 ms in 5 of 5 runs. The final rule: the checkpointer falls behind if the WAL grows by 1,000 pages or more while one of its checkpoints runs. Only then, from 8,000 pages, the write connection waits for it, for at most 2 s, because SQLite gives `SQLITE_BUSY` at once to a second checkpoint and calls no busy handler (<https://sqlite.org/c3ref/wal_checkpoint_v2.html>).
@@ -1729,11 +1731,11 @@ Status values: Open, Decided, Replaced.
 - Raised by the M9 research of 2026-10-24. Decided by the product owner on 2026-10-24: the recommendation.
 - Facts: architecture.md section 12 has no budget for either. On the Mac, the steps of a restore of 98.6 MB took under 0.5 s together. The iPad has slower storage.
 - Recommendation: measure the D-56 library on the iPad in phase 0 of M9, then set the budgets with the measures, as D-144 did for the export.
-- Measured in task 0.2 ([m9-plan.md](m9-plan.md) section 6.2): about 0.17 s for "Back up now" and 0.7 s for a restore of the D-56 library, at most 11 MB of peak memory growth per step. The product owner set the recommended budgets on 2026-10-24: "Back up now" of the D-56 library under 0.5 s from the tap to the item of the share sheet, a restore of the D-56 library under 1.5 s from the tap of the alert to the close of the repository, each with a peak memory growth under 50 MB. The largest library is recorded without a budget, as D-145 does for the export.
+- Measured in task 0.2 (the M9 plan section 6.2): about 0.17 s for "Back up now" and 0.7 s for a restore of the D-56 library, at most 11 MB of peak memory growth per step. The product owner set the recommended budgets on 2026-10-24: "Back up now" of the D-56 library under 0.5 s from the tap to the item of the share sheet, a restore of the D-56 library under 1.5 s from the tap of the alert to the close of the repository, each with a peak memory growth under 50 MB. The largest library is recorded without a budget, as D-145 does for the export.
 
 ### D-166 The settings of D-162 that need `sqlite3_db_config`
 
-- Raised by task 1.3 of [m9-plan.md](m9-plan.md) on 2026-10-24. Decided by the product owner on 2026-10-24: the recommendation, (a).
+- Raised by task 1.3 of the M9 plan on 2026-10-24. Decided by the product owner on 2026-10-24: the recommendation, (a).
 - Facts: D-162 and task 1.3, item 3 turn on `SQLITE_DBCONFIG_DEFENSIVE` and turn off `SQLITE_DBCONFIG_TRUSTED_SCHEMA`, triggers, and views. All four settings go through `sqlite3_db_config(sqlite3*, int op, ...)`, a C variadic function. Swift does not import it: the compiler says "'sqlite3_db_config' is unavailable: Variadic function is unavailable" (Xcode 27, Swift 6.4). SQLite has no `va_list` form of it. A call through a pointer of another function type breaks the arm64 call rules of Apple, which put variadic arguments on the stack.
 - Measured on the Mac with SQLite 3.51: an open of `file:<path>?immutable=1` with `SQLITE_OPEN_READONLY | SQLITE_OPEN_URI` works. `PRAGMA trusted_schema = OFF`, `PRAGMA query_only = ON`, `PRAGMA cell_size_check = ON`, and `PRAGMA mmap_size = 0` take their values. An `INSERT` fails with "attempt to write a readonly database".
 - What each missing setting protects against, from <https://www.sqlite.org/security.html> and <https://www.sqlite.org/c3ref/c_dbconfig_defensive.html>:
@@ -1747,7 +1749,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-167 The heap measure of `StrokeStoreMemoryTests`
 
-- Decided by the product owner on 2026-10-24: option (a). Raised at the end of phase 3 of [m9-plan.md](m9-plan.md) on 2026-10-24.
+- Decided by the product owner on 2026-10-24: option (a). Raised at the end of phase 3 of the M9 plan on 2026-10-24.
 - Result: `StrokeStore.storageByteCount` sums the capacities of the lists, the slot table, and the grid of the store. `Array.storageByteCount` and `Dictionary.storageByteCount` in `Geometry` give the bytes of one collection. A dictionary counts its buckets, the smallest power of two that holds its capacity at a load factor of three quarters. The test asserts this sum against 75 MB and reports the heap growth without a limit. With the bucket count, the sum is about 59 MB, not the 51.7 MB of option (a), which took the capacities. The review after M9 compared the counts with `malloc_size` on the Mac: they leave out the header of each collection, 0.5 % of the grid of 200,000 strokes.
 - Facts: `StrokeStoreMemoryTests.testStoreOfTwoHundredThousandHandwritingStrokes` failed in the baseline `make check` (80.7 MB) and in 4 of 10 later full runs (76.9 to 84.3 MB) against its limit of 75 MB. It passed in the others at 63.1 to 72.7 MB. The test takes the growth of `size_in_use` of all malloc zones while it adds 200,000 strokes.
 - Measured on the iPad in full runs (`M9-probe-*`, `M9-relief-*`, `M9-reserve-*`, `M9-parts-*`):
@@ -1793,7 +1795,7 @@ Status values: Open, Decided, Replaced.
 ### D-171 The message of a failed "Back up now"
 
 - Raised by the review after M9 on 2026-10-24. Decided by the product owner on 2026-10-24: the recommendation, (a).
-- Facts: `BackupMessage(_:)` maps each other error to `restoreStopped`. A failed `VACUUM INTO` of "Back up now" thus showed "The restore did not finish. Your library stays as it was." m9-plan.md task 3.2 has no message for it.
+- Facts: `BackupMessage(_:)` maps each other error to `restoreStopped`. A failed `VACUUM INTO` of "Back up now" thus showed "The restore did not finish. Your library stays as it was." the M9 plan task 3.2 has no message for it.
 - Options: (a) a message of its own. (b) the message of a failed save.
 - Result: `BackupMessage.backUpFailed`, "Pointer could not write the snapshot. Your library stays as it is. Try again.", and `BackupMessage(backUp:)`, which keeps the message of a full disk. A failed delete of an old snapshot after a good write is only logged, because the new snapshot exists.
 
@@ -2064,7 +2066,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-188 The byte budget of the stored glyph quads
 
-- Raised by task 4.1 of [m10-plan.md](m10-plan.md) on 2026-10-25. Decided by the product owner on the same day: the recommendation.
+- Raised by task 4.1 of the M10 plan on 2026-10-25. Decided by the product owner on the same day: the recommendation.
 - Facts: a stored quad takes 32 bytes. The D-56 text holds about a million glyphs, so its quads take 32 MB at one atlas exponent. A pan at zoom 0.25 and a zoom to 1 use two exponents, 64 MB. The memory of a D-56 canvas is 349 MB now (section 6.31 of the plan). Normal notes hold far fewer glyphs: 50 boxes of 200 characters take 320 KB.
 - Options:
   - (a) 32 MB: one exponent of D-56. A zoom between the two exponents of D-56 builds the runs of the new exponent again, with the CPU cost of today, once per zoom.
@@ -2074,7 +2076,7 @@ Status values: Open, Decided, Replaced.
 
 ### D-189 How one draw reads the atlas pages of the stored glyph quads
 
-- Raised by task 4.1 of [m10-plan.md](m10-plan.md) on 2026-10-25. Decided by the product owner on the same day: the recommendation.
+- Raised by task 4.1 of the M10 plan on 2026-10-25. Decided by the product owner on the same day: the recommendation.
 - Facts: a draw of today binds one atlas page, so a box whose glyphs lie on several pages takes several draws. All pages of one exponent have the same side. The iPad Pro (M4) supports Metal 3 and argument buffers of tier 2.
 - Options:
   - (a) The pages live in one `MTLHeap`, and an argument buffer holds the texture handle of each page (`gpuResourceID`). The encoder makes the heap resident once with `useHeap`. A page that the atlas drops frees its part of the heap.
@@ -2083,32 +2085,32 @@ Status values: Open, Decided, Replaced.
 
 ### D-190 Where the stored glyph quads become the quads of a frame
 
-- Raised by task 4.1 of [m10-plan.md](m10-plan.md) on 2026-10-25. Decided by the product owner on the same day: the recommendation.
+- Raised by task 4.1 of the M10 plan on 2026-10-25. Decided by the product owner on the same day: the recommendation.
 - Facts: the glyph instances of a frame today hold target pixels, and the glyph shaders read them. A stored quad holds canvas points relative to its box.
 - Options:
   - (a) A compute pass reads the record of each box of the frame and writes the glyph instances of today into the glyph ring of the frame. The glyph pipeline and its shaders stay as they are.
   - (b) The vertex shader reads the stored quads directly. Each glyph then needs the index of its box record, a new shader, and a draw per run or a search per vertex.
 - Recommendation: (a). It changes the least code that the snapshot tests cover. The compute pass writes about 32 MB of instances for D-56 at zoom 0.25. Task 4.3 measures its GPU time against the glyph pass of today.
 - Change after the decision, measured on the iPad on 2026-10-25: the expansion runs as a vertex function in a render pass without rasterization, not as a compute pass. The first compute dispatch held about 38 MB more graphics memory of the driver for the D-56 open (184 MB against 146 MB), and the open passed the memory budget of D-93 (380 MB). The vertex pass does the same work with the same arithmetic and holds no extra memory. The shaders of the CPU path stay as they are.
-- Second change, decided by the product owner on 2026-10-26: option (b), with a search per vertex. In the normal state of the iPad, the vertex pass cost about 1 ms of GPU time per text pass. The text pan GPU p99 rose by 16 % against the code before phase 4 (2.57 to 2.98 ms, 5 pairs). A search with buckets of 64 quads and an expansion buffer per frame changed nothing. The vertex shader of the paged glyph draw now finds the record of its glyph and makes the quad. The expansion pass, its pipeline, and its buffer of 1.3 MB go. The measures are in section 6.44 of [m10-plan.md](m10-plan.md).
+- Second change, decided by the product owner on 2026-10-26: option (b), with a search per vertex. In the normal state of the iPad, the vertex pass cost about 1 ms of GPU time per text pass. The text pan GPU p99 rose by 16 % against the code before phase 4 (2.57 to 2.98 ms, 5 pairs). A search with buckets of 64 quads and an expansion buffer per frame changed nothing. The vertex shader of the paged glyph draw now finds the record of its glyph and makes the quad. The expansion pass, its pipeline, and its buffer of 1.3 MB go. The measures are in section 6.44 of the M10 plan.
 
 ### D-191 The palm radius of the UI tests
 
-- Raised by task 7.1 of [m10-plan.md](m10-plan.md) on 2026-10-25. Decided by the product owner on the same day: the recommendation.
+- Raised by task 7.1 of the M10 plan on 2026-10-25. Decided by the product owner on the same day: the recommendation.
 - Facts: the palm guard ignores a finger touch with a `majorRadius` above 30 points (`PalmGuard.palmRadius`, architecture.md 4.1). Measured on the iPad: XCTest gives each synthesized finger touch a `majorRadius` of 32.67 points. No UI test drag could thus pan the camera or drag a new card, and the pan test passed only because it checked that no stroke appeared.
 - Options: (a) with the launch argument `-uiTestLibrary` only, the palm guard takes a radius of 40 points. The app keeps 30 points, and `PalmGuardTests` keep the rule of 30 points in process. (b) a radius of 40 points for the app, which needs a measure of real fingers first. (c) the UI tests use taps only.
 - Decision: (a). `PalmGuard.uiTestPalmRadius` is 40 points, and `CanvasDependencies.isUITest` selects it. The pan test now checks that the camera moves.
 
 ### D-192 The passcode prompt of the UI tests
 
-- Raised by the close of [m10-plan.md](m10-plan.md) on 2026-10-26. Decided by the product owner on the same day: the recommendation.
+- Raised by the close of the M10 plan on 2026-10-26. Decided by the product owner on the same day: the recommendation.
 - Facts: before a UI test run, Xcode asks the iPad service `com.apple.dt.testmanagerd.remote.automation` to enable automation mode, and the iPad asks for its passcode. Apple says that the prompt is intentional on a device and that no supported way enters the passcode automatically ([Apple Developer Forums 707040](https://developer.apple.com/forums/thread/707040)). Without an answer, the runner fails with "Timed out while enabling automation mode" after about one minute, or with "Authentication cancelled". `make test` ran the UI tests after `PointerDeviceTests`, about 7 minutes after its start, and failed there twice in a row on 2026-10-26. The UI tests alone passed.
 - Options: (a) `make test` runs `PointerUITests` in an `xcodebuild` call of their own before `PointerDeviceTests`, and the product owner enters the passcode once per run. (b) keep the order, and the product owner enters the passcode about 7 minutes into the device run. (c) remove the passcode of the test iPad, which Apple names as the workaround and which lowers the security of the iPad.
 - Decision: (a). `make test` prints a line before the UI tests.
 
 ### D-193 A screen with more card previews than the preview atlas holds
 
-- Raised by the close of [m10-plan.md](m10-plan.md) on 2026-10-26, task 8.2. Decided by the product owner on the same day: the recommendation.
+- Raised by the close of the M10 plan on 2026-10-26, task 8.2. Decided by the product owner on the same day: the recommendation.
 - Facts: D-97 gives the atlas 8 MB "as a start value" and the steps 128, 256, and 512 pixels. It does not set the content of a screen whose previews do not fit. At zoom 0.25, a screen of the D-56 cards shows about 1,480 cards of 50 by 35 pixels. 8 MB hold 512 previews of 128 pixels. Since `a754c20`, each new preview evicted a shown one, and the redraw of the evicted card asked for it again. With a still camera, the renderer read about 1,570 previews per second and never rested (`PreviewArrivalPerformanceTests`, 2,000 frames). The code of `4456612` dropped the requests past its limit and rested after 2.64 s, with most cards without a preview. The redraws of the loop also made the card pan at zoom 0.25 slower. Its GPU p50 rose by 10.7 % against the baseline (10 pairs, p 1.1e-05).
 - Research: if its working set is larger than the cache, a cache thrashes. Each new item then pushes out an item that is still in use. Source: Denning, "The working set model for program behavior", CACM 11(5), 1968 (<https://dl.acm.org/doi/10.1145/363095.363141>).
 - Options: (a) a step of 64 pixels for cards below 64 pixels on the screen, with a guard. A preview of 64 pixels takes 4 KB, so 1,480 previews take about 6 MB. The guard: a preview of a card on the screen never goes for another card. Until the camera moves, a card without room shows an empty frame. (b) the guard only, so about 970 of the 1,480 cards show no preview. (c) a budget of 24 MB and the guard.

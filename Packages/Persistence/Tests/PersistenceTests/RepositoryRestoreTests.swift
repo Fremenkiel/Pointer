@@ -4,7 +4,7 @@ import Testing
 
 @testable import Persistence
 
-/// The restore of a checked snapshot into the live library (task 1.4 of docs/m9-plan.md,
+/// The restore of a checked snapshot into the live library (task 1.4 of the M9 plan,
 /// storage.md section 9, M9 acceptance 2, D-148, D-164).
 @Suite("Restore of the repository")
 struct RepositoryRestoreTests {

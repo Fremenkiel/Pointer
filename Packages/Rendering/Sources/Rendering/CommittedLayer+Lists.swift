@@ -1,6 +1,6 @@
 /// The reused lists of a committed layer. A new layer after a rotation or a leave takes the
 /// lists of the layer before it with their capacity, so its first build grows no list in a
-/// frame (review M9 section 3.3, item 5, m10-plan.md task 3.3).
+/// frame (review M9 section 3.3, item 5, the M10 plan task 3.3).
 struct LayerLists {
     var buildSlots: [Int] = []
     var buildTextIDs: [GreenItem] = []

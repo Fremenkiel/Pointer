@@ -5,11 +5,11 @@ import Testing
 @testable import CanvasFeature
 @testable import Rendering
 
-/// A step that fails after the renderer got its change (D-122, m6-fix-plan.md task 3.2).
+/// A step that fails after the renderer got its change (D-122, the M6 fix plan task 3.2).
 extension CanvasHistoryTests {
     /// The strokes that the renderer holds after the waiting load and edits. The canvas has no
     /// window, so no frame takes them from the inbox.
-    private static func rendered(_ renderer: CanvasRenderer) -> Set<StrokeID> {
+    static func rendered(_ renderer: CanvasRenderer) -> Set<StrokeID> {
         renderer.engine.inbox.withLock { box in
             var ids = Set(box.loaded.map(\.id))
             for edit in box.edits {

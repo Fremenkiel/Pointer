@@ -6,7 +6,7 @@ import XCTest
 @testable import Rendering
 
 /// The heap allocations of a text pass with cached glyphs, against a bare render pass with one
-/// draw (PERF-01, D-43, task 2.2 of docs/m5-plan.md).
+/// draw (PERF-01, D-43, task 2.2 of the M5 plan).
 @MainActor
 final class TextPassAllocationTests: XCTestCase {
     /// The bytes of the zero buffer of the bare pass, more than one quad and its uniforms.

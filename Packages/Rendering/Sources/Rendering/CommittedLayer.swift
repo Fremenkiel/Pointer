@@ -26,7 +26,7 @@ final class CommittedLayer {
     /// The size of a texture over the size of the drawable.
     static let textureScale = 2.0
     /// The zoom ratios, front zoom over camera zoom, that the front texture serves without a
-    /// build (docs/m2-fix-plan.md, phase 2).
+    /// build (the M2 fix plan, phase 2).
     static let zoomBand = 0.8...1.25
     /// The part of the margin that the visible rectangle must keep inside the front texture.
     static let marginReserve = 0.25
@@ -37,7 +37,7 @@ final class CommittedLayer {
     private(set) var front: InkTarget?
     /// The front texture of the layer before a new viewport, for example a rotation. The screen
     /// shows it, scaled, until the first build completes, so a resize shows no black screen
-    /// (docs/m2-fix-plan.md, phase 5, task 6).
+    /// (the M2 fix plan, phase 5, task 6).
     private(set) var fallback: InkTarget?
     private let textures: [any MTLTexture]
     /// The eraser mask: the size of a committed texture, one coverage channel (D-66). It exists

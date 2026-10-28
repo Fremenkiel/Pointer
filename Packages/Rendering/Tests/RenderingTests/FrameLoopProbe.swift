@@ -108,7 +108,7 @@ final class FrameLoopCollector: FrameObserving {
         }
         // The present belongs to this frame. A frame from before the measured time can show
         // inside it, and a sorted list of all presents then counted the first frame as late
-        // (m10-plan.md task 5.1).
+        // (the M10 plan task 5.1).
         drawable.addPresentedHandler { [self] presented in
             record(presentedAt: presented.presentedTime, frame: index)
         }
@@ -172,7 +172,7 @@ final class FrameLoopCollector: FrameObserving {
 }
 
 /// Drives a renderer on its render thread as `InkView` does, moves the camera from a main-thread
-/// `UIUpdateLink` as a pan does, and measures each frame (docs/m2-fix-plan.md, phase 0, task 3).
+/// `UIUpdateLink` as a pan does, and measures each frame (the M2 fix plan, phase 0, task 3).
 @MainActor
 final class FrameLoopProbe {
     /// The seconds before the measurement starts.

@@ -15,6 +15,9 @@ common="-project Pointer.xcodeproj -scheme PointerApp -configuration Release \
     ENABLE_TESTABILITY=YES -quiet"
 mkdir -p .build/Perf
 if [ "$first" -eq 1 ]; then
+    # The bundles of an earlier set go, or the compare reads the runs of another build through
+    # its glob (review of 2026-10-28).
+    rm -rf ".build/Perf/$name"-[0-9]*.xcresult
     # shellcheck disable=SC2086
     xcodebuild build-for-testing $common > ".build/Perf/$name-build.log" 2>&1 || {
         cat ".build/Perf/$name-build.log"

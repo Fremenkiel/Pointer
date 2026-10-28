@@ -11,7 +11,7 @@ import XCTest
 @testable import Pointer
 @testable import Rendering
 
-/// The open of a card of the D-56 canvas with the animation of D-98 (m6-plan.md task 4.5,
+/// The open of a card of the D-56 canvas with the animation of D-98 (the M6 plan task 4.5,
 /// CARD-03, CAN-05). The test counts the late frames of the parent during the open, and records
 /// the largest change of the camera between two frames.
 @MainActor
@@ -80,7 +80,7 @@ final class OpenAnimationTests: XCTestCase {
         let child: CanvasViewController
     }
 
-    /// The leave of a D-56 card back to the D-56 canvas (m6-plan.md task 4.6): the late frames
+    /// The leave of a D-56 card back to the D-56 canvas (the M6 plan task 4.6): the late frames
     /// of the child and of the parent, from the tap to the end of the flight of the parent.
     func testLeaveOfD56CardHasNoLateFrame() async throws {
         let host = try OnScreenCanvas.host()

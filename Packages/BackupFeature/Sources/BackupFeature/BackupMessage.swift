@@ -1,7 +1,7 @@
 import Foundation
 import Persistence
 
-/// A message of a backup or a restore that did not work (task 3.2 of docs/m9-plan.md).
+/// A message of a backup or a restore that did not work (task 3.2 of the M9 plan).
 public enum BackupMessage: Error, Equatable, Sendable, CaseIterable {
     /// The picked file is no Pointer library: another file, another page size, version 0, or
     /// another schema (D-162).
@@ -20,7 +20,7 @@ public enum BackupMessage: Error, Equatable, Sendable, CaseIterable {
     /// The save before the restore or before "Back up now" failed, so nothing ran (D-149).
     case saveFailed
     /// The restored library did not open, so Pointer put the library before the restore back
-    /// (D-20, task 2.2 of docs/m9-plan.md).
+    /// (D-20, task 2.2 of the M9 plan).
     case restoreUndone
     /// "Back up now" did not write its snapshot (D-171).
     case backUpFailed

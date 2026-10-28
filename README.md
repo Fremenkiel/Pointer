@@ -10,7 +10,7 @@ The app has three tools only: a white pen, text boxes, and an eraser. It stores 
 
 ## Status
 
-Milestones M0 to M9 are done: ink, storage and workspaces, the eraser and undo, text boxes, cards and navigation, the Apple Pencil interactions, PDF export, and backup and restore. PencilKit draws the live stroke, and a Metal renderer draws the finished ink (decisions D-02 and D-33). The next milestone is M10, hardening. See [docs/plan.md](docs/plan.md).
+All ten milestones are done, M0 to M10: ink, storage and workspaces, the eraser and undo, text boxes, cards and navigation, the Apple Pencil interactions, PDF export, backup and restore, and hardening. PencilKit draws the live stroke, and a Metal renderer draws the finished ink (decisions D-02 and D-33). The performance baseline of the iPad Pro 11-inch (M4) is in `Performance/Baselines/`. No next milestone is planned. See [docs/plan.md](docs/plan.md) for the state of each milestone and the work that waits for the product owner.
 
 ## Build
 
@@ -32,10 +32,9 @@ Read the documents in this order:
 4. [docs/data-model.md](docs/data-model.md) gives the data types and their rules.
 5. [docs/storage.md](docs/storage.md) gives the SQLite schema, the save strategy, and the backup strategy.
 6. [docs/code-of-code.md](docs/code-of-code.md) gives the coding standard. All contributors must obey it, people and agents.
-7. [docs/plan.md](docs/plan.md) gives the build order and the acceptance criteria per milestone.
-8. [docs/decisions.md](docs/decisions.md) lists the open decisions for the product owner.
-9. [docs/review-2026-10-17.md](docs/review-2026-10-17.md) gives the design review and the source check of the research.
-10. [docs/review-2026-10-24.md](docs/review-2026-10-24.md) and [docs/review-2026-10-24-m9.md](docs/review-2026-10-24-m9.md) give the code reviews after M8 and after M9.
+7. [docs/plan.md](docs/plan.md) gives the build order, the state of each milestone, and the open work.
+8. [docs/decisions.md](docs/decisions.md) lists each design decision of the product owner.
+9. The reviews, newest first: [docs/review-2026-10-28.md](docs/review-2026-10-28.md) after M10, [docs/review-2026-10-24-m9.md](docs/review-2026-10-24-m9.md) after M9, [docs/review-2026-10-24.md](docs/review-2026-10-24.md) after M8, and [docs/review-2026-10-17.md](docs/review-2026-10-17.md), the design review.
 
 [AGENTS.md](AGENTS.md) is the entry point for AI coding agents.
 

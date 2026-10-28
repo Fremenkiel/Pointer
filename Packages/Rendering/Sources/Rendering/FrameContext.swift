@@ -1,6 +1,6 @@
 import Metal
 
-/// The values that every pass of one frame shares (docs/m2-fix-plan.md, phase 6, task 3).
+/// The values that every pass of one frame shares (the M2 fix plan, phase 6, task 3).
 struct FrameContext {
     /// The command buffer of the frame.
     let commandBuffer: any MTLCommandBuffer

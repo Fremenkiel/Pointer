@@ -3,7 +3,7 @@ import Model
 import Rendering
 
 /// The write of the preview of a child canvas at each leave event of D-111: the up button, the
-/// pinch-out exit, the workspace switch, and the move to the background (m6-plan.md task 4.8).
+/// pinch-out exit, the workspace switch, and the move to the background (the M6 plan task 4.8).
 extension AppComposition {
     /// Stops the check for an idle moment and writes the preview of a child canvas on the
     /// screen. The move to the background starts here, because iOS refuses work on the GPU in
@@ -75,7 +75,7 @@ extension AppComposition {
     }
 
     /// Removes the preview files of the canvases that the launch purge removed (D-18,
-    /// m10-plan.md task 2.9). A file that stays costs disk space only, so a failure logs.
+    /// the M10 plan task 2.9). A file that stays costs disk space only, so a failure logs.
     func removePreviews(of canvases: [CanvasID]) async {
         guard let store = previewStore else { return }
         for canvas in canvases {

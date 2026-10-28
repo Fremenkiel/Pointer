@@ -7,7 +7,7 @@ import XCTest
 @testable import CanvasFeature
 @testable import Rendering
 
-/// A hover sample allocates nothing in Pointer code (PERF-01, m7-plan.md task 2.3). The work of
+/// A hover sample allocates nothing in Pointer code (PERF-01, the M7 plan task 2.3). The work of
 /// Core Animation does not count, as the Metal work does not count (D-43), so the test subtracts
 /// the count of a bare layer move with the same samples. The samples run on the main thread, so
 /// the counts take the main thread only.

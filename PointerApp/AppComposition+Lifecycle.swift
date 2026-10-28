@@ -52,9 +52,13 @@ extension AppComposition {
         let workspace = selector?.current?.id
         let cards = path?.workspace == workspace ? path?.cards ?? [] : []
         let camera = container.canvas.map { ($0.camera, $0.canvasID) }
+        let canvas = container.canvas
         let logger = logger
         Task {
             do {
+                // The rows of the ended edit and the placed card travel through the row channel
+                // of the canvas, so the save waits for them (D-149, review of 2026-10-28).
+                await canvas?.flushRows()
                 try await repository?.saveNow()
                 try await deviceStore?.save(lastWorkspace: workspace, navigationPath: cards)
                 if let (camera, canvasID) = camera {

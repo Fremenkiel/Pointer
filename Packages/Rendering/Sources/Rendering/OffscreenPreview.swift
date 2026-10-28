@@ -3,7 +3,7 @@ import Metal
 import Model
 
 /// The parts that the offscreen previews of `PreviewMaker` use, and nothing more (review M9
-/// section 3.3, item 4, m10-plan.md task 3.4). A whole `FrameRenderer` held an unused arena of
+/// section 3.3, item 4, the M10 plan task 3.4). A whole `FrameRenderer` held an unused arena of
 /// 16 MB, a second glyph table, and text lists, and each preview built a new atlas, glyph ring,
 /// and text encoder. Here one atlas, one ring of one buffer, and one encoder with its stores
 /// serve all previews.
@@ -68,7 +68,7 @@ final class OffscreenPreview {
 
     /// Renders the preview of the items of `content` that touch the region of `placement`.
     /// Cards show their frames and titles without previews. The strokes draw in passes whose
-    /// points fit `previewArenaByteBudget`. It blocks until the GPU completes (m6-plan.md task
+    /// points fit `previewArenaByteBudget`. It blocks until the GPU completes (the M6 plan task
     /// 3.3, item 6).
     ///
     /// - Precondition: The content keeps the node limit.
