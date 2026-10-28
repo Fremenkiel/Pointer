@@ -71,8 +71,26 @@ final class CardMenuSnapshotTests: XCTestCase {
     }
 
     /// Draws `rect` of the windows of the scene, the lowest window first, so that a menu in a
-    /// window of the system shows on top of the window of the test.
-    private static func capture(_ window: UIWindow, in rect: CGRect) throws -> UIImage {
+    /// window of the system shows on top of the window of the test. After a heavy test of a full
+    /// run, the render server gave no snapshot for a few seconds, and the image was black, so
+    /// the draw runs again until each window gives its snapshot (review of 2026-10-28, the M11
+    /// plan phase 1).
+    private static func capture(_ window: UIWindow, in rect: CGRect) async throws -> UIImage {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: Self.drawTimeout)
+        // The deadline bounds the loop (FLOW-03).
+        while clock.now < deadline {
+            if let image = try draw(window, in: rect) { return image }
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        throw SnapshotDrawError.noSnapshot
+    }
+
+    /// The longest wait for the snapshots of the windows.
+    private static let drawTimeout = Duration.seconds(5)
+
+    /// Draws `rect` of the windows once, or returns `nil` if a window gave no snapshot.
+    private static func draw(_ window: UIWindow, in rect: CGRect) throws -> UIImage? {
         let scene = try XCTUnwrap(window.windowScene)
         let windows = scene.windows.filter { !$0.isHidden }.sorted {
             $0.windowLevel < $1.windowLevel
@@ -80,9 +98,10 @@ final class CardMenuSnapshotTests: XCTestCase {
         let format = UIGraphicsImageRendererFormat()
         format.scale = ViewSnapshot.scale
         format.opaque = true
-        return UIGraphicsImageRenderer(size: rect.size, format: format).image { _ in
+        var isComplete = true
+        let image = UIGraphicsImageRenderer(size: rect.size, format: format).image { _ in
             for each in windows where each === window || each.windowLevel > window.windowLevel {
-                each.drawHierarchy(
+                let drawn = each.drawHierarchy(
                     in: CGRect(
                         origin: CGPoint(
                             x: each.frame.minX - rect.minX,
@@ -92,8 +111,10 @@ final class CardMenuSnapshotTests: XCTestCase {
                     ),
                     afterScreenUpdates: true
                 )
+                isComplete = isComplete && drawn
             }
         }
+        return isComplete ? image : nil
     }
 
     /// The card menu shows Rename and Delete in the style of the system.
@@ -118,11 +139,15 @@ final class CardMenuSnapshotTests: XCTestCase {
                 with: UIEditMenuConfiguration(identifier: nil, sourcePoint: CGPoint(x: 300, y: 200))
             )
             try await Task.sleep(for: Self.settle)
-            image = try Self.capture(window, in: region)
+            image = try await Self.capture(window, in: region)
             interaction.dismissMenu()
             if try !Self.isBlack(image) { break }
             try await Task.sleep(for: Self.settle)
         }
+        XCTAssertFalse(
+            try Self.isBlack(image),
+            "A black capture: \(Self.state(of: root, window: window, frame: region))"
+        )
         try ViewSnapshot.assertMatches(image: image, named: "card-menu")
     }
 
@@ -150,7 +175,11 @@ final class CardMenuSnapshotTests: XCTestCase {
         alert.textFields?.first?.resignFirstResponder()
         try await Task.sleep(for: Self.settle)
         let frame = alert.view.convert(alert.view.bounds, to: window)
-        let image = try Self.capture(window, in: frame.insetBy(dx: -8, dy: -8))
+        let image = try await Self.capture(window, in: frame.insetBy(dx: -8, dy: -8))
+        XCTAssertFalse(
+            try Self.isBlack(image),
+            "A black capture: \(Self.state(of: alert, window: window, frame: frame))"
+        )
         root.dismiss(animated: false)
         try ViewSnapshot.assertMatches(image: image, named: "card-rename-alert")
     }
@@ -171,7 +200,11 @@ final class CardMenuSnapshotTests: XCTestCase {
         root.present(alert, animated: false)
         try await Task.sleep(for: Self.settle)
         let frame = alert.view.convert(alert.view.bounds, to: window)
-        let image = try Self.capture(window, in: frame.insetBy(dx: -8, dy: -8))
+        let image = try await Self.capture(window, in: frame.insetBy(dx: -8, dy: -8))
+        XCTAssertFalse(
+            try Self.isBlack(image),
+            "A black capture: \(Self.state(of: alert, window: window, frame: frame))"
+        )
         root.dismiss(animated: false)
         // An XCTest class keeps only XCTest attachments, so a new image comes out this way.
         let attachment = XCTAttachment(image: image)
@@ -179,5 +212,16 @@ final class CardMenuSnapshotTests: XCTestCase {
         attachment.lifetime = .deleteOnSuccess
         add(attachment)
         try ViewSnapshot.assertMatches(image: image, named: "canvas-message-stroke-limit")
+    }
+}
+
+extension CardMenuSnapshotTests {
+    /// The state of a black capture, as `BackupFeatureSnapshotTests.state` names it.
+    fileprivate static func state(
+        of presented: UIViewController,
+        window: UIWindow,
+        frame: CGRect
+    ) -> String {
+        BackupFeatureSnapshotTests.state(of: presented, window: window, frame: frame)
     }
 }
