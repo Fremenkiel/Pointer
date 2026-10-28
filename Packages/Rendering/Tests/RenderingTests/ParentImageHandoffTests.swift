@@ -27,6 +27,30 @@ struct ParentImageHandoffTests {
         return layer
     }
 
+    @Test("The handoff waits for the completion of the freeze command buffer (3.2.13)")
+    func waitsForFreeze() async throws {
+        let parent = try CanvasRenderer()
+        let layer = Self.layer(for: parent)
+        let frame = Rect(origin: Point(x: -60, y: -25), size: Size(width: 120, height: 60))
+        let card = try CardStoreTests.card(1, frame: frame, title: "Tree")
+        parent.load([card])
+        for _ in 0..<2_000 where parent.isLoading {
+            _ = parent.renderFrame(into: layer, deadline: nil)
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        parent.beginOpen(of: card.id)
+        for _ in 0..<10 where parent.renderFrame(into: layer, deadline: nil) {}
+        let child = try CanvasRenderer()
+        #expect(parent.engine.withRenderer { $0.transition?.frozen != nil })
+        // The test stands in for the GPU: a flag that no completion set yet.
+        parent.engine.withRenderer { $0.transition?.frozenCompletion = CompletionFlag() }
+        #expect(!parent.engine.tryGiveParentImage(to: child.engine))
+        #expect(child.engine.withRenderer { $0.parentImage == nil })
+        parent.engine.withRenderer { $0.transition?.frozenCompletion.set() }
+        #expect(parent.engine.tryGiveParentImage(to: child.engine))
+        #expect(child.engine.withRenderer { $0.parentImage != nil })
+    }
+
     @Test("A held frame lock of the parent does not stop the main actor, and the image arrives")
     func heldParentLock() async throws {
         let parent = try CanvasRenderer()

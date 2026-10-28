@@ -21,6 +21,9 @@ struct FrameTransition {
     let freezes: Bool
     /// The frozen copy of the parent frame, or `nil` before the freeze and in a leave (D-109).
     var frozen: InkTarget?
+    /// Set when the command buffer that wrote the frozen copy completed, so that the handoff to
+    /// the child never gives a texture that the GPU still writes (review of 2026-10-28, 3.2.13).
+    var frozenCompletion = CompletionFlag()
     /// `true` after the first frame of an open froze the parent, also without a shown image.
     /// The frames after it change only with the flight, the weight, or a preview.
     var isFrozen = false

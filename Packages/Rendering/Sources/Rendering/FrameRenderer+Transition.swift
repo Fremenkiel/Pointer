@@ -59,6 +59,10 @@ extension FrameRenderer {
                     camera: camera,
                     displayScale: displayScale
                 )
+                // The handoff to the child reads the flag (D-109). The handler captures the
+                // flag only, once per open.
+                let completion = current.frozenCompletion
+                commandBuffer.whenCompleted { _ in completion.set() }
             } catch {
                 logger.error("The frozen copy failed: \(String(describing: error))")
             }

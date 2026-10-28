@@ -6,9 +6,9 @@ extension RenderEngine {
     ///
     /// Safe: the parent drops its reference in the same lock that takes the copy, so after the
     /// handoff the child is the only owner, and only its render thread reads the texture. The
-    /// parent wrote the texture in the first frame of the open, 0.35 s and about 40 frames before
-    /// the handoff at the end of the open, so that command buffer has completed. The box never
-    /// leaves this file.
+    /// handoff waits for the completion flag of the command buffer that wrote the texture, so
+    /// the GPU no longer writes it (review of 2026-10-28, 3.2.13). The box never leaves this
+    /// file.
     private struct ParentImageBox: @unchecked Sendable {
         let image: InkTarget
     }
@@ -19,11 +19,15 @@ extension RenderEngine {
     /// render threads never hold both locks, so the nested tries cannot deadlock.
     ///
     /// - Precondition: `child` is another engine.
-    /// - Returns: `false` if a frame held a lock and nothing moved. Then the caller tries again.
+    /// - Returns: `false` if a frame held a lock, or if the command buffer of the freeze did not
+    ///   complete yet, and nothing moved. Then the caller tries again.
     func tryGiveParentImage(to child: RenderEngine) -> Bool {
         precondition(child !== self, "A parent gives its image to another engine")
         let moved = core.withLockIfAvailable { parent -> Bool in
-            guard let frozen = parent.transition?.frozen else { return true }
+            guard let transition = parent.transition, let frozen = transition.frozen else {
+                return true
+            }
+            guard transition.frozenCompletion.isSet else { return false }
             let box = ParentImageBox(image: frozen)
             let given = child.core.withLockIfAvailable { renderer -> Bool in
                 renderer.parentImage = box.image
