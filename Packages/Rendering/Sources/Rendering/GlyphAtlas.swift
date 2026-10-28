@@ -293,7 +293,19 @@ final class GlyphAtlas {
     /// - Precondition: `index` is an index of `pages`.
     func drop(_ index: Int) {
         precondition(pages.indices.contains(index), "Page \(index) is outside the list")
-        guard let page = pages[index] else { return }
+        guard pages[index] != nil else { return }
+        // The copy of the page ends in the release, before the empty heaps go, because the
+        // texture of the copy keeps its heap (review of 2026-10-28, 3.2.11).
+        release(page: index)
+        generations[index] &+= 1
+        pageTable?.releaseEmptyHeaps()
+        assert(byteCount >= 0, "The atlas counts no negative bytes")
+    }
+
+    /// Removes the placements, the table entries, and the bytes of the page at `index`, and
+    /// takes the page out of the list.
+    private func release(page index: Int) {
+        guard let page = pages[index] else { preconditionFailure("Page \(index) is gone") }
         for key in page.keys {
             if let placement = placements.removeValue(forKey: key), placement.id >= 0 {
                 pageTable?.releasePlacement(placement.id)
@@ -305,9 +317,6 @@ final class GlyphAtlas {
         }
         byteCount -= page.texture.width * page.texture.height
         pages[index] = nil
-        generations[index] &+= 1
-        pageTable?.releaseEmptyHeaps()
-        assert(byteCount >= 0, "The atlas counts no negative bytes")
     }
 
     /// Puts the raster on the shelf of a page and uploads its pixels.

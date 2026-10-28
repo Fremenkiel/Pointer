@@ -47,6 +47,19 @@ struct GlyphAtlasTests {
         #expect(again == small)
     }
 
+    @Test("A drop of the last page of a heap frees the heap (3.2.11)")
+    func dropFreesHeap() throws {
+        let device = try #require(MTLCreateSystemDefaultDevice())
+        let atlas = GlyphAtlas(device: device, byteBudget: 16 << 20, isBindless: true)
+        let table = try #require(atlas.pageTable)
+        let glyph = try Self.glyph("M")
+        _ = try #require(atlas.placement(of: glyph.glyph, font: Self.font, exponent: 1, frame: 1))
+        #expect(table.heaps.count == 1)
+        #expect(atlas.pages[0] != nil)
+        atlas.drop(0)
+        #expect(table.heaps.isEmpty, "The chunk of the last page goes with the page")
+    }
+
     @Test("A space has no bitmap")
     func space() throws {
         let atlas = try Self.atlas()
