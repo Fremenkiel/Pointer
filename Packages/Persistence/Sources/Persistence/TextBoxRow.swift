@@ -23,6 +23,11 @@ enum TextBoxRow {
         FROM text_box WHERE canvas_id = ? AND is_deleted = 0
         """
 
+    /// Counts the live text boxes of one canvas, for the report of a load past the limit.
+    static let countLive: StaticString = """
+        SELECT count(*) FROM text_box WHERE canvas_id = ? AND is_deleted = 0
+        """
+
     /// Binds `textBox` to the parameters of `upsert`.
     ///
     /// - Throws: `PersistenceError.sqlite` if a bind fails.

@@ -4,30 +4,35 @@ extension SQLiteLibraryRepository {
     /// Returns the live workspaces in the order of the selector. A damaged row is skipped and
     /// reported (storage.md section 9).
     ///
-    /// - Throws: `ModelError.storageFailed` if the read fails.
+    /// - Throws: `ModelError.storageFailed` if the read fails, and
+    ///   `ModelError.workspaceLimitReached` if the library holds more than
+    ///   `Limits.maxWorkspaces` live workspaces (review of 2026-10-28, 3.2.5).
     public func workspaces() throws(ModelError) -> [Workspace] {
         let statements = try openStatements()
         var result: [Workspace] = []
         let query = RowQuery(
             statement: statements.selectWorkspaces,
+            count: statements.countWorkspaces,
             canvas: nil,
             table: "workspace",
             limit: Limits.maxWorkspaces,
             read: WorkspaceRow.read
         )
-        try storage { () throws(PersistenceError) in
+        let overLimit = try storage { () throws(PersistenceError) in
             try readRows(query) { (workspace: Workspace) throws(ModelError) in
                 guard result.count < Limits.maxWorkspaces else { throw .workspaceLimitReached }
                 result.append(workspace)
             }
         }
+        guard overLimit == 0 else { throw .workspaceLimitReached }
         return result
     }
 
     /// Returns the live content of one canvas: cards, text boxes, and strokes without a live
     /// erase record (storage.md section 5). A damaged row is skipped and reported, and the other
-    /// rows load (storage.md section 9). The rows that wait for a save are saved first, so the
-    /// load holds them.
+    /// rows load (storage.md section 9). The rows past a limit of the canvas are skipped and
+    /// reported with their count. The rows that wait for a save are saved first, so the load
+    /// holds them.
     ///
     /// - Throws: `ModelError.storageFailed` if the save of the waiting rows or a read fails.
     public func content(of canvasID: CanvasID) throws(ModelError) -> CanvasContent {
@@ -40,33 +45,16 @@ extension SQLiteLibraryRepository {
         let interval = signposter.beginInterval("Load canvas")
         defer { signposter.endInterval("Load canvas", interval) }
         var content = CanvasContent(canvasID: canvasID)
-        let cards = RowQuery(
-            statement: statements.selectCards,
-            canvas: canvasID,
-            table: "card",
-            limit: Limits.maxNodesPerCanvas,
-            read: CardRow.read
-        )
-        let textBoxes = RowQuery(
-            statement: statements.selectTextBoxes,
-            canvas: canvasID,
-            table: "text_box",
-            limit: Limits.maxNodesPerCanvas,
-            read: TextBoxRow.read
-        )
-        let strokes = RowQuery(
-            statement: statements.selectStrokes,
-            canvas: canvasID,
-            table: "stroke",
-            // An erase can pass the stroke limit by its parts (D-73).
-            limit: Limits.maxStrokesAfterErase,
-            read: StrokeRow.read
-        )
         try storage { () throws(PersistenceError) in
             try reserveRows(of: canvasID, in: &content, statement: statements.countCanvasRows)
-            try readRows(cards) { (card: Card) throws(ModelError) in try content.add(card) }
-            try readRows(textBoxes) { (box: TextBox) throws(ModelError) in try content.add(box) }
-            try readRows(strokes) { (stroke: Stroke) throws(ModelError) in
+            let cards = statements.cards(of: canvasID)
+            _ = try readRows(cards) { (card: Card) throws(ModelError) in try content.add(card) }
+            let textBoxes = statements.textBoxes(of: canvasID)
+            _ = try readRows(textBoxes) { (box: TextBox) throws(ModelError) in
+                try content.add(box)
+            }
+            let strokes = statements.strokes(of: canvasID)
+            _ = try readRows(strokes) { (stroke: Stroke) throws(ModelError) in
                 try content.add(stroke, limit: Limits.maxStrokesAfterErase)
             }
         }
@@ -141,14 +129,17 @@ extension SQLiteLibraryRepository {
 
     /// Reads at most `query.limit + 1` rows and gives each valid row to `add`.
     ///
-    /// A row that does not decode, or that `add` refuses at a limit, is skipped. The skipped
+    /// A row that does not decode is skipped. The first row that `add` refuses at a limit ends
+    /// the read, because the rows after it do not fit either, and the count query of the table
+    /// gives the number of rows that did not load (review of 2026-10-28, 3.2.5). The skipped
     /// rows go to the app as one fault per table.
     ///
+    /// - Returns: The number of rows past the limit, or 0.
     /// - Throws: `PersistenceError` if a step fails, for example on a damaged page.
     private func readRows<Row>(
         _ query: RowQuery<Row>,
         add: (Row) throws(ModelError) -> Void
-    ) throws(PersistenceError) {
+    ) throws(PersistenceError) -> Int {
         precondition(query.limit > 0, "A query of \(query.table) needs a positive limit")
         let statement = query.statement
         var binder = try RowBinder(statement)
@@ -158,16 +149,42 @@ extension SQLiteLibraryRepository {
         if let canvas = query.canvas { try binder.bind(canvas) }
         var rows = 0
         var skipped = 0
-        while rows <= query.limit, try statement.step() {
+        var overLimit = 0
+        while rows <= query.limit, overLimit == 0, try statement.step() {
             rows += 1
+            let row: Row
             do {
-                try add(try query.read(statement))
+                row = try query.read(statement)
             } catch {
                 skipped += 1
                 logger.error("Skipped a row of \(query.table): \(error)")
+                continue
+            }
+            do {
+                try add(row)
+            } catch {
+                overLimit = max(try liveRows(query) - (rows - 1 - skipped), 1)
+                logger.error("\(query.table): \(overLimit) rows past the limit: \(error)")
             }
         }
-        if skipped > 0 { report(.rowsSkipped(table: query.table, count: skipped)) }
+        if skipped + overLimit > 0 {
+            report(.rowsSkipped(table: query.table, count: skipped + overLimit))
+        }
+        return overLimit
+    }
+
+    /// Counts the live rows of `query` with its count statement.
+    ///
+    /// - Throws: `PersistenceError` if the bind or the step fails.
+    private func liveRows<Row>(_ query: RowQuery<Row>) throws(PersistenceError) -> Int {
+        let statement = query.count
+        var binder = try RowBinder(statement)
+        defer { resetAfterRead(statement) }
+        if let canvas = query.canvas { try binder.bind(canvas) }
+        guard try statement.step() else {
+            throw .corruptValue(reason: "no count of \(query.table)")
+        }
+        return Int(clamping: statement.int64(at: 0))
     }
 
     /// Reserves room in `content` for the rows of the canvas. The count costs 0.24 ms and saves
@@ -205,6 +222,8 @@ extension SQLiteLibraryRepository {
 struct RowQuery<Row> {
     /// The prepared read.
     let statement: SQLiteStatement
+    /// The prepared count of the live rows of the read, with the same canvas parameter.
+    let count: SQLiteStatement
     /// The canvas that the read binds, or `nil` for a read without a canvas.
     let canvas: CanvasID?
     /// The table name for the log.
@@ -213,4 +232,43 @@ struct RowQuery<Row> {
     let limit: Int
     /// Decodes one row.
     let read: (SQLiteStatement) throws(PersistenceError) -> Row
+}
+
+extension LibraryStatements {
+    /// The read of the live cards of `canvas`.
+    func cards(of canvas: CanvasID) -> RowQuery<Card> {
+        RowQuery(
+            statement: selectCards,
+            count: countLiveCards,
+            canvas: canvas,
+            table: "card",
+            limit: Limits.maxNodesPerCanvas,
+            read: CardRow.read
+        )
+    }
+
+    /// The read of the live text boxes of `canvas`.
+    func textBoxes(of canvas: CanvasID) -> RowQuery<TextBox> {
+        RowQuery(
+            statement: selectTextBoxes,
+            count: countLiveTextBoxes,
+            canvas: canvas,
+            table: "text_box",
+            limit: Limits.maxNodesPerCanvas,
+            read: TextBoxRow.read
+        )
+    }
+
+    /// The read of the live strokes of `canvas`. An erase can pass the stroke limit by its
+    /// parts (D-73), so the read takes `Limits.maxStrokesAfterErase`.
+    func strokes(of canvas: CanvasID) -> RowQuery<Stroke> {
+        RowQuery(
+            statement: selectStrokes,
+            count: countLiveStrokes,
+            canvas: canvas,
+            table: "stroke",
+            limit: Limits.maxStrokesAfterErase,
+            read: StrokeRow.read
+        )
+    }
 }

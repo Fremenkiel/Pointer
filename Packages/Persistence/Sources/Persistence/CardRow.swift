@@ -25,6 +25,11 @@ enum CardRow {
         FROM card WHERE canvas_id = ? AND is_deleted = 0
         """
 
+    /// Counts the live cards of one canvas, for the report of a load past the limit.
+    static let countLive: StaticString = """
+        SELECT count(*) FROM card WHERE canvas_id = ? AND is_deleted = 0
+        """
+
     /// Reads the IDs and the parents of up to `Limits.maxDepth` live cards, for the check of a
     /// navigation path (D-112). An unused parameter takes NULL, which matches no row.
     static let selectPath: StaticString = """

@@ -16,6 +16,19 @@ enum WorkspaceRow {
         VALUES (?, ?, ?, ?, ?, ?)
         """
 
+    /// Sets the title of a live workspace.
+    static let rename: StaticString = """
+        UPDATE workspace SET title = ?, modified = ? WHERE id = ? AND is_deleted = 0
+        """
+
+    /// Marks a live workspace as deleted.
+    static let delete: StaticString = """
+        UPDATE workspace SET is_deleted = 1, modified = ? WHERE id = ? AND is_deleted = 0
+        """
+
+    /// Counts the live workspaces.
+    static let countLive: StaticString = "SELECT count(*) FROM workspace WHERE is_deleted = 0"
+
     /// Reads the live workspaces in the order of the selector.
     static let selectLive: StaticString = """
         SELECT id, title, sort_key, created, modified, is_deleted FROM workspace

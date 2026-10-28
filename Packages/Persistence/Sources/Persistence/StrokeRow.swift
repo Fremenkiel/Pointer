@@ -26,6 +26,13 @@ enum StrokeRow {
         WHERE s.canvas_id = ? AND e.stroke_id IS NULL
         """
 
+    /// Counts the live strokes of one canvas, for the report of a load past the limit.
+    static let countLive: StaticString = """
+        SELECT count(*) FROM stroke s
+        LEFT JOIN stroke_erase e ON e.stroke_id = s.id AND e.is_deleted = 0
+        WHERE s.canvas_id = ? AND e.stroke_id IS NULL
+        """
+
     /// Binds `stroke` to the parameters of `insert`.
     ///
     /// - Throws: `PersistenceError.sqlite` if a bind fails.

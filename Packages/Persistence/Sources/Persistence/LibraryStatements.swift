@@ -37,6 +37,12 @@ final class LibraryStatements {
     /// Counts the strokes, cards, and text boxes of a canvas, erased and deleted rows included,
     /// for the reserve of a load.
     let countCanvasRows: SQLiteStatement
+    /// Counts the live strokes of a canvas, for the report of a load past the limit.
+    let countLiveStrokes: SQLiteStatement
+    /// Counts the live cards of a canvas, for the report of a load past the limit.
+    let countLiveCards: SQLiteStatement
+    /// Counts the live text boxes of a canvas, for the report of a load past the limit.
+    let countLiveTextBoxes: SQLiteStatement
     /// Writes the last timestamp of the clock to the `library` table.
     let writeLastTimestamp: SQLiteStatement
 
@@ -57,15 +63,9 @@ final class LibraryStatements {
         upsertCard = try connection.prepare(CardRow.upsert)
         upsertTextBox = try connection.prepare(TextBoxRow.upsert)
         insertWorkspace = try connection.prepare(WorkspaceRow.insert)
-        renameWorkspace = try connection.prepare(
-            "UPDATE workspace SET title = ?, modified = ? WHERE id = ? AND is_deleted = 0"
-        )
-        deleteWorkspace = try connection.prepare(
-            "UPDATE workspace SET is_deleted = 1, modified = ? WHERE id = ? AND is_deleted = 0"
-        )
-        countWorkspaces = try connection.prepare(
-            "SELECT count(*) FROM workspace WHERE is_deleted = 0"
-        )
+        renameWorkspace = try connection.prepare(WorkspaceRow.rename)
+        deleteWorkspace = try connection.prepare(WorkspaceRow.delete)
+        countWorkspaces = try connection.prepare(WorkspaceRow.countLive)
         selectWorkspaces = try connection.prepare(WorkspaceRow.selectLive)
         selectStrokes = try connection.prepare(StrokeRow.selectLive)
         selectCards = try connection.prepare(CardRow.selectLive)
@@ -78,6 +78,9 @@ final class LibraryStatements {
                 (SELECT count(*) FROM text_box WHERE canvas_id = ?1)
             """
         )
+        countLiveStrokes = try connection.prepare(StrokeRow.countLive)
+        countLiveCards = try connection.prepare(CardRow.countLive)
+        countLiveTextBoxes = try connection.prepare(TextBoxRow.countLive)
         writeLastTimestamp = try connection.prepare(
             """
             INSERT INTO library (key, value) VALUES ('lastTimestamp', ?)

@@ -128,9 +128,35 @@ struct RepositoryLoadingTests {
         try writer.execute(
             "INSERT INTO workspace VALUES (randomblob(16), 'W', 'V', zeroblob(28), zeroblob(28), 0)"
         )
-        #expect(try await repository.workspaces().count == Limits.maxWorkspaces)
+        // One workspace too many: the load throws (3.2.5).
+        await #expect(throws: ModelError.workspaceLimitReached) {
+            try await repository.workspaces()
+        }
         var faults = harness.faults.makeAsyncIterator()
         #expect(await faults.next() == .rowsSkipped(table: "workspace", count: 1))
+    }
+
+    @Test("A load past the node limit reports the count of the live rows that did not fit (3.2.5)")
+    func rowsPastLimit() async throws {
+        let harness = try RepositoryHarness()
+        let repository = try await harness.open()
+        let writer = try SQLiteConnection(path: harness.path, mode: .readWrite)
+        // 50,000 live text boxes over the limit, and one deleted box that does not count.
+        try writer.execute(
+            """
+            WITH RECURSIVE n (i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 60000)
+            INSERT INTO text_box
+            SELECT randomblob(16), X'03010000000000000000000000000000', 0, 0, 't', 'V',
+                zeroblob(28), zeroblob(28), 0 FROM n;
+            INSERT INTO text_box VALUES (randomblob(16), X'03010000000000000000000000000000', 0, 0,
+                'gone', 'V', zeroblob(28),
+                zeroblob(28), 1);
+            """
+        )
+        let content = try await repository.content(of: Values.canvas)
+        #expect(content.textBoxes.count == Limits.maxNodesPerCanvas)
+        var faults = harness.faults.makeAsyncIterator()
+        #expect(await faults.next() == .rowsSkipped(table: "text_box", count: 50_000))
     }
 
     @Test("A library with a newer schema opens read-only, reads, and refuses each write")
