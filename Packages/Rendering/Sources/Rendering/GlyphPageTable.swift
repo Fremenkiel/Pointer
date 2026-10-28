@@ -110,6 +110,7 @@ final class GlyphPageTable {
     /// Returns the buffer of places with room for `count` places, made or doubled if needed. A
     /// frame in flight keeps the old buffer, because its command buffer holds it.
     private func placesBuffer(holding count: Int) -> (any MTLBuffer)? {
+        precondition(count > 0, "A buffer of places holds at least one place, got \(count)")
         let stride = MemoryLayout<GlyphPlace>.stride
         if let places, places.length >= count * stride { return places }
         let capacity = max(Self.initialPlaces, 2 * (places?.length ?? 0) / stride, count)
