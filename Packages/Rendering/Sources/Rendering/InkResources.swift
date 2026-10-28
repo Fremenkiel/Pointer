@@ -2,6 +2,10 @@ import Metal
 
 /// The Metal objects that every ink pass shares: device, queue, and pipelines.
 final class InkResources {
+    /// The longest side of a texture: the limit of the Apple GPU families of the iPads that
+    /// run Pointer (review 3.4.5). Source: Metal feature set tables, maximum 2D texture width
+    /// and height, Apple family 4 and later.
+    static let maxTextureSide = 16_384
     /// The pixel format of the committed textures: the ink coverage in red and the text
     /// coverage in green (D-82). Both are gray values, so two channels hold them at half the
     /// memory of BGRA. The eraser mask hides the red channel only.
@@ -274,7 +278,7 @@ final class InkResources {
     ) throws(RenderingError) -> any MTLTexture {
         precondition(width > 0 && height > 0, "Texture size \(width) x \(height) is empty")
         precondition(
-            width <= 16_384 && height <= 16_384,
+            width <= Self.maxTextureSide && height <= Self.maxTextureSide,
             "Texture \(width) x \(height) is too large"
         )
         let descriptor = MTLTextureDescriptor.texture2DDescriptor(

@@ -59,4 +59,15 @@ extension GlyphAtlas {
         fullFrames += 1
         Self.logger.error("The glyph atlas has no room within \(self.byteBudget) bytes")
     }
+
+    /// The side of a page: room for `rowsPerPage` rows of a line of text at the scale.
+    static func pageSide(exponent: Int) -> Int {
+        let row = Double(TextLayout.lineHeight) * scale(of: exponent) * rowHeightFactor
+        let wanted = Int((row * Double(rowsPerPage)).rounded(.up))
+        var side = pageSides.lowerBound
+        for _ in 0..<8 where side < wanted && side < pageSides.upperBound {
+            side *= 2
+        }
+        return side
+    }
 }

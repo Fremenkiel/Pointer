@@ -53,6 +53,9 @@ final class GlyphAtlas {
     static let pageSides = 256...2048
     /// The rows of the largest glyph that a page holds at least.
     static let rowsPerPage = 12
+    /// The height of a row of glyphs over the line height of the text: the glyphs of fallback
+    /// fonts and emoji reach past the line box of SF Mono (review 3.4.5).
+    static let rowHeightFactor = 1.5
 
     let device: any MTLDevice
     /// The byte budget of all pages.
@@ -81,11 +84,8 @@ final class GlyphAtlas {
     /// The last frame in which the atlas logged that it has no room, so that a frame logs it
     /// once and not once per glyph (review 3.3.5).
     var fullFrame: UInt64 = 0
-    // Only the tests read it (SCOPE-01).
-    // swiftlint:disable unused_declaration
-    /// The number of frames that found the atlas full.
+    /// The number of frames that found the atlas full. Only the tests read it.
     var fullFrames = 0
-    // swiftlint:enable unused_declaration
 
     /// Makes an empty atlas. With `isBindless`, the pages live in the heap of a page table, for
     /// the stored runs (D-189).
@@ -262,17 +262,6 @@ final class GlyphAtlas {
         descriptor.usage = .shaderRead
         descriptor.storageMode = .shared
         return descriptor
-    }
-
-    /// The side of a page: room for `rowsPerPage` rows of a line of text at the scale.
-    static func pageSide(exponent: Int) -> Int {
-        let row = Double(TextLayout.lineHeight) * scale(of: exponent) * 1.5
-        let wanted = Int((row * Double(rowsPerPage)).rounded(.up))
-        var side = pageSides.lowerBound
-        for _ in 0..<8 where side < wanted && side < pageSides.upperBound {
-            side *= 2
-        }
-        return side
     }
 
     private func fits(width: Int, height: Int, in page: Page) -> Bool {
