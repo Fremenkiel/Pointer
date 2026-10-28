@@ -6,7 +6,7 @@ The task lists of the milestones (`m2-plan.md` to `m10-plan.md` and the fix plan
 
 ## 1. Milestones
 
-All ten milestones are done. The dates are the days of the close on the iPad Pro 11-inch (M4).
+All ten milestones are done, and M11 is planned. The dates are the days of the close on the iPad Pro 11-inch (M4).
 
 | Milestone | Scope | Done | Notes |
 |---|---|---|---|
@@ -21,6 +21,7 @@ All ten milestones are done. The dates are the days of the close on the iPad Pro
 | M8 | PDF export: `Export`, the export button, the share sheet | 2026-10-24 | Vector ink and searchable text. The checkpoint design of D-146 and D-147. |
 | M9 | Backup: "Back up now" and restore | 2026-10-24 | A restore gives the same rows. A restore on a new device ID works. |
 | M10 | Hardening: limits, UI tests, baselines, stored glyph quads, accessibility, the review items of M7 to M9 | 2026-10-27 | `make perf-compare` passes 136 samples with 0 failures against the baseline of f8e4c0b. `make coverage` gives 88.8 % to 94.1 % per package. |
+| M11 | Review fixes: the open findings of the review of 2026-10-28, the decisions D-194 to D-196 | | Planned. The M11 plan ([m11-plan.md](m11-plan.md)) holds the tasks. |
 
 ## 2. Acceptance criteria of the last milestone
 
@@ -41,11 +42,10 @@ M10 had two acceptance criteria:
    5. VoiceOver on each button: turn VoiceOver on, and move over the bar, the selector, and the card menu. Each button has a label and a hint.
    6. The selector at the largest text size: set the text size to AX5 in Settings, open the selector, and look at each row.
    7. The Large Content Viewer: at an accessibility text size, long press each button of the bar. The viewer shows the icon and the name.
-2. Task 4.3 of M10, the text build at zoom 0.25 in one frame. The stored glyph quads halve the CPU time and the frame count of a build after a pan. Section 6.44 of the M10 plan in git history holds the numbers. The product owner decides whether that gain closes the task.
-3. A finding without a fix. In 1 of 10 full runs of `PointerDeviceTests` on f8e4c0b, the test process crashed with `EXC_BAD_ACCESS` in `+[CADisplayLink notifyDisplayChange:]`. The crash came on a QuartzCore queue with no frame of Pointer in that thread. The main thread removed a canvas view in `RestoreFlowTests` at that moment. Ten more full runs and 20 runs of the suites in that process did not crash. The cause is a race in QuartzCore between a display change and the removal of a view.
-4. The UI tests after the review of 2026-10-28. `make test` runs them first, and the iPad asks for its passcode (D-192).
-5. `make perf-compare` after the review of 2026-10-28, after a restart of the iPad. On 2026-10-28, the compare failed 6 samples of the card frame loop, the erase undo, and the save. The base commit e5d3105 fails the same samples by the same amounts. The review code against the base commit passes all 26 samples in 5 pairs. The iPad thus runs in a state other than the normal state of the baseline. Section 7 of the review holds the numbers.
+2. A finding without a fix. In 1 of 10 full runs of `PointerDeviceTests` on f8e4c0b, the test process crashed with `EXC_BAD_ACCESS` in `+[CADisplayLink notifyDisplayChange:]`. The crash came on a QuartzCore queue with no frame of Pointer in that thread. The main thread removed a canvas view in `RestoreFlowTests` at that moment. Ten more full runs and 20 runs of the suites in that process did not crash. The cause is a race in QuartzCore between a display change and the removal of a view.
+3. The UI tests after the review of 2026-10-28. `make test` runs them first, and the iPad asks for its passcode (D-192).
+4. `make perf-compare` after the review of 2026-10-28, after a restart of the iPad. On 2026-10-28, the compare failed 6 samples of the card frame loop, the erase undo, and the save. The base commit e5d3105 fails the same samples by the same amounts. The review code against the base commit passes all 26 samples in 5 pairs. The iPad thus runs in a state other than the normal state of the baseline. Section 7 of the review holds the numbers.
 
 ## 4. Next milestone
 
-No next milestone is planned. The review of 2026-10-28 ([review-2026-10-28.md](review-2026-10-28.md)) lists the candidates for the next milestone in its section 4. The product owner picks them, as AGENT-04 asks.
+The next milestone is M11, review fixes. The product owner picked the candidates of section 4 of the review of 2026-10-28 ([review-2026-10-28.md](review-2026-10-28.md)) on 2026-10-28, with the decisions D-194 to D-197. The M11 plan ([m11-plan.md](m11-plan.md)) holds the tasks in that order. Task 4.3 of M10 is closed (D-197).

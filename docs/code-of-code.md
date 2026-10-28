@@ -125,7 +125,7 @@ func split(_ stroke: Stroke, by center: Point, radius: Double) -> [StrokePart] {
 - `SAFE-06` No `print`, `debugPrint`, `NSLog`, or `dump`. Use `os.Logger` with a subsystem and a category per package. Never log text or ink content of the user. Enforcement: lint.
 - `SAFE-07` No `fatalError` except in `init(coder:)` stubs that UIKit requires. Use `preconditionFailure` with a message for unreachable code. Enforcement: lint.
 - `SAFE-08` `#if` only for `DEBUG`, `targetEnvironment(simulator)`, and `canImport`. No feature flags with `#if`. Enforcement: lint.
-- `SAFE-09` No `Unsafe*Pointer`, `unsafeBitCast`, `Unmanaged`, `nonisolated(unsafe)`, `@unchecked Sendable`, or `@preconcurrency`. Exceptions: Tier B files with the suffix `+Unsafe.swift`, and the SQLite wrapper files `Packages/Persistence/**/SQLite*+Unsafe.swift`. Each use there has a comment that states why it is safe. No unsafe type leaves these files: their public API uses `Data`, `String`, and Swift numbers only. Enforcement: lint that excludes those files.
+- `SAFE-09` No `Unsafe*Pointer`, `unsafeBitCast`, `Unmanaged`, `nonisolated(unsafe)`, `@unchecked Sendable`, or `@preconcurrency`. Exceptions: Tier B files with the suffix `+Unsafe.swift`, and the SQLite wrapper files `Packages/Persistence/**/SQLite*+Unsafe.swift`. Each use there has a comment that states why it is safe. No pointer type leaves these files: their public API uses `Data`, `String`, and Swift numbers only. A type with `@unchecked Sendable` and a safety comment can be the main type of such a file, and other files can use it (D-194). Enforcement: lint that excludes those files.
 
 ### 3.7 Scope
 
