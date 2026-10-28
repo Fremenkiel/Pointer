@@ -50,4 +50,13 @@ extension GlyphAtlas {
         setPageTable(table)
         return true
     }
+
+    /// Logs a full atlas once per frame. The message builds a string, so a frame with many
+    /// glyphs over the atlas logged once per glyph on the render thread (review 3.3.5).
+    func noteFull(frame: UInt64) {
+        guard frame != fullFrame else { return }
+        fullFrame = frame
+        fullFrames += 1
+        Self.logger.error("The glyph atlas has no room within \(self.byteBudget) bytes")
+    }
 }

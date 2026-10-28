@@ -60,6 +60,36 @@ struct GlyphAtlasTests {
         #expect(table.heaps.isEmpty, "The chunk of the last page goes with the page")
     }
 
+    @Test("A frame with 100 glyphs over the atlas logs the full atlas once (3.3.5)")
+    func fullAtlasLogsOncePerFrame() throws {
+        // One page of the smallest side holds the first glyphs, and no second page fits.
+        let atlas = try Self.atlas(
+            budget: GlyphAtlas.pageSides.lowerBound * GlyphAtlas.pageSides.lowerBound
+        )
+        let layout = TextLayout(
+            text: String((0..<200).map { Character(UnicodeScalar(0x4E00 + $0) ?? "a") })
+        )
+        var placed = 0
+        var refused = 0
+        for glyph in layout.glyphs {
+            let font = layout.fonts[Int(layout.fontIndices[placed + refused])]
+            if atlas.placement(of: glyph.glyph, font: font, exponent: 3, frame: 7) == nil {
+                refused += 1
+            } else {
+                placed += 1
+            }
+        }
+        #expect(refused >= 100, "\(refused) glyphs found no room")
+        #expect(atlas.fullFrames == 1)
+        _ = atlas.placement(
+            of: layout.glyphs[0].glyph,
+            font: layout.fonts[0],
+            exponent: 4,
+            frame: 8
+        )
+        #expect(atlas.fullFrames == 2)
+    }
+
     @Test("A space has no bitmap")
     func space() throws {
         let atlas = try Self.atlas()

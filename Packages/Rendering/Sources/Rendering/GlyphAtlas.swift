@@ -77,7 +77,15 @@ final class GlyphAtlas {
     /// The frames after its last use for which a page stays. The stored runs read the pages
     /// through the table, so a page of a frame in flight must not go (D-189).
     private(set) var dropMargin: UInt64
-    private static let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
+    static let logger = Logger(subsystem: "dk.saarikivi.pointer", category: "Rendering")
+    /// The last frame in which the atlas logged that it has no room, so that a frame logs it
+    /// once and not once per glyph (review 3.3.5).
+    var fullFrame: UInt64 = 0
+    // Only the tests read it (SCOPE-01).
+    // swiftlint:disable unused_declaration
+    /// The number of frames that found the atlas full.
+    var fullFrames = 0
+    // swiftlint:enable unused_declaration
 
     /// Makes an empty atlas. With `isBindless`, the pages live in the heap of a page table, for
     /// the stored runs (D-189).
@@ -188,7 +196,7 @@ final class GlyphAtlas {
             return empty
         }
         guard let index = page(for: raster, exponent: exponent, frame: frame) else {
-            Self.logger.error("The glyph atlas has no room within \(self.byteBudget) bytes")
+            noteFull(frame: frame)
             return nil
         }
         let placement = insert(raster, key: key, page: index)
