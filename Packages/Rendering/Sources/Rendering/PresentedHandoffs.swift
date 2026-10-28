@@ -22,7 +22,9 @@ enum PresentedHandoffs {
     private static let entries = Mutex<[Entry]>(Array(repeating: Entry(), count: capacity))
 
     /// Calls `onPresented` with `handoff` when `drawable` is presented. With all slots in use,
-    /// a closure of its own carries the handoff.
+    /// a closure of its own carries the handoff. An entry of an earlier drawable with the same
+    /// identifier, which was never presented, goes, so it cannot fire for this drawable (review
+    /// of 2026-10-28, 3.2.19).
     ///
     /// - Precondition: `handoff` is positive.
     static func attach(
@@ -33,6 +35,7 @@ enum PresentedHandoffs {
         precondition(handoff > 0, "Handoffs count from 1")
         let id = ObjectIdentifier(drawable)
         let isRecorded = entries.withLock { slots in
+            if let stale = slots.firstIndex(where: { $0.drawable == id }) { slots[stale] = Entry() }
             guard let free = slots.firstIndex(where: { $0.drawable == nil }) else { return false }
             slots[free] = Entry(drawable: id, handoff: handoff, onPresented: onPresented)
             return true
