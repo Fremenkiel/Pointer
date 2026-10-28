@@ -91,8 +91,7 @@ extension SQLiteLibraryRepository {
         var retries = 0
         for _ in 0..<(steps + Self.maxRestoreRetries) {
             guard !stop.isStopped else {
-                try backup.finish()
-                throw .restoreStopped
+                throw stopped { () throws(PersistenceError) in try backup.finish() }
             }
             let outcome = try backup.step(pages: Self.restorePagesPerStep)
             if outcome == .done { return try backup.finish() }
@@ -104,5 +103,18 @@ extension SQLiteLibraryRepository {
         }
         logger.error("The restore did not end after \(steps) steps and \(retries) retries")
         throw .sqlite(code: SQLITE_BUSY, message: "the restore did not end")
+    }
+
+    /// Rolls a stopped copy back with `finish` and returns the error of the stop. The stop is
+    /// the reason that the app handles, so an error of the rollback goes to the log (review of
+    /// 2026-10-28, 3.2.3). SQLite reports in the end only an error of an earlier step, and the
+    /// step throws at once, so the log line waits for another SQLite.
+    func stopped(finish: () throws(PersistenceError) -> Void) -> PersistenceError {
+        do {
+            try finish()
+        } catch {
+            logger.error("The rollback of a stopped restore failed: \(error)")
+        }
+        return .restoreStopped
     }
 }

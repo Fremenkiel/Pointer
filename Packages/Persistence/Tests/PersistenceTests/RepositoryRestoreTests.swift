@@ -1,5 +1,6 @@
 import Foundation
 import Model
+import SQLite3
 import Testing
 
 @testable import Persistence
@@ -50,6 +51,15 @@ struct RepositoryRestoreTests {
         #expect(try reader.text("PRAGMA integrity_check") == "ok")
         _ = try await repository.open { _ in }
         await repository.close()
+    }
+
+    @Test("A stopped restore whose rollback fails throws restoreStopped (3.2.3)")
+    func stopWithFailingRollback() async throws {
+        let repository = try RepositoryHarness().make()
+        let error = await repository.stopped { () throws(PersistenceError) in
+            throw .sqlite(code: SQLITE_IOERR, message: "disk I/O error")
+        }
+        #expect(error == .restoreStopped)
     }
 
     @Test("A closed library after a failed open takes a restore (task 2.2, item 4)")
