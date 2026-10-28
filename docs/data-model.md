@@ -199,6 +199,7 @@ final class InkPoints: Sendable {
 Rules:
 
 - `origin` is the first point of the stroke. Thus all offsets are small, and `Float` precision is enough.
+- Each point has finite coordinates. `InkPoints` checks it with a precondition. The pencil converter and the row reader refuse such a point before, so the check names the fault of a new producer.
 - `points` are the control points of the uniform cubic B-spline that PencilKit drew (decision D-26, see [architecture.md](architecture.md) section 4.3). They are not points on the curve. The curve does not depend on the zoom at which you drew it.
 - `InkPoints` is the one reference type of `Model` (review A-03). It holds only `let` properties, so the compiler checks that it is `Sendable`. A copy of a `Stroke` or of a dictionary of strokes then costs one retain, not a copy of the points.
 - A stroke with one sample (a dot) stores the point twice.

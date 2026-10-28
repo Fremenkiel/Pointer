@@ -119,6 +119,16 @@ struct StrokeTests {
         #expect(stroke.bounds == expected)
     }
 
+    @Test("A point with an infinite coordinate stops at the precondition (3.2.17)")
+    func infinitePoint() async {
+        await #expect(processExitsWith: .failure) {
+            _ = InkPoints([
+                InkPoint(x: 0, y: 0, force: 1, time: 0),
+                InkPoint(x: .infinity, y: 0, force: 1, time: 0),
+            ])
+        }
+    }
+
     @Test("Points of one more than the limit stop at the precondition (TEST-06)")
     func pastPointLimit() async {
         await #expect(processExitsWith: .failure) {

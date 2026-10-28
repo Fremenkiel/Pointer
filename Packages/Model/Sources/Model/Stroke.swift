@@ -22,7 +22,8 @@ public struct Stroke: Identifiable, Sendable {
     /// The curve stays inside the convex hull of its control points, also at the ends, so the
     /// bounds of the control points plus half the width hold the whole line.
     ///
-    /// - Precondition: `width` is positive and finite, and `origin` is finite.
+    /// - Precondition: `width` is positive and finite, and `origin` is finite. The points are
+    ///   finite, which `InkPoints` checks.
     public init(
         id: StrokeID,
         canvasID: CanvasID,
