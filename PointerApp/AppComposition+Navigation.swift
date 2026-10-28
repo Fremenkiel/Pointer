@@ -113,7 +113,10 @@ extension AppComposition {
     /// its card, so the parent loads below it at the camera of CARD-04, and the child fades out,
     /// which crossfades its image into the preview of the card.
     func leaveByPinch() {
-        guard let path, let child = container.canvas, let card = path.cards.last, opening == nil
+        // The guards of `leave()`: a pinch during a restore starts no load on a library that is
+        // about to be replaced (review of 2026-10-28, 3.2.15).
+        guard !isLibraryBusy, let path, let child = container.canvas, let card = path.cards.last,
+            opening == nil, !container.isSwapping
         else { return }
         let leaving = CardOpening(target: path.popping())
         leaving.isFlightDone = true
