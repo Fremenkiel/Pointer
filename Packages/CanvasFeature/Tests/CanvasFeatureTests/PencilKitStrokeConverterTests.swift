@@ -22,7 +22,12 @@ struct PencilKitStrokeConverterTests {
             clock: Fixtures.clock(),
             canvasID: Fixtures.canvas
         )
-        let converted = try converter.convert(live, camera: camera, viewSize: viewSize)
+        let converted = try converter.convert(
+            live,
+            camera: camera,
+            viewSize: viewSize,
+            penWidth: .standard
+        )
         let stroke = try #require(converted.first)
         #expect(stroke.origin == Point(x: 1_000_000, y: 1_000_000))
         #expect(stroke.canvasPoint(at: 1) == Point(x: 1_000_005, y: 1_000_000))
@@ -44,7 +49,8 @@ struct PencilKitStrokeConverterTests {
         let converted = try converter.convert(
             live,
             camera: Camera(center: .zero, zoom: 1),
-            viewSize: viewSize
+            viewSize: viewSize,
+            penWidth: .standard
         )
         let stroke = try #require(converted.first)
         #expect(stroke.origin == .zero)
@@ -62,7 +68,8 @@ struct PencilKitStrokeConverterTests {
         let strokes = try converter.convert(
             live,
             camera: Camera(center: .zero, zoom: 1),
-            viewSize: viewSize
+            viewSize: viewSize,
+            penWidth: .standard
         )
         #expect(strokes.count == 2)
         #expect(strokes.allSatisfy { $0.points.count <= Limits.maxPointsPerStroke })
@@ -82,10 +89,11 @@ struct PencilKitStrokeConverterTests {
         let converted = try converter.convert(
             live,
             camera: Camera(center: .zero, zoom: 2),
-            viewSize: viewSize
+            viewSize: viewSize,
+            penWidth: .standard
         )
         let stroke = try #require(converted.first)
-        #expect(Double(stroke.width) == PenTool.width)
+        #expect(Double(stroke.width) == PenWidth.standard.canvasPoints)
     }
 
     @Test("The width rule and its inverse agree", arguments: [0.5, 2.0, 16.0])
@@ -97,7 +105,7 @@ struct PencilKitStrokeConverterTests {
     @Test("The live tool is a white monoline with the pen width times the zoom")
     @MainActor
     func tool() {
-        let tool = PenTool.inkingTool(zoom: 4)
+        let tool = PenTool.inkingTool(width: .standard, zoom: 4)
         #expect(tool.inkType == .monoline)
         #expect(tool.width == 8)
         let white = tool.color.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))

@@ -69,6 +69,6 @@ final class CanvasView: UIView {
         liveCanvas.isScrollEnabled = false
         liveCanvas.contentInsetAdjustmentBehavior = .never
         liveCanvas.isMultipleTouchEnabled = true
-        liveCanvas.tool = PenTool.inkingTool(zoom: 1)
+        liveCanvas.tool = PenTool.inkingTool(width: .standard, zoom: 1)
     }
 }

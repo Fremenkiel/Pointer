@@ -16,7 +16,8 @@ struct PencilKitStrokeConverter {
     /// The canvas that gets the strokes.
     let canvasID: CanvasID
 
-    /// Converts a stroke that the live `PKCanvasView` drew at zoom 1 in view space.
+    /// Converts a stroke that the live `PKCanvasView` drew at zoom 1 in view space. A path
+    /// without a drawn point takes `penWidth`, the width of the pen (TOOL-09).
     ///
     /// - Throws: `ModelError` if the path has no points or a value that is not finite.
     /// - Returns: One stroke, or several strokes for a path above the point limit.
@@ -24,7 +25,8 @@ struct PencilKitStrokeConverter {
     func convert(
         _ stroke: PKStroke,
         camera: Camera,
-        viewSize: Size
+        viewSize: Size,
+        penWidth: PenWidth
     ) throws(ModelError) -> [Stroke] {
         let samples = stroke.path.map { point in
             ControlPointSample(
@@ -34,7 +36,7 @@ struct PencilKitStrokeConverter {
             )
         }
         guard !samples.isEmpty else { throw .emptyPath }
-        let width = Self.drawnWidth(of: stroke.path) ?? PenTool.width * camera.zoom
+        let width = Self.drawnWidth(of: stroke.path) ?? penWidth.canvasPoints * camera.zoom
         let toCanvas = Self.transform(stroke.transform).then(
             camera.viewToCanvas(viewSize: viewSize)
         )

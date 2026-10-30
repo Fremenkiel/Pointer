@@ -21,12 +21,52 @@
         }
       }
     },
+    "All ink, text boxes, and cards on this canvas go. Undo brings them back while the app runs.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All ink, text boxes, and cards on this canvas go. Undo brings them back while the app runs."
+          }
+        }
+      }
+    },
     "Cancel": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Clear": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        }
+      }
+    },
+    "Clear canvas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear canvas"
+          }
+        }
+      }
+    },
+    "Clear this canvas?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear this canvas?"
           }
         }
       }
@@ -101,6 +141,16 @@
         }
       }
     },
+    "Standard pen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard pen"
+          }
+        }
+      }
+    },
     "Text": {
       "localizations": {
         "en": {
@@ -117,6 +167,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "The PDF could not be made."
+          }
+        }
+      }
+    },
+    "Thick pen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thick pen"
+          }
+        }
+      }
+    },
+    "Thin pen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thin pen"
           }
         }
       }

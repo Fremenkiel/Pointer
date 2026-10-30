@@ -69,4 +69,26 @@ enum CanvasStrings {
             bundle: .module
         )
     }
+    /// The label of the button that clears the canvas (TOOL-10).
+    static var clearCanvas: String { String(localized: "Clear canvas", bundle: .module) }
+    /// The title of the question before a clear (D-200).
+    static var clearTitle: String { String(localized: "Clear this canvas?", bundle: .module) }
+    /// The text of the question before a clear.
+    static var clearMessage: String {
+        String(
+            localized: """
+                All ink, text boxes, and cards on this canvas go. Undo brings them back while \
+                the app runs.
+                """,
+            bundle: .module
+        )
+    }
+    /// The title of the clear button of the question.
+    static var clear: String { String(localized: "Clear", bundle: .module) }
+    /// The name of the thin pen width (TOOL-09).
+    static var thinPen: String { String(localized: "Thin pen", bundle: .module) }
+    /// The name of the standard pen width.
+    static var standardPen: String { String(localized: "Standard pen", bundle: .module) }
+    /// The name of the thick pen width.
+    static var thickPen: String { String(localized: "Thick pen", bundle: .module) }
 }

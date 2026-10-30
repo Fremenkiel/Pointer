@@ -103,7 +103,7 @@ final class ZoomFrameAllocationTests: XCTestCase {
             let zoom = 0.25 + Double(index) * 0.001
             let count = try XCTUnwrap(
                 AllocationCounter.countMainThread {
-                    live.tool = PenTool.inkingTool(zoom: zoom)
+                    live.tool = PenTool.inkingTool(width: .standard, zoom: zoom)
                 }
             )
             counts.append(count)

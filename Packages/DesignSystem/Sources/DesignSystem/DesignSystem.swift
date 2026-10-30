@@ -73,6 +73,9 @@ public enum DesignSystem {
         /// The line width of the eraser circle of the hover dot, in view points (D-133). A start
         /// value that the product owner tunes on the device.
         public static let hoverRingWidth: CGFloat = 1
+        /// The points of the dot of a pen width button per canvas point of the width, so that the
+        /// three widths of TOOL-09 show as dots of 3, 6, and 12 points (D-199).
+        public static let penWidthDotScale: CGFloat = 3
     }
 
     /// The font tokens.
@@ -108,6 +111,9 @@ public enum DesignSystem {
         public static let redo = "arrow.uturn.forward"
         /// Exports the canvas as a PDF (EXP-01).
         public static let export = "square.and.arrow.up"
+        /// Clears the canvas: all ink, text boxes, and cards go (TOOL-10, D-200). The symbol of
+        /// `delete`, because the button removes items.
+        public static let clearCanvas = "trash"
         /// The pen tool (TOOL-01).
         public static let pen = "pencil.tip"
         /// The eraser tool (TOOL-01).

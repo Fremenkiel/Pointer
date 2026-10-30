@@ -21,7 +21,7 @@ struct CanvasViewControllerTests {
         let controller = CanvasViewController(dependencies: dependencies)
         let canvasView = try #require(controller.view as? CanvasView)
         let tool = try #require(canvasView.liveCanvas.tool as? PKInkingTool)
-        #expect(tool.width == PenTool.inkingTool(zoom: zoom).width)
+        #expect(tool.width == PenTool.inkingTool(width: .standard, zoom: zoom).width)
     }
 
     @Test("A closed canvas releases its view and its renderer")

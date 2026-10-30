@@ -18,11 +18,12 @@ struct LargeTextChromeSnapshotTests {
         )
     }
 
-    @Test("Undo, redo, and export keep their size")
+    @Test("Undo, redo, clear, and export keep their size")
     func historyButtons() throws {
         let controls = HistoryControls()
         controls.canUndo = true
         controls.canRedo = true
+        controls.canClear = true
         try ViewSnapshot.assertMatches(
             HistoryButtons(controls: controls).environment(\.dynamicTypeSize, .accessibility5),
             named: "history-buttons-on"

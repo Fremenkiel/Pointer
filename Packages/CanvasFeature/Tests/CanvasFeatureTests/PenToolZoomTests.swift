@@ -47,7 +47,8 @@ struct PenToolZoomTests {
 
     /// The width of the pen tool at the shown zoom.
     private func expectedWidth(of controller: CanvasViewController) -> CGFloat {
-        PenTool.inkingTool(zoom: controller.camera.zoom).width
+        PenTool.inkingTool(width: .standard, zoom: controller.camera.zoom)
+            .width
     }
 
     @Test("A new canvas has the pen width of its camera")
@@ -59,7 +60,9 @@ struct PenToolZoomTests {
         )
         dependencies.camera = Camera(center: .zero, zoom: 3)
         let controller = CanvasViewController(dependencies: dependencies)
-        #expect(try toolWidth(of: controller) == PenTool.inkingTool(zoom: 3).width)
+        #expect(
+            try toolWidth(of: controller) == PenTool.inkingTool(width: .standard, zoom: 3).width
+        )
     }
 
     @Test("A pencil down during a spring gives the pen the width of the zoom at the pencil down")

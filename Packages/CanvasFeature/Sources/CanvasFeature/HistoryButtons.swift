@@ -1,13 +1,14 @@
 import DesignSystem
 import SwiftUI
 
-/// The undo, redo, and export buttons in the top right corner (UNDO-01, EXP-01). Undo and redo
-/// are off while their list is empty. Export is off while an export runs.
+/// The undo, redo, clear, and export buttons in the top right corner (UNDO-01, TOOL-10, EXP-01).
+/// Undo and redo are off while their list is empty. Clear is off on an empty canvas. Export is
+/// off while an export runs.
 struct HistoryButtons: View {
     /// The state of the buttons.
     let controls: HistoryControls
-    /// `false` in the tool palette, which shows undo and redo only (D-63).
-    var showsExport = true
+    /// `false` in the tool palette, which shows undo and redo only (D-63, PEN-03).
+    var showsCanvasCommands = true
 
     /// The buttons in a row.
     var body: some View {
@@ -28,7 +29,16 @@ struct HistoryButtons: View {
             ) {
                 controls.redo()
             }
-            if showsExport {
+            if showsCanvasCommands {
+                button(
+                    DesignSystem.Icon.clearCanvas,
+                    label: CanvasStrings.clearCanvas,
+                    identifier: "clear",
+                    isEnabled: controls.canClear
+                ) {
+                    controls.clear()
+                }
+                // The export button stays the last button: the share sheet anchors on it.
                 button(
                     DesignSystem.Icon.export,
                     label: CanvasStrings.export,

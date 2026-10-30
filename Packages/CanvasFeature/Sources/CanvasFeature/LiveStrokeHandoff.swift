@@ -51,16 +51,17 @@ final class LiveStrokeHandoff {
     // swiftlint:enable unused_declaration
 
     /// Hands off each new stroke of the drawing. The canvas calls it when the drawing changes.
+    /// `penWidth` is the width of a path without a drawn point (TOOL-09).
     ///
     /// - Precondition: The view size is positive.
-    func drawingDidChange(camera: Camera, viewSize: Size) {
+    func drawingDidChange(camera: Camera, viewSize: Size, penWidth: PenWidth) {
         precondition(viewSize.width > 0 && viewSize.height > 0, "The canvas view has no size")
         guard !isChangingDrawing else { return }
         for stroke in canvasView.drawing.strokes {
             let key = StrokeKey(stroke)
             guard !handedOff.contains(key) else { continue }
             handedOff.insert(key)
-            handOff(stroke, key: key, camera: camera, viewSize: viewSize)
+            handOff(stroke, key: key, camera: camera, viewSize: viewSize, penWidth: penWidth)
         }
         assert(
             handedOff.count >= canvasView.drawing.strokes.count,
@@ -68,9 +69,20 @@ final class LiveStrokeHandoff {
         )
     }
 
-    private func handOff(_ stroke: PKStroke, key: StrokeKey, camera: Camera, viewSize: Size) {
+    private func handOff(
+        _ stroke: PKStroke,
+        key: StrokeKey,
+        camera: Camera,
+        viewSize: Size,
+        penWidth: PenWidth
+    ) {
         do {
-            let strokes = try converter.convert(stroke, camera: camera, viewSize: viewSize)
+            let strokes = try converter.convert(
+                stroke,
+                camera: camera,
+                viewSize: viewSize,
+                penWidth: penWidth
+            )
             guard strokes.count <= remainingCapacity() else {
                 logger.notice("The canvas is at its stroke limit. A live stroke is refused.")
                 presented.insert(key)

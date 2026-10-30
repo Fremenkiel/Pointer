@@ -254,7 +254,7 @@ protocol CanvasCommand: Sendable {
 }
 ```
 
-`heldPointCount` is the memory cost of the command in the budgets of the history: the control points of its strokes (D-76) and the code points of its texts (D-88). `forEachHeldStroke` gives the IDs of the strokes that the command holds. Both functions `apply` and `revert` return the changed rows, so the canvas sends them to the repository without a second pass. A command checks the content before it changes it, so a thrown error leaves the content as it was. `AddStroke` holds the strokes of one pen path. `EraseStrokes` holds the removed strokes, the parts, and the area of the eraser path.
+`heldPointCount` is the memory cost of the command in the budgets of the history: the control points of its strokes (D-76) and the code points of its texts (D-88). `forEachHeldStroke` gives the IDs of the strokes that the command holds. Both functions `apply` and `revert` return the changed rows, so the canvas sends them to the repository without a second pass. A command checks the content before it changes it, so a thrown error leaves the content as it was. `AddStroke` holds the strokes of one pen path. `EraseStrokes` holds the removed strokes, the parts, and the area of the eraser path. `ClearCanvas` holds all live strokes, text boxes, and cards of the canvas (TOOL-10, D-200).
 
 Rules:
 

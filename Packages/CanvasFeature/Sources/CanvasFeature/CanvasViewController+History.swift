@@ -247,6 +247,7 @@ extension CanvasViewController {
 
     /// Updates the buttons after a step.
     func historyDidChange() {
+        historyControls.canClear = !content.strokes.isEmpty || content.nodeCount > 0
         // During an edit, the buttons show the steps of the text view (D-86).
         guard textEditing.isEditing else {
             historyControls.canUndo = history.canUndo
@@ -257,10 +258,12 @@ extension CanvasViewController {
         historyControls.canRedo = textEditing.view.undoManager?.canRedo ?? false
     }
 
-    /// Shows the undo, redo, and export buttons in the top right corner (UNDO-01, EXP-01).
+    /// Shows the undo, redo, clear, and export buttons in the top right corner (UNDO-01, TOOL-10,
+    /// EXP-01).
     func installHistoryButtons() {
         historyControls.undo = { [weak self] in self?.undo() }
         historyControls.redo = { [weak self] in self?.redo() }
+        historyControls.clear = { [weak self] in self?.askToClearCanvas() }
         historyControls.export = { [weak self] in self?.exportCanvas() }
         let host = UIHostingController(rootView: HistoryButtons(controls: historyControls))
         canvasExport.anchor = host.view

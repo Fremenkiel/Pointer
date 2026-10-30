@@ -14,13 +14,28 @@ struct ToolControlsSnapshotTests {
         return controls
     }
 
-    @Test("The palette marks the current tool", arguments: Tool.allCases)
+    @Test(
+        "The palette marks the current tool and shows the pen widths for the pen only (TOOL-09)",
+        arguments: Tool.allCases
+    )
     func palette(tool: Tool) throws {
         let history = HistoryControls()
         history.canUndo = true
         try ViewSnapshot.assertMatches(
             ToolPalette(tools: tools(tool), history: history),
             named: "tool-palette-\(tool)"
+        )
+    }
+
+    @Test("The palette marks the picked pen width")
+    func paletteThickPen() throws {
+        let controls = tools(.pen)
+        controls.penWidth = .thick
+        let history = HistoryControls()
+        history.canUndo = true
+        try ViewSnapshot.assertMatches(
+            ToolPalette(tools: controls, history: history),
+            named: "tool-palette-pen-thick"
         )
     }
 

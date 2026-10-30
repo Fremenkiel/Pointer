@@ -9,6 +9,8 @@ extension CanvasViewController: UIPencilInteractionDelegate {
     /// touch set the pen width.
     func installToolControls() {
         toolControls.select = { [weak self] tool in self?.pick(tool) }
+        toolControls.penWidth = penSettings.width
+        toolControls.selectWidth = { [weak self] width in self?.pick(width: width) }
         toolControls.openPalette = { [weak self] in self?.showPaletteUnderButton() }
         toolControls.newCard = { [weak self] in self?.showPendingCard() }
         let interaction = UIPencilInteraction(delegate: self)
@@ -24,6 +26,21 @@ extension CanvasViewController: UIPencilInteractionDelegate {
     private func pick(_ tool: Tool) {
         select(tool)
         presentedViewController?.dismiss(animated: true)
+    }
+
+    /// Picks a pen width from the palette and closes it.
+    private func pick(width: PenWidth) {
+        select(width: width)
+        presentedViewController?.dismiss(animated: true)
+    }
+
+    /// Picks the pen width of the next stroke (TOOL-09, D-199). Every canvas of the app takes
+    /// it. A stroke that runs keeps its width, because PencilKit takes the tool at the next
+    /// touch (D-70).
+    public func select(width: PenWidth) {
+        penSettings.width = width
+        toolControls.penWidth = width
+        if !toolState.isPencilDown { applyPenTool() }
     }
 
     /// Opens the palette under the current-tool button (D-64). The button is the first square
@@ -55,6 +72,8 @@ extension CanvasViewController: UIPencilInteractionDelegate {
         arrow: UIPopoverArrowDirection
     ) {
         guard presentedViewController == nil, let source else { return }
+        // Another canvas can have picked the width since this canvas took it (D-199).
+        toolControls.penWidth = penSettings.width
         let host = UIHostingController(
             rootView: ToolPalette(tools: toolControls, history: historyControls)
         )
@@ -122,12 +141,14 @@ extension CanvasViewController: UIPencilInteractionDelegate {
     /// flight runs on it (architecture.md 4.5, CARD-03, CARD-04).
     var takesPencilActions: Bool { isShownCanvas && !isInCardTransition }
 
-    /// Gives the live canvas the pen width of the shown zoom, if the zoom changed since the last
-    /// time (architecture.md 4.2).
+    /// Gives the live canvas the pen tool of the shown zoom and the picked width, if one of them
+    /// changed since the last time (architecture.md 4.2, D-131, D-199).
     func applyPenTool() {
         let zoom = cameraController.shownCamera.zoom
-        guard zoom != penToolZoom else { return }
-        canvasView.liveCanvas.tool = PenTool.inkingTool(zoom: zoom)
+        let width = penSettings.width
+        guard zoom != penToolZoom || width != penToolWidth else { return }
+        canvasView.liveCanvas.tool = PenTool.inkingTool(width: width, zoom: zoom)
         penToolZoom = zoom
+        penToolWidth = width
     }
 }

@@ -53,7 +53,11 @@ struct LiveStrokeHandoffTests {
         canvasView.drawing = PKDrawing(strokes: [
             Fixtures.pencilKitStroke(Fixtures.wave(), pointSize: 3)
         ])
-        handoff.drawingDidChange(camera: Camera(center: .zero, zoom: 1), viewSize: viewSize)
+        handoff.drawingDidChange(
+            camera: Camera(center: .zero, zoom: 1),
+            viewSize: viewSize,
+            penWidth: .standard
+        )
         #expect(reported.count == 1)
         #expect(handoff.liveStrokeCount == 1)
         try await renderUntilIdle(renderer, layer)
@@ -68,7 +72,11 @@ struct LiveStrokeHandoffTests {
         let (renderer, layer) = (subject.renderer, subject.layer)
         let first = Fixtures.pencilKitStroke(Fixtures.wave(), pointSize: 3)
         canvasView.drawing = PKDrawing(strokes: [first])
-        handoff.drawingDidChange(camera: Camera(center: .zero, zoom: 1), viewSize: viewSize)
+        handoff.drawingDidChange(
+            camera: Camera(center: .zero, zoom: 1),
+            viewSize: viewSize,
+            penWidth: .standard
+        )
         handoff.isToolInUse = true
         try await renderUntilIdle(renderer, layer)
         #expect(handoff.liveStrokeCount == 1)
@@ -77,7 +85,11 @@ struct LiveStrokeHandoffTests {
         canvasView.drawing = PKDrawing(strokes: [first, second])
         handoff.isToolInUse = false
         #expect(handoff.liveStrokeCount == 1)
-        handoff.drawingDidChange(camera: Camera(center: .zero, zoom: 1), viewSize: viewSize)
+        handoff.drawingDidChange(
+            camera: Camera(center: .zero, zoom: 1),
+            viewSize: viewSize,
+            penWidth: .standard
+        )
         try await renderUntilIdle(renderer, layer)
         #expect(handoff.liveStrokeCount == 0)
         #expect(renderer.strokeCount == 2)
@@ -92,7 +104,11 @@ struct LiveStrokeHandoffTests {
         subject.canvasView.drawing = PKDrawing(strokes: [
             Fixtures.pencilKitStroke(Fixtures.wave(), pointSize: 3)
         ])
-        subject.handoff.drawingDidChange(camera: Camera(center: .zero, zoom: 1), viewSize: viewSize)
+        subject.handoff.drawingDidChange(
+            camera: Camera(center: .zero, zoom: 1),
+            viewSize: viewSize,
+            penWidth: .standard
+        )
         #expect(reported == 0)
         #expect(subject.renderer.strokeCount == 0)
         #expect(subject.handoff.liveStrokeCount == 0)

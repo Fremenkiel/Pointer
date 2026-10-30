@@ -76,16 +76,63 @@ struct PencilKitParityTests {
         arguments: [0.25, 1.0, 8.0]
     )
     func handoffImage(zoom: Double) throws {
-        let pointSize = PencilKitStrokeConverter.pointSize(drawingWidth: PenTool.width * zoom)
+        let pointSize = PencilKitStrokeConverter.pointSize(
+            drawingWidth: PenWidth.standard.canvasPoints * zoom
+        )
         let live = Fixtures.pencilKitStroke(Fixtures.wave(), pointSize: pointSize)
         let camera = Camera(center: Point(x: 1_000, y: -2_000), zoom: zoom)
         let converter = PencilKitStrokeConverter(
             clock: Fixtures.clock(),
             canvasID: Fixtures.canvas
         )
-        let strokes = try converter.convert(live, camera: camera, viewSize: viewSize)
+        let strokes = try converter.convert(
+            live,
+            camera: camera,
+            viewSize: viewSize,
+            penWidth: .standard
+        )
         let renderer = try CanvasRenderer()
         let metal = try renderer.renderImage(
+            of: strokes,
+            camera: camera,
+            viewSize: viewSize,
+            displayScale: 2
+        )
+        let pencilKit = try #require(
+            Fixtures.pencilKitImage(
+                PKDrawing(strokes: [live]),
+                size: CGSize(width: 200, height: 120),
+                scale: 2
+            )
+        )
+        let comparison = InkComparison(metal, pencilKit)
+        #expect(abs(comparison.inkRatio - 1) < 0.03, "Ink ratio \(comparison.inkRatio)")
+        #expect(comparison.differingPixels == 0, "\(comparison)")
+        #expect(comparison.maxDifference <= 32, "\(comparison)")
+    }
+
+    @Test(
+        "The Metal stroke matches the PencilKit stroke at each pen width (TOOL-09, FEEL-03)",
+        arguments: [(PenWidth.thin, 1.0), (.thick, 1.0), (.thick, 8.0)]
+    )
+    func handoffImageWidth(width: PenWidth, zoom: Double) throws {
+        let pointSize = PencilKitStrokeConverter.pointSize(
+            drawingWidth: width.canvasPoints * zoom
+        )
+        let live = Fixtures.pencilKitStroke(Fixtures.wave(), pointSize: pointSize)
+        let camera = Camera(center: Point(x: 1_000, y: -2_000), zoom: zoom)
+        let converter = PencilKitStrokeConverter(
+            clock: Fixtures.clock(),
+            canvasID: Fixtures.canvas
+        )
+        let strokes = try converter.convert(
+            live,
+            camera: camera,
+            viewSize: viewSize,
+            penWidth: width
+        )
+        #expect(strokes.map(\.width) == [Float(width.canvasPoints)])
+        let metal = try CanvasRenderer().renderImage(
             of: strokes,
             camera: camera,
             viewSize: viewSize,
@@ -115,14 +162,21 @@ struct PencilKitParityTests {
 
     @Test("A stroke with level-of-detail runs matches the PencilKit stroke at the run boundaries")
     func runBoundaries() throws {
-        let pointSize = PencilKitStrokeConverter.pointSize(drawingWidth: PenTool.width)
+        let pointSize = PencilKitStrokeConverter.pointSize(
+            drawingWidth: PenWidth.standard.canvasPoints
+        )
         let live = Fixtures.pencilKitStroke(Self.jumpPath(), pointSize: pointSize)
         let camera = Camera(center: .zero, zoom: 1)
         let converter = PencilKitStrokeConverter(
             clock: Fixtures.clock(),
             canvasID: Fixtures.canvas
         )
-        let strokes = try converter.convert(live, camera: camera, viewSize: viewSize)
+        let strokes = try converter.convert(
+            live,
+            camera: camera,
+            viewSize: viewSize,
+            penWidth: .standard
+        )
         let metal = try CanvasRenderer().renderImage(
             of: strokes,
             camera: camera,

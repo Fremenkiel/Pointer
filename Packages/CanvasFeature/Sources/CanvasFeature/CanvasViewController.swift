@@ -12,7 +12,8 @@ import os
 public final class CanvasViewController: UIViewController {
     /// The renderer that draws the canvas.
     let renderer: CanvasRenderer
-    private let handoff: LiveStrokeHandoff
+    /// Moves each finished live stroke to the renderer (architecture.md 4.2).
+    let handoff: LiveStrokeHandoff
     /// The Metal view with the view of the live stroke on top.
     let canvasView: CanvasView
     /// The logger of the canvas.
@@ -25,6 +26,8 @@ public final class CanvasViewController: UIViewController {
     var history = History()
     /// The histories of the app, or `nil` for a canvas whose history ends with it.
     let sessions: CanvasSessions?
+    /// The pen width of the app, shared by every canvas while it runs (TOOL-09, D-199).
+    let penSettings: PenSettings
     /// The workspace of the canvas, or `nil` for a canvas without a workspace (D-196).
     public let workspace: WorkspaceID?
     /// The state of the undo and redo buttons.
@@ -76,6 +79,8 @@ public final class CanvasViewController: UIViewController {
     var hasShownStrokeLimit = false
     /// The zoom of the pen tool of the live canvas, or `nil` before the first tool (D-131).
     var penToolZoom: Double?
+    /// The width of the pen tool of the live canvas, or `nil` before the first tool (D-199).
+    var penToolWidth: PenWidth?
     /// The key commands of undo and redo, made once (C-05).
     lazy var historyKeyCommands = makeHistoryKeyCommands()
     /// The edit view, the running edit, and the move of the text boxes.
@@ -117,6 +122,7 @@ public final class CanvasViewController: UIViewController {
         clock = dependencies.clock
         rowChannel = dependencies.repository.map { RowChannel(repository: $0) }
         sessions = dependencies.sessions
+        penSettings = dependencies.penSettings ?? PenSettings()
         workspace = dependencies.workspace
         onCameraRest = dependencies.onCameraRest
         onMessage = dependencies.onMessage
@@ -368,26 +374,6 @@ public final class CanvasViewController: UIViewController {
         if cameraController.isAnimating {
             canvasView.inkView.requestFrame()
         }
-    }
-}
-
-extension CanvasViewController: PKCanvasViewDelegate {
-    /// Hands off each finished stroke.
-    public func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-        guard viewSize.width > 0, viewSize.height > 0 else { return }
-        handoff.drawingDidChange(camera: cameraController.shownCamera, viewSize: viewSize)
-        releaseHeldSpring()
-    }
-
-    /// The pencil starts a live stroke. The removal of handed-off strokes waits.
-    public func canvasViewDidBeginUsingTool(_ canvasView: PKCanvasView) {
-        handoff.isToolInUse = true
-    }
-
-    /// The pencil lifted. Handed-off strokes can leave the drawing. The rows of the stroke start
-    /// the save when the canvas sends them, so the lift asks for none (review of 2026-10-28).
-    public func canvasViewDidEndUsingTool(_ canvasView: PKCanvasView) {
-        handoff.isToolInUse = false
     }
 }
 

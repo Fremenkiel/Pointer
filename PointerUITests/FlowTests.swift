@@ -113,6 +113,39 @@ final class FlowTests: XCTestCase {
         expect(app, "uiTest.cards", "1")
     }
 
+    /// The fill strokes of the launch argument are never saved (D-55), so an erase record of one
+    /// of them fails the save and stops the edits. The test clears a card instead.
+    func testClearCanvasRemovesCardsAndUndoBringsThemBack() {
+        let app = launch()
+        XCTAssertFalse(app.buttons["clear"].isEnabled, "An empty canvas has nothing to clear")
+        app.buttons["newCard"].tap()
+        let window = app.windows.firstMatch.frame
+        let edge = app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: 80, dy: window.height / 2))
+        edge.press(
+            forDuration: 0.05,
+            thenDragTo: edge.withOffset(CGVector(dx: 500, dy: 0)),
+            withVelocity: .slow,
+            thenHoldForDuration: 0.1
+        )
+        expect(app, "uiTest.cards", "1")
+        app.buttons["clear"].tap()
+        // The question before the clear (D-200). A cancel changes nothing.
+        let alert = app.alerts.firstMatch
+        XCTAssertTrue(alert.waitForExistence(timeout: Self.timeout))
+        alert.buttons["Cancel"].tap()
+        expect(app, "uiTest.cards", "1")
+        app.buttons["clear"].tap()
+        XCTAssertTrue(alert.waitForExistence(timeout: Self.timeout))
+        alert.buttons["Clear"].tap()
+        expect(app, "uiTest.cards", "0")
+        expect(app, "uiTest.strokes", "0")
+        XCTAssertFalse(app.buttons["clear"].isEnabled)
+        app.buttons["undo"].tap()
+        expect(app, "uiTest.cards", "1")
+        XCTAssertTrue(app.buttons["clear"].isEnabled)
+    }
+
     func testExportOpensShareSheet() {
         let app = launch(fillStrokes: 100)
         expect(app, "uiTest.strokes", "100")
