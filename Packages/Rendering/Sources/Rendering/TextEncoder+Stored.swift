@@ -114,12 +114,18 @@ extension TextEncoder {
         into quads: inout [StoredGlyph],
         pages: inout (indices: [Int], generations: [UInt32])
     ) -> Bool {
-        var placed = PlacedGlyphs(of: layout, in: atlas, exponent: exponent, frame: frame)
-        // The glyph count bounds the loop (FLOW-03).
-        while let item = placed.next() {
-            guard let place = item.place else { return false }
+        var placer = GlyphPlacer(of: layout, in: atlas)
+        for (index, glyph) in layout.glyphs.enumerated() {
+            guard
+                let place = placer.place(
+                    glyph,
+                    at: index,
+                    in: atlas,
+                    exponent: exponent,
+                    frame: frame
+                )
+            else { return false }
             guard place.page >= 0 else { continue }
-            let glyph = item.glyph
             if !pages.indices.contains(place.page) {
                 pages.indices.append(place.page)
                 pages.generations.append(atlas.generations[place.page])

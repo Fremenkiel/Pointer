@@ -244,13 +244,19 @@ final class TextEncoder {
         exponent: Int,
         frame: UInt64
     ) -> Run? {
+        var placer = GlyphPlacer(of: layout, in: atlas)
         var run = runs.last
         let first = ring.used
-        var placed = PlacedGlyphs(of: layout, in: atlas, exponent: exponent, frame: frame)
-        // The glyph count bounds the loop (FLOW-03).
-        while let item = placed.next() {
-            guard let place = item.place, place.page >= 0 else { continue }
-            let glyph = item.glyph
+        for (index, glyph) in layout.glyphs.enumerated() {
+            guard
+                let place = placer.place(
+                    glyph,
+                    at: index,
+                    in: atlas,
+                    exponent: exponent,
+                    frame: frame
+                ), place.page >= 0
+            else { continue }
             if run?.page == place.page {
                 run?.count += 1
             } else {
