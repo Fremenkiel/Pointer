@@ -4,7 +4,7 @@ This document lists each design point where the right choice was not certain. Ea
 
 Status values: Open, Decided, Replaced.
 
-The milestone plans and fix plans of M2 to M10 (`m2-plan.md` to `m10-plan.md`) left `docs/` after the close of M10 on 2026-10-28. An entry that names a task or a section of a plan refers to the version in git history: `git show e5d3105:docs/m10-plan.md`.
+The milestone plans and fix plans of M2 to M11 (`m2-plan.md` to `m11-plan.md`) left `docs/` after the close of each milestone. An entry that names a task or a section of a plan refers to the version in git history: `git show e5d3105:docs/m10-plan.md` and `git show aac9ac4:docs/m11-plan.md`.
 
 ## Summary
 
