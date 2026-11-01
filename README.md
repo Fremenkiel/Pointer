@@ -20,7 +20,7 @@ Install Xcode 27 and SwiftLint (`brew install swiftlint`). Then run all checks f
 make check
 ```
 
-Open `Pointer.xcodeproj` in Xcode to run the app. Set your signing team on the `PointerApp` target before you run it on an iPad.
+Open `Pointer.xcodeproj` in Xcode to run the app. Set your signing team on the `PointerApp` target before you run it on an iPad. To install the app on the connected iPad without Xcode, run `make install`. It uses the iPad of the `DEVICE` variable of the Makefile.
 
 ## Documents
 

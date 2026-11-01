@@ -95,9 +95,10 @@ make coverage    # line coverage of TEST-02, a separate device run (D-120)
 make perf-baseline  # 10 runs of the performance suites on the iPad, writes the baseline (D-172, D-177)
 make perf-compare   # 10 new runs against the baseline, about 50 minutes (D-172, D-177)
 make validation  # PointerDeviceTests with Metal API and shader validation, at each close (D-186)
+make install     # build the app in Release and install it on the connected iPad
 ```
 
-`make test` and `make snapshots` use the connected iPad Pro 11-inch (M4) in Release. To use another iPad, set `DEVICE` to its UDID, for example `make test DEVICE=00008132-000018993E8B801C`. Before a device run, make sure that the iPad is unlocked: `xcrun devicectl device info lockState --device <UDID>` must print `passcodeRequired: false`. Before the UI tests, the iPad asks for its passcode to enable UI Automation. Enter it on the iPad, or the UI tests fail after about one minute (D-192).
+`make test`, `make snapshots`, and `make install` use the connected iPad Pro 11-inch (M4) in Release. To use another iPad, set `DEVICE` to its UDID, for example `make test DEVICE=00008132-000018993E8B801C`. Before a device run, make sure that the iPad is unlocked: `xcrun devicectl device info lockState --device <UDID>` must print `passcodeRequired: false`. Before the UI tests, the iPad asks for its passcode to enable UI Automation. Enter it on the iPad, or the UI tests fail after about one minute (D-192).
 
 ## Working rules
 

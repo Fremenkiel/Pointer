@@ -16,7 +16,7 @@ DEVICE_TEST := xcodebuild test -project $(PROJECT) -scheme $(SCHEME) -configurat
 
 .PHONY: check build unused analyze test snapshots coverage format lint layers density nesting \
 	self-test plist \
-	perf-baseline perf-compare validation
+	perf-baseline perf-compare validation install
 
 check: build unused analyze test snapshots format lint layers density nesting self-test plist
 	@echo "All checks passed."
@@ -177,6 +177,17 @@ validation:
 		-only-testing:PointerDeviceTests \
 		$(foreach suite,$(ALLOCATION_SUITES) $(PERF_SUITES),-skip-testing:PointerDeviceTests/$(suite))
 	@echo "validation: done"
+
+# Builds the app in Release and installs it on the connected iPad. The build signs with the team
+# of the project, so it needs a Mac that is logged in to that Apple account. It builds in a folder
+# of its own, so the test build of `make test` stays. Keep the iPad unlocked during the install.
+INSTALL_DATA := .build/InstallData
+INSTALL_APP := $(INSTALL_DATA)/Build/Products/Release-iphoneos/Pointer.app
+install:
+	xcodebuild build -project $(PROJECT) -scheme $(SCHEME) -configuration Release \
+		-destination 'id=$(DEVICE)' -derivedDataPath $(INSTALL_DATA) -allowProvisioningUpdates -quiet
+	xcrun devicectl device install app --device $(DEVICE) $(INSTALL_APP)
+	@echo "install: Pointer installed on $(DEVICE)"
 
 # STYLE-04. The fixtures hold deliberate violations, so the formatter skips them.
 format:
