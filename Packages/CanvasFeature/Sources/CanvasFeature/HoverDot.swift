@@ -15,16 +15,16 @@ struct HoverDot: Equatable {
     /// Returns the mark of a hover sample, or `nil` if no mark shows.
     ///
     /// The pen and the text tool show a small dot. The eraser shows an outline circle with the
-    /// eraser radius. No mark shows while the user turned "Show Hover Preview" off, while the
-    /// pencil touches the screen, or during a card flight.
+    /// radius of `eraserSize` (D-201). No mark shows while the user turned "Show Hover Preview"
+    /// off, or while `isBlocked`: the pencil touches the screen, or a card flight runs.
     static func mark(
         tool: Tool,
+        eraserSize: EraserSize,
         isPreviewOn: Bool,
         location: CGPoint,
-        isPencilDown: Bool,
-        isInFlight: Bool
+        isBlocked: Bool
     ) -> HoverDot? {
-        guard isPreviewOn, !isPencilDown, !isInFlight else { return nil }
+        guard isPreviewOn, !isBlocked else { return nil }
         switch tool {
         case .pen, .text:
             return HoverDot(
@@ -33,7 +33,7 @@ struct HoverDot: Equatable {
                 isRing: false
             )
         case .eraser:
-            return HoverDot(center: location, radius: EraserTool.radius, isRing: true)
+            return HoverDot(center: location, radius: eraserSize.viewPoints, isRing: true)
         }
     }
 }

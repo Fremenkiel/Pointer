@@ -42,3 +42,5 @@ Nothing waits for the product owner. On 2026-10-30, the product owner closed M11
 No next milestone is planned. The candidates come from the next review.
 
 On 2026-10-30, after the close of M11, the product owner asked for two features. The first is a choice of three pen widths in the palette (TOOL-09, D-199). The second is a clear canvas command behind a question, as one undo step (TOOL-10, D-200). Both are built with their tests and their snapshot references.
+
+On 2026-11-02, the product owner asked for one palette row with the sizes of the selected tool next to the tools, and for three eraser sizes (TOOL-04, TOOL-07, PEN-03, D-201). Both are built with their tests and their snapshot references.

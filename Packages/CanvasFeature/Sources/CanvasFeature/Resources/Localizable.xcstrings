@@ -101,6 +101,16 @@
         }
       }
     },
+    "Large eraser": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Large eraser"
+          }
+        }
+      }
+    },
     "New card": {
       "localizations": {
         "en": {
@@ -137,6 +147,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rename"
+          }
+        }
+      }
+    },
+    "Small eraser": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Small eraser"
+          }
+        }
+      }
+    },
+    "Standard eraser": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard eraser"
           }
         }
       }

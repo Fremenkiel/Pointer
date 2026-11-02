@@ -15,10 +15,10 @@ struct HoverDotTests {
     func dot(tool: Tool) {
         let mark = HoverDot.mark(
             tool: tool,
+            eraserSize: .standard,
             isPreviewOn: true,
             location: Self.location,
-            isPencilDown: false,
-            isInFlight: false
+            isBlocked: false
         )
         #expect(
             mark
@@ -30,70 +30,62 @@ struct HoverDotTests {
         )
     }
 
-    @Test("The eraser shows an outline circle with the eraser radius (D-133)")
-    func eraserRing() {
+    @Test(
+        "The eraser shows an outline circle with the radius of its size (D-133, D-201)",
+        arguments: EraserSize.allCases
+    )
+    func eraserRing(size: EraserSize) {
         let mark = HoverDot.mark(
             tool: .eraser,
+            eraserSize: size,
             isPreviewOn: true,
             location: Self.location,
-            isPencilDown: false,
-            isInFlight: false
+            isBlocked: false
         )
-        #expect(mark == HoverDot(center: Self.location, radius: 8, isRing: true))
-        #expect(mark?.radius == CGFloat(EraserTool.radius))
+        #expect(mark == HoverDot(center: Self.location, radius: size.viewPoints, isRing: true))
+        #expect(mark?.isRing == true)
     }
 
     @Test("No mark shows while Show Hover Preview is off", arguments: Tool.allCases)
     func previewOff(tool: Tool) {
         let mark = HoverDot.mark(
             tool: tool,
+            eraserSize: .standard,
             isPreviewOn: false,
             location: Self.location,
-            isPencilDown: false,
-            isInFlight: false
-        )
-        #expect(mark == nil)
-    }
-
-    @Test("No mark shows while the pencil touches the screen", arguments: Tool.allCases)
-    func pencilDown(tool: Tool) {
-        let mark = HoverDot.mark(
-            tool: tool,
-            isPreviewOn: true,
-            location: Self.location,
-            isPencilDown: true,
-            isInFlight: false
-        )
-        #expect(mark == nil)
-    }
-
-    @Test("No mark shows during a card flight", arguments: Tool.allCases)
-    func flight(tool: Tool) {
-        let mark = HoverDot.mark(
-            tool: tool,
-            isPreviewOn: true,
-            location: Self.location,
-            isPencilDown: false,
-            isInFlight: true
+            isBlocked: false
         )
         #expect(mark == nil)
     }
 
     @Test(
-        "A mark shows only with the preview on, the pencil up, and no flight",
+        "No mark shows while the pencil touches the screen or a card flight runs",
+        arguments: Tool.allCases
+    )
+    func blocked(tool: Tool) {
+        let mark = HoverDot.mark(
+            tool: tool,
+            eraserSize: .standard,
+            isPreviewOn: true,
+            location: Self.location,
+            isBlocked: true
+        )
+        #expect(mark == nil)
+    }
+
+    @Test(
+        "A mark shows only with the preview on and no block",
         arguments: [false, true],
         [false, true]
     )
-    func gates(isPencilDown: Bool, isInFlight: Bool) {
-        for isPreviewOn in [false, true] {
-            let mark = HoverDot.mark(
-                tool: .pen,
-                isPreviewOn: isPreviewOn,
-                location: Self.location,
-                isPencilDown: isPencilDown,
-                isInFlight: isInFlight
-            )
-            #expect((mark != nil) == (isPreviewOn && !isPencilDown && !isInFlight))
-        }
+    func gates(isPreviewOn: Bool, isBlocked: Bool) {
+        let mark = HoverDot.mark(
+            tool: .pen,
+            eraserSize: .standard,
+            isPreviewOn: isPreviewOn,
+            location: Self.location,
+            isBlocked: isBlocked
+        )
+        #expect((mark != nil) == (isPreviewOn && !isBlocked))
     }
 }

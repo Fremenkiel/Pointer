@@ -28,6 +28,8 @@ public final class CanvasViewController: UIViewController {
     let sessions: CanvasSessions?
     /// The pen width of the app, shared by every canvas while it runs (TOOL-09, D-199).
     let penSettings: PenSettings
+    /// The eraser size of the app, shared by every canvas while it runs (TOOL-04, D-201).
+    let eraserSettings: EraserSettings
     /// The workspace of the canvas, or `nil` for a canvas without a workspace (D-196).
     public let workspace: WorkspaceID?
     /// The state of the undo and redo buttons.
@@ -45,6 +47,8 @@ public final class CanvasViewController: UIViewController {
     /// The current-tool button and the card button right of it. The app places them next to the
     /// workspace selector (D-64, D-117).
     public var toolButton: UIViewController { toolButtonHost }
+    /// The host of the open palette, or `nil` while no palette shows (D-201).
+    weak var paletteHost: UIViewController?
     /// Runs when the GPU completes the first frame that holds an erase, an undo, or a redo, with
     /// the `gpuEndTime` of that frame. The acceptance test of M4 times the steps with it (D-69,
     /// D-74).
@@ -58,6 +62,9 @@ public final class CanvasViewController: UIViewController {
     var eraserSamples: [Point]?
     /// The sample list of the last gesture, kept for its capacity.
     var spareEraserSamples: [Point] = []
+    /// The radius in view points of the running or the last eraser gesture. A gesture keeps the
+    /// radius of its start, so a size picked during it takes effect at the next gesture (D-70).
+    var eraseRadius = EraserSize.standard.viewPoints
     /// Turns the pan and the pinch input into camera changes.
     var cameraController: CameraController
     /// Decides which finger touches the gestures ignore (TOOL-03).
@@ -123,6 +130,7 @@ public final class CanvasViewController: UIViewController {
         rowChannel = dependencies.repository.map { RowChannel(repository: $0) }
         sessions = dependencies.sessions
         penSettings = dependencies.penSettings ?? PenSettings()
+        eraserSettings = dependencies.eraserSettings ?? EraserSettings()
         workspace = dependencies.workspace
         onCameraRest = dependencies.onCameraRest
         onMessage = dependencies.onMessage

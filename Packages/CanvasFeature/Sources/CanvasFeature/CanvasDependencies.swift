@@ -22,6 +22,9 @@ public struct CanvasDependencies {
     /// The pen width of the app, shared by every canvas while it runs (TOOL-09, D-199), or `nil`
     /// for a canvas with settings of its own.
     public var penSettings: PenSettings?
+    /// The eraser size of the app, shared by every canvas while it runs (TOOL-04, D-201), or
+    /// `nil` for a canvas with settings of its own.
+    public var eraserSettings: EraserSettings?
     /// The workspace of the canvas, so that a delete of the workspace removes the session of the
     /// canvas (D-196), or `nil` for a canvas without a workspace.
     public var workspace: WorkspaceID?

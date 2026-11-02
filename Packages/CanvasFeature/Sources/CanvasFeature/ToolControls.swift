@@ -10,10 +10,14 @@ final class ToolControls {
     var selected = Tool.pen
     /// The pen width that the palette marks (TOOL-09, D-199).
     var penWidth = PenWidth.standard
-    /// Picks a tool and closes the palette.
+    /// The eraser size that the palette marks (TOOL-04, D-201).
+    var eraserSize = EraserSize.standard
+    /// Picks a tool and keeps the palette open (D-201).
     @ObservationIgnored var select: (Tool) -> Void = { _ in }
     /// Picks a pen width and closes the palette.
     @ObservationIgnored var selectWidth: (PenWidth) -> Void = { _ in }
+    /// Picks an eraser size and closes the palette.
+    @ObservationIgnored var selectEraserSize: (EraserSize) -> Void = { _ in }
     /// Opens the palette under the button.
     @ObservationIgnored var openPalette: () -> Void = {}
     /// Shows a new card at the left edge of the screen (CARD-01, D-117).
@@ -47,6 +51,17 @@ extension PenWidth {
         case .thin: CanvasStrings.thinPen
         case .standard: CanvasStrings.standardPen
         case .thick: CanvasStrings.thickPen
+        }
+    }
+}
+
+extension EraserSize {
+    /// The name of the size for VoiceOver.
+    var label: String {
+        switch self {
+        case .small: CanvasStrings.smallEraser
+        case .standard: CanvasStrings.standardEraser
+        case .large: CanvasStrings.largeEraser
         }
     }
 }

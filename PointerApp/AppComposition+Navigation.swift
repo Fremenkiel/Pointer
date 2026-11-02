@@ -270,6 +270,7 @@ extension AppComposition {
         dependencies.repository = repository
         dependencies.sessions = sessions
         dependencies.penSettings = penSettings
+        dependencies.eraserSettings = eraserSettings
         dependencies.workspace = target.workspace
         dependencies.transientStrokes = fillStrokes(
             canvasID: canvasID,

@@ -6,32 +6,52 @@ import UIKit
 /// D-63, D-64). The app plays no haptic event (PEN-06, D-23).
 extension CanvasViewController: UIPencilInteractionDelegate {
     /// Connects the button, installs the one pencil interaction of the canvas, and lets a new
-    /// touch set the pen width.
+    /// touch set the pen width and close the palette.
     func installToolControls() {
-        toolControls.select = { [weak self] tool in self?.pick(tool) }
+        toolControls.select = { [weak self] tool in self?.select(tool) }
         toolControls.penWidth = penSettings.width
         toolControls.selectWidth = { [weak self] width in self?.pick(width: width) }
+        toolControls.eraserSize = eraserSettings.size
+        toolControls.selectEraserSize = { [weak self] size in self?.pick(eraserSize: size) }
         toolControls.openPalette = { [weak self] in self?.showPaletteUnderButton() }
         toolControls.newCard = { [weak self] in self?.showPendingCard() }
         let interaction = UIPencilInteraction(delegate: self)
         view.addInteraction(interaction)
         // PencilKit takes the pen width before `pencilBegan()` runs, so the width follows a new
-        // touch at its hit test (D-131).
-        canvasView.onTouchHitTest = { [weak self] in self?.applyPenTool() }
+        // touch at its hit test (D-131). The same touch closes the palette, and the popover lets
+        // it through to the canvas (D-201).
+        canvasView.onTouchHitTest = { [weak self] in
+            self?.applyPenTool()
+            self?.dismissPalette()
+        }
         toolButtonHost.view.backgroundColor = .clear
         toolButtonHost.sizingOptions = .intrinsicContentSize
-    }
-
-    /// Picks a tool from the palette and closes it.
-    private func pick(_ tool: Tool) {
-        select(tool)
-        presentedViewController?.dismiss(animated: true)
     }
 
     /// Picks a pen width from the palette and closes it.
     private func pick(width: PenWidth) {
         select(width: width)
-        presentedViewController?.dismiss(animated: true)
+        dismissPalette()
+    }
+
+    /// Picks an eraser size from the palette and closes it.
+    private func pick(eraserSize: EraserSize) {
+        select(eraserSize: eraserSize)
+        dismissPalette()
+    }
+
+    /// Closes the palette if it is open. A share sheet or an alert stays. A close during the open
+    /// animation runs after it, because UIKit drops a dismiss during a presentation (D-201).
+    func dismissPalette() {
+        guard let paletteHost, paletteHost === presentedViewController else { return }
+        guard paletteHost.isBeingPresented, let coordinator = paletteHost.transitionCoordinator
+        else {
+            paletteHost.dismiss(animated: true)
+            return
+        }
+        coordinator.animate(alongsideTransition: nil) { _ in
+            paletteHost.dismiss(animated: true)
+        }
     }
 
     /// Picks the pen width of the next stroke (TOOL-09, D-199). Every canvas of the app takes
@@ -41,6 +61,14 @@ extension CanvasViewController: UIPencilInteractionDelegate {
         penSettings.width = width
         toolControls.penWidth = width
         if !toolState.isPencilDown { applyPenTool() }
+    }
+
+    /// Picks the eraser size of the next erase gesture (TOOL-04, D-201). Every canvas of the app
+    /// takes it. A gesture that runs keeps its size (D-70). The hover ring shows the size at once.
+    public func select(eraserSize: EraserSize) {
+        eraserSettings.size = eraserSize
+        toolControls.eraserSize = eraserSize
+        toolDidChangeForHover()
     }
 
     /// Opens the palette under the current-tool button (D-64). The button is the first square
@@ -72,8 +100,10 @@ extension CanvasViewController: UIPencilInteractionDelegate {
         arrow: UIPopoverArrowDirection
     ) {
         guard presentedViewController == nil, let source else { return }
-        // Another canvas can have picked the width since this canvas took it (D-199).
+        // Another canvas can have picked the width or the size since this canvas took them
+        // (D-199, D-201).
         toolControls.penWidth = penSettings.width
+        toolControls.eraserSize = eraserSettings.size
         let host = UIHostingController(
             rootView: ToolPalette(tools: toolControls, history: historyControls)
         )
@@ -83,13 +113,20 @@ extension CanvasViewController: UIPencilInteractionDelegate {
         // host adds none, as measured on the iPad (D-179).
         host.view.addInteraction(UILargeContentViewerInteraction())
         host.modalPresentationStyle = .popover
+        // The row changes with the tool while the palette is open, and the popover follows it
+        // (D-201).
+        host.sizingOptions = .preferredContentSize
         host.preferredContentSize = host.sizeThatFits(in: view.bounds.size)
         if let popover = host.popoverPresentationController {
             popover.sourceView = source
             popover.sourceRect = rect
             popover.permittedArrowDirections = arrow
             popover.backgroundColor = UIColor(DesignSystem.Color.chromeBackground)
+            // A touch on the canvas reaches the canvas, which closes the palette at the hit test
+            // of the touch and then draws or erases (D-201).
+            popover.passthroughViews = [canvasView]
         }
+        paletteHost = host
         present(host, animated: true)
     }
 

@@ -4,7 +4,7 @@ import Testing
 @testable import CanvasFeature
 
 /// The tool palette, the current-tool button for each tool, and the card button (TOOL-07,
-/// D-117, TEST-07).
+/// D-117, D-201, TEST-07).
 @MainActor
 @Suite("Tool control snapshots")
 struct ToolControlsSnapshotTests {
@@ -15,7 +15,7 @@ struct ToolControlsSnapshotTests {
     }
 
     @Test(
-        "The palette marks the current tool and shows the pen widths for the pen only (TOOL-09)",
+        "The palette shows the tools, the sizes of the selected tool, and undo and redo in one row",
         arguments: Tool.allCases
     )
     func palette(tool: Tool) throws {
@@ -36,6 +36,18 @@ struct ToolControlsSnapshotTests {
         try ViewSnapshot.assertMatches(
             ToolPalette(tools: controls, history: history),
             named: "tool-palette-pen-thick"
+        )
+    }
+
+    @Test("The palette marks the picked eraser size (D-201)")
+    func paletteLargeEraser() throws {
+        let controls = tools(.eraser)
+        controls.eraserSize = .large
+        let history = HistoryControls()
+        history.canUndo = true
+        try ViewSnapshot.assertMatches(
+            ToolPalette(tools: controls, history: history),
+            named: "tool-palette-eraser-large"
         )
     }
 

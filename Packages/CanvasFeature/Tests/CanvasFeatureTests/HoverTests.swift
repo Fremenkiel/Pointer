@@ -91,6 +91,27 @@ struct HoverTests {
         #expect(hover.layer.fillColor != nil)
     }
 
+    @Test("A size pick during a hover swaps the ring of the eraser, and a move keeps it (D-201)")
+    func eraserSize() throws {
+        let controller = try makeController()
+        let hover = controller.canvasView.hoverDot
+        controller.select(.eraser)
+        controller.hoverBegan(at: Self.tip, isPreviewOn: true)
+        #expect(hover.shownRingRadius == CGFloat(EraserSize.standard.viewPoints))
+        let standardPath = try #require(hover.layer.path)
+        controller.select(eraserSize: .large)
+        #expect(hover.shownRingRadius == CGFloat(EraserSize.large.viewPoints))
+        #expect(hover.shownCenter == Self.tip)
+        let largePath = try #require(hover.layer.path)
+        #expect(largePath.boundingBox.width > standardPath.boundingBox.width)
+        controller.hoverMoved(to: CGPoint(x: 200, y: 150))
+        #expect(hover.layer.path === largePath)
+        controller.select(.pen)
+        #expect(hover.shownRingRadius == 0)
+        controller.select(.eraser)
+        #expect(hover.shownRingRadius == CGFloat(EraserSize.large.viewPoints))
+    }
+
     @Test("No dot shows while Show Hover Preview is off, read at the start of each hover")
     func previewOff() throws {
         let controller = try makeController()

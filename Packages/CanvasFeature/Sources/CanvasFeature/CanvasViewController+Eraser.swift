@@ -17,7 +17,9 @@ extension CanvasViewController {
         }
         eraserSamples = samples
         pencilObserver.reportsCoalescedSamples = true
-        renderer.beginErase(radius: EraserTool.radius)
+        // The gesture keeps this radius to its end (D-70, D-201).
+        eraseRadius = eraserSettings.size.viewPoints
+        renderer.beginErase(radius: eraseRadius)
     }
 
     /// Adds one sample in view space. A sample past `EraserPath.maxSamples` is ignored.
@@ -73,7 +75,7 @@ extension CanvasViewController {
         let camera = cameraController.shownCamera
         let path = EraserPath(
             samples: samples.map { camera.canvasPoint(fromView: $0, viewSize: viewSize) },
-            radius: EraserTool.canvasRadius(zoom: camera.zoom)
+            radius: EraserTool.canvasRadius(viewPoints: eraseRadius, zoom: camera.zoom)
         )
         // A pass over the bounds of all strokes. It takes about 0.3 ms for 21,000 strokes, so
         // the canvas keeps no grid of its own (M4 task 3.5).

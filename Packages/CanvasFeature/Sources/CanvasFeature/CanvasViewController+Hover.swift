@@ -33,10 +33,10 @@ extension CanvasViewController {
         CanvasSignpost.begin("Hover")
         let mark = HoverDot.mark(
             tool: tool,
+            eraserSize: eraserSettings.size,
             isPreviewOn: canvasView.hoverDot.isPreviewOn,
             location: location,
-            isPencilDown: toolState.isPencilDown,
-            isInFlight: !takesPencilActions
+            isBlocked: toolState.isPencilDown || !takesPencilActions
         )
         canvasView.hoverDot.show(mark)
         CanvasSignpost.end("Hover")
@@ -47,7 +47,7 @@ extension CanvasViewController {
         canvasView.hoverDot.show(nil)
     }
 
-    /// Shows the shape of a new tool at once while the dot shows.
+    /// Shows the shape of a new tool or a new eraser size at once while the dot shows.
     func toolDidChangeForHover() {
         guard let center = canvasView.hoverDot.shownCenter else { return }
         hoverMoved(to: center)

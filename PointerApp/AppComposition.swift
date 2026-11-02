@@ -34,6 +34,8 @@ final class AppComposition {
     let sessions = CanvasSessions()
     /// The pen width of the app while it runs, shared by every canvas (TOOL-09, D-199).
     let penSettings = PenSettings()
+    /// The eraser size of the app while it runs, shared by every canvas (TOOL-04, D-201).
+    let eraserSettings = EraserSettings()
     /// The camera of the last workspace from the launch read. The first canvas uses it.
     var launchCamera: (canvas: CanvasID, camera: Camera)?
     /// The stored path of the last workspace from the launch read (WS-04, D-112).

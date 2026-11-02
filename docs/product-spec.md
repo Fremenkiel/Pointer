@@ -39,19 +39,19 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 - TOOL-01: The app has three tools: pen, eraser, and text. No other tool exists.
 - TOOL-02: The pen draws white (`#FFFFFF`) lines. The line width is one of the three widths of TOOL-09. Pressure does not change it (D-05).
 - TOOL-03: Only Apple Pencil draws. A finger never draws.
-- TOOL-04: The eraser removes ink where the pencil touches it and cuts the stroke at that place (D-06).
+- TOOL-04: The eraser removes ink where the pencil touches it and cuts the stroke at that place (D-06). The eraser has three sizes: small (a radius of 4 view points), standard (8 view points, D-128), and large (16 view points). You pick one in the palette of TOOL-07 while the eraser is the selected tool. The size stays the same on the screen at every zoom. The app keeps the choice while it runs, and each launch starts with the standard size (D-201).
 - TOOL-05: The text tool creates a text box where the pencil taps. The keyboard opens. Scribble (handwriting into text fields) works in the text box.
 - TOOL-06: A finger tap on an existing text box starts editing it.
-- TOOL-07: A small tool bar shows the current tool and lets you change it with a tap. A squeeze of the pencil opens it as the palette of PEN-03 (D-63). A button in the top left corner shows the current tool, and a finger tap on it opens the same palette (D-64).
+- TOOL-07: A small tool bar shows the current tool and lets you change it with a tap. A squeeze of the pencil opens it as the palette of PEN-03 (D-63). A button in the top left corner shows the current tool, and a finger tap on it opens the same palette (D-64). A tap on a tool keeps the palette open, and the palette shows the sizes of that tool. A tap on a size closes the palette. A touch on the canvas closes the palette, and the touch draws or erases (D-201).
 - TOOL-08: A long press on a text box without a drag opens a menu with "Delete" (D-89).
-- TOOL-09: The pen has three widths: thin (1 canvas point), standard (2 canvas points, the width of D-37), and thick (4 canvas points). You pick one in the palette of TOOL-07 while the pen is the selected tool. The eraser and the text tool have no width. The app keeps the choice while it runs, and each launch starts with the standard width (D-199).
+- TOOL-09: The pen has three widths: thin (1 canvas point), standard (2 canvas points, the width of D-37), and thick (4 canvas points). You pick one in the palette of TOOL-07 while the pen is the selected tool. The text tool has no size. The app keeps the choice while it runs, and each launch starts with the standard width (D-199).
 - TOOL-10: A clear button in the top right corner, next to the export button, removes everything on the current canvas: all ink, all text boxes, and all cards with the canvases inside them. On the root canvas, it removes the whole content of the workspace. The app asks for a confirmation first. The clear is one undo step (D-200).
 
 ### 3.3 Apple Pencil
 
 - PEN-01: A double tap on the pencil switches between pen and eraser.
 - PEN-02: The app reads the system setting for double tap (`UIPencilInteraction.preferredTapAction`). If the setting is "Switch to eraser" or "Switch to previous tool", a double tap switches between pen and eraser. For every other value, the app does nothing (D-130).
-- PEN-03: A squeeze (Apple Pencil Pro) opens a small tool palette at the pencil tip. The palette holds pen, eraser, text, undo, and redo. While the pen is the selected tool, it also holds the three pen widths (TOOL-09).
+- PEN-03: A squeeze (Apple Pencil Pro) opens a small tool palette at the pencil tip. The palette is one row: pen, eraser, text, then the three sizes of the selected tool (TOOL-09 for the pen, TOOL-04 for the eraser), then undo and redo (D-201).
 - PEN-04: When the pencil hovers (on iPads that support hover), a small dot shows where the tip will touch.
 - PEN-05: The app works with every Apple Pencil model. It never needs pressure, because Apple Pencil (USB-C) has no pressure sensor.
 - PEN-06: The app gives no haptic feedback in the pencil or in the iPad. Haptics that the system plays by itself are accepted, but drawing plays none (D-23). It has no paper texture, no paper grain, and no writing sound. Responsiveness is the only property that the app takes from paper.

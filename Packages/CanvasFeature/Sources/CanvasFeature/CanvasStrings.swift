@@ -91,4 +91,10 @@ enum CanvasStrings {
     static var standardPen: String { String(localized: "Standard pen", bundle: .module) }
     /// The name of the thick pen width.
     static var thickPen: String { String(localized: "Thick pen", bundle: .module) }
+    /// The name of the small eraser size (TOOL-04, D-201).
+    static var smallEraser: String { String(localized: "Small eraser", bundle: .module) }
+    /// The name of the standard eraser size.
+    static var standardEraser: String { String(localized: "Standard eraser", bundle: .module) }
+    /// The name of the large eraser size.
+    static var largeEraser: String { String(localized: "Large eraser", bundle: .module) }
 }
