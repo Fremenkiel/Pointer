@@ -30,6 +30,8 @@ extension CanvasViewController {
     /// Moves the dot to a hover sample, or hides it (D-128). It allocates nothing in Pointer code
     /// (PERF-01), and the interval "Hover" times it (PERF-03).
     func hoverMoved(to location: CGPoint) {
+        // During an erase, the ring follows the eraser samples instead (TOOL-11, D-202).
+        guard eraserSamples == nil else { return }
         CanvasSignpost.begin("Hover")
         let mark = HoverDot.mark(
             tool: tool,

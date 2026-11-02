@@ -1,9 +1,10 @@
 import Geometry
 import InkEngine
 import Model
+import UIKit
 
-/// The eraser tool: the mask while the pencil moves and one `EraseStrokes` at the lift
-/// (architecture.md 4.4, D-30, D-66).
+/// The eraser tool: the mask and the ring at the tip while the pencil moves, and one
+/// `EraseStrokes` at the lift (architecture.md 4.4, D-30, D-66, D-202).
 extension CanvasViewController {
     /// Starts an eraser gesture.
     func beginErase() {
@@ -22,8 +23,11 @@ extension CanvasViewController {
         renderer.beginErase(radius: eraseRadius)
     }
 
-    /// Adds one sample in view space. A sample past `EraserPath.maxSamples` is ignored.
+    /// Adds one sample in view space, and moves the eraser ring to it (TOOL-11, D-202). A sample
+    /// past `EraserPath.maxSamples` moves the ring and is otherwise ignored.
     func addEraserSample(_ location: Point) {
+        let center = CGPoint(x: location.x, y: location.y)
+        canvasView.hoverDot.show(HoverDot(center: center, radius: eraseRadius, isRing: true))
         guard var samples = eraserSamples, samples.count < EraserPath.maxSamples else { return }
         eraserSamples = nil
         samples.append(location)
@@ -38,6 +42,8 @@ extension CanvasViewController {
         guard let samples = eraserSamples else { return }
         eraserSamples = nil
         pencilObserver.reportsCoalescedSamples = false
+        // The ring of the gesture goes. The next hover sample shows the hover dot (D-202).
+        hideHoverDot()
         defer { spareEraserSamples = samples }
         let size = Size(width: canvasView.bounds.width, height: canvasView.bounds.height)
         guard !isCancelled, !samples.isEmpty, size.width > 0, size.height > 0,

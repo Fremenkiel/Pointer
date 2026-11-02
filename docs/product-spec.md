@@ -46,6 +46,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 - TOOL-08: A long press on a text box without a drag opens a menu with "Delete" (D-89).
 - TOOL-09: The pen has three widths: thin (1 canvas point), standard (2 canvas points, the width of D-37), and thick (4 canvas points). You pick one in the palette of TOOL-07 while the pen is the selected tool. The text tool has no size. The app keeps the choice while it runs, and each launch starts with the standard width (D-199).
 - TOOL-10: A clear button in the top right corner, next to the export button, removes everything on the current canvas: all ink, all text boxes, and all cards with the canvases inside them. On the root canvas, it removes the whole content of the workspace. The app asks for a confirmation first. The clear is one undo step (D-200).
+- TOOL-11: While the eraser touches the screen, a ring with the radius of the eraser follows the pencil tip, so you see where the eraser is. It shows also while "Show Hover Preview" is off. It goes at the lift (D-202).
 
 ### 3.3 Apple Pencil
 

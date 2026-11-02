@@ -2,7 +2,7 @@ import DesignSystem
 import UIKit
 
 /// The mark that shows where the hovering pencil will touch (architecture.md 4.6, PEN-04,
-/// D-128, D-133).
+/// D-128, D-133), and the ring at the tip of a running erase gesture (TOOL-11, D-202).
 struct HoverDot: Equatable {
     /// The center of the mark in view points: the hover location.
     let center: CGPoint
