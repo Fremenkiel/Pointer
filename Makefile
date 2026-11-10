@@ -4,8 +4,10 @@
 PROJECT := Pointer.xcodeproj
 SCHEME := PointerApp
 DERIVED_DATA := .build/DerivedData
-# The connected iPad. Learned rule 1 of AGENTS.md bans the simulator (D-77).
-DEVICE ?= 00008132-000018993E8B801C
+# The connected iPad. Learned rule 1 of AGENTS.md bans the simulator (D-77). The UDID stays out
+# of git: put `DEVICE := <UDID>` into Local.mk, which git ignores, or give DEVICE on the command line.
+-include Local.mk
+DEVICE ?=
 DEVICE_DATA := .build/DeviceData
 TIER_A := Geometry Model InkEngine Persistence
 XCODEBUILD := xcodebuild -project $(PROJECT) -scheme $(SCHEME) -derivedDataPath $(DERIVED_DATA)
@@ -16,7 +18,7 @@ DEVICE_TEST := xcodebuild test -project $(PROJECT) -scheme $(SCHEME) -configurat
 
 .PHONY: check build unused analyze test snapshots coverage format lint layers density nesting \
 	self-test plist \
-	perf-baseline perf-compare validation install
+	perf-baseline perf-compare validation install device
 
 check: build unused analyze test snapshots format lint layers density nesting self-test plist
 	@echo "All checks passed."
@@ -62,7 +64,7 @@ analyze:
 # iPad first, each in a new process of the app on a temporary library (D-178). The iPad asks for
 # its passcode before the UI tests, so they come early in the run (D-192). Keep the iPad unlocked
 # during the run.
-test:
+test: device
 	@for package in $(TIER_A); do \
 		if [ -d Packages/$$package/Tests ]; then \
 			swift test --package-path Packages/$$package || exit 1; \
@@ -75,7 +77,7 @@ test:
 
 # TEST-07: the snapshot tests run in PointerDeviceTests on the iPad and compare against the
 # reference images in the test bundle (D-77).
-snapshots:
+snapshots: device
 	$(DEVICE_TEST) -quiet \
 		-only-testing:PointerDeviceTests/InkImageTests \
 		-only-testing:PointerDeviceTests/RedrawTests \
@@ -104,7 +106,7 @@ snapshots:
 COVERAGE_DATA := .build/CoverageData
 COVERAGE_REPORTS := .build/Coverage
 COVERAGE_FRAMEWORKS := $(COVERAGE_DATA)/Build/Products/Release-iphoneos/Pointer.app/Frameworks
-coverage:
+coverage: device
 	@rm -rf $(COVERAGE_REPORTS) $(COVERAGE_DATA)/Build/ProfileData
 	@mkdir -p $(COVERAGE_REPORTS)
 	@for package in $(TIER_A); do \
@@ -140,7 +142,7 @@ PERF_SUITES := CanvasOpenPerformanceTests CanvasMemoryPerformanceTests \
 	ExportPerformanceTests OpenAnimationTests FlightStallTests CanvasLifetimeTests \
 	TextBuildPerformanceTests GlyphInsertPerformanceTests PreviewArrivalPerformanceTests
 PERF_BASELINE := Performance/Baselines/iPad16,4.json
-perf-baseline:
+perf-baseline: device
 	Scripts/perf-runs.sh baseline 1 $(PERF_RUNS) $(DEVICE) $(PERF_SUITES)
 	xcrun devicectl device info details --device $(DEVICE) --json-output .build/Perf/device.json \
 		> /dev/null
@@ -150,7 +152,7 @@ perf-baseline:
 		--xcode "$$(xcodebuild -version | head -1)" \
 		$$(for run in $$(seq 1 $(PERF_RUNS)); do printf '.build/Perf/baseline-%s.xcresult ' $$run; done)
 
-perf-compare:
+perf-compare: device
 	Scripts/perf-runs.sh compare 1 $(PERF_RUNS) $(DEVICE) $(PERF_SUITES)
 	@swift Scripts/perf.swift compare --baseline $(PERF_BASELINE) .build/Perf/compare-*.xcresult; \
 	status=$$?; \
@@ -172,7 +174,7 @@ ALLOCATION_SUITES := EditAllocationTests EraserSampleAllocationTests FrameAlloca
 	TextEditFrameAllocationTests TextMoveAllocationTests TextPassAllocationTests \
 	TransitionAllocationTests ZoomFrameAllocationTests FrameKindAllocationTests \
 	DragPostAllocationTests GestureAllocationTests StoredBuildAllocationTests
-validation:
+validation: device
 	TEST_RUNNER_MTL_DEBUG_LAYER=1 TEST_RUNNER_MTL_SHADER_VALIDATION=1 $(DEVICE_TEST) -quiet \
 		-only-testing:PointerDeviceTests \
 		$(foreach suite,$(ALLOCATION_SUITES) $(PERF_SUITES),-skip-testing:PointerDeviceTests/$(suite))
@@ -183,11 +185,16 @@ validation:
 # of its own, so the test build of `make test` stays. Keep the iPad unlocked during the install.
 INSTALL_DATA := .build/InstallData
 INSTALL_APP := $(INSTALL_DATA)/Build/Products/Release-iphoneos/Pointer.app
-install:
+install: device
 	xcodebuild build -project $(PROJECT) -scheme $(SCHEME) -configuration Release \
 		-destination 'id=$(DEVICE)' -derivedDataPath $(INSTALL_DATA) -allowProvisioningUpdates -quiet
 	xcrun devicectl device install app --device $(DEVICE) $(INSTALL_APP)
 	@echo "install: Pointer installed on $(DEVICE)"
+
+# The device targets need the UDID of the connected iPad.
+device:
+	@test -n "$(DEVICE)" || { echo "error: set DEVICE to the UDID of the iPad in Local.mk," \
+		"for example: echo 'DEVICE := <UDID>' > Local.mk. xcrun devicectl list devices prints the UDID."; exit 1; }
 
 # STYLE-04. The fixtures hold deliberate violations, so the formatter skips them.
 format:

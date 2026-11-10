@@ -65,3 +65,11 @@ fastlane/test_output
 DerivedData/
 *.xcuserstate
 .claude/worktrees/
+
+# Local configuration of the Makefile, for example the UDID of the iPad
+Local.mk
+
+# Signing keys and profiles
+*.p8
+*.p12
+*.mobileprovision

@@ -97,7 +97,7 @@ The cards form a tree. The root of each tree is the root canvas of a workspace.
 ### 3.8 Storage and backup
 
 - STO-01: The app stores all data on the device. It has no accounts and no network access.
-- STO-02: The app writes a complete copy of the library (a snapshot) once a day. The snapshot goes into a folder that you can see in the Files app, under "On My iPad > Pointer > Backups".
+- STO-02: The app writes a complete copy of the library (a snapshot) once a day. The snapshot goes into a folder that you can see in the Files app, under "On My iPad > &Pointer > Backups".
 - STO-03: You can back up the library by copying a snapshot file to any storage provider in the Files app.
 - STO-04: A "Back up now" command makes a new snapshot and opens the share sheet. The app has no App Intent for scheduled backups (D-14).
 - STO-07: You can restore the library from a snapshot file (D-20).

@@ -98,7 +98,7 @@ make validation  # PointerDeviceTests with Metal API and shader validation, at e
 make install     # build the app in Release and install it on the connected iPad
 ```
 
-`make test`, `make snapshots`, and `make install` use the connected iPad Pro 11-inch (M4) in Release. To use another iPad, set `DEVICE` to its UDID, for example `make test DEVICE=00008132-000018993E8B801C`. Before a device run, make sure that the iPad is unlocked: `xcrun devicectl device info lockState --device <UDID>` must print `passcodeRequired: false`. Before the UI tests, the iPad asks for its passcode to enable UI Automation. Enter it on the iPad, or the UI tests fail after about one minute (D-192).
+`make test`, `make snapshots`, and `make install` use the connected iPad Pro 11-inch (M4) in Release. The UDID of the iPad stays out of git. Put it into `Local.mk`, which git ignores, for example `echo 'DEVICE := <UDID>' > Local.mk`. `xcrun devicectl list devices` prints the UDID. To use another iPad for one run, give `DEVICE` on the command line, for example `make test DEVICE=<UDID>`. Before a device run, make sure that the iPad is unlocked: `xcrun devicectl device info lockState --device <UDID>` must print `passcodeRequired: false`. Before the UI tests, the iPad asks for its passcode to enable UI Automation. Enter it on the iPad, or the UI tests fail after about one minute (D-192).
 
 ## Working rules
 
@@ -112,5 +112,5 @@ make install     # build the app in Release and install it on the connected iPad
 
 Corrections from the product owner go here as numbered rules (AGENT-06).
 
-1. Run the tests on the connected iPad, never on a simulator, and do not make a simulator (product owner, 2026-10-20). Package tests cannot run on a device, so run the Mac parts of `make check` and all of `PointerDeviceTests` on the iPad. Keep the iPad unlocked during a device run.
+1. Run the tests on the connected iPad, never on a simulator, and do not make a simulator (product owner, 2026-10-20). Package tests cannot run on a device, so run the Mac parts of `make check` and all of `PointerDeviceTests` on the iPad. Keep the iPad unlocked during a device run. One exception: an iPad simulator can make the App Store screenshots, never a test run (product owner, 2026-11-10).
 2. Do not ask the product owner to accept a failed test, also one older than the task (product owner, 2026-10-24). Define the behavior that the test expects and the way it fails. Research the cause in reliable sources, benchmark the possible solutions on the iPad, and fix the cause.
